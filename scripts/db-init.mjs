@@ -121,13 +121,18 @@ async function main() {
     create table if not exists products (
       id bigserial primary key,
       product_name text not null,
-      sku text not null unique,
+      sku text not null,
       variant text not null,
       unit_cost numeric(12, 2) not null default 0,
       article_number text not null,
       is_active boolean not null default true,
       created_at timestamptz not null default now()
     );
+  `;
+  await sql`alter table products drop constraint if exists products_sku_key;`;
+  await sql`
+    create unique index if not exists idx_products_sku_variant_unique
+    on products (sku, variant);
   `;
 
   await sql`
@@ -173,10 +178,9 @@ async function main() {
     await sql`
       insert into products (product_name, sku, variant, unit_cost, article_number, is_active)
       values (${item.productName}, ${item.sku}, ${item.variant}, ${item.unitCost}, ${item.articleNumber}, true)
-      on conflict (sku) do update
+      on conflict (sku, variant) do update
       set
         product_name = excluded.product_name,
-        variant = excluded.variant,
         unit_cost = excluded.unit_cost,
         article_number = excluded.article_number;
     `;

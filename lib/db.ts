@@ -73,13 +73,19 @@ async function setupSchema() {
     create table if not exists products (
       id bigserial primary key,
       product_name text not null,
-      sku text not null unique,
+      sku text not null,
       variant text not null,
       unit_cost numeric(12, 2) not null default 0,
       article_number text not null,
       is_active boolean not null default true,
       created_at timestamptz not null default now()
     );
+  `;
+
+  await db`alter table products drop constraint if exists products_sku_key;`;
+  await db`
+    create unique index if not exists idx_products_sku_variant_unique
+    on products (sku, variant);
   `;
 
   await db`

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { createAdminAuditLog, upsertProductsBulk } from "@/lib/repositories";
+import { createAdminAuditLog, isUppercaseSku, upsertProductsBulk } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 type BatchProductInput = {
@@ -15,6 +15,7 @@ function isValidItem(item: BatchProductInput) {
   return (
     Boolean(item.productName?.trim()) &&
     Boolean(item.sku?.trim()) &&
+    isUppercaseSku(item.sku.trim()) &&
     Boolean(item.variant?.trim()) &&
     Boolean(item.articleNumber?.trim()) &&
     Number.isFinite(item.unitCost) &&

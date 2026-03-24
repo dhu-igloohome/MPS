@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { createAdminAuditLog, createProduct, listProducts } from "@/lib/repositories";
+import {
+  createAdminAuditLog,
+  createProduct,
+  findProductBySkuAndVariant,
+  isUppercaseSku,
+  listProducts,
+} from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export async function GET() {
@@ -28,6 +34,19 @@ export async function POST(request: Request) {
 
   if (!productName || !sku || !variant || !articleNumber || unitCost < 0) {
     return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
+  }
+  if (!isUppercaseSku(sku)) {
+    return NextResponse.json(
+      { message: "SKU must be uppercase letters/numbers/hyphen only" },
+      { status: 400 },
+    );
+  }
+  const duplicate = await findProductBySkuAndVariant(sku, variant);
+  if (duplicate) {
+    return NextResponse.json(
+      { message: "Duplicate SKU and Variant is not allowed." },
+      { status: 400 },
+    );
   }
 
   try {

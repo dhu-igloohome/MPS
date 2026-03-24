@@ -49,6 +49,10 @@ type ProductRow = {
   created_at: string;
 };
 
+export function isUppercaseSku(input: string) {
+  return /^[A-Z0-9-]+$/.test(input);
+}
+
 export async function authenticateUser(username: string, password: string) {
   await ensureDatabase();
   const db = getSql();
@@ -171,6 +175,46 @@ export async function listActiveProducts() {
     order by product_name asc, sku asc;
   `;
   return rows.map(mapProduct);
+}
+
+export async function findProductBySkuAndVariant(sku: string, variant: string) {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ProductRow[]>`
+    select
+      id,
+      product_name,
+      sku,
+      variant,
+      unit_cost::text,
+      article_number,
+      is_active,
+      created_at::text
+    from products
+    where sku = ${sku} and variant = ${variant}
+    limit 1;
+  `;
+  return rows[0] ? mapProduct(rows[0]) : null;
+}
+
+export async function findProductById(id: string) {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ProductRow[]>`
+    select
+      id,
+      product_name,
+      sku,
+      variant,
+      unit_cost::text,
+      article_number,
+      is_active,
+      created_at::text
+    from products
+    where id = ${Number(id)}
+    limit 1;
+  `;
+  return rows[0] ? mapProduct(rows[0]) : null;
 }
 
 export async function findActiveProductByNameAndSku(productName: string, sku: string) {
@@ -535,10 +579,9 @@ export async function upsertProductsBulk(
         ${item.articleNumber.trim()},
         true
       )
-      on conflict (sku) do update
+      on conflict (sku, variant) do update
       set
         product_name = excluded.product_name,
-        variant = excluded.variant,
         unit_cost = excluded.unit_cost,
         article_number = excluded.article_number,
         is_active = true;
@@ -547,6 +590,7 @@ export async function upsertProductsBulk(
 }
 
 export async function updateProduct(input: {
+  id: string;
   sku: string;
   productName: string;
   variant: string;
@@ -559,12 +603,13 @@ export async function updateProduct(input: {
   await db`
     update products
     set
+      sku = ${input.sku.trim()},
       product_name = ${input.productName.trim()},
       variant = ${input.variant.trim()},
       unit_cost = ${input.unitCost},
       article_number = ${input.articleNumber.trim()},
       is_active = ${input.isActive}
-    where sku = ${input.sku};
+    where id = ${Number(input.id)};
   `;
 }
 

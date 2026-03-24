@@ -135,10 +135,11 @@ export function ProductManagement({ products }: ProductManagementProps) {
   }
 
   async function saveItem(item: ProductItem) {
-    const response = await fetch(`/api/admin/products/${encodeURIComponent(item.sku)}`, {
+    const response = await fetch(`/api/admin/products/${encodeURIComponent(item.id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        sku: item.sku,
         productName: item.productName,
         variant: item.variant,
         unitCost: item.unitCost,
@@ -154,8 +155,8 @@ export function ProductManagement({ products }: ProductManagementProps) {
     router.refresh();
   }
 
-  function updateRow(skuKey: string, patch: Partial<ProductItem>) {
-    setEditable((prev) => prev.map((item) => (item.sku === skuKey ? { ...item, ...patch } : item)));
+  function updateRow(idKey: string, patch: Partial<ProductItem>) {
+    setEditable((prev) => prev.map((item) => (item.id === idKey ? { ...item, ...patch } : item)));
   }
 
   return (
@@ -174,7 +175,7 @@ export function ProductManagement({ products }: ProductManagementProps) {
             className="rounded-lg border border-zinc-300 px-3 py-2"
             placeholder="SKU"
             value={sku}
-            onChange={(event) => setSku(event.target.value)}
+            onChange={(event) => setSku(event.target.value.toUpperCase())}
             required
           />
           <input
@@ -249,15 +250,21 @@ export function ProductManagement({ products }: ProductManagementProps) {
                   <td className="px-2 py-2">
                     <input
                       value={item.productName}
-                      onChange={(event) => updateRow(item.sku, { productName: event.target.value })}
+                      onChange={(event) => updateRow(item.id, { productName: event.target.value })}
                       className="w-full rounded border border-zinc-300 px-2 py-1"
                     />
                   </td>
-                  <td className="px-2 py-2">{item.sku}</td>
+                  <td className="px-2 py-2">
+                    <input
+                      value={item.sku}
+                      onChange={(event) => updateRow(item.id, { sku: event.target.value.toUpperCase() })}
+                      className="w-full rounded border border-zinc-300 px-2 py-1"
+                    />
+                  </td>
                   <td className="px-2 py-2">
                     <input
                       value={item.variant}
-                      onChange={(event) => updateRow(item.sku, { variant: event.target.value })}
+                      onChange={(event) => updateRow(item.id, { variant: event.target.value })}
                       className="w-full rounded border border-zinc-300 px-2 py-1"
                     />
                   </td>
@@ -267,14 +274,14 @@ export function ProductManagement({ products }: ProductManagementProps) {
                       step="0.01"
                       min={0}
                       value={item.unitCost}
-                      onChange={(event) => updateRow(item.sku, { unitCost: Number(event.target.value) })}
+                      onChange={(event) => updateRow(item.id, { unitCost: Number(event.target.value) })}
                       className="w-full rounded border border-zinc-300 px-2 py-1"
                     />
                   </td>
                   <td className="px-2 py-2">
                     <input
                       value={item.articleNumber}
-                      onChange={(event) => updateRow(item.sku, { articleNumber: event.target.value })}
+                      onChange={(event) => updateRow(item.id, { articleNumber: event.target.value })}
                       className="w-full rounded border border-zinc-300 px-2 py-1"
                     />
                   </td>
@@ -282,7 +289,7 @@ export function ProductManagement({ products }: ProductManagementProps) {
                     <input
                       type="checkbox"
                       checked={item.isActive}
-                      onChange={(event) => updateRow(item.sku, { isActive: event.target.checked })}
+                      onChange={(event) => updateRow(item.id, { isActive: event.target.checked })}
                     />
                   </td>
                   <td className="px-2 py-2">

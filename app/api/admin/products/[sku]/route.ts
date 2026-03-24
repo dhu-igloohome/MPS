@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { createAdminAuditLog, updateProduct } from "@/lib/repositories";
+import {
+  createAdminAuditLog,
+  findProductById,
+  findProductBySkuAndVariant,
+  isUppercaseSku,
+  updateProduct,
+} from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 type RouteContext = {
@@ -14,19 +20,40 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const { sku } = await context.params;
+  const id = sku;
   const body = await request.json();
+  const nextSku = String(body.sku || "").trim();
   const productName = String(body.productName || "").trim();
   const variant = String(body.variant || "").trim();
   const articleNumber = String(body.articleNumber || "").trim();
   const unitCost = Number(body.unitCost || 0);
   const isActive = Boolean(body.isActive);
 
-  if (!sku || !productName || !variant || !articleNumber || unitCost < 0) {
+  if (!id || !nextSku || !productName || !variant || !articleNumber || unitCost < 0) {
     return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
+  }
+  if (!isUppercaseSku(nextSku)) {
+    return NextResponse.json(
+      { message: "SKU must be uppercase letters/numbers/hyphen only" },
+      { status: 400 },
+    );
+  }
+
+  const current = await findProductById(id);
+  if (!current) {
+    return NextResponse.json({ message: "Product not found" }, { status: 404 });
+  }
+  const duplicate = await findProductBySkuAndVariant(nextSku, variant);
+  if (duplicate && duplicate.id !== current.id) {
+    return NextResponse.json(
+      { message: "Duplicate SKU and Variant is not allowed." },
+      { status: 400 },
+    );
   }
 
   await updateProduct({
-    sku,
+    id,
+    sku: nextSku,
     productName,
     variant,
     articleNumber,
@@ -38,7 +65,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     actorUsername: session.username,
     action: "update_product",
     targetUsername: session.username,
-    details: `product=${productName}; sku=${sku}; isActive=${isActive}`,
+    details: `product=${productName}; sku=${nextSku}; isActive=${isActive}`,
   });
 
   return NextResponse.json({ ok: true });
