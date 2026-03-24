@@ -51,6 +51,30 @@ const officesByRegion = {
   USA: ["New York", "San Francisco", "Austin", "Chicago"],
 };
 
+const products = [
+  {
+    productName: "Router Pro",
+    sku: "RTR-PRO-001",
+    variant: "Standard",
+    unitCost: 120,
+    articleNumber: "ART-1001",
+  },
+  {
+    productName: "Router Pro",
+    sku: "RTR-PRO-002",
+    variant: "Enterprise",
+    unitCost: 180,
+    articleNumber: "ART-1002",
+  },
+  {
+    productName: "Gateway X",
+    sku: "GTW-X-001",
+    variant: "128G",
+    unitCost: 95,
+    articleNumber: "ART-2001",
+  },
+];
+
 async function main() {
   await sql`
     create table if not exists users (
@@ -94,6 +118,19 @@ async function main() {
   `;
 
   await sql`
+    create table if not exists products (
+      id bigserial primary key,
+      product_name text not null,
+      sku text not null unique,
+      variant text not null,
+      unit_cost numeric(12, 2) not null default 0,
+      article_number text not null,
+      is_active boolean not null default true,
+      created_at timestamptz not null default now()
+    );
+  `;
+
+  await sql`
     create table if not exists admin_audit_logs (
       id bigserial primary key,
       actor_username text not null references users(username),
@@ -130,6 +167,19 @@ async function main() {
         set region = excluded.region;
       `;
     }
+  }
+
+  for (const item of products) {
+    await sql`
+      insert into products (product_name, sku, variant, unit_cost, article_number, is_active)
+      values (${item.productName}, ${item.sku}, ${item.variant}, ${item.unitCost}, ${item.articleNumber}, true)
+      on conflict (sku) do update
+      set
+        product_name = excluded.product_name,
+        variant = excluded.variant,
+        unit_cost = excluded.unit_cost,
+        article_number = excluded.article_number;
+    `;
   }
 
   console.log("Database initialized successfully.");

@@ -46,3 +46,14 @@ export type ForecastEntry = {
   createdBy: string;
   createdAt: string;
 };
+
+export type ProductItem = {
+  id: string;
+  productName: string;
+  sku: string;
+  variant: string;
+  unitCost: number;
+  articleNumber: string;
+  isActive: boolean;
+  createdAt: string;
+};

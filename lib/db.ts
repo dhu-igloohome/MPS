@@ -70,6 +70,19 @@ async function setupSchema() {
   `;
 
   await db`
+    create table if not exists products (
+      id bigserial primary key,
+      product_name text not null,
+      sku text not null unique,
+      variant text not null,
+      unit_cost numeric(12, 2) not null default 0,
+      article_number text not null,
+      is_active boolean not null default true,
+      created_at timestamptz not null default now()
+    );
+  `;
+
+  await db`
     create table if not exists admin_audit_logs (
       id bigserial primary key,
       actor_username text not null references users(username),

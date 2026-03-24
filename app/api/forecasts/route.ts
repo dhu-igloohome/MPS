@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { createForecast, officeExistsByRegion } from "@/lib/repositories";
+import {
+  createForecast,
+  findActiveProductByNameAndSku,
+  officeExistsByRegion,
+} from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import { Region } from "@/lib/types";
 
@@ -38,6 +42,11 @@ export async function POST(request: Request) {
 
   if (!month || !productName.trim() || !sku.trim()) {
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+  }
+
+  const product = await findActiveProductByNameAndSku(productName.trim(), sku.trim());
+  if (!product) {
+    return NextResponse.json({ message: "Invalid product and SKU" }, { status: 400 });
   }
 
   if (buildToOrder < 0 || buildToStock < 0) {

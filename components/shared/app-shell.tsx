@@ -57,6 +57,16 @@ export function AppShell({ session, title, description, children }: AppShellProp
                 </Link>
               </li>
             ) : null}
+            {session.role === "super_admin" ? (
+              <li>
+                <Link
+                  href="/admin/products"
+                  className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
+                >
+                  Product Database
+                </Link>
+              </li>
+            ) : null}
           </ul>
           <div className="mt-4 rounded-lg bg-zinc-50 p-3 text-xs text-zinc-600">
             Regions: {session.regions.join(", ")}

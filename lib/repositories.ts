@@ -4,6 +4,7 @@ import {
   AdminAuditLog,
   AdminUser,
   ForecastEntry,
+  ProductItem,
   Region,
   SessionPayload,
   UserRole,
@@ -34,6 +35,17 @@ type AdminAuditLogRow = {
   action: string;
   target_username: string;
   details: string;
+  created_at: string;
+};
+
+type ProductRow = {
+  id: number;
+  product_name: string;
+  sku: string;
+  variant: string;
+  unit_cost: string | number;
+  article_number: string;
+  is_active: boolean;
   created_at: string;
 };
 
@@ -139,6 +151,46 @@ export async function createForecast(input: {
   `;
 
   return mapForecast(rows[0]);
+}
+
+export async function listActiveProducts() {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ProductRow[]>`
+    select
+      id,
+      product_name,
+      sku,
+      variant,
+      unit_cost::text,
+      article_number,
+      is_active,
+      created_at::text
+    from products
+    where is_active = true
+    order by product_name asc, sku asc;
+  `;
+  return rows.map(mapProduct);
+}
+
+export async function findActiveProductByNameAndSku(productName: string, sku: string) {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ProductRow[]>`
+    select
+      id,
+      product_name,
+      sku,
+      variant,
+      unit_cost::text,
+      article_number,
+      is_active,
+      created_at::text
+    from products
+    where is_active = true and product_name = ${productName} and sku = ${sku}
+    limit 1;
+  `;
+  return rows[0] ? mapProduct(rows[0]) : null;
 }
 
 export async function getForecastsByRegions(regions: Region[]) {
@@ -416,4 +468,81 @@ export async function listAdminAuditLogs(limit = 50) {
       createdAt: row.created_at,
     }),
   );
+}
+
+export async function listProducts(limit = 500) {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ProductRow[]>`
+    select
+      id,
+      product_name,
+      sku,
+      variant,
+      unit_cost::text,
+      article_number,
+      is_active,
+      created_at::text
+    from products
+    order by created_at desc
+    limit ${limit};
+  `;
+  return rows.map(mapProduct);
+}
+
+export async function createProduct(input: {
+  productName: string;
+  sku: string;
+  variant: string;
+  unitCost: number;
+  articleNumber: string;
+}) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    insert into products (product_name, sku, variant, unit_cost, article_number, is_active)
+    values (
+      ${input.productName.trim()},
+      ${input.sku.trim()},
+      ${input.variant.trim()},
+      ${input.unitCost},
+      ${input.articleNumber.trim()},
+      true
+    );
+  `;
+}
+
+export async function updateProduct(input: {
+  sku: string;
+  productName: string;
+  variant: string;
+  unitCost: number;
+  articleNumber: string;
+  isActive: boolean;
+}) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    update products
+    set
+      product_name = ${input.productName.trim()},
+      variant = ${input.variant.trim()},
+      unit_cost = ${input.unitCost},
+      article_number = ${input.articleNumber.trim()},
+      is_active = ${input.isActive}
+    where sku = ${input.sku};
+  `;
+}
+
+function mapProduct(row: ProductRow): ProductItem {
+  return {
+    id: String(row.id),
+    productName: row.product_name,
+    sku: row.sku,
+    variant: row.variant,
+    unitCost: Number(row.unit_cost || 0),
+    articleNumber: row.article_number,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+  };
 }

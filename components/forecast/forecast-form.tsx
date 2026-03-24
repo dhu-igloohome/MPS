@@ -3,32 +3,54 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Region } from "@/lib/types";
+import { ProductItem, Region } from "@/lib/types";
 
 type ForecastFormProps = {
   allowedRegions: Region[];
   officesByRegion: Record<Region, string[]>;
+  products: ProductItem[];
 };
 
-export function ForecastForm({ allowedRegions, officesByRegion }: ForecastFormProps) {
+export function ForecastForm({ allowedRegions, officesByRegion, products }: ForecastFormProps) {
   const router = useRouter();
   const defaultRegion = allowedRegions[0];
+  const defaultProductName = products[0]?.productName || "";
+  const defaultSku =
+    products.find((item) => item.productName === defaultProductName)?.sku || "";
 
   const [month, setMonth] = useState("");
   const [region, setRegion] = useState<Region>(defaultRegion);
   const [office, setOffice] = useState(officesByRegion[defaultRegion][0]);
-  const [productName, setProductName] = useState("");
-  const [sku, setSku] = useState("");
+  const [productName, setProductName] = useState(defaultProductName);
+  const [sku, setSku] = useState(defaultSku);
   const [buildToOrder, setBuildToOrder] = useState("0");
   const [buildToStock, setBuildToStock] = useState("0");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   const officeOptions = useMemo(() => officesByRegion[region], [officesByRegion, region]);
+  const productNameOptions = useMemo(
+    () => [...new Set(products.map((item) => item.productName))],
+    [products],
+  );
+  const skuOptions = useMemo(
+    () => products.filter((item) => item.productName === productName),
+    [products, productName],
+  );
+  const selectedProduct = useMemo(
+    () => products.find((item) => item.sku === sku && item.productName === productName) || null,
+    [products, productName, sku],
+  );
 
   function onRegionChange(nextRegion: Region) {
     setRegion(nextRegion);
     setOffice(officesByRegion[nextRegion][0]);
+  }
+
+  function onProductNameChange(nextProductName: string) {
+    setProductName(nextProductName);
+    const firstSku = products.find((item) => item.productName === nextProductName)?.sku || "";
+    setSku(firstSku);
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -60,8 +82,6 @@ export function ForecastForm({ allowedRegions, officesByRegion }: ForecastFormPr
     }
 
     setMessage("Saved successfully.");
-    setProductName("");
-    setSku("");
     setBuildToOrder("0");
     setBuildToStock("0");
     router.refresh();
@@ -73,6 +93,11 @@ export function ForecastForm({ allowedRegions, officesByRegion }: ForecastFormPr
       <p className="mt-1 text-sm text-zinc-600">
         Fill monthly forecast for Product/SKU with BTO and BTS quantities.
       </p>
+      {products.length === 0 ? (
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          No active products found. Please ask admin to add products in Product Database.
+        </p>
+      ) : null}
 
       <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
         <label className="block">
@@ -118,21 +143,51 @@ export function ForecastForm({ allowedRegions, officesByRegion }: ForecastFormPr
 
         <label className="block">
           <span className="mb-1 block text-sm text-zinc-700">Product Name</span>
-          <input
+          <select
             value={productName}
-            onChange={(event) => setProductName(event.target.value)}
+            onChange={(event) => onProductNameChange(event.target.value)}
             required
             className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
-          />
+          >
+            {productNameOptions.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="block">
           <span className="mb-1 block text-sm text-zinc-700">SKU</span>
-          <input
+          <select
             value={sku}
             onChange={(event) => setSku(event.target.value)}
             required
             className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+          >
+            {skuOptions.map((item) => (
+              <option key={item.sku} value={item.sku}>
+                {item.sku}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-sm text-zinc-700">Variant</span>
+          <input
+            value={selectedProduct?.variant || ""}
+            readOnly
+            className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-700"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-sm text-zinc-700">Article Number</span>
+          <input
+            value={selectedProduct?.articleNumber || ""}
+            readOnly
+            className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-700"
           />
         </label>
 
@@ -161,7 +216,7 @@ export function ForecastForm({ allowedRegions, officesByRegion }: ForecastFormPr
         <div className="md:col-span-2 flex items-center gap-3">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || products.length === 0}
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60"
           >
             {loading ? "Saving..." : "Save Forecast"}
