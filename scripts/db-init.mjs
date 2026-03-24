@@ -46,9 +46,20 @@ const users = [
 ];
 
 const officesByRegion = {
-  APAC: ["Singapore", "Shanghai", "Tokyo", "Seoul", "Sydney"],
-  EU: ["London", "Berlin", "Paris", "Amsterdam"],
-  USA: ["New York", "San Francisco", "Austin", "Chicago"],
+  APAC: [
+    "新加坡 (Singapore) - 总部",
+    "中国 深圳 (Shenzhen)",
+    "越南 胡志明市 (Ho Chi Minh City)",
+    "菲律宾 马尼拉 (Manila)",
+    "泰国 曼谷 (Bangkok)",
+    "马来西亚 吉隆坡 (Kuala Lumpur)",
+    "印度 班加罗尔 (Bengaluru)",
+    "印度尼西亚 雅加达 (Jakarta)",
+    "日本 东京 (Tokyo)",
+    "澳大利亚 悉尼 (Sydney)",
+  ],
+  EU: ["英国 达文特里 (Daventry)", "爱尔兰 布雷 (Bray)"],
+  USA: ["美国 奥斯汀 (Austin)"],
 };
 
 const products = [
