@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Language, normalizeLanguage } from "@/lib/i18n";
@@ -15,7 +15,6 @@ const TEXT = {
     login: "Login",
     toggle: "中文",
     error: "Invalid username or password.",
-    officeTimeTitle: "Current Time by Office (24-hour format)",
   },
   zh: {
     title: "igloo订单追踪系统",
@@ -25,25 +24,8 @@ const TEXT = {
     login: "登录",
     toggle: "EN",
     error: "用户名或密码错误。",
-    officeTimeTitle: "13个办公室当前时间（24小时制）",
   },
 };
-
-const OFFICE_TIMEZONES = [
-  { office: "新加坡 (Singapore) - 总部", timeZone: "Asia/Singapore" },
-  { office: "中国 深圳 (Shenzhen)", timeZone: "Asia/Shanghai" },
-  { office: "美国 奥斯汀 (Austin)", timeZone: "America/Chicago" },
-  { office: "越南 胡志明市 (Ho Chi Minh City)", timeZone: "Asia/Ho_Chi_Minh" },
-  { office: "菲律宾 马尼拉 (Manila)", timeZone: "Asia/Manila" },
-  { office: "泰国 曼谷 (Bangkok)", timeZone: "Asia/Bangkok" },
-  { office: "马来西亚 吉隆坡 (Kuala Lumpur)", timeZone: "Asia/Kuala_Lumpur" },
-  { office: "印度 班加罗尔 (Bengaluru)", timeZone: "Asia/Kolkata" },
-  { office: "印度尼西亚 雅加达 (Jakarta)", timeZone: "Asia/Jakarta" },
-  { office: "日本 东京 (Tokyo)", timeZone: "Asia/Tokyo" },
-  { office: "澳大利亚 悉尼 (Sydney)", timeZone: "Australia/Sydney" },
-  { office: "英国 达文特里 (Daventry)", timeZone: "Europe/London" },
-  { office: "爱尔兰 布雷 (Bray)", timeZone: "Europe/Dublin" },
-];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -61,26 +43,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [now, setNow] = useState(() => new Date());
 
   const t = TEXT[language];
-
-  function formatOfficeTime(timeZone: string) {
-    return new Intl.DateTimeFormat("en-GB", {
-      timeZone,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }).format(now);
-  }
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setNow(new Date());
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   function onToggleLanguage() {
     const nextLanguage: Language = language === "en" ? "zh" : "en";
@@ -114,8 +78,7 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-100 px-4 py-10">
-      <div className="w-full max-w-3xl space-y-4">
-        <section className="mx-auto w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="space-y-2">
             <Image
@@ -169,22 +132,7 @@ export default function LoginPage() {
             {loading ? "..." : t.login}
           </button>
         </form>
-        </section>
-        <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-zinc-900">{t.officeTimeTitle}</h2>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {OFFICE_TIMEZONES.map((item) => (
-              <div
-                key={item.office}
-                className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm"
-              >
-                <span className="text-zinc-700">{item.office}</span>
-                <span className="font-mono text-zinc-900">{formatOfficeTime(item.timeZone)}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
+      </section>
     </main>
   );
 }
