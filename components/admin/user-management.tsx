@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { Language } from "@/lib/i18n";
 import { AdminAuditLog, AdminUser, Region, UserRole } from "@/lib/types";
 
 const ALL_REGIONS: Region[] = ["APAC", "EU", "USA"];
@@ -10,10 +11,50 @@ const ALL_REGIONS: Region[] = ["APAC", "EU", "USA"];
 type UserManagementProps = {
   users: AdminUser[];
   auditLogs: AdminAuditLog[];
+  language: Language;
 };
 
-export function UserManagement({ users, auditLogs }: UserManagementProps) {
+export function UserManagement({ users, auditLogs, language }: UserManagementProps) {
   const router = useRouter();
+  const t = {
+    createTitle: language === "en" ? "Create Office Account" : "创建办公室账号",
+    username: language === "en" ? "Username" : "用户名",
+    displayName: language === "en" ? "Display Name" : "显示名称",
+    initialPassword: language === "en" ? "Initial Password (>= 6 chars)" : "初始密码（>= 6 位）",
+    creating: language === "en" ? "Creating..." : "创建中...",
+    createUser: language === "en" ? "Create User" : "创建用户",
+    existingAccounts: language === "en" ? "Existing Accounts" : "已有账号",
+    role: language === "en" ? "Role" : "角色",
+    regions: language === "en" ? "Regions" : "区域",
+    actions: language === "en" ? "Actions" : "操作",
+    saveResetPw: language === "en" ? "Save / Reset PW" : "保存 / 重置密码",
+    delete: language === "en" ? "Delete" : "删除",
+    operationLogs: language === "en" ? "Operation Logs" : "操作日志",
+    operationLogsDesc:
+      language === "en"
+        ? "Recent account management operations by super administrators."
+        : "超级管理员最近的账号管理操作记录。",
+    time: language === "en" ? "Time" : "时间",
+    actor: language === "en" ? "Actor" : "操作者",
+    action: language === "en" ? "Action" : "动作",
+    targetUser: language === "en" ? "Target User" : "目标用户",
+    details: language === "en" ? "Details" : "详情",
+    noLogs: language === "en" ? "No logs yet." : "暂无日志。",
+    createFailed:
+      language === "en"
+        ? "Create failed. Check username uniqueness and input fields."
+        : "创建失败，请检查用户名唯一性和输入字段。",
+    userCreated: language === "en" ? "User created." : "用户已创建。",
+    resetPrompt:
+      language === "en"
+        ? "Reset password for {username} (leave blank to skip):"
+        : "重置 {username} 的密码（留空则跳过）：",
+    updateFailed: language === "en" ? "Update failed." : "更新失败。",
+    updated: language === "en" ? "Updated {username}." : "已更新 {username}。",
+    deleteConfirm: language === "en" ? "Delete user {username}?" : "确认删除用户 {username}？",
+    deleteFailed: language === "en" ? "Delete failed." : "删除失败。",
+    deleted: language === "en" ? "Deleted {username}." : "已删除 {username}。",
+  };
   const [editableUsers, setEditableUsers] = useState<AdminUser[]>(users);
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -56,11 +97,11 @@ export function UserManagement({ users, auditLogs }: UserManagementProps) {
     setLoading(false);
 
     if (!response.ok) {
-      setMessage("Create failed. Check username uniqueness and input fields.");
+      setMessage(t.createFailed);
       return;
     }
 
-    setMessage("User created.");
+    setMessage(t.userCreated);
     setUsername("");
     setDisplayName("");
     setPassword("");
@@ -70,7 +111,10 @@ export function UserManagement({ users, auditLogs }: UserManagementProps) {
   }
 
   async function updateUser(user: AdminUser) {
-    const newPassword = window.prompt(`Reset password for ${user.username} (leave blank to skip):`, "");
+    const newPassword = window.prompt(
+      t.resetPrompt.replace("{username}", user.username),
+      "",
+    );
     const response = await fetch(`/api/admin/users/${encodeURIComponent(user.username)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -82,16 +126,16 @@ export function UserManagement({ users, auditLogs }: UserManagementProps) {
     });
 
     if (!response.ok) {
-      setMessage("Update failed.");
+      setMessage(t.updateFailed);
       return;
     }
 
-    setMessage(`Updated ${user.username}.`);
+    setMessage(t.updated.replace("{username}", user.username));
     router.refresh();
   }
 
   async function deleteUser(usernameToDelete: string) {
-    if (!window.confirm(`Delete user ${usernameToDelete}?`)) {
+    if (!window.confirm(t.deleteConfirm.replace("{username}", usernameToDelete))) {
       return;
     }
 
@@ -100,11 +144,11 @@ export function UserManagement({ users, auditLogs }: UserManagementProps) {
     });
 
     if (!response.ok) {
-      setMessage("Delete failed.");
+      setMessage(t.deleteFailed);
       return;
     }
 
-    setMessage(`Deleted ${usernameToDelete}.`);
+    setMessage(t.deleted.replace("{username}", usernameToDelete));
     router.refresh();
   }
 
@@ -131,25 +175,25 @@ export function UserManagement({ users, auditLogs }: UserManagementProps) {
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-zinc-900">Create Office Account</h3>
+        <h3 className="text-lg font-semibold text-zinc-900">{t.createTitle}</h3>
         <form className="mt-3 grid gap-3 md:grid-cols-2" onSubmit={createUser}>
           <input
             className="rounded-lg border border-zinc-300 px-3 py-2"
-            placeholder="Username"
+            placeholder={t.username}
             value={username}
             onChange={(event) => setUsername(event.target.value)}
             required
           />
           <input
             className="rounded-lg border border-zinc-300 px-3 py-2"
-            placeholder="Display Name"
+            placeholder={t.displayName}
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             required
           />
           <input
             className="rounded-lg border border-zinc-300 px-3 py-2"
-            placeholder="Initial Password (>= 6 chars)"
+            placeholder={t.initialPassword}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
@@ -186,23 +230,23 @@ export function UserManagement({ users, auditLogs }: UserManagementProps) {
               disabled={loading}
               className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-700 disabled:opacity-60"
             >
-              {loading ? "Creating..." : "Create User"}
+              {loading ? t.creating : t.createUser}
             </button>
           </div>
         </form>
       </section>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-zinc-900">Existing Accounts</h3>
+        <h3 className="text-lg font-semibold text-zinc-900">{t.existingAccounts}</h3>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-left text-zinc-600">
-                <th className="px-2 py-2">Username</th>
-                <th className="px-2 py-2">Display Name</th>
-                <th className="px-2 py-2">Role</th>
-                <th className="px-2 py-2">Regions</th>
-                <th className="px-2 py-2">Actions</th>
+                <th className="px-2 py-2">{t.username}</th>
+                <th className="px-2 py-2">{t.displayName}</th>
+                <th className="px-2 py-2">{t.role}</th>
+                <th className="px-2 py-2">{t.regions}</th>
+                <th className="px-2 py-2">{t.actions}</th>
               </tr>
             </thead>
             <tbody>
@@ -245,7 +289,7 @@ export function UserManagement({ users, auditLogs }: UserManagementProps) {
                         onClick={() => updateUser(user)}
                         className="rounded-lg border border-zinc-300 px-2 py-1 hover:bg-zinc-50"
                       >
-                        Save / Reset PW
+                        {t.saveResetPw}
                       </button>
                       <button
                         type="button"
@@ -253,7 +297,7 @@ export function UserManagement({ users, auditLogs }: UserManagementProps) {
                         onClick={() => deleteUser(user.username)}
                         className="rounded-lg border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50 disabled:opacity-50"
                       >
-                        Delete
+                        {t.delete}
                       </button>
                     </div>
                   </td>
@@ -265,26 +309,26 @@ export function UserManagement({ users, auditLogs }: UserManagementProps) {
       </section>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-zinc-900">Operation Logs</h3>
+        <h3 className="text-lg font-semibold text-zinc-900">{t.operationLogs}</h3>
         <p className="mt-1 text-sm text-zinc-600">
-          Recent account management operations by super administrators.
+          {t.operationLogsDesc}
         </p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-left text-zinc-600">
-                <th className="px-2 py-2">Time</th>
-                <th className="px-2 py-2">Actor</th>
-                <th className="px-2 py-2">Action</th>
-                <th className="px-2 py-2">Target User</th>
-                <th className="px-2 py-2">Details</th>
+                <th className="px-2 py-2">{t.time}</th>
+                <th className="px-2 py-2">{t.actor}</th>
+                <th className="px-2 py-2">{t.action}</th>
+                <th className="px-2 py-2">{t.targetUser}</th>
+                <th className="px-2 py-2">{t.details}</th>
               </tr>
             </thead>
             <tbody>
               {auditLogs.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-2 py-4 text-center text-zinc-500">
-                    No logs yet.
+                    {t.noLogs}
                   </td>
                 </tr>
               ) : (

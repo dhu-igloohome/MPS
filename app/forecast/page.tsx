@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { ForecastForm } from "@/components/forecast/forecast-form";
 import { AppShell } from "@/components/shared/app-shell";
 import { OFFICES_BY_REGION } from "@/lib/accounts";
+import { normalizeLanguage } from "@/lib/i18n";
 import { listActiveProducts } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
@@ -14,17 +16,24 @@ export default async function ForecastPage() {
     redirect("/login");
   }
   const products = await listActiveProducts();
+  const cookieStore = await cookies();
+  const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
   return (
     <AppShell
       session={session}
-      title="Forecast Collection"
-      description="Module 1: collect monthly order forecast from APAC/EU/USA offices."
+      title={language === "en" ? "Forecast Collection" : "Forecast 填报"}
+      description={
+        language === "en"
+          ? "Module 1: collect monthly order forecast from APAC/EU/USA offices."
+          : "模块 1：收集 APAC/EU/USA 办公室月度订单 forecast。"
+      }
     >
       <ForecastForm
         allowedRegions={session.regions}
         officesByRegion={OFFICES_BY_REGION}
         products={products}
+        language={language}
       />
     </AppShell>
   );

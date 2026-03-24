@@ -3,14 +3,57 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { Language } from "@/lib/i18n";
 import { ProductItem } from "@/lib/types";
 
 type ProductManagementProps = {
   products: ProductItem[];
+  language: Language;
 };
 
-export function ProductManagement({ products }: ProductManagementProps) {
+export function ProductManagement({ products, language }: ProductManagementProps) {
   const router = useRouter();
+  const t = {
+    createProduct: language === "en" ? "Create Product" : "创建产品",
+    productName: language === "en" ? "Product Name" : "产品名称",
+    sku: "SKU",
+    variant: language === "en" ? "Variant" : "型号",
+    unitCost: language === "en" ? "Unit Cost (optional)" : "单价（可选）",
+    articleNumber: language === "en" ? "Article Number (optional)" : "Article Number（可选）",
+    create: language === "en" ? "Create" : "创建",
+    batchTitle:
+      language === "en" ? "Batch Create / Update via Attachment (CSV)" : "通过附件（CSV）批量创建 / 更新",
+    headers:
+      language === "en"
+        ? "Headers: product name, SKU, variant, unit cost, article number"
+        : "表头：product name, SKU, variant, unit cost, article number",
+    downloadTemplate: language === "en" ? "Download CSV template" : "下载 CSV 模板",
+    tableTitle: language === "en" ? "Product Database" : "产品数据库",
+    active: language === "en" ? "Active" : "启用",
+    actions: language === "en" ? "Actions" : "操作",
+    save: language === "en" ? "Save" : "保存",
+    delete: language === "en" ? "Delete" : "删除",
+    csvEmpty: language === "en" ? "CSV is empty." : "CSV 为空。",
+    missingHeader: language === "en" ? "Missing required header: {header}" : "缺少必需表头：{header}",
+    batchFailed:
+      language === "en"
+        ? "Batch upload failed. Please check CSV headers and values."
+        : "批量上传失败，请检查 CSV 表头和数据。",
+    batchSuccess:
+      language === "en"
+        ? "Batch upload success: {count} rows processed."
+        : "批量上传成功：已处理 {count} 行。",
+    createFailed: language === "en" ? "Create product failed." : "创建产品失败。",
+    productCreated: language === "en" ? "Product created." : "产品已创建。",
+    updateFailed: language === "en" ? "Update product failed." : "更新产品失败。",
+    saved: language === "en" ? "Saved {sku}." : "已保存 {sku}。",
+    deleteConfirm:
+      language === "en"
+        ? "Delete product {name} / {sku} / {variant}?"
+        : "确认删除产品 {name} / {sku} / {variant}？",
+    deleteFailed: language === "en" ? "Delete product failed." : "删除产品失败。",
+    deleted: language === "en" ? "Deleted {sku} ({variant})." : "已删除 {sku}（{variant}）。",
+  };
   const [editable, setEditable] = useState<ProductItem[]>(products);
   const [productName, setProductName] = useState("");
   const [sku, setSku] = useState("");
@@ -55,7 +98,7 @@ export function ProductManagement({ products }: ProductManagementProps) {
       .filter(Boolean);
 
     if (lines.length < 2) {
-      setMessage("CSV is empty.");
+      setMessage(t.csvEmpty);
       return;
     }
 
@@ -66,7 +109,7 @@ export function ProductManagement({ products }: ProductManagementProps) {
       ["productName", "sku", "variant", "unitCost", "articleNumber"];
     for (const required of requiredHeaders) {
       if (!headerMap.includes(required)) {
-        setMessage(`Missing required header: ${required}`);
+        setMessage(t.missingHeader.replace("{header}", required));
         return;
       }
     }
@@ -94,12 +137,12 @@ export function ProductManagement({ products }: ProductManagementProps) {
     });
 
     if (!response.ok) {
-      setMessage("Batch upload failed. Please check CSV headers and values.");
+      setMessage(t.batchFailed);
       return;
     }
 
     const result = (await response.json()) as { count?: number };
-    setMessage(`Batch upload success: ${result.count || 0} rows processed.`);
+    setMessage(t.batchSuccess.replace("{count}", String(result.count || 0)));
     event.target.value = "";
     router.refresh();
   }
@@ -122,10 +165,10 @@ export function ProductManagement({ products }: ProductManagementProps) {
       }),
     });
     if (!response.ok) {
-      setMessage("Create product failed.");
+      setMessage(t.createFailed);
       return;
     }
-    setMessage("Product created.");
+    setMessage(t.productCreated);
     setProductName("");
     setSku("");
     setVariant("");
@@ -148,15 +191,22 @@ export function ProductManagement({ products }: ProductManagementProps) {
       }),
     });
     if (!response.ok) {
-      setMessage("Update product failed.");
+      setMessage(t.updateFailed);
       return;
     }
-    setMessage(`Saved ${item.sku}.`);
+    setMessage(t.saved.replace("{sku}", item.sku));
     router.refresh();
   }
 
   async function deleteItem(item: ProductItem) {
-    if (!window.confirm(`Delete product ${item.productName} / ${item.sku} / ${item.variant}?`)) {
+    if (
+      !window.confirm(
+        t.deleteConfirm
+          .replace("{name}", item.productName)
+          .replace("{sku}", item.sku)
+          .replace("{variant}", item.variant),
+      )
+    ) {
       return;
     }
 
@@ -164,10 +214,10 @@ export function ProductManagement({ products }: ProductManagementProps) {
       method: "DELETE",
     });
     if (!response.ok) {
-      setMessage("Delete product failed.");
+      setMessage(t.deleteFailed);
       return;
     }
-    setMessage(`Deleted ${item.sku} (${item.variant}).`);
+    setMessage(t.deleted.replace("{sku}", item.sku).replace("{variant}", item.variant));
     router.refresh();
   }
 
@@ -178,25 +228,25 @@ export function ProductManagement({ products }: ProductManagementProps) {
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-zinc-900">Create Product</h3>
+        <h3 className="text-lg font-semibold text-zinc-900">{t.createProduct}</h3>
         <form className="mt-3 grid gap-3 md:grid-cols-2" onSubmit={createItem}>
           <input
             className="rounded-lg border border-zinc-300 px-3 py-2"
-            placeholder="Product Name"
+            placeholder={t.productName}
             value={productName}
             onChange={(event) => setProductName(event.target.value)}
             required
           />
           <input
             className="rounded-lg border border-zinc-300 px-3 py-2"
-            placeholder="SKU"
+            placeholder={t.sku}
             value={sku}
             onChange={(event) => setSku(event.target.value.toUpperCase())}
             required
           />
           <input
             className="rounded-lg border border-zinc-300 px-3 py-2"
-            placeholder="Variant"
+            placeholder={t.variant}
             value={variant}
             onChange={(event) => setVariant(event.target.value.toUpperCase())}
             required
@@ -206,33 +256,33 @@ export function ProductManagement({ products }: ProductManagementProps) {
             step="0.01"
             min={0}
             className="rounded-lg border border-zinc-300 px-3 py-2"
-            placeholder="Unit Cost (optional)"
+            placeholder={t.unitCost}
             value={unitCost}
             onChange={(event) => setUnitCost(event.target.value)}
           />
           <input
             className="rounded-lg border border-zinc-300 px-3 py-2 md:col-span-2"
-            placeholder="Article Number (optional)"
+            placeholder={t.articleNumber}
             value={articleNumber}
             onChange={(event) => setArticleNumber(event.target.value)}
           />
           <div className="md:col-span-2">
             <button className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-700">
-              Create
+              {t.create}
             </button>
           </div>
         </form>
         <div className="mt-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-4">
-          <p className="text-sm font-medium text-zinc-800">Batch Create / Update via Attachment (CSV)</p>
+          <p className="text-sm font-medium text-zinc-800">{t.batchTitle}</p>
           <p className="mt-1 text-xs text-zinc-600">
-            Headers: product name, SKU, variant, unit cost, article number
+            {t.headers}
           </p>
           <button
             type="button"
             onClick={downloadCsvTemplate}
             className="mt-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
           >
-            Download CSV template
+            {t.downloadTemplate}
           </button>
           <input
             type="file"
@@ -244,18 +294,18 @@ export function ProductManagement({ products }: ProductManagementProps) {
       </section>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-zinc-900">Product Database</h3>
+        <h3 className="text-lg font-semibold text-zinc-900">{t.tableTitle}</h3>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-left text-zinc-600">
-                <th className="px-2 py-2">Product Name</th>
-                <th className="px-2 py-2">SKU</th>
-                <th className="px-2 py-2">Variant</th>
-                <th className="px-2 py-2">Unit Cost</th>
-                <th className="px-2 py-2">Article Number</th>
-                <th className="px-2 py-2">Active</th>
-                <th className="px-2 py-2">Actions</th>
+                <th className="px-2 py-2">{t.productName}</th>
+                <th className="px-2 py-2">{t.sku}</th>
+                <th className="px-2 py-2">{t.variant}</th>
+                <th className="px-2 py-2">{language === "en" ? "Unit Cost" : "单价"}</th>
+                <th className="px-2 py-2">{language === "en" ? "Article Number" : "Article Number"}</th>
+                <th className="px-2 py-2">{t.active}</th>
+                <th className="px-2 py-2">{t.actions}</th>
               </tr>
             </thead>
             <tbody>
@@ -315,14 +365,14 @@ export function ProductManagement({ products }: ProductManagementProps) {
                         onClick={() => saveItem(item)}
                         className="rounded border border-zinc-300 px-2 py-1 hover:bg-zinc-50"
                       >
-                        Save
+                        {t.save}
                       </button>
                       <button
                         type="button"
                         onClick={() => deleteItem(item)}
                         className="rounded border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50"
                       >
-                        Delete
+                        {t.delete}
                       </button>
                     </div>
                   </td>
