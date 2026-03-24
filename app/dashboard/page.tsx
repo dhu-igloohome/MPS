@@ -2,7 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/shared/app-shell";
-import { getForecastsByRegions, getSummaryByMonthAndRegion } from "@/lib/repositories";
+import {
+  getForecastsByRegions,
+  getSummaryByMonthAndRegion,
+  getSummaryByQuarterAndRegion,
+} from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +23,7 @@ export default async function DashboardPage() {
 
   const entries = await getForecastsByRegions(session.regions);
   const summary = await getSummaryByMonthAndRegion(session.regions);
+  const quarterSummary = await getSummaryByQuarterAndRegion(session.regions);
 
   const totalBTO = entries.reduce((sum, item) => sum + item.buildToOrder, 0);
   const totalBTS = entries.reduce((sum, item) => sum + item.buildToStock, 0);
@@ -80,6 +85,46 @@ export default async function DashboardPage() {
                     <td className="px-2 py-2">
                       {formatNumber(item.buildToOrder + item.buildToStock)}
                     </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
+        <h3 className="text-lg font-semibold text-zinc-900">Quarterly Summary by Region (with SKU)</h3>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[700px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 text-left text-zinc-600">
+                <th className="px-2 py-2">Quarter</th>
+                <th className="px-2 py-2">Region</th>
+                <th className="px-2 py-2">Build to Order</th>
+                <th className="px-2 py-2">Build to Stock</th>
+                <th className="px-2 py-2">Forecast Total</th>
+                <th className="px-2 py-2">SKU Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              {quarterSummary.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-2 py-6 text-center text-zinc-500">
+                    No quarterly forecast data yet.
+                  </td>
+                </tr>
+              ) : (
+                quarterSummary.map((item) => (
+                  <tr key={`${item.quarter}-${item.region}`} className="border-b border-zinc-100">
+                    <td className="px-2 py-2">{item.quarter}</td>
+                    <td className="px-2 py-2">{item.region}</td>
+                    <td className="px-2 py-2">{formatNumber(item.buildToOrder)}</td>
+                    <td className="px-2 py-2">{formatNumber(item.buildToStock)}</td>
+                    <td className="px-2 py-2">
+                      {formatNumber(item.buildToOrder + item.buildToStock)}
+                    </td>
+                    <td className="px-2 py-2">{formatNumber(item.skuCount)}</td>
                   </tr>
                 ))
               )}

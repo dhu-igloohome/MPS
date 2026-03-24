@@ -208,6 +208,49 @@ export async function getSummaryByMonthAndRegion(regions: Region[]) {
   }));
 }
 
+export async function getSummaryByQuarterAndRegion(regions: Region[]) {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<
+    {
+      quarter: string;
+      region: Region;
+      build_to_order: number;
+      build_to_stock: number;
+      sku_count: number;
+    }[]
+  >`
+    select
+      concat(
+        split_part(forecast_month, '-', 1),
+        '-Q',
+        (((split_part(forecast_month, '-', 2)::int - 1) / 3) + 1)::int
+      ) as quarter,
+      region,
+      sum(build_to_order) as build_to_order,
+      sum(build_to_stock) as build_to_stock,
+      count(distinct sku) as sku_count
+    from forecasts
+    where region = any(${regions})
+    group by
+      split_part(forecast_month, '-', 1),
+      (((split_part(forecast_month, '-', 2)::int - 1) / 3) + 1)::int,
+      region
+    order by
+      split_part(forecast_month, '-', 1) desc,
+      (((split_part(forecast_month, '-', 2)::int - 1) / 3) + 1)::int desc,
+      region asc;
+  `;
+
+  return rows.map((row) => ({
+    quarter: row.quarter,
+    region: row.region,
+    buildToOrder: Number(row.build_to_order || 0),
+    buildToStock: Number(row.build_to_stock || 0),
+    skuCount: Number(row.sku_count || 0),
+  }));
+}
+
 function mapForecast(row: {
   id: number;
   forecast_month: string;
