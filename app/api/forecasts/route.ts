@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { OFFICES_BY_REGION } from "@/lib/accounts";
-import { addForecast } from "@/lib/forecast-store";
+import { createForecast, officeExistsByRegion } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import { Region } from "@/lib/types";
 
@@ -27,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Forbidden region" }, { status: 403 });
   }
 
-  if (!OFFICES_BY_REGION[region].includes(office)) {
+  if (!(await officeExistsByRegion(region, office))) {
     return NextResponse.json({ message: "Invalid office" }, { status: 400 });
   }
 
@@ -45,7 +44,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Quantity cannot be negative" }, { status: 400 });
   }
 
-  const entry = addForecast({
+  const entry = await createForecast({
     month,
     region,
     office,

@@ -40,7 +40,3 @@ export const USER_ACCOUNTS: UserAccount[] = [
     regions: ["USA"],
   },
 ];
-
-export function findAccount(username: string) {
-  return USER_ACCOUNTS.find((item) => item.username === username);
-}

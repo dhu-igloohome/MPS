@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/shared/app-shell";
-import { getSummaryByMonthAndRegion, listForecastsByRegions } from "@/lib/forecast-store";
+import { getForecastsByRegions, getSummaryByMonthAndRegion } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -17,8 +17,8 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const entries = listForecastsByRegions(session.regions);
-  const summary = getSummaryByMonthAndRegion(session.regions);
+  const entries = await getForecastsByRegions(session.regions);
+  const summary = await getSummaryByMonthAndRegion(session.regions);
 
   const totalBTO = entries.reduce((sum, item) => sum + item.buildToOrder, 0);
   const totalBTS = entries.reduce((sum, item) => sum + item.buildToStock, 0);

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { findAccount } from "@/lib/accounts";
+import { authenticateUser } from "@/lib/repositories";
 import { createSessionToken, SESSION_COOKIE_NAME } from "@/lib/session";
 
 export async function POST(request: Request) {
@@ -9,8 +9,8 @@ export async function POST(request: Request) {
   const username = String(body.username || "").trim();
   const password = String(body.password || "");
 
-  const account = findAccount(username);
-  if (!account || account.password !== password) {
+  const account = await authenticateUser(username, password);
+  if (!account) {
     return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
   }
 
