@@ -56,7 +56,7 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-3">
             <a
               href="/api/dashboard/export-csv"
-              className="text-sm text-zinc-700 hover:text-zinc-900"
+              className="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900"
             >
               Export CSV
             </a>
