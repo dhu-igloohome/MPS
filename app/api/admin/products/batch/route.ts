@@ -17,7 +17,6 @@ function isValidItem(item: BatchProductInput) {
     Boolean(item.sku?.trim()) &&
     isUppercaseSku(item.sku.trim()) &&
     Boolean(item.variant?.trim()) &&
-    Boolean(item.articleNumber?.trim()) &&
     Number.isFinite(item.unitCost) &&
     item.unitCost >= 0
   );
@@ -40,7 +39,7 @@ export async function POST(request: Request) {
       productName: String(item.productName || "").trim(),
       sku: String(item.sku || "").trim(),
       variant: String(item.variant || "").trim(),
-      unitCost: Number(item.unitCost || 0),
+      unitCost: Number.isFinite(Number(item.unitCost)) ? Number(item.unitCost) : 0,
       articleNumber: String(item.articleNumber || "").trim(),
     }))
     .filter(isValidItem);

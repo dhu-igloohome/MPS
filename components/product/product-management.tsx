@@ -15,7 +15,7 @@ export function ProductManagement({ products }: ProductManagementProps) {
   const [productName, setProductName] = useState("");
   const [sku, setSku] = useState("");
   const [variant, setVariant] = useState("");
-  const [unitCost, setUnitCost] = useState("0");
+  const [unitCost, setUnitCost] = useState("");
   const [articleNumber, setArticleNumber] = useState("");
   const [message, setMessage] = useState("");
 
@@ -129,7 +129,7 @@ export function ProductManagement({ products }: ProductManagementProps) {
     setProductName("");
     setSku("");
     setVariant("");
-    setUnitCost("0");
+    setUnitCost("");
     setArticleNumber("");
     router.refresh();
   }
@@ -190,17 +190,15 @@ export function ProductManagement({ products }: ProductManagementProps) {
             step="0.01"
             min={0}
             className="rounded-lg border border-zinc-300 px-3 py-2"
-            placeholder="Unit Cost"
+            placeholder="Unit Cost (optional)"
             value={unitCost}
             onChange={(event) => setUnitCost(event.target.value)}
-            required
           />
           <input
             className="rounded-lg border border-zinc-300 px-3 py-2 md:col-span-2"
-            placeholder="Article Number"
+            placeholder="Article Number (optional)"
             value={articleNumber}
             onChange={(event) => setArticleNumber(event.target.value)}
-            required
           />
           <div className="md:col-span-2">
             <button className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-700">

@@ -30,9 +30,10 @@ export async function POST(request: Request) {
   const sku = String(body.sku || "").trim();
   const variant = String(body.variant || "").trim();
   const articleNumber = String(body.articleNumber || "").trim();
-  const unitCost = Number(body.unitCost || 0);
+  const unitCostRaw = Number(body.unitCost);
+  const unitCost = Number.isFinite(unitCostRaw) && unitCostRaw >= 0 ? unitCostRaw : 0;
 
-  if (!productName || !sku || !variant || !articleNumber || unitCost < 0) {
+  if (!productName || !sku || !variant) {
     return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
   }
   if (!isUppercaseSku(sku)) {

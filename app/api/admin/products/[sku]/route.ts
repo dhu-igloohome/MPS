@@ -26,10 +26,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   const productName = String(body.productName || "").trim();
   const variant = String(body.variant || "").trim();
   const articleNumber = String(body.articleNumber || "").trim();
-  const unitCost = Number(body.unitCost || 0);
+  const unitCostRaw = Number(body.unitCost);
+  const unitCost = Number.isFinite(unitCostRaw) && unitCostRaw >= 0 ? unitCostRaw : 0;
   const isActive = Boolean(body.isActive);
 
-  if (!id || !nextSku || !productName || !variant || !articleNumber || unitCost < 0) {
+  if (!id || !nextSku || !productName || !variant) {
     return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
   }
   if (!isUppercaseSku(nextSku)) {
