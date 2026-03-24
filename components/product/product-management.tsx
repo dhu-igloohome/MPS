@@ -19,6 +19,20 @@ export function ProductManagement({ products }: ProductManagementProps) {
   const [articleNumber, setArticleNumber] = useState("");
   const [message, setMessage] = useState("");
 
+  function downloadCsvTemplate() {
+    const headers = "product name,SKU,variant,unit cost,article number";
+    const sample =
+      "Router Pro,RTR-PRO-001,Standard,120,ART-1001\nGateway X,GTW-X-001,128G,95,ART-2001";
+    const csv = `${headers}\n${sample}`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "product_template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function mapHeader(input: string) {
     const normalized = input.trim().toLowerCase().replaceAll("_", " ");
     if (normalized === "product name") return "productName";
@@ -198,6 +212,13 @@ export function ProductManagement({ products }: ProductManagementProps) {
           <p className="mt-1 text-xs text-zinc-600">
             Headers: product name, SKU, variant, unit cost, article number
           </p>
+          <button
+            type="button"
+            onClick={downloadCsvTemplate}
+            className="mt-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+          >
+            Download CSV template
+          </button>
           <input
             type="file"
             accept=".csv,text/csv"
