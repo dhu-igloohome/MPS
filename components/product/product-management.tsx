@@ -19,6 +19,77 @@ export function ProductManagement({ products }: ProductManagementProps) {
   const [articleNumber, setArticleNumber] = useState("");
   const [message, setMessage] = useState("");
 
+  function mapHeader(input: string) {
+    const normalized = input.trim().toLowerCase().replaceAll("_", " ");
+    if (normalized === "product name") return "productName";
+    if (normalized === "sku") return "sku";
+    if (normalized === "variant") return "variant";
+    if (normalized === "unit cost") return "unitCost";
+    if (normalized === "article number") return "articleNumber";
+    return null;
+  }
+
+  async function handleBatchFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setMessage("");
+
+    const content = await file.text();
+    const lines = content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length < 2) {
+      setMessage("CSV is empty.");
+      return;
+    }
+
+    const rawHeaders = lines[0].split(",").map((h) => h.trim());
+    const headerMap = rawHeaders.map(mapHeader);
+
+    const requiredHeaders: Array<"productName" | "sku" | "variant" | "unitCost" | "articleNumber"> =
+      ["productName", "sku", "variant", "unitCost", "articleNumber"];
+    for (const required of requiredHeaders) {
+      if (!headerMap.includes(required)) {
+        setMessage(`Missing required header: ${required}`);
+        return;
+      }
+    }
+
+    const rows = lines.slice(1).map((line) => line.split(",").map((item) => item.trim()));
+    const items = rows.map((columns) => {
+      const payload: Record<string, string | number> = {};
+      headerMap.forEach((mapped, index) => {
+        if (!mapped) return;
+        payload[mapped] = columns[index] || "";
+      });
+      return {
+        productName: String(payload.productName || ""),
+        sku: String(payload.sku || ""),
+        variant: String(payload.variant || ""),
+        unitCost: Number(payload.unitCost || 0),
+        articleNumber: String(payload.articleNumber || ""),
+      };
+    });
+
+    const response = await fetch("/api/admin/products/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+
+    if (!response.ok) {
+      setMessage("Batch upload failed. Please check CSV headers and values.");
+      return;
+    }
+
+    const result = (await response.json()) as { count?: number };
+    setMessage(`Batch upload success: ${result.count || 0} rows processed.`);
+    event.target.value = "";
+    router.refresh();
+  }
+
   useEffect(() => {
     setEditable(products);
   }, [products]);
@@ -122,6 +193,18 @@ export function ProductManagement({ products }: ProductManagementProps) {
             </button>
           </div>
         </form>
+        <div className="mt-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-4">
+          <p className="text-sm font-medium text-zinc-800">Batch Create / Update via Attachment (CSV)</p>
+          <p className="mt-1 text-xs text-zinc-600">
+            Headers: product name, SKU, variant, unit cost, article number
+          </p>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleBatchFileUpload}
+            className="mt-3 block w-full text-sm text-zinc-700 file:mr-3 file:rounded-lg file:border file:border-zinc-300 file:bg-white file:px-3 file:py-1.5 file:text-sm"
+          />
+        </div>
       </section>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">

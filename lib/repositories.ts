@@ -512,6 +512,40 @@ export async function createProduct(input: {
   `;
 }
 
+export async function upsertProductsBulk(
+  items: Array<{
+    productName: string;
+    sku: string;
+    variant: string;
+    unitCost: number;
+    articleNumber: string;
+  }>,
+) {
+  await ensureDatabase();
+  const db = getSql();
+
+  for (const item of items) {
+    await db`
+      insert into products (product_name, sku, variant, unit_cost, article_number, is_active)
+      values (
+        ${item.productName.trim()},
+        ${item.sku.trim()},
+        ${item.variant.trim()},
+        ${item.unitCost},
+        ${item.articleNumber.trim()},
+        true
+      )
+      on conflict (sku) do update
+      set
+        product_name = excluded.product_name,
+        variant = excluded.variant,
+        unit_cost = excluded.unit_cost,
+        article_number = excluded.article_number,
+        is_active = true;
+    `;
+  }
+}
+
 export async function updateProduct(input: {
   sku: string;
   productName: string;
