@@ -49,3 +49,21 @@ npm run sync:vercel
 ```
 
 It will add, commit, and push to `main`, and Vercel will deploy automatically.
+
+## One-Click Complaints Scraper (No Reddit)
+
+- Double-click `run_reddit_scraper.bat`
+- Data sources:
+  - Hacker News (new stories)
+  - GitHub Issues (selected product/tool repositories)
+- Time filter: last 1 year
+- Keywords:
+  - `I wish there was`
+  - `I hate when`
+  - `too complex`
+  - `someone please build`
+- Output file: `complaints_ideas.csv` (project root)
+
+Optional:
+
+- Set `GITHUB_TOKEN` in your environment to increase GitHub API rate limits.
