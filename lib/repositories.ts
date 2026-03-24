@@ -53,6 +53,10 @@ export function isUppercaseSku(input: string) {
   return /^[A-Z][A-Z0-9]*$/.test(input);
 }
 
+export function isValidVariant(input: string) {
+  return /^[0-9]+[A-Z]*$/.test(input);
+}
+
 export async function authenticateUser(username: string, password: string) {
   await ensureDatabase();
   const db = getSql();

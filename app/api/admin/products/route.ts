@@ -5,6 +5,7 @@ import {
   createProduct,
   findProductBySkuAndVariant,
   isUppercaseSku,
+  isValidVariant,
   listProducts,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
@@ -39,6 +40,12 @@ export async function POST(request: Request) {
   if (!isUppercaseSku(sku)) {
     return NextResponse.json(
       { message: "SKU must be uppercase letters only, or uppercase letters with numbers." },
+      { status: 400 },
+    );
+  }
+  if (!isValidVariant(variant)) {
+    return NextResponse.json(
+      { message: "Variant must be numbers only, or numbers followed by uppercase letters." },
       { status: 400 },
     );
   }

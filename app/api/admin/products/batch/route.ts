@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { createAdminAuditLog, isUppercaseSku, upsertProductsBulk } from "@/lib/repositories";
+import {
+  createAdminAuditLog,
+  isUppercaseSku,
+  isValidVariant,
+  upsertProductsBulk,
+} from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 type BatchProductInput = {
@@ -17,6 +22,7 @@ function isValidItem(item: BatchProductInput) {
     Boolean(item.sku?.trim()) &&
     isUppercaseSku(item.sku.trim()) &&
     Boolean(item.variant?.trim()) &&
+    isValidVariant(item.variant.trim()) &&
     Number.isFinite(item.unitCost) &&
     item.unitCost >= 0
   );
@@ -38,7 +44,7 @@ export async function POST(request: Request) {
     .map((item) => ({
       productName: String(item.productName || "").trim(),
       sku: String(item.sku || "").trim(),
-      variant: String(item.variant || "").trim(),
+      variant: String(item.variant || "").trim().toUpperCase(),
       unitCost: Number.isFinite(Number(item.unitCost)) ? Number(item.unitCost) : 0,
       articleNumber: String(item.articleNumber || "").trim(),
     }))
