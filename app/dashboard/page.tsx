@@ -53,9 +53,17 @@ export default async function DashboardPage() {
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-zinc-900">Monthly Summary by Region</h3>
-          <Link href="/forecast" className="text-sm text-indigo-600 hover:text-indigo-500">
-            Add forecast
-          </Link>
+          <div className="flex items-center gap-3">
+            <a
+              href="/api/dashboard/export-csv"
+              className="text-sm text-zinc-700 hover:text-zinc-900"
+            >
+              Export CSV
+            </a>
+            <Link href="/forecast" className="text-sm text-indigo-600 hover:text-indigo-500">
+              Add forecast
+            </Link>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-sm">
