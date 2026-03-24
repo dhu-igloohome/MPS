@@ -30,6 +30,7 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
     office: language === "en" ? "Office" : "办公室",
     productName: language === "en" ? "Product Name" : "产品名称",
     sku: "SKU",
+    remark: language === "en" ? "Remark" : "备注",
     variant: language === "en" ? "Variant" : "型号",
     articleNumber: language === "en" ? "Article Number" : "Article Number",
     bto: language === "en" ? "Build to Order" : "按单生产",
@@ -52,6 +53,7 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
   const [office, setOffice] = useState(officesByRegion[defaultRegion][0]);
   const [productName, setProductName] = useState(defaultProductName);
   const [sku, setSku] = useState(defaultSku);
+  const [remark, setRemark] = useState("");
   const [buildToOrder, setBuildToOrder] = useState("0");
   const [buildToStock, setBuildToStock] = useState("0");
   const [loading, setLoading] = useState(false);
@@ -98,6 +100,7 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
         office,
         productName,
         sku,
+        remark,
         buildToOrder: Number(buildToOrder || 0),
         buildToStock: Number(buildToStock || 0),
       }),
@@ -111,6 +114,7 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
     }
 
     setMessage(t.saved);
+    setRemark("");
     setBuildToOrder("0");
     setBuildToStock("0");
     router.refresh();
@@ -200,6 +204,16 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
               </option>
             ))}
           </select>
+        </label>
+
+        <label className="block md:col-span-2">
+          <span className="mb-1 block text-sm text-zinc-700">{t.remark}</span>
+          <textarea
+            value={remark}
+            onChange={(event) => setRemark(event.target.value)}
+            rows={3}
+            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+          />
         </label>
 
         <label className="block">

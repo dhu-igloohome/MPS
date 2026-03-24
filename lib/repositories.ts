@@ -105,6 +105,7 @@ export async function createForecast(input: {
   office: string;
   productName: string;
   sku: string;
+  remark: string;
   buildToOrder: number;
   buildToStock: number;
   createdBy: string;
@@ -119,6 +120,7 @@ export async function createForecast(input: {
       office: string;
       product_name: string;
       sku: string;
+      remark: string;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -131,6 +133,7 @@ export async function createForecast(input: {
       office,
       product_name,
       sku,
+      remark,
       build_to_order,
       build_to_stock,
       created_by
@@ -141,6 +144,7 @@ export async function createForecast(input: {
       ${input.office},
       ${input.productName.trim()},
       ${input.sku.trim()},
+      ${input.remark.trim()},
       ${input.buildToOrder},
       ${input.buildToStock},
       ${input.createdBy}
@@ -152,6 +156,7 @@ export async function createForecast(input: {
       office,
       product_name,
       sku,
+      remark,
       build_to_order,
       build_to_stock,
       created_by,
@@ -252,6 +257,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       office: string;
       product_name: string;
       sku: string;
+      remark: string;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -265,6 +271,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       office,
       product_name,
       sku,
+      remark,
       build_to_order,
       build_to_stock,
       created_by,
@@ -358,6 +365,7 @@ function mapForecast(row: {
   office: string;
   product_name: string;
   sku: string;
+  remark: string;
   build_to_order: number;
   build_to_stock: number;
   created_by: string;
@@ -370,6 +378,7 @@ function mapForecast(row: {
     office: row.office,
     productName: row.product_name,
     sku: row.sku,
+    remark: row.remark || "",
     buildToOrder: Number(row.build_to_order || 0),
     buildToStock: Number(row.build_to_stock || 0),
     createdBy: row.created_by,

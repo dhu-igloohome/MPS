@@ -121,12 +121,14 @@ async function main() {
       office text not null,
       product_name text not null,
       sku text not null,
+      remark text not null default '',
       build_to_order integer not null default 0,
       build_to_stock integer not null default 0,
       created_by text not null references users(username),
       created_at timestamptz not null default now()
     );
   `;
+  await sql`alter table forecasts add column if not exists remark text not null default '';`;
 
   await sql`
     create table if not exists products (

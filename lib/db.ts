@@ -62,12 +62,14 @@ async function setupSchema() {
       office text not null,
       product_name text not null,
       sku text not null,
+      remark text not null default '',
       build_to_order integer not null default 0,
       build_to_stock integer not null default 0,
       created_by text not null references users(username),
       created_at timestamptz not null default now()
     );
   `;
+  await db`alter table forecasts add column if not exists remark text not null default '';`;
 
   await db`
     create table if not exists products (

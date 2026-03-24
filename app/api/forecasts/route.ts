@@ -37,6 +37,7 @@ export async function POST(request: Request) {
   const month = String(body.month || "");
   const productName = String(body.productName || "");
   const sku = String(body.sku || "");
+  const remark = String(body.remark || "");
   const buildToOrder = Number(body.buildToOrder || 0);
   const buildToStock = Number(body.buildToStock || 0);
 
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
     office,
     productName,
     sku,
+    remark,
     buildToOrder,
     buildToStock,
     createdBy: session.username,

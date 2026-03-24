@@ -41,6 +41,7 @@ export type ForecastEntry = {
   office: string;
   productName: string;
   sku: string;
+  remark: string;
   buildToOrder: number;
   buildToStock: number;
   createdBy: string;
