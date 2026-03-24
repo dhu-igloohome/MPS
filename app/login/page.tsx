@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -64,7 +65,14 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-zinc-100 px-4 py-10">
       <section className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
+          <div className="space-y-2">
+            <Image
+              src="/igloo-logo-pinge.svg"
+              alt="Igloo logo"
+              width={87}
+              height={24}
+              priority
+            />
             <h1 className="text-2xl font-semibold text-zinc-900">{t.title}</h1>
             <p className="mt-2 text-sm text-zinc-600">{t.subtitle}</p>
           </div>

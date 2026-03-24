@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { LogoutButton } from "@/components/shared/logout-button";
 import { SessionPayload } from "@/lib/types";
@@ -15,7 +16,8 @@ export function AppShell({ session, title, description, children }: AppShellProp
     <main className="min-h-screen bg-zinc-100">
       <header className="border-b border-zinc-200 bg-white">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <div>
+          <div className="space-y-1">
+            <Image src="/igloo-logo-pinge.svg" alt="Igloo logo" width={87} height={24} priority />
             <p className="text-sm text-zinc-500">MPS Forecast System</p>
             <h1 className="text-lg font-semibold text-zinc-900">{title}</h1>
           </div>
