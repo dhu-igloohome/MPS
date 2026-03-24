@@ -47,6 +47,16 @@ export function AppShell({ session, title, description, children }: AppShellProp
                 Forecast Input
               </Link>
             </li>
+            {session.role === "super_admin" ? (
+              <li>
+                <Link
+                  href="/admin/users"
+                  className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
+                >
+                  User Management
+                </Link>
+              </li>
+            ) : null}
           </ul>
           <div className="mt-4 rounded-lg bg-zinc-50 p-3 text-xs text-zinc-600">
             Regions: {session.regions.join(", ")}

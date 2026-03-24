@@ -1,6 +1,6 @@
 import { ensureDatabase, getSql } from "@/lib/db";
-import { verifyPassword } from "@/lib/security";
-import { ForecastEntry, Region, SessionPayload } from "@/lib/types";
+import { hashPassword, verifyPassword } from "@/lib/security";
+import { AdminUser, ForecastEntry, Region, SessionPayload, UserRole } from "@/lib/types";
 
 type UserRow = {
   username: string;
@@ -11,6 +11,14 @@ type UserRow = {
 
 type RegionRow = {
   region: Region;
+};
+
+type AdminUserRow = {
+  username: string;
+  display_name: string;
+  role: UserRole;
+  created_at: string;
+  region: Region | null;
 };
 
 export async function authenticateUser(username: string, password: string) {
@@ -208,4 +216,109 @@ function mapForecast(row: {
     createdBy: row.created_by,
     createdAt: row.created_at,
   };
+}
+
+export async function listUsersWithRegions() {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<AdminUserRow[]>`
+    select
+      u.username,
+      u.display_name,
+      u.role,
+      u.created_at::text,
+      ur.region
+    from users u
+    left join user_regions ur on ur.username = u.username
+    order by u.created_at asc, ur.region asc;
+  `;
+
+  const map = new Map<string, AdminUser>();
+  for (const row of rows) {
+    const current = map.get(row.username) || {
+      username: row.username,
+      displayName: row.display_name,
+      role: row.role,
+      regions: [],
+      createdAt: row.created_at,
+    };
+    if (row.region && !current.regions.includes(row.region)) {
+      current.regions.push(row.region);
+    }
+    map.set(row.username, current);
+  }
+
+  return [...map.values()];
+}
+
+export async function createUserAccount(input: {
+  username: string;
+  displayName: string;
+  password: string;
+  role: UserRole;
+  regions: Region[];
+}) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    insert into users (username, password_hash, display_name, role)
+    values (
+      ${input.username},
+      ${hashPassword(input.password)},
+      ${input.displayName},
+      ${input.role}
+    );
+  `;
+
+  for (const region of input.regions) {
+    await db`
+      insert into user_regions (username, region)
+      values (${input.username}, ${region});
+    `;
+  }
+}
+
+export async function updateUserRegionsAndRole(input: {
+  username: string;
+  role: UserRole;
+  regions: Region[];
+}) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    update users
+    set role = ${input.role}
+    where username = ${input.username};
+  `;
+
+  await db`
+    delete from user_regions
+    where username = ${input.username};
+  `;
+
+  for (const region of input.regions) {
+    await db`
+      insert into user_regions (username, region)
+      values (${input.username}, ${region});
+    `;
+  }
+}
+
+export async function resetUserPassword(username: string, password: string) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    update users
+    set password_hash = ${hashPassword(password)}
+    where username = ${username};
+  `;
+}
+
+export async function deleteUserAccount(username: string) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    delete from users
+    where username = ${username};
+  `;
 }

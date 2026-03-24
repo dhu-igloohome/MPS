@@ -17,6 +17,14 @@ export type SessionPayload = {
   regions: Region[];
 };
 
+export type AdminUser = {
+  username: string;
+  displayName: string;
+  role: UserRole;
+  regions: Region[];
+  createdAt: string;
+};
+
 export type ForecastEntry = {
   id: string;
   month: string;
