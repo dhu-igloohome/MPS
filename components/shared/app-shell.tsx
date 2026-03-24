@@ -49,6 +49,22 @@ export function AppShell({ session, title, description, children }: AppShellProp
                 Forecast Input
               </Link>
             </li>
+            <li>
+              <Link
+                href="/order-progress"
+                className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
+              >
+                订单进度
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/logistics-progress"
+                className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
+              >
+                物流进度
+              </Link>
+            </li>
             {session.role === "super_admin" ? (
               <li>
                 <Link
@@ -70,9 +86,6 @@ export function AppShell({ session, title, description, children }: AppShellProp
               </li>
             ) : null}
           </ul>
-          <div className="mt-4 rounded-lg bg-zinc-50 p-3 text-xs text-zinc-600">
-            Regions: {session.regions.join(", ")}
-          </div>
         </nav>
 
         <section className="min-w-0 flex-1 space-y-4">
