@@ -1,0 +1,31 @@
+export type Region = "APAC" | "EU" | "USA";
+
+export type UserRole = "super_admin" | "regional_admin";
+
+export type UserAccount = {
+  username: string;
+  password: string;
+  displayName: string;
+  role: UserRole;
+  regions: Region[];
+};
+
+export type SessionPayload = {
+  username: string;
+  displayName: string;
+  role: UserRole;
+  regions: Region[];
+};
+
+export type ForecastEntry = {
+  id: string;
+  month: string;
+  region: Region;
+  office: string;
+  productName: string;
+  sku: string;
+  buildToOrder: number;
+  buildToStock: number;
+  createdBy: string;
+  createdAt: string;
+};
