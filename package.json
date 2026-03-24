@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync:vercel": "node scripts/sync-vercel.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.0.1",
