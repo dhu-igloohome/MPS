@@ -8,7 +8,7 @@ type Language = "en" | "zh";
 
 const TEXT = {
   en: {
-    title: "MPS Forecast Portal",
+    title: "igloo ForeTracker",
     subtitle: "Sign in to submit monthly forecasts by region.",
     username: "Username",
     password: "Password",
@@ -17,7 +17,7 @@ const TEXT = {
     error: "Invalid username or password.",
   },
   zh: {
-    title: "MPS 预测填报系统",
+    title: "igloo订单追踪系统",
     subtitle: "登录后可按区域录入月度订单 forecast。",
     username: "用户名",
     password: "密码",

@@ -18,7 +18,7 @@ export function AppShell({ session, title, description, children }: AppShellProp
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
           <div className="space-y-1">
             <Image src="/igloo-logo-pinge.svg" alt="Igloo logo" width={87} height={24} priority />
-            <p className="text-sm text-zinc-500">MPS Forecast System</p>
+            <p className="text-sm text-zinc-500">igloo ForeTracker | igloo订单追踪系统</p>
             <h1 className="text-lg font-semibold text-zinc-900">{title}</h1>
           </div>
           <div className="flex items-center gap-3">

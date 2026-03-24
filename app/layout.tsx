@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MPS Forecast System",
-  description: "Interactive portal for global monthly forecast collection.",
+  title: "igloo ForeTracker",
+  description: "igloo订单追踪系统",
 };
 
 export default function RootLayout({
