@@ -1,0 +1,20 @@
+---
+description: Auto-sync all changes to Vercel without asking
+alwaysApply: true
+---
+
+# Vercel 自动同步
+
+项目已配置 GitHub → Vercel 自动部署。完成任何代码修改后，**默认自动执行同步**，无需再询问用户。
+
+## 行为
+
+1. 完成修改后，自动执行 `npm run sync:vercel`。
+2. 该脚本会：`git add -A` → `git commit` → `git push origin main`。
+3. 推送后 Vercel 会自动部署，无需额外操作。
+4. **不要**在同步前询问用户是否要部署；直接执行。
+
+## 例外
+
+- 仅当用户**明确要求**不要部署、不要推送时，才跳过 `sync:vercel`。
+- 若当前不在 `main` 分支，脚本会报错退出，此时告知用户即可。

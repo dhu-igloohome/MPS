@@ -4,7 +4,7 @@ import Image from "next/image";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Language = "en" | "zh";
+import { Language, normalizeLanguage } from "@/lib/i18n";
 
 const TEXT = {
   en: {
@@ -29,13 +29,28 @@ const TEXT = {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [language, setLanguage] = useState<Language>("zh");
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof document === "undefined") {
+      return "zh";
+    }
+    const cookieText = document.cookie
+      .split("; ")
+      .find((item) => item.startsWith("lang="))
+      ?.split("=")[1];
+    return normalizeLanguage(cookieText);
+  });
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const t = TEXT[language];
+
+  function onToggleLanguage() {
+    const nextLanguage: Language = language === "en" ? "zh" : "en";
+    setLanguage(nextLanguage);
+    document.cookie = `lang=${nextLanguage}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,7 +93,7 @@ export default function LoginPage() {
           </div>
           <button
             type="button"
-            onClick={() => setLanguage((prev) => (prev === "en" ? "zh" : "en"))}
+            onClick={onToggleLanguage}
             className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
           >
             {t.toggle}

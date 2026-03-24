@@ -1,7 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
+import { cookies } from "next/headers";
 
+import { LanguageToggle } from "@/components/shared/language-toggle";
 import { LogoutButton } from "@/components/shared/logout-button";
+import { normalizeLanguage } from "@/lib/i18n";
 import { SessionPayload } from "@/lib/types";
 
 type AppShellProps = {
@@ -11,7 +14,19 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-export function AppShell({ session, title, description, children }: AppShellProps) {
+export async function AppShell({ session, title, description, children }: AppShellProps) {
+  const cookieStore = await cookies();
+  const language = normalizeLanguage(cookieStore.get("lang")?.value);
+
+  const navText = {
+    cockpit: language === "en" ? "Cockpit" : "驾驶舱",
+    forecastInput: language === "en" ? "Forecast Input" : "Forecast 填报",
+    orderProgress: language === "en" ? "Order Progress" : "订单进度",
+    logisticsProgress: language === "en" ? "Logistics Progress" : "物流进度",
+    userManagement: language === "en" ? "User Management" : "用户管理",
+    productDatabase: language === "en" ? "Product Database" : "产品数据库",
+  };
+
   return (
     <main className="min-h-screen bg-zinc-100">
       <header className="border-b border-zinc-200 bg-white">
@@ -25,6 +40,7 @@ export function AppShell({ session, title, description, children }: AppShellProp
             <span className="hidden text-sm text-zinc-600 sm:inline">
               {session.displayName} ({session.role})
             </span>
+            <LanguageToggle language={language} />
             <LogoutButton />
           </div>
         </div>
@@ -38,7 +54,7 @@ export function AppShell({ session, title, description, children }: AppShellProp
                 href="/dashboard"
                 className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
               >
-                Cockpit
+                {navText.cockpit}
               </Link>
             </li>
             <li>
@@ -46,7 +62,7 @@ export function AppShell({ session, title, description, children }: AppShellProp
                 href="/forecast"
                 className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
               >
-                Forecast Input
+                {navText.forecastInput}
               </Link>
             </li>
             <li>
@@ -54,7 +70,7 @@ export function AppShell({ session, title, description, children }: AppShellProp
                 href="/order-progress"
                 className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
               >
-                订单进度
+                {navText.orderProgress}
               </Link>
             </li>
             <li>
@@ -62,7 +78,7 @@ export function AppShell({ session, title, description, children }: AppShellProp
                 href="/logistics-progress"
                 className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
               >
-                物流进度
+                {navText.logisticsProgress}
               </Link>
             </li>
             {session.role === "super_admin" ? (
@@ -71,7 +87,7 @@ export function AppShell({ session, title, description, children }: AppShellProp
                   href="/admin/users"
                   className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
                 >
-                  User Management
+                  {navText.userManagement}
                 </Link>
               </li>
             ) : null}
@@ -81,7 +97,7 @@ export function AppShell({ session, title, description, children }: AppShellProp
                   href="/admin/products"
                   className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
                 >
-                  Product Database
+                  {navText.productDatabase}
                 </Link>
               </li>
             ) : null}
