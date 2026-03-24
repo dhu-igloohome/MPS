@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { REGIONS } from "@/lib/accounts";
 import {
+  createAdminAuditLog,
   deleteUserAccount,
   resetUserPassword,
   updateUserRegionsAndRole,
@@ -52,6 +53,12 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ message: "Invalid role" }, { status: 400 });
     }
     await updateUserRegionsAndRole({ username, role, regions });
+    await createAdminAuditLog({
+      actorUsername: session.username,
+      action: "update_user_permissions",
+      targetUsername: username,
+      details: `role=${role}; regions=${regions.join(",")}`,
+    });
   }
 
   if (password) {
@@ -59,6 +66,11 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ message: "Password too short" }, { status: 400 });
     }
     await resetUserPassword(username, password);
+    await createAdminAuditLog({
+      actorUsername: session.username,
+      action: "reset_password",
+      targetUsername: username,
+    });
   }
 
   return NextResponse.json({ ok: true });
@@ -76,5 +88,10 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   await deleteUserAccount(username);
+  await createAdminAuditLog({
+    actorUsername: session.username,
+    action: "delete_user",
+    targetUsername: username,
+  });
   return NextResponse.json({ ok: true });
 }

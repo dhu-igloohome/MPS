@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { REGIONS } from "@/lib/accounts";
-import { createUserAccount, listUsersWithRegions } from "@/lib/repositories";
+import {
+  createAdminAuditLog,
+  createUserAccount,
+  listUsersWithRegions,
+} from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import { Region, UserRole } from "@/lib/types";
 
@@ -49,6 +53,12 @@ export async function POST(request: Request) {
       password,
       role,
       regions,
+    });
+    await createAdminAuditLog({
+      actorUsername: session.username,
+      action: "create_user",
+      targetUsername: username,
+      details: `role=${role}; regions=${regions.join(",")}`,
     });
     return NextResponse.json({ ok: true });
   } catch {

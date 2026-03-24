@@ -1,6 +1,13 @@
 import { ensureDatabase, getSql } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/security";
-import { AdminUser, ForecastEntry, Region, SessionPayload, UserRole } from "@/lib/types";
+import {
+  AdminAuditLog,
+  AdminUser,
+  ForecastEntry,
+  Region,
+  SessionPayload,
+  UserRole,
+} from "@/lib/types";
 
 type UserRow = {
   username: string;
@@ -19,6 +26,15 @@ type AdminUserRow = {
   role: UserRole;
   created_at: string;
   region: Region | null;
+};
+
+type AdminAuditLogRow = {
+  id: number;
+  actor_username: string;
+  action: string;
+  target_username: string;
+  details: string;
+  created_at: string;
 };
 
 export async function authenticateUser(username: string, password: string) {
@@ -321,4 +337,40 @@ export async function deleteUserAccount(username: string) {
     delete from users
     where username = ${username};
   `;
+}
+
+export async function createAdminAuditLog(input: {
+  actorUsername: string;
+  action: string;
+  targetUsername: string;
+  details?: string;
+}) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    insert into admin_audit_logs (actor_username, action, target_username, details)
+    values (${input.actorUsername}, ${input.action}, ${input.targetUsername}, ${input.details || ""});
+  `;
+}
+
+export async function listAdminAuditLogs(limit = 50) {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<AdminAuditLogRow[]>`
+    select id, actor_username, action, target_username, details, created_at::text
+    from admin_audit_logs
+    order by created_at desc
+    limit ${limit};
+  `;
+
+  return rows.map(
+    (row): AdminAuditLog => ({
+      id: String(row.id),
+      actorUsername: row.actor_username,
+      action: row.action,
+      targetUsername: row.target_username,
+      details: row.details,
+      createdAt: row.created_at,
+    }),
+  );
 }

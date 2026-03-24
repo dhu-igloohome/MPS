@@ -93,6 +93,17 @@ async function main() {
     );
   `;
 
+  await sql`
+    create table if not exists admin_audit_logs (
+      id bigserial primary key,
+      actor_username text not null references users(username),
+      action text not null,
+      target_username text not null,
+      details text not null default '',
+      created_at timestamptz not null default now()
+    );
+  `;
+
   for (const user of users) {
     await sql`
       insert into users (username, password_hash, display_name, role)

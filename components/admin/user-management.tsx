@@ -3,15 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { AdminUser, Region, UserRole } from "@/lib/types";
+import { AdminAuditLog, AdminUser, Region, UserRole } from "@/lib/types";
 
 const ALL_REGIONS: Region[] = ["APAC", "EU", "USA"];
 
 type UserManagementProps = {
   users: AdminUser[];
+  auditLogs: AdminAuditLog[];
 };
 
-export function UserManagement({ users }: UserManagementProps) {
+export function UserManagement({ users, auditLogs }: UserManagementProps) {
   const router = useRouter();
   const [editableUsers, setEditableUsers] = useState<AdminUser[]>(users);
   const [username, setUsername] = useState("");
@@ -258,6 +259,47 @@ export function UserManagement({ users }: UserManagementProps) {
                   </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
+        <h3 className="text-lg font-semibold text-zinc-900">Operation Logs</h3>
+        <p className="mt-1 text-sm text-zinc-600">
+          Recent account management operations by super administrators.
+        </p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[860px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 text-left text-zinc-600">
+                <th className="px-2 py-2">Time</th>
+                <th className="px-2 py-2">Actor</th>
+                <th className="px-2 py-2">Action</th>
+                <th className="px-2 py-2">Target User</th>
+                <th className="px-2 py-2">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auditLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-2 py-4 text-center text-zinc-500">
+                    No logs yet.
+                  </td>
+                </tr>
+              ) : (
+                auditLogs.map((log) => (
+                  <tr key={log.id} className="border-b border-zinc-100">
+                    <td className="px-2 py-2">
+                      {new Date(log.createdAt).toLocaleString("en-US", { hour12: false })}
+                    </td>
+                    <td className="px-2 py-2">{log.actorUsername}</td>
+                    <td className="px-2 py-2">{log.action}</td>
+                    <td className="px-2 py-2">{log.targetUsername}</td>
+                    <td className="px-2 py-2">{log.details || "-"}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

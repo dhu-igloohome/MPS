@@ -14,7 +14,6 @@ const TEXT = {
     login: "Login",
     toggle: "中文",
     error: "Invalid username or password.",
-    helper: "Default super admin: david / david123",
   },
   zh: {
     title: "MPS 预测填报系统",
@@ -24,7 +23,6 @@ const TEXT = {
     login: "登录",
     toggle: "EN",
     error: "用户名或密码错误。",
-    helper: "默认超级管理员：david / david123",
   },
 };
 
@@ -111,8 +109,6 @@ export default function LoginPage() {
             {loading ? "..." : t.login}
           </button>
         </form>
-
-        <p className="mt-4 text-xs text-zinc-500">{t.helper}</p>
       </section>
     </main>
   );

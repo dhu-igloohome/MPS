@@ -25,6 +25,15 @@ export type AdminUser = {
   createdAt: string;
 };
 
+export type AdminAuditLog = {
+  id: string;
+  actorUsername: string;
+  action: string;
+  targetUsername: string;
+  details: string;
+  createdAt: string;
+};
+
 export type ForecastEntry = {
   id: string;
   month: string;

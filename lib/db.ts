@@ -68,6 +68,17 @@ async function setupSchema() {
       created_at timestamptz not null default now()
     );
   `;
+
+  await db`
+    create table if not exists admin_audit_logs (
+      id bigserial primary key,
+      actor_username text not null references users(username),
+      action text not null,
+      target_username text not null,
+      details text not null default '',
+      created_at timestamptz not null default now()
+    );
+  `;
 }
 
 async function seedUsers() {
