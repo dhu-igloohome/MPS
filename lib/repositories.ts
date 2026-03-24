@@ -50,7 +50,7 @@ type ProductRow = {
 };
 
 export function isUppercaseSku(input: string) {
-  return /^[A-Z0-9-]+$/.test(input);
+  return /^[A-Z][A-Z0-9]*$/.test(input);
 }
 
 export async function authenticateUser(username: string, password: string) {

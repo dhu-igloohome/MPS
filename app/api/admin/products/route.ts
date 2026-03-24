@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
   if (!isUppercaseSku(sku)) {
     return NextResponse.json(
-      { message: "SKU must be uppercase letters/numbers/hyphen only" },
+      { message: "SKU must be uppercase letters only, or uppercase letters with numbers." },
       { status: 400 },
     );
   }

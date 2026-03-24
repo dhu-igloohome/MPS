@@ -34,7 +34,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   if (!isUppercaseSku(nextSku)) {
     return NextResponse.json(
-      { message: "SKU must be uppercase letters/numbers/hyphen only" },
+      { message: "SKU must be uppercase letters only, or uppercase letters with numbers." },
       { status: 400 },
     );
   }
