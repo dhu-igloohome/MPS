@@ -22,7 +22,7 @@ export function ProductManagement({ products }: ProductManagementProps) {
   function downloadCsvTemplate() {
     const headers = "product name,SKU,variant,unit cost,article number";
     const sample =
-      "Router Pro,RTR-PRO-001,Standard,120,ART-1001\nGateway X,GTW-X-001,128G,95,ART-2001";
+      "Deadbolt 2S,IGB4,Default,120,ART-1001\nEntry Level DB,DBX1,Default,180,ART-1002\nKeybox 3,IGK3,Default,95,ART-2001";
     const csv = `${headers}\n${sample}`;
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

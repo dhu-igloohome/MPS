@@ -53,23 +53,23 @@ const officesByRegion = {
 
 const products = [
   {
-    productName: "Router Pro",
-    sku: "RTR-PRO-001",
-    variant: "Standard",
+    productName: "Deadbolt 2S",
+    sku: "IGB4",
+    variant: "Default",
     unitCost: 120,
     articleNumber: "ART-1001",
   },
   {
-    productName: "Router Pro",
-    sku: "RTR-PRO-002",
-    variant: "Enterprise",
+    productName: "Entry Level DB",
+    sku: "DBX1",
+    variant: "Default",
     unitCost: 180,
     articleNumber: "ART-1002",
   },
   {
-    productName: "Gateway X",
-    sku: "GTW-X-001",
-    variant: "128G",
+    productName: "Keybox 3",
+    sku: "IGK3",
+    variant: "Default",
     unitCost: 95,
     articleNumber: "ART-2001",
   },
@@ -185,6 +185,12 @@ async function main() {
         article_number = excluded.article_number;
     `;
   }
+
+  // Remove legacy demo rows so UI only shows the new defaults.
+  await sql`
+    delete from products
+    where sku in ('RTR-PRO-001', 'RTR-PRO-002', 'GTW-X-001');
+  `;
 
   console.log("Database initialized successfully.");
 }
