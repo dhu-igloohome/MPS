@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   createAdminAuditLog,
+  deleteProductById,
   findProductById,
   findProductBySkuAndVariant,
   isUppercaseSku,
@@ -74,6 +75,34 @@ export async function PATCH(request: Request, context: RouteContext) {
     action: "update_product",
     targetUsername: session.username,
     details: `product=${productName}; sku=${nextSku}; isActive=${isActive}`,
+  });
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const session = await getSession();
+  if (!session || session.role !== "super_admin") {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  }
+
+  const { sku } = await context.params;
+  const id = sku;
+  if (!id) {
+    return NextResponse.json({ message: "Invalid product id" }, { status: 400 });
+  }
+
+  const current = await findProductById(id);
+  if (!current) {
+    return NextResponse.json({ message: "Product not found" }, { status: 404 });
+  }
+
+  await deleteProductById(id);
+  await createAdminAuditLog({
+    actorUsername: session.username,
+    action: "delete_product",
+    targetUsername: session.username,
+    details: `product=${current.productName}; sku=${current.sku}; variant=${current.variant}`,
   });
 
   return NextResponse.json({ ok: true });

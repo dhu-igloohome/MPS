@@ -155,6 +155,22 @@ export function ProductManagement({ products }: ProductManagementProps) {
     router.refresh();
   }
 
+  async function deleteItem(item: ProductItem) {
+    if (!window.confirm(`Delete product ${item.productName} / ${item.sku} / ${item.variant}?`)) {
+      return;
+    }
+
+    const response = await fetch(`/api/admin/products/${encodeURIComponent(item.id)}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      setMessage("Delete product failed.");
+      return;
+    }
+    setMessage(`Deleted ${item.sku} (${item.variant}).`);
+    router.refresh();
+  }
+
   function updateRow(idKey: string, patch: Partial<ProductItem>) {
     setEditable((prev) => prev.map((item) => (item.id === idKey ? { ...item, ...patch } : item)));
   }
@@ -293,13 +309,22 @@ export function ProductManagement({ products }: ProductManagementProps) {
                     />
                   </td>
                   <td className="px-2 py-2">
-                    <button
-                      type="button"
-                      onClick={() => saveItem(item)}
-                      className="rounded border border-zinc-300 px-2 py-1 hover:bg-zinc-50"
-                    >
-                      Save
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => saveItem(item)}
+                        className="rounded border border-zinc-300 px-2 py-1 hover:bg-zinc-50"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteItem(item)}
+                        className="rounded border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

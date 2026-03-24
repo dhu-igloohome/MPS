@@ -617,6 +617,15 @@ export async function updateProduct(input: {
   `;
 }
 
+export async function deleteProductById(id: string) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    delete from products
+    where id = ${Number(id)};
+  `;
+}
+
 function mapProduct(row: ProductRow): ProductItem {
   return {
     id: String(row.id),
