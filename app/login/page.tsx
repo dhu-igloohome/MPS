@@ -9,7 +9,7 @@ import { Language, normalizeLanguage } from "@/lib/i18n";
 const TEXT = {
   en: {
     title: "igloo ForeTracker",
-    subtitle: "Sign in to submit monthly forecasts by region.",
+    subtitle: "For username and password setup, contact David Huang.",
     username: "Username",
     password: "Password",
     login: "Login",
@@ -18,7 +18,7 @@ const TEXT = {
   },
   zh: {
     title: "igloo订单追踪系统",
-    subtitle: "登录后可按区域录入月度订单 forecast。",
+    subtitle: "登录用户名与密码创建请联系David Huang。",
     username: "用户名",
     password: "密码",
     login: "登录",
