@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Language } from "@/lib/i18n";
@@ -67,6 +68,7 @@ function labels(language: Language) {
     colBy: en ? "By" : "创建人",
     colActions: en ? "Actions" : "操作",
     deleteConfirm: en ? "Delete this shipment record?" : "确认删除该物流记录？",
+    exportCsv: en ? "Export CSV" : "导出 CSV",
     hintRecordOnly: en
       ? "Record-keeping only: no inventory is deducted. Use Transfer when moving stock between offices."
       : "仅作记录，不扣库存。办公室之间调货请选「调拨」。",
@@ -452,7 +454,16 @@ export function LogisticsProgressPanel({
       </section>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-zinc-900">{t.listTitle}</h3>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-lg font-semibold text-zinc-900">{t.listTitle}</h3>
+          <Link
+            href="/api/logistics-shipments/export-csv"
+            prefetch={false}
+            className="inline-flex w-fit items-center rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+          >
+            {t.exportCsv}
+          </Link>
+        </div>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[1100px] border-collapse text-sm">
             <thead>

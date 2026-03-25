@@ -1,23 +1,12 @@
 import { NextResponse } from "next/server";
 
+import { toCsvLine } from "@/lib/csv";
 import {
   getForecastsByRegions,
   getSummaryByMonthAndRegion,
   getSummaryByQuarterAndRegion,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
-
-function escapeCsv(value: string | number) {
-  const text = String(value ?? "");
-  if (text.includes('"') || text.includes(",") || text.includes("\n")) {
-    return `"${text.replaceAll('"', '""')}"`;
-  }
-  return text;
-}
-
-function toCsvRow(columns: Array<string | number>) {
-  return columns.map(escapeCsv).join(",");
-}
 
 export async function GET() {
   const session = await getSession();
@@ -32,10 +21,10 @@ export async function GET() {
   const lines: string[] = [];
 
   lines.push("Monthly Summary by Region");
-  lines.push(toCsvRow(["Month", "Region", "Build to Order", "Build to Stock", "Total"]));
+  lines.push(toCsvLine(["Month", "Region", "Build to Order", "Build to Stock", "Total"]));
   for (const item of monthly) {
     lines.push(
-      toCsvRow([
+      toCsvLine([
         item.month,
         item.region,
         item.buildToOrder,
@@ -48,7 +37,7 @@ export async function GET() {
   lines.push("");
   lines.push("Quarterly Summary by Region");
   lines.push(
-    toCsvRow([
+    toCsvLine([
       "Quarter",
       "Region",
       "Build to Order",
@@ -59,7 +48,7 @@ export async function GET() {
   );
   for (const item of quarterly) {
     lines.push(
-      toCsvRow([
+      toCsvLine([
         item.quarter,
         item.region,
         item.buildToOrder,
@@ -73,7 +62,7 @@ export async function GET() {
   lines.push("");
   lines.push("Latest Forecast Entries");
   lines.push(
-    toCsvRow([
+    toCsvLine([
       "Month",
       "Region",
       "Office",
@@ -87,7 +76,7 @@ export async function GET() {
   );
   for (const item of entries) {
     lines.push(
-      toCsvRow([
+      toCsvLine([
         item.month,
         item.region,
         item.office,

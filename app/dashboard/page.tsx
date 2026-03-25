@@ -8,6 +8,8 @@ import {
   getForecastsByRegions,
   getSummaryByMonthAndRegion,
   getSummaryByQuarterAndRegion,
+  listLogisticsShipmentsBySession,
+  listOrderProgressBySessionRegions,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
@@ -26,6 +28,8 @@ export default async function DashboardPage() {
   const entries = await getForecastsByRegions(session.regions);
   const summary = await getSummaryByMonthAndRegion(session.regions);
   const quarterSummary = await getSummaryByQuarterAndRegion(session.regions);
+  const orderProgressRows = await listOrderProgressBySessionRegions(session.regions);
+  const logisticsRows = await listLogisticsShipmentsBySession(session);
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   const t = {
@@ -56,6 +60,13 @@ export default async function DashboardPage() {
     productName: language === "en" ? "Product Name" : "产品名称",
     by: language === "en" ? "By" : "提交人",
     noRecords: language === "en" ? "No records yet." : "暂无记录。",
+    orderLogisticsTitle: language === "en" ? "Order & logistics snapshot" : "订单与物流概览",
+    orderProgressModule: language === "en" ? "Order progress" : "订单进度",
+    logisticsModule: language === "en" ? "Logistics progress" : "物流进度",
+    recordCountLabel: language === "en" ? "visible records" : "可见记录数",
+    openModule: language === "en" ? "Open" : "进入",
+    exportOrderCsv: language === "en" ? "Export orders CSV" : "导出订单 CSV",
+    exportLogisticsCsv: language === "en" ? "Export logistics CSV" : "导出物流 CSV",
   };
 
   const totalBTO = entries.reduce((sum, item) => sum + item.buildToOrder, 0);
@@ -81,6 +92,56 @@ export default async function DashboardPage() {
           <p className="text-sm text-zinc-500">{t.bts}</p>
           <p className="mt-2 text-2xl font-semibold text-zinc-900">{formatNumber(totalBTS)}</p>
         </article>
+      </section>
+
+      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
+        <h3 className="mb-4 text-lg font-semibold text-zinc-900">{t.orderLogisticsTitle}</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <article className="rounded-xl border border-zinc-100 bg-zinc-50/80 p-4">
+            <p className="text-sm font-medium text-zinc-700">{t.orderProgressModule}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-zinc-900">
+              {orderProgressRows.length}
+            </p>
+            <p className="text-xs text-zinc-500">{t.recordCountLabel}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/order-progress"
+                className="inline-flex rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-700"
+              >
+                {t.openModule}
+              </Link>
+              <Link
+                href="/api/order-progress/export-csv"
+                prefetch={false}
+                className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+              >
+                {t.exportOrderCsv}
+              </Link>
+            </div>
+          </article>
+          <article className="rounded-xl border border-zinc-100 bg-zinc-50/80 p-4">
+            <p className="text-sm font-medium text-zinc-700">{t.logisticsModule}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-zinc-900">
+              {logisticsRows.length}
+            </p>
+            <p className="text-xs text-zinc-500">{t.recordCountLabel}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/logistics-progress"
+                className="inline-flex rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-700"
+              >
+                {t.openModule}
+              </Link>
+              <Link
+                href="/api/logistics-shipments/export-csv"
+                prefetch={false}
+                className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+              >
+                {t.exportLogisticsCsv}
+              </Link>
+            </div>
+          </article>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Language } from "@/lib/i18n";
@@ -101,6 +102,12 @@ function labels(language: Language) {
     pNotStarted: en ? "Not started" : "未生产",
     pInProd: en ? "In production" : "生产中",
     pReady: en ? "Ready to ship" : "待出货",
+    exportCsv: en ? "Export CSV" : "导出 CSV",
+    batchImport: en ? "Batch import (CSV)" : "CSV 批量导入",
+    downloadTemplate: en ? "Download CSV template" : "下载 CSV 模板",
+    batchHint: en
+      ? "Up to 500 rows. Header row required. Does not create delivery batches—use the form for splits. Region must be within your access."
+      : "最多 500 行，首行为表头。不会导入分批次交货，分批请在表单中维护。region 须为您有权限的区域。",
   };
 }
 
@@ -144,6 +151,9 @@ export function OrderProgressPanel({
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [planRows, setPlanRows] = useState<DraftPlanRow[]>([]);
+  const [batchSummary, setBatchSummary] = useState<string | null>(null);
+  const [batchErrors, setBatchErrors] = useState<{ row: number; message: string }[]>([]);
+  const batchFileRef = useRef<HTMLInputElement>(null);
 
   const resolvedProductName =
     productName.length > 0 && productNameOptions.includes(productName)
@@ -183,6 +193,8 @@ export function OrderProgressPanel({
     if (allowedRegions[0]) setRegion(allowedRegions[0]);
     setPlanRows([]);
     setMessage("");
+    setBatchSummary(null);
+    setBatchErrors([]);
   }
 
   function startEdit(entry: OrderProgressEntry) {
@@ -208,12 +220,52 @@ export function OrderProgressPanel({
         : [],
     );
     setMessage("");
+    setBatchSummary(null);
+    setBatchErrors([]);
+  }
+
+  async function onBatchFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setLoading(true);
+    setMessage("");
+    setBatchSummary(null);
+    setBatchErrors([]);
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch("/api/order-progress/batch", {
+      method: "POST",
+      body: formData,
+    });
+    const data = (await response.json().catch(() => ({}))) as {
+      message?: string;
+      created?: number;
+      failed?: number;
+      errors?: { row: number; message: string }[];
+    };
+    setLoading(false);
+    if (!response.ok) {
+      setMessage(data.message || "Batch import failed");
+      return;
+    }
+    const created = data.created ?? 0;
+    const failed = data.failed ?? 0;
+    setBatchSummary(
+      language === "en"
+        ? `Imported ${created} order line(s). ${failed} row(s) skipped or failed.`
+        : `已导入 ${created} 条订单行；${failed} 行跳过或失败。`,
+    );
+    setBatchErrors(Array.isArray(data.errors) ? data.errors.slice(0, 20) : []);
+    router.refresh();
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setMessage("");
+    setBatchSummary(null);
+    setBatchErrors([]);
 
     const deliveryPlans: {
       expectedDeliveryDate: string;
@@ -319,7 +371,49 @@ export function OrderProgressPanel({
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-zinc-900">{t.formTitle}</h3>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <h3 className="text-lg font-semibold text-zinc-900">{t.formTitle}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/api/order-progress/csv-template"
+              prefetch={false}
+              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+            >
+              {t.downloadTemplate}
+            </Link>
+            <input
+              ref={batchFileRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={onBatchFileChange}
+            />
+            <button
+              type="button"
+              disabled={loading || products.length === 0}
+              onClick={() => batchFileRef.current?.click()}
+              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+            >
+              {t.batchImport}
+            </button>
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-zinc-500">{t.batchHint}</p>
+        {batchSummary ? (
+          <p className="mt-2 text-sm text-emerald-800">{batchSummary}</p>
+        ) : null}
+        {batchErrors.length > 0 ? (
+          <ul className="mt-2 max-h-40 list-inside list-disc overflow-y-auto text-sm text-red-700">
+            {batchErrors.map((err) => (
+              <li key={`${err.row}-${err.message}`}>
+                {language === "en" ? "Row" : "第"}
+                {err.row}
+                {language === "en" ? ": " : " 行："}
+                {err.message}
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {products.length === 0 ? (
           <p className="mt-2 text-sm text-amber-800">
             {language === "en"
@@ -571,7 +665,16 @@ export function OrderProgressPanel({
       </section>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-zinc-900">{t.listTitle}</h3>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-lg font-semibold text-zinc-900">{t.listTitle}</h3>
+          <Link
+            href="/api/order-progress/export-csv"
+            prefetch={false}
+            className="inline-flex w-fit items-center rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+          >
+            {t.exportCsv}
+          </Link>
+        </div>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[1040px] border-collapse text-sm">
             <thead>
