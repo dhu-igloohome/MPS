@@ -141,6 +141,7 @@ async function main() {
       order_type text not null check (order_type in ('BTO', 'BTS')),
       progress text not null check (progress in ('not_started', 'in_production', 'ready_to_ship')),
       factory_name text not null default '',
+      order_number text not null default '',
       region text not null check (region in ('APAC', 'EU', 'US')),
       created_by text not null references users(username),
       created_at timestamptz not null default now(),
@@ -150,6 +151,10 @@ async function main() {
   await sql`
     alter table order_progress
     add column if not exists order_date date not null default current_date;
+  `;
+  await sql`
+    alter table order_progress
+    add column if not exists order_number text not null default '';
   `;
 
   await sql`

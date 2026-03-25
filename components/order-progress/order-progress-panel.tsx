@@ -44,6 +44,7 @@ function labels(language: Language) {
   const en = language === "en";
   return {
     formTitle: en ? "Create / edit order line" : "创建 / 编辑订单行",
+    orderNumber: en ? "Order number" : "订单号",
     productName: en ? "Product name" : "产品名称",
     sku: "SKU",
     quantity: en ? "Quantity" : "数量",
@@ -66,6 +67,7 @@ function labels(language: Language) {
       ? "Your account has no region assignment. You cannot manage order progress."
       : "您的账号未分配区域，无法管理订单进度。",
     empty: en ? "No records yet." : "暂无记录。",
+    colOrderNumber: en ? "Order #" : "订单号",
     colProduct: en ? "Product" : "产品",
     colSku: "SKU",
     colQty: en ? "Qty" : "数量",
@@ -129,6 +131,7 @@ export function OrderProgressPanel({
   );
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [orderNumber, setOrderNumber] = useState("");
   const [productName, setProductName] = useState("");
   const [sku, setSku] = useState("");
   const [quantity, setQuantity] = useState("0");
@@ -168,6 +171,7 @@ export function OrderProgressPanel({
 
   function resetForm() {
     setEditingId(null);
+    setOrderNumber("");
     setProductName("");
     setSku("");
     setQuantity("0");
@@ -183,6 +187,7 @@ export function OrderProgressPanel({
 
   function startEdit(entry: OrderProgressEntry) {
     setEditingId(entry.id);
+    setOrderNumber(entry.orderNumber);
     setProductName(entry.productName);
     setSku(entry.sku);
     setQuantity(String(entry.quantity));
@@ -251,6 +256,7 @@ export function OrderProgressPanel({
         : expectedDeliveryDate;
 
     const payload = {
+      orderNumber: orderNumber.trim().slice(0, 200),
       productName: resolvedProductName,
       sku: resolvedSku,
       quantity: Number(quantity),
@@ -323,6 +329,16 @@ export function OrderProgressPanel({
         ) : null}
 
         <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={onSubmit}>
+          <label className="block md:col-span-2">
+            <span className="mb-1 block text-sm text-zinc-700">{t.orderNumber}</span>
+            <input
+              value={orderNumber}
+              onChange={(e) => setOrderNumber(e.target.value)}
+              maxLength={200}
+              placeholder={language === "en" ? "Optional" : "选填"}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            />
+          </label>
           <label className="block">
             <span className="mb-1 block text-sm text-zinc-700">{t.productName}</span>
             <select
@@ -557,9 +573,10 @@ export function OrderProgressPanel({
       <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-zinc-900">{t.listTitle}</h3>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[960px] border-collapse text-sm">
+          <table className="w-full min-w-[1040px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-left text-zinc-600">
+                <th className="px-2 py-2">{t.colOrderNumber}</th>
                 <th className="px-2 py-2">{t.colProduct}</th>
                 <th className="px-2 py-2">{t.colSku}</th>
                 <th className="px-2 py-2">{t.colQty}</th>
@@ -576,13 +593,16 @@ export function OrderProgressPanel({
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-2 py-6 text-center text-zinc-500">
+                  <td colSpan={12} className="px-2 py-6 text-center text-zinc-500">
                     {t.empty}
                   </td>
                 </tr>
               ) : (
                 entries.map((row) => (
                   <tr key={row.id} className="border-b border-zinc-100">
+                    <td className="px-2 py-2 font-medium tabular-nums text-zinc-900">
+                      {row.orderNumber || "—"}
+                    </td>
                     <td className="px-2 py-2">{row.productName}</td>
                     <td className="px-2 py-2">{row.sku}</td>
                     <td className="px-2 py-2">{row.quantity}</td>

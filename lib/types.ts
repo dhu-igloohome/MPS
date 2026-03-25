@@ -75,6 +75,8 @@ export type OrderProgressDeliveryPlan = {
 
 export type OrderProgressEntry = {
   id: string;
+  /** 业务订单号（可与 ERP/客户单号对应）。 */
+  orderNumber: string;
   productName: string;
   sku: string;
   quantity: number;

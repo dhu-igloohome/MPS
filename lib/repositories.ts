@@ -57,6 +57,7 @@ type ProductRow = {
 
 type OrderProgressRow = {
   id: number;
+  order_number: string;
   product_name: string;
   sku: string;
   quantity: number;
@@ -706,6 +707,7 @@ function mapDeliveryPlanRow(row: OrderProgressDeliveryPlanRow): OrderProgressDel
 function mapOrderProgress(row: OrderProgressRow, deliveryPlans: OrderProgressDeliveryPlan[]): OrderProgressEntry {
   return {
     id: String(row.id),
+    orderNumber: row.order_number ?? "",
     productName: row.product_name,
     sku: row.sku,
     quantity: Number(row.quantity ?? 0),
@@ -794,6 +796,7 @@ export async function listOrderProgressBySessionRegions(regions: Region[]) {
   const rows = await db<OrderProgressRow[]>`
     select
       id,
+      coalesce(order_number, '') as order_number,
       product_name,
       sku,
       quantity,
@@ -848,6 +851,7 @@ export async function getOrderProgressById(id: string) {
 }
 
 export async function createOrderProgress(input: {
+  orderNumber: string;
   productName: string;
   sku: string;
   quantity: number;
@@ -869,6 +873,7 @@ export async function createOrderProgress(input: {
       : input.expectedDeliveryDate;
   const rows = await db<OrderProgressRow[]>`
     insert into order_progress (
+      order_number,
       product_name,
       sku,
       quantity,
@@ -881,6 +886,7 @@ export async function createOrderProgress(input: {
       created_by
     )
     values (
+      ${input.orderNumber.trim()},
       ${input.productName.trim()},
       ${input.sku.trim()},
       ${input.quantity},
@@ -894,6 +900,7 @@ export async function createOrderProgress(input: {
     )
     returning
       id,
+      coalesce(order_number, '') as order_number,
       product_name,
       sku,
       quantity,
@@ -917,6 +924,7 @@ export async function createOrderProgress(input: {
 
 export async function updateOrderProgress(input: {
   id: string;
+  orderNumber: string;
   productName: string;
   sku: string;
   quantity: number;
@@ -938,6 +946,7 @@ export async function updateOrderProgress(input: {
   const rows = await db<OrderProgressRow[]>`
     update order_progress
     set
+      order_number = ${input.orderNumber.trim()},
       product_name = ${input.productName.trim()},
       sku = ${input.sku.trim()},
       quantity = ${input.quantity},
@@ -951,6 +960,7 @@ export async function updateOrderProgress(input: {
     where id = ${Number(input.id)}
     returning
       id,
+      coalesce(order_number, '') as order_number,
       product_name,
       sku,
       quantity,
