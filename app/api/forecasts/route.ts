@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const region = String(body.region || "");
-  const office = String(body.office || "");
+  const office = String(body.office || "").trim();
 
   if (!isRegion(region)) {
     return NextResponse.json({ message: "Invalid region" }, { status: 400 });
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Forbidden region" }, { status: 403 });
   }
 
-  if (!(await officeExistsByRegion(region, office))) {
+  if (office && !(await officeExistsByRegion(region, office))) {
     return NextResponse.json({ message: "Invalid office" }, { status: 400 });
   }
 

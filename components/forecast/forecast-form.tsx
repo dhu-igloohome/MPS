@@ -28,10 +28,13 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
     forecastMonth: language === "en" ? "Forecast Month" : "Forecast 月份",
     region: language === "en" ? "Region" : "区域",
     office: language === "en" ? "Office" : "办公室",
+    officeOptional: language === "en" ? "Office (optional)" : "办公室（选填）",
+    noOffice: language === "en" ? "Not specified" : "未填写",
     productName: language === "en" ? "Product Name" : "产品名称",
     sku: "SKU",
     remark: language === "en" ? "Remark" : "备注",
     variant: language === "en" ? "Variant" : "型号",
+    variantOptional: language === "en" ? "Variant (optional)" : "型号（选填）",
     articleNumber: language === "en" ? "Article Number" : "Article Number",
     bto: language === "en" ? "Build to Order" : "按单生产",
     bts: language === "en" ? "Build to Stock" : "备货生产",
@@ -50,7 +53,7 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
 
   const [month, setMonth] = useState("");
   const [region, setRegion] = useState<Region>(defaultRegion);
-  const [office, setOffice] = useState(officesByRegion[defaultRegion][0]);
+  const [office, setOffice] = useState("");
   const [productName, setProductName] = useState(defaultProductName);
   const [sku, setSku] = useState(defaultSku);
   const [remark, setRemark] = useState("");
@@ -75,7 +78,7 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
 
   function onRegionChange(nextRegion: Region) {
     setRegion(nextRegion);
-    setOffice(officesByRegion[nextRegion][0]);
+    setOffice("");
   }
 
   function onProductNameChange(nextProductName: string) {
@@ -160,12 +163,13 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.office}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.officeOptional}</span>
           <select
             value={office}
             onChange={(event) => setOffice(event.target.value)}
             className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           >
+            <option value="">{t.noOffice}</option>
             {officeOptions.map((item) => (
               <option key={item} value={item}>
                 {item}
@@ -217,7 +221,7 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.variant}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.variantOptional}</span>
           <input
             value={selectedProduct?.variant || ""}
             readOnly
