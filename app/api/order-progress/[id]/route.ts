@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { parseDeliveryPlansInput } from "@/lib/order-progress-delivery-plans";
 import {
   deleteOrderProgressById,
   findActiveProductByNameAndSku,
@@ -61,6 +62,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   const factoryName = String(body.factoryName || "");
   const region = String(body.region || "");
   const quantity = Number(body.quantity);
+  const parsedPlans = parseDeliveryPlansInput(body.deliveryPlans);
+  if (!parsedPlans.ok) {
+    return NextResponse.json({ message: parsedPlans.message }, { status: 400 });
+  }
+  const deliveryPlans = parsedPlans.plans;
 
   if (!productName.trim() || !sku.trim()) {
     return NextResponse.json({ message: "Missing product or SKU" }, { status: 400 });
@@ -70,7 +76,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ message: "Invalid order date" }, { status: 400 });
   }
 
-  if (!DATE_RE.test(expectedDeliveryDate)) {
+  if (deliveryPlans.length === 0 && !DATE_RE.test(expectedDeliveryDate)) {
     return NextResponse.json({ message: "Invalid expected delivery date" }, { status: 400 });
   }
 
@@ -110,6 +116,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     progress,
     factoryName,
     region,
+    deliveryPlans,
   });
 
   if (!entry) {

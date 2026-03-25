@@ -66,6 +66,13 @@ export type OrderProgressOrderType = "BTO" | "BTS";
 
 export type OrderProgressStatus = "not_started" | "in_production" | "ready_to_ship";
 
+export type OrderProgressDeliveryPlan = {
+  id: string;
+  expectedDeliveryDate: string;
+  quantity: number;
+  progress: OrderProgressStatus;
+};
+
 export type OrderProgressEntry = {
   id: string;
   productName: string;
@@ -80,4 +87,6 @@ export type OrderProgressEntry = {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  /** 多批次交货；为空时表示仅使用主档 expectedDeliveryDate。 */
+  deliveryPlans: OrderProgressDeliveryPlan[];
 };

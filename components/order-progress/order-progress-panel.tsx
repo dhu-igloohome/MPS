@@ -22,6 +22,24 @@ type OrderProgressPanelProps = {
 const ORDER_TYPES: OrderProgressOrderType[] = ["BTO", "BTS"];
 const PROGRESS: OrderProgressStatus[] = ["not_started", "in_production", "ready_to_ship"];
 
+const PLAN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+type DraftPlanRow = {
+  key: string;
+  expectedDeliveryDate: string;
+  quantity: string;
+  progress: OrderProgressStatus;
+};
+
+function newPlanRow(): DraftPlanRow {
+  return {
+    key: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `p-${Date.now()}-${Math.random()}`,
+    expectedDeliveryDate: "",
+    quantity: "0",
+    progress: "not_started",
+  };
+}
+
 function labels(language: Language) {
   const en = language === "en";
   return {
@@ -53,6 +71,22 @@ function labels(language: Language) {
     colQty: en ? "Qty" : "数量",
     colOrderDate: en ? "Order date" : "下单日",
     colExpectedDate: en ? "Expected delivery" : "预计交货日",
+    deliveryBatches: en ? "Delivery batches (optional)" : "分批次交货（可选）",
+    deliveryBatchesHint: en
+      ? "Each batch has its own date, quantity, and progress. Leave empty to use only the main date above. Batch quantities do not need to sum to the line total (e.g. freebies or defective units)."
+      : "每批可单独填写日期、数量与进度；不填批次则仅使用上方主预计交货日。各批数量之和不必等于订单行总数（例如赠品或不良品）。",
+    addBatch: en ? "Add batch" : "添加批次",
+    removeBatch: en ? "Remove" : "移除",
+    batchDate: en ? "Batch date" : "批次交货日",
+    batchQty: en ? "Batch qty" : "批次数量",
+    batchProgress: en ? "Batch progress" : "批次进度",
+    needDateOrBatch: en
+      ? "Enter the main expected delivery date, or add at least one complete batch (date and non-negative integer quantity)."
+      : "请填写主预计交货日，或至少添加一条完整批次（日期与非负整数数量）。",
+    invalidBatchDate: en ? "Invalid batch delivery date." : "批次交货日期无效。",
+    invalidBatchQty: en
+      ? "Each batch with a date needs a non-negative integer quantity."
+      : "填写了日期的批次须使用非负整数数量。",
     colType: en ? "Type" : "类型",
     colProgress: en ? "Progress" : "进度",
     colFactory: en ? "Factory" : "工厂",
@@ -106,6 +140,7 @@ export function OrderProgressPanel({
   const [region, setRegion] = useState<OrderProgressRegion>(() => allowedRegions[0] ?? "APAC");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [planRows, setPlanRows] = useState<DraftPlanRow[]>([]);
 
   const resolvedProductName =
     productName.length > 0 && productNameOptions.includes(productName)
@@ -142,6 +177,7 @@ export function OrderProgressPanel({
     setProgress("not_started");
     setFactoryName("");
     if (allowedRegions[0]) setRegion(allowedRegions[0]);
+    setPlanRows([]);
     setMessage("");
   }
 
@@ -156,6 +192,16 @@ export function OrderProgressPanel({
     setProgress(entry.progress);
     setFactoryName(entry.factoryName);
     setRegion(entry.region);
+    setPlanRows(
+      entry.deliveryPlans.length > 0
+        ? entry.deliveryPlans.map((p) => ({
+            key: p.id,
+            expectedDeliveryDate: p.expectedDeliveryDate,
+            quantity: String(p.quantity),
+            progress: p.progress,
+          }))
+        : [],
+    );
     setMessage("");
   }
 
@@ -164,16 +210,57 @@ export function OrderProgressPanel({
     setLoading(true);
     setMessage("");
 
+    const deliveryPlans: {
+      expectedDeliveryDate: string;
+      quantity: number;
+      progress: OrderProgressStatus;
+    }[] = [];
+
+    for (const r of planRows) {
+      if (!r.expectedDeliveryDate.trim()) continue;
+      if (!PLAN_DATE_RE.test(r.expectedDeliveryDate)) {
+        setLoading(false);
+        setMessage(t.invalidBatchDate);
+        return;
+      }
+      const q = Number(r.quantity);
+      if (!Number.isInteger(q) || q < 0) {
+        setLoading(false);
+        setMessage(t.invalidBatchQty);
+        return;
+      }
+      deliveryPlans.push({
+        expectedDeliveryDate: r.expectedDeliveryDate,
+        quantity: q,
+        progress: r.progress,
+      });
+    }
+
+    if (deliveryPlans.length === 0 && !PLAN_DATE_RE.test(expectedDeliveryDate)) {
+      setLoading(false);
+      setMessage(t.needDateOrBatch);
+      return;
+    }
+
+    const effectiveExpectedDate =
+      deliveryPlans.length > 0
+        ? deliveryPlans.reduce(
+            (min, p) => (p.expectedDeliveryDate < min ? p.expectedDeliveryDate : min),
+            deliveryPlans[0].expectedDeliveryDate,
+          )
+        : expectedDeliveryDate;
+
     const payload = {
       productName: resolvedProductName,
       sku: resolvedSku,
       quantity: Number(quantity),
       orderDate,
-      expectedDeliveryDate,
+      expectedDeliveryDate: effectiveExpectedDate,
       orderType,
       progress,
       factoryName,
       region: resolvedRegion,
+      deliveryPlans,
     };
 
     const url =
@@ -301,11 +388,94 @@ export function OrderProgressPanel({
               type="date"
               value={expectedDeliveryDate}
               onChange={(e) => setExpectedDeliveryDate(e.target.value)}
-              required
+              required={planRows.length === 0}
               className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
             />
             <span className="mt-1 block text-xs text-zinc-500">{t.dateHint}</span>
           </label>
+
+          <div className="md:col-span-2 rounded-xl border border-zinc-200 bg-zinc-50/80 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-medium text-zinc-800">{t.deliveryBatches}</span>
+              <button
+                type="button"
+                onClick={() => setPlanRows((rows) => [...rows, newPlanRow()])}
+                className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+              >
+                {t.addBatch}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-zinc-600">{t.deliveryBatchesHint}</p>
+            {planRows.length > 0 ? (
+              <div className="mt-3 space-y-3">
+                {planRows.map((row, index) => (
+                  <div
+                    key={row.key}
+                    className="grid gap-2 rounded-lg border border-zinc-200 bg-white p-3 sm:grid-cols-[1fr_7rem_1fr_auto] sm:items-end"
+                  >
+                    <label className="block min-w-0">
+                      <span className="mb-1 block text-xs text-zinc-600">{t.batchDate}</span>
+                      <input
+                        type="date"
+                        value={row.expectedDeliveryDate}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setPlanRows((rows) =>
+                            rows.map((r, i) => (i === index ? { ...r, expectedDeliveryDate: v } : r)),
+                          );
+                        }}
+                        className="w-full rounded-lg border border-zinc-300 px-2 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+                      />
+                    </label>
+                    <label className="block min-w-0">
+                      <span className="mb-1 block text-xs text-zinc-600">{t.batchQty}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={row.quantity}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setPlanRows((rows) =>
+                            rows.map((r, i) => (i === index ? { ...r, quantity: v } : r)),
+                          );
+                        }}
+                        className="w-full rounded-lg border border-zinc-300 px-2 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+                      />
+                    </label>
+                    <label className="block min-w-0">
+                      <span className="mb-1 block text-xs text-zinc-600">{t.batchProgress}</span>
+                      <select
+                        value={row.progress}
+                        onChange={(e) => {
+                          const v = e.target.value as OrderProgressStatus;
+                          setPlanRows((rows) =>
+                            rows.map((r, i) => (i === index ? { ...r, progress: v } : r)),
+                          );
+                        }}
+                        className="w-full rounded-lg border border-zinc-300 px-2 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+                      >
+                        {PROGRESS.map((p) => (
+                          <option key={p} value={p}>
+                            {progressLabel(language, p)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="flex sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setPlanRows((rows) => rows.filter((_, i) => i !== index))}
+                        className="rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
+                      >
+                        {t.removeBatch}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           <label className="block">
             <span className="mb-1 block text-sm text-zinc-700">{t.orderType}</span>
@@ -417,7 +587,23 @@ export function OrderProgressPanel({
                     <td className="px-2 py-2">{row.sku}</td>
                     <td className="px-2 py-2">{row.quantity}</td>
                     <td className="px-2 py-2">{row.orderDate}</td>
-                    <td className="px-2 py-2">{row.expectedDeliveryDate}</td>
+                    <td className="px-2 py-2 align-top">
+                      {row.deliveryPlans.length > 0 ? (
+                        <ul className="max-w-[14rem] space-y-1 text-xs text-zinc-800">
+                          {row.deliveryPlans.map((p) => (
+                            <li key={p.id}>
+                              <span className="font-medium tabular-nums">{p.expectedDeliveryDate}</span>
+                              <span className="text-zinc-500"> · </span>
+                              <span className="tabular-nums">{p.quantity}</span>
+                              <span className="text-zinc-500"> · </span>
+                              {progressLabel(language, p.progress)}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        row.expectedDeliveryDate
+                      )}
+                    </td>
                     <td className="px-2 py-2">{orderTypeLabel(language, row.orderType)}</td>
                     <td className="px-2 py-2">{progressLabel(language, row.progress)}</td>
                     <td className="px-2 py-2">{row.factoryName || "—"}</td>

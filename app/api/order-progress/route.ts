@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { parseDeliveryPlansInput } from "@/lib/order-progress-delivery-plans";
 import {
   createOrderProgress,
   findActiveProductByNameAndSku,
@@ -53,6 +54,11 @@ export async function POST(request: Request) {
   const factoryName = String(body.factoryName || "");
   const region = String(body.region || "");
   const quantity = Number(body.quantity);
+  const parsedPlans = parseDeliveryPlansInput(body.deliveryPlans);
+  if (!parsedPlans.ok) {
+    return NextResponse.json({ message: parsedPlans.message }, { status: 400 });
+  }
+  const deliveryPlans = parsedPlans.plans;
 
   if (!productName.trim() || !sku.trim()) {
     return NextResponse.json({ message: "Missing product or SKU" }, { status: 400 });
@@ -62,7 +68,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid order date" }, { status: 400 });
   }
 
-  if (!DATE_RE.test(expectedDeliveryDate)) {
+  if (deliveryPlans.length === 0 && !DATE_RE.test(expectedDeliveryDate)) {
     return NextResponse.json({ message: "Invalid expected delivery date" }, { status: 400 });
   }
 
@@ -102,6 +108,7 @@ export async function POST(request: Request) {
     factoryName,
     region,
     createdBy: session.username,
+    deliveryPlans,
   });
 
   return NextResponse.json({ ok: true, entry });

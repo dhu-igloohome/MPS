@@ -1,9 +1,11 @@
 import { ensureDatabase, getSql } from "@/lib/db";
+import type { ParsedOrderProgressDeliveryPlan } from "@/lib/order-progress-delivery-plans";
 import { hashPassword, verifyPassword } from "@/lib/security";
 import {
   AdminAuditLog,
   AdminUser,
   ForecastEntry,
+  OrderProgressDeliveryPlan,
   OrderProgressEntry,
   OrderProgressOrderType,
   OrderProgressRegion,
@@ -67,6 +69,16 @@ type OrderProgressRow = {
   created_by: string;
   created_at: string;
   updated_at: string;
+};
+
+type OrderProgressDeliveryPlanRow = {
+  id: number;
+  order_progress_id: number;
+  expected_delivery_date: string;
+  quantity: number;
+  progress: OrderProgressStatus;
+  sort_order: number;
+  created_at: string;
 };
 
 export function orderProgressRegionsForSession(regions: Region[]): OrderProgressRegion[] {
@@ -682,7 +694,16 @@ function formatPgDateOnly(value: string | Date): string {
   return s.length >= 10 ? s.slice(0, 10) : s;
 }
 
-function mapOrderProgress(row: OrderProgressRow): OrderProgressEntry {
+function mapDeliveryPlanRow(row: OrderProgressDeliveryPlanRow): OrderProgressDeliveryPlan {
+  return {
+    id: String(row.id),
+    expectedDeliveryDate: formatPgDateOnly(row.expected_delivery_date),
+    quantity: Number(row.quantity ?? 0),
+    progress: row.progress,
+  };
+}
+
+function mapOrderProgress(row: OrderProgressRow, deliveryPlans: OrderProgressDeliveryPlan[]): OrderProgressEntry {
   return {
     id: String(row.id),
     productName: row.product_name,
@@ -697,7 +718,68 @@ function mapOrderProgress(row: OrderProgressRow): OrderProgressEntry {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    deliveryPlans,
   };
+}
+
+async function loadDeliveryPlansByProgressIds(
+  db: ReturnType<typeof getSql>,
+  ids: number[],
+): Promise<Map<number, OrderProgressDeliveryPlan[]>> {
+  const map = new Map<number, OrderProgressDeliveryPlan[]>();
+  if (ids.length === 0) {
+    return map;
+  }
+  const rows = await db<OrderProgressDeliveryPlanRow[]>`
+    select
+      id,
+      order_progress_id,
+      expected_delivery_date::text,
+      quantity,
+      progress,
+      sort_order,
+      created_at::text
+    from order_progress_delivery_plans
+    where order_progress_id = any(${ids})
+    order by sort_order asc, id asc;
+  `;
+  for (const row of rows) {
+    const list = map.get(row.order_progress_id) ?? [];
+    list.push(mapDeliveryPlanRow(row));
+    map.set(row.order_progress_id, list);
+  }
+  return map;
+}
+
+async function replaceOrderProgressDeliveryPlans(
+  db: ReturnType<typeof getSql>,
+  orderProgressId: number,
+  plans: ParsedOrderProgressDeliveryPlan[],
+) {
+  await db`
+    delete from order_progress_delivery_plans
+    where order_progress_id = ${orderProgressId};
+  `;
+  let sortOrder = 0;
+  for (const p of plans) {
+    await db`
+      insert into order_progress_delivery_plans (
+        order_progress_id,
+        expected_delivery_date,
+        quantity,
+        progress,
+        sort_order
+      )
+      values (
+        ${orderProgressId},
+        ${p.expectedDeliveryDate},
+        ${p.quantity},
+        ${p.progress},
+        ${sortOrder}
+      );
+    `;
+    sortOrder += 1;
+  }
 }
 
 export async function listOrderProgressBySessionRegions(regions: Region[]) {
@@ -727,7 +809,11 @@ export async function listOrderProgressBySessionRegions(regions: Region[]) {
     order by updated_at desc, id desc
     limit 500;
   `;
-  return rows.map(mapOrderProgress);
+  const planMap = await loadDeliveryPlansByProgressIds(
+    db,
+    rows.map((r) => Number(r.id)),
+  );
+  return rows.map((row) => mapOrderProgress(row, planMap.get(Number(row.id)) ?? []));
 }
 
 export async function getOrderProgressById(id: string) {
@@ -752,7 +838,11 @@ export async function getOrderProgressById(id: string) {
     where id = ${Number(id)}
     limit 1;
   `;
-  return rows[0] ? mapOrderProgress(rows[0]) : null;
+  if (!rows[0]) {
+    return null;
+  }
+  const planMap = await loadDeliveryPlansByProgressIds(db, [Number(rows[0].id)]);
+  return mapOrderProgress(rows[0], planMap.get(Number(rows[0].id)) ?? []);
 }
 
 export async function createOrderProgress(input: {
@@ -766,9 +856,15 @@ export async function createOrderProgress(input: {
   factoryName: string;
   region: OrderProgressRegion;
   createdBy: string;
+  deliveryPlans: ParsedOrderProgressDeliveryPlan[];
 }) {
   await ensureDatabase();
   const db = getSql();
+  const plans = input.deliveryPlans;
+  const deliveryDate =
+    plans.length > 0
+      ? plans.reduce((min, p) => (p.expectedDeliveryDate < min ? p.expectedDeliveryDate : min), plans[0].expectedDeliveryDate)
+      : input.expectedDeliveryDate;
   const rows = await db<OrderProgressRow[]>`
     insert into order_progress (
       product_name,
@@ -787,7 +883,7 @@ export async function createOrderProgress(input: {
       ${input.sku.trim()},
       ${input.quantity},
       ${input.orderDate},
-      ${input.expectedDeliveryDate},
+      ${deliveryDate},
       ${input.orderType},
       ${input.progress},
       ${input.factoryName.trim()},
@@ -809,7 +905,12 @@ export async function createOrderProgress(input: {
       created_at::text,
       updated_at::text;
   `;
-  return mapOrderProgress(rows[0]);
+  const newId = Number(rows[0].id);
+  if (plans.length > 0) {
+    await replaceOrderProgressDeliveryPlans(db, newId, plans);
+  }
+  const planMap = await loadDeliveryPlansByProgressIds(db, [newId]);
+  return mapOrderProgress(rows[0], planMap.get(newId) ?? []);
 }
 
 export async function updateOrderProgress(input: {
@@ -823,9 +924,15 @@ export async function updateOrderProgress(input: {
   progress: OrderProgressStatus;
   factoryName: string;
   region: OrderProgressRegion;
+  deliveryPlans: ParsedOrderProgressDeliveryPlan[];
 }) {
   await ensureDatabase();
   const db = getSql();
+  const plans = input.deliveryPlans;
+  const deliveryDate =
+    plans.length > 0
+      ? plans.reduce((min, p) => (p.expectedDeliveryDate < min ? p.expectedDeliveryDate : min), plans[0].expectedDeliveryDate)
+      : input.expectedDeliveryDate;
   const rows = await db<OrderProgressRow[]>`
     update order_progress
     set
@@ -833,7 +940,7 @@ export async function updateOrderProgress(input: {
       sku = ${input.sku.trim()},
       quantity = ${input.quantity},
       order_date = ${input.orderDate},
-      delivery_date = ${input.expectedDeliveryDate},
+      delivery_date = ${deliveryDate},
       order_type = ${input.orderType},
       progress = ${input.progress},
       factory_name = ${input.factoryName.trim()},
@@ -855,7 +962,13 @@ export async function updateOrderProgress(input: {
       created_at::text,
       updated_at::text;
   `;
-  return rows[0] ? mapOrderProgress(rows[0]) : null;
+  if (!rows[0]) {
+    return null;
+  }
+  const pid = Number(rows[0].id);
+  await replaceOrderProgressDeliveryPlans(db, pid, plans);
+  const planMap = await loadDeliveryPlansByProgressIds(db, [pid]);
+  return mapOrderProgress(rows[0], planMap.get(pid) ?? []);
 }
 
 export async function deleteOrderProgressById(id: string) {

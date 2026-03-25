@@ -153,6 +153,18 @@ async function main() {
   `;
 
   await sql`
+    create table if not exists order_progress_delivery_plans (
+      id bigserial primary key,
+      order_progress_id bigint not null references order_progress(id) on delete cascade,
+      expected_delivery_date date not null,
+      quantity integer not null check (quantity >= 0),
+      progress text not null check (progress in ('not_started', 'in_production', 'ready_to_ship')),
+      sort_order integer not null default 0,
+      created_at timestamptz not null default now()
+    );
+  `;
+
+  await sql`
     create table if not exists products (
       id bigserial primary key,
       product_name text not null,
