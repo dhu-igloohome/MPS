@@ -419,6 +419,63 @@ export function OrderProgressPanel({
     router.refresh();
   }
 
+  function renderProductionChecklist(
+    orderId: string,
+    steps: OrderProductionStep[],
+    variant: "form" | "table",
+  ) {
+    const compact = variant === "table";
+    if (steps.length === 0) {
+      if (compact) {
+        return <span className="text-xs text-zinc-400">—</span>;
+      }
+      return <p className="mt-2 text-sm text-zinc-600">{t.productionEmpty}</p>;
+    }
+    return (
+      <ul
+        className={
+          compact
+            ? "max-h-52 space-y-1 overflow-y-auto pr-0.5"
+            : "mt-3 max-h-64 space-y-2 overflow-y-auto"
+        }
+      >
+        {steps.map((s) => {
+          const toggleKey = `${orderId}:${s.id}`;
+          const busy = togglingProductionKey === toggleKey;
+          return (
+            <li
+              key={s.id}
+              className={
+                compact
+                  ? "flex items-start gap-1.5 rounded border border-zinc-100 bg-zinc-50/90 px-2 py-1 text-xs"
+                  : "flex items-start gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+              }
+            >
+              <input
+                type="checkbox"
+                className={compact ? "mt-0.5 h-3.5 w-3.5 shrink-0" : "mt-0.5 shrink-0"}
+                checked={s.done}
+                disabled={busy}
+                onChange={(e) => onToggleProductionStep(orderId, s.id, e.target.checked)}
+              />
+              <span className="min-w-0 text-zinc-800">
+                <span className="tabular-nums text-zinc-500">{s.sortOrder + 1}. </span>
+                {s.label}
+                {!compact && s.done && s.completedBy ? (
+                  <span className="mt-0.5 block text-xs text-zinc-500">
+                    {s.completedAt ?? ""}
+                    {s.completedAt ? " · " : null}
+                    {s.completedBy}
+                  </span>
+                ) : null}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
   if (allowedRegions.length === 0) {
     return (
       <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -722,47 +779,11 @@ export function OrderProgressPanel({
           {editingId ? (
             <div className="md:col-span-2 rounded-xl border border-zinc-200 bg-zinc-50/80 p-4">
               <p className="text-sm font-medium text-zinc-800">{t.productionTitle}</p>
-              {(() => {
-                const steps = productionStepsByOrderId[editingId] ?? [];
-                if (steps.length === 0) {
-                  return <p className="mt-2 text-sm text-zinc-600">{t.productionEmpty}</p>;
-                }
-                return (
-                  <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto">
-                    {steps.map((s) => {
-                      const toggleKey = `${editingId}:${s.id}`;
-                      const busy = togglingProductionKey === toggleKey;
-                      return (
-                        <li
-                          key={s.id}
-                          className="flex items-start gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
-                        >
-                          <input
-                            type="checkbox"
-                            className="mt-0.5 shrink-0"
-                            checked={s.done}
-                            disabled={busy}
-                            onChange={(e) =>
-                              onToggleProductionStep(editingId, s.id, e.target.checked)
-                            }
-                          />
-                          <span className="min-w-0 text-zinc-800">
-                            <span className="tabular-nums text-zinc-500">{s.sortOrder + 1}. </span>
-                            {s.label}
-                            {s.done && s.completedBy ? (
-                              <span className="mt-0.5 block text-xs text-zinc-500">
-                                {s.completedAt ?? ""}
-                                {s.completedAt ? " · " : null}
-                                {s.completedBy}
-                              </span>
-                            ) : null}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                );
-              })()}
+              {renderProductionChecklist(
+                editingId,
+                productionStepsByOrderId[editingId] ?? [],
+                "form",
+              )}
             </div>
           ) : null}
         </form>
@@ -782,7 +803,7 @@ export function OrderProgressPanel({
           </Link>
         </div>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[1120px] border-collapse text-sm">
+          <table className="w-full min-w-[1280px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-left text-zinc-600">
                 <th className="px-2 py-2">{t.colOrderNumber}</th>
@@ -836,8 +857,20 @@ export function OrderProgressPanel({
                     </td>
                     <td className="px-2 py-2">{orderTypeLabel(language, row.orderType)}</td>
                     <td className="px-2 py-2">{progressLabel(language, row.progress)}</td>
-                    <td className="px-2 py-2 tabular-nums text-zinc-700">
-                      {productionSummary(productionStepsByOrderId[row.id] ?? row.productionSteps)}
+                    <td className="min-w-[13rem] max-w-[18rem] px-2 py-2 align-top">
+                      {(() => {
+                        const steps = productionStepsByOrderId[row.id] ?? row.productionSteps;
+                        return (
+                          <div>
+                            {steps.length > 0 ? (
+                              <p className="mb-1 text-xs font-medium tabular-nums text-zinc-600">
+                                {productionSummary(steps)}
+                              </p>
+                            ) : null}
+                            {renderProductionChecklist(row.id, steps, "table")}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-2 py-2">{row.factoryName || "—"}</td>
                     <td className="px-2 py-2">{row.region}</td>
