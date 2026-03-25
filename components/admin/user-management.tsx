@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Language } from "@/lib/i18n";
@@ -23,6 +24,11 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
     initialPassword: language === "en" ? "Initial Password (>= 6 chars)" : "初始密码（>= 6 位）",
     creating: language === "en" ? "Creating..." : "创建中...",
     createUser: language === "en" ? "Create User" : "创建用户",
+    batchImport: language === "en" ? "Batch import (CSV)" : "CSV 批量导入",
+    downloadTemplate: language === "en" ? "Download CSV template" : "下载 CSV 模板",
+    batchHint: language === "en"
+      ? "Up to 100 rows. regions: e.g. APAC|EU or APAC,USA. Password ≥ 6 chars. Username: letters, digits, . _ - only."
+      : "最多 100 行。regions 列示例：APAC|EU 或 APAC,USA。密码至少 6 位。用户名仅限字母、数字、. _ -。",
     existingAccounts: language === "en" ? "Existing Accounts" : "已有账号",
     role: language === "en" ? "Role" : "角色",
     regions: language === "en" ? "Regions" : "区域",
@@ -63,6 +69,9 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
   const [regions, setRegions] = useState<Region[]>(["APAC"]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [batchSummary, setBatchSummary] = useState<string | null>(null);
+  const [batchErrors, setBatchErrors] = useState<{ row: number; message: string }[]>([]);
+  const batchFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setEditableUsers(users);
@@ -77,10 +86,48 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
     });
   }
 
+  async function onBatchFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setLoading(true);
+    setMessage("");
+    setBatchSummary(null);
+    setBatchErrors([]);
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch("/api/admin/users/batch", {
+      method: "POST",
+      body: formData,
+    });
+    const data = (await response.json().catch(() => ({}))) as {
+      message?: string;
+      created?: number;
+      failed?: number;
+      errors?: { row: number; message: string }[];
+    };
+    setLoading(false);
+    if (!response.ok) {
+      setMessage(data.message || "Batch import failed");
+      return;
+    }
+    const created = data.created ?? 0;
+    const failed = data.failed ?? 0;
+    setBatchSummary(
+      language === "en"
+        ? `Created ${created} user(s). ${failed} row(s) skipped or failed.`
+        : `已创建 ${created} 个用户；${failed} 行跳过或失败。`,
+    );
+    setBatchErrors(Array.isArray(data.errors) ? data.errors.slice(0, 30) : []);
+    router.refresh();
+  }
+
   async function createUser(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setMessage("");
+    setBatchSummary(null);
+    setBatchErrors([]);
 
     const response = await fetch("/api/admin/users", {
       method: "POST",
@@ -175,7 +222,49 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-zinc-900">{t.createTitle}</h3>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <h3 className="text-lg font-semibold text-zinc-900">{t.createTitle}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/api/admin/users/csv-template"
+              prefetch={false}
+              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+            >
+              {t.downloadTemplate}
+            </Link>
+            <input
+              ref={batchFileRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={onBatchFileChange}
+            />
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => batchFileRef.current?.click()}
+              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
+            >
+              {t.batchImport}
+            </button>
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-zinc-500">{t.batchHint}</p>
+        {batchSummary ? (
+          <p className="mt-2 text-sm text-emerald-800">{batchSummary}</p>
+        ) : null}
+        {batchErrors.length > 0 ? (
+          <ul className="mt-2 max-h-48 list-inside list-disc overflow-y-auto text-sm text-red-700">
+            {batchErrors.map((err) => (
+              <li key={`${err.row}-${err.message}`}>
+                {language === "en" ? "Row" : "第"}
+                {err.row}
+                {language === "en" ? ": " : " 行："}
+                {err.message}
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <form className="mt-3 grid gap-3 md:grid-cols-2" onSubmit={createUser}>
           <input
             className="rounded-lg border border-zinc-300 px-3 py-2"
