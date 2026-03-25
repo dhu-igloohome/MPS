@@ -5,6 +5,10 @@ import {
   AdminAuditLog,
   AdminUser,
   ForecastEntry,
+  LogisticsLocation,
+  LogisticsMovementType,
+  LogisticsShipmentEntry,
+  LogisticsShipmentStatus,
   OrderProgressDeliveryPlan,
   OrderProgressEntry,
   OrderProgressOrderType,
@@ -988,6 +992,282 @@ export async function deleteOrderProgressById(id: string) {
   const db = getSql();
   await db`
     delete from order_progress
+    where id = ${Number(id)};
+  `;
+}
+
+type LogisticsShipmentRow = {
+  id: number;
+  movement_type: LogisticsMovementType;
+  product_name: string;
+  sku: string;
+  quantity: number;
+  from_location: string;
+  to_location: string;
+  order_progress_id: number | null;
+  tracking_number: string;
+  carrier: string;
+  status: LogisticsShipmentStatus;
+  notes: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+function isLogisticsLocation(value: string): value is LogisticsLocation {
+  return value === "FACTORY" || value === "APAC" || value === "EU" || value === "US";
+}
+
+export function sessionCanAccessLogisticsEndpoints(
+  session: SessionPayload,
+  fromLocation: LogisticsLocation,
+  toLocation: LogisticsLocation,
+): boolean {
+  if (session.role === "super_admin") {
+    return true;
+  }
+  const allowed = new Set(orderProgressRegionsForSession(session.regions));
+  const fromOffice = fromLocation !== "FACTORY" && allowed.has(fromLocation as OrderProgressRegion);
+  const toOffice = toLocation !== "FACTORY" && allowed.has(toLocation as OrderProgressRegion);
+  return fromOffice || toOffice;
+}
+
+function mapLogisticsShipment(row: LogisticsShipmentRow): LogisticsShipmentEntry {
+  const fromL = isLogisticsLocation(row.from_location) ? row.from_location : "FACTORY";
+  const toL = isLogisticsLocation(row.to_location) ? row.to_location : "APAC";
+  const opId = row.order_progress_id;
+  return {
+    id: String(row.id),
+    movementType: row.movement_type,
+    productName: row.product_name,
+    sku: row.sku,
+    quantity: Number(row.quantity ?? 0),
+    fromLocation: fromL,
+    toLocation: toL,
+    orderProgressId: opId != null ? String(opId) : null,
+    trackingNumber: row.tracking_number || "",
+    carrier: row.carrier || "",
+    status: row.status,
+    notes: row.notes || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listLogisticsShipmentsBySession(session: SessionPayload) {
+  await ensureDatabase();
+  const db = getSql();
+  if (session.role === "super_admin") {
+    const rows = await db<LogisticsShipmentRow[]>`
+      select
+        id,
+        movement_type,
+        product_name,
+        sku,
+        quantity,
+        from_location,
+        to_location,
+        order_progress_id,
+        tracking_number,
+        carrier,
+        status,
+        notes,
+        created_by,
+        created_at::text,
+        updated_at::text
+      from logistics_shipments
+      order by updated_at desc, id desc
+      limit 500;
+    `;
+    return rows.map(mapLogisticsShipment);
+  }
+  const allowed = orderProgressRegionsForSession(session.regions);
+  if (allowed.length === 0) {
+    return [];
+  }
+  const rows = await db<LogisticsShipmentRow[]>`
+    select
+      id,
+      movement_type,
+      product_name,
+      sku,
+      quantity,
+      from_location,
+      to_location,
+      order_progress_id,
+      tracking_number,
+      carrier,
+      status,
+      notes,
+      created_by,
+      created_at::text,
+      updated_at::text
+    from logistics_shipments
+    where from_location = any(${allowed}) or to_location = any(${allowed})
+    order by updated_at desc, id desc
+    limit 500;
+  `;
+  return rows.map(mapLogisticsShipment);
+}
+
+export async function getLogisticsShipmentById(id: string) {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<LogisticsShipmentRow[]>`
+    select
+      id,
+      movement_type,
+      product_name,
+      sku,
+      quantity,
+      from_location,
+      to_location,
+      order_progress_id,
+      tracking_number,
+      carrier,
+      status,
+      notes,
+      created_by,
+      created_at::text,
+      updated_at::text
+    from logistics_shipments
+    where id = ${Number(id)}
+    limit 1;
+  `;
+  return rows[0] ? mapLogisticsShipment(rows[0]) : null;
+}
+
+export async function createLogisticsShipment(input: {
+  movementType: LogisticsMovementType;
+  productName: string;
+  sku: string;
+  quantity: number;
+  fromLocation: LogisticsLocation;
+  toLocation: LogisticsLocation;
+  orderProgressId: string | null;
+  trackingNumber: string;
+  carrier: string;
+  status: LogisticsShipmentStatus;
+  notes: string;
+  createdBy: string;
+}) {
+  await ensureDatabase();
+  const db = getSql();
+  const opId =
+    input.orderProgressId && input.orderProgressId.trim() !== ""
+      ? Number(input.orderProgressId)
+      : null;
+  const rows = await db<LogisticsShipmentRow[]>`
+    insert into logistics_shipments (
+      movement_type,
+      product_name,
+      sku,
+      quantity,
+      from_location,
+      to_location,
+      order_progress_id,
+      tracking_number,
+      carrier,
+      status,
+      notes,
+      created_by
+    )
+    values (
+      ${input.movementType},
+      ${input.productName.trim()},
+      ${input.sku.trim()},
+      ${input.quantity},
+      ${input.fromLocation},
+      ${input.toLocation},
+      ${opId},
+      ${input.trackingNumber.trim()},
+      ${input.carrier.trim()},
+      ${input.status},
+      ${input.notes.trim()},
+      ${input.createdBy}
+    )
+    returning
+      id,
+      movement_type,
+      product_name,
+      sku,
+      quantity,
+      from_location,
+      to_location,
+      order_progress_id,
+      tracking_number,
+      carrier,
+      status,
+      notes,
+      created_by,
+      created_at::text,
+      updated_at::text;
+  `;
+  return mapLogisticsShipment(rows[0]);
+}
+
+export async function updateLogisticsShipment(input: {
+  id: string;
+  movementType: LogisticsMovementType;
+  productName: string;
+  sku: string;
+  quantity: number;
+  fromLocation: LogisticsLocation;
+  toLocation: LogisticsLocation;
+  orderProgressId: string | null;
+  trackingNumber: string;
+  carrier: string;
+  status: LogisticsShipmentStatus;
+  notes: string;
+}) {
+  await ensureDatabase();
+  const db = getSql();
+  const opId =
+    input.orderProgressId && input.orderProgressId.trim() !== ""
+      ? Number(input.orderProgressId)
+      : null;
+  const rows = await db<LogisticsShipmentRow[]>`
+    update logistics_shipments
+    set
+      movement_type = ${input.movementType},
+      product_name = ${input.productName.trim()},
+      sku = ${input.sku.trim()},
+      quantity = ${input.quantity},
+      from_location = ${input.fromLocation},
+      to_location = ${input.toLocation},
+      order_progress_id = ${opId},
+      tracking_number = ${input.trackingNumber.trim()},
+      carrier = ${input.carrier.trim()},
+      status = ${input.status},
+      notes = ${input.notes.trim()},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning
+      id,
+      movement_type,
+      product_name,
+      sku,
+      quantity,
+      from_location,
+      to_location,
+      order_progress_id,
+      tracking_number,
+      carrier,
+      status,
+      notes,
+      created_by,
+      created_at::text,
+      updated_at::text;
+  `;
+  return rows[0] ? mapLogisticsShipment(rows[0]) : null;
+}
+
+export async function deleteLogisticsShipmentById(id: string) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    delete from logistics_shipments
     where id = ${Number(id)};
   `;
 }

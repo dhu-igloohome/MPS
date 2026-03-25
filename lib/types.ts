@@ -92,3 +92,29 @@ export type OrderProgressEntry = {
   /** 多批次交货；为空时表示仅使用主档 expectedDeliveryDate。 */
   deliveryPlans: OrderProgressDeliveryPlan[];
 };
+
+/** 物流节点：工厂/供应商侧或各区域办公室（仅记录，不做库存扣账）。 */
+export type LogisticsLocation = "FACTORY" | OrderProgressRegion;
+
+export type LogisticsMovementType = "inbound" | "transfer";
+
+export type LogisticsShipmentStatus = "not_shipped" | "in_transit" | "delivered" | "cancelled";
+
+export type LogisticsShipmentEntry = {
+  id: string;
+  movementType: LogisticsMovementType;
+  productName: string;
+  sku: string;
+  quantity: number;
+  fromLocation: LogisticsLocation;
+  toLocation: LogisticsLocation;
+  /** 可选关联订单进度行 */
+  orderProgressId: string | null;
+  trackingNumber: string;
+  carrier: string;
+  status: LogisticsShipmentStatus;
+  notes: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};

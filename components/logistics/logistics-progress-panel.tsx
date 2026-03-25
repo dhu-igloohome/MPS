@@ -1,0 +1,535 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { Language } from "@/lib/i18n";
+import type {
+  LogisticsLocation,
+  LogisticsMovementType,
+  LogisticsShipmentEntry,
+  LogisticsShipmentStatus,
+  OrderProgressEntry,
+  OrderProgressRegion,
+  ProductItem,
+} from "@/lib/types";
+
+type LogisticsProgressPanelProps = {
+  entries: LogisticsShipmentEntry[];
+  products: ProductItem[];
+  orderLines: OrderProgressEntry[];
+  language: Language;
+};
+
+const MOVEMENT_TYPES: LogisticsMovementType[] = ["inbound", "transfer"];
+const OFFICE_LOCATIONS: OrderProgressRegion[] = ["APAC", "EU", "US"];
+const STATUSES: LogisticsShipmentStatus[] = [
+  "not_shipped",
+  "in_transit",
+  "delivered",
+  "cancelled",
+];
+
+function labels(language: Language) {
+  const en = language === "en";
+  return {
+    formTitle: en ? "Create / edit shipment" : "创建 / 编辑物流记录",
+    listTitle: en ? "Shipments (your regions)" : "物流记录（与您区域相关）",
+    movementType: en ? "Movement type" : "类型",
+    inbound: en ? "Inbound (factory → office)" : "入库（工厂 → 办公室）",
+    transfer: en ? "Transfer (office → office)" : "调拨（办公室 → 办公室）",
+    from: en ? "From" : "起点",
+    to: en ? "To" : "终点",
+    productName: en ? "Product name" : "产品名称",
+    sku: "SKU",
+    quantity: en ? "Quantity" : "数量",
+    orderLine: en ? "Link order line (optional)" : "关联订单行（可选）",
+    orderLineNone: en ? "None" : "不关联",
+    trackingNumber: en ? "Tracking #" : "运单号",
+    carrier: en ? "Carrier" : "承运商",
+    status: en ? "Status" : "状态",
+    notes: en ? "Notes" : "备注",
+    save: en ? "Save" : "保存",
+    create: en ? "Create" : "创建",
+    cancelEdit: en ? "Cancel edit" : "取消编辑",
+    edit: en ? "Edit" : "编辑",
+    delete: en ? "Delete" : "删除",
+    empty: en ? "No shipments yet." : "暂无物流记录。",
+    colType: en ? "Type" : "类型",
+    colProduct: en ? "Product" : "产品",
+    colQty: en ? "Qty" : "数量",
+    colFrom: en ? "From" : "从",
+    colTo: en ? "To" : "到",
+    colOrder: en ? "Order line" : "订单行",
+    colTracking: en ? "Tracking" : "运单号",
+    colCarrier: en ? "Carrier" : "承运商",
+    colStatus: en ? "Status" : "状态",
+    colBy: en ? "By" : "创建人",
+    colActions: en ? "Actions" : "操作",
+    deleteConfirm: en ? "Delete this shipment record?" : "确认删除该物流记录？",
+    hintRecordOnly: en
+      ? "Record-keeping only: no inventory is deducted. Use Transfer when moving stock between offices."
+      : "仅作记录，不扣库存。办公室之间调货请选「调拨」。",
+    stNotShipped: en ? "Not shipped" : "未发货",
+    stInTransit: en ? "In transit" : "运输中",
+    stDelivered: en ? "Delivered" : "已送达",
+    stCancelled: en ? "Cancelled" : "已取消",
+    locFactory: en ? "Factory / supplier" : "工厂 / 供应商",
+    locAPAC: "APAC",
+    locEU: "EU",
+    locUS: "US",
+  };
+}
+
+function locationLabel(language: Language, loc: LogisticsLocation) {
+  const t = labels(language);
+  if (loc === "FACTORY") return t.locFactory;
+  if (loc === "APAC") return t.locAPAC;
+  if (loc === "EU") return t.locEU;
+  return t.locUS;
+}
+
+function statusLabel(language: Language, s: LogisticsShipmentStatus) {
+  const t = labels(language);
+  if (s === "not_shipped") return t.stNotShipped;
+  if (s === "in_transit") return t.stInTransit;
+  if (s === "delivered") return t.stDelivered;
+  return t.stCancelled;
+}
+
+function movementLabel(language: Language, m: LogisticsMovementType) {
+  const t = labels(language);
+  return m === "inbound" ? t.inbound : t.transfer;
+}
+
+export function LogisticsProgressPanel({
+  entries,
+  products,
+  orderLines,
+  language,
+}: LogisticsProgressPanelProps) {
+  const router = useRouter();
+  const t = labels(language);
+
+  const productNameOptions = useMemo(
+    () => [...new Set(products.map((p) => p.productName))],
+    [products],
+  );
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [movementType, setMovementType] = useState<LogisticsMovementType>("inbound");
+  const [productName, setProductName] = useState("");
+  const [sku, setSku] = useState("");
+  const [quantity, setQuantity] = useState("0");
+  const [fromLocation, setFromLocation] = useState<LogisticsLocation>("FACTORY");
+  const [toLocation, setToLocation] = useState<LogisticsLocation>("APAC");
+  const [orderProgressId, setOrderProgressId] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [carrier, setCarrier] = useState("");
+  const [status, setStatus] = useState<LogisticsShipmentStatus>("not_shipped");
+  const [notes, setNotes] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const resolvedProductName =
+    productName.length > 0 && productNameOptions.includes(productName)
+      ? productName
+      : (productNameOptions[0] ?? "");
+
+  const skuOptions = useMemo(
+    () => products.filter((p) => p.productName === resolvedProductName),
+    [products, resolvedProductName],
+  );
+
+  const resolvedSku = skuOptions.some((p) => p.sku === sku)
+    ? sku
+    : (skuOptions[0]?.sku ?? "");
+
+  function onProductNameChange(nextName: string) {
+    setProductName(nextName);
+    const opts = products.filter((p) => p.productName === nextName);
+    setSku(opts[0]?.sku ?? "");
+  }
+
+  function applyMovementType(next: LogisticsMovementType) {
+    setMovementType(next);
+    if (next === "inbound") {
+      setFromLocation("FACTORY");
+      setToLocation("APAC");
+    } else {
+      setFromLocation("APAC");
+      setToLocation("EU");
+    }
+  }
+
+  function resetForm() {
+    setEditingId(null);
+    setMovementType("inbound");
+    setProductName("");
+    setSku("");
+    setQuantity("0");
+    setFromLocation("FACTORY");
+    setToLocation("APAC");
+    setOrderProgressId("");
+    setTrackingNumber("");
+    setCarrier("");
+    setStatus("not_shipped");
+    setNotes("");
+    setMessage("");
+  }
+
+  function startEdit(entry: LogisticsShipmentEntry) {
+    setEditingId(entry.id);
+    setMovementType(entry.movementType);
+    setProductName(entry.productName);
+    setSku(entry.sku);
+    setQuantity(String(entry.quantity));
+    setFromLocation(entry.fromLocation);
+    setToLocation(entry.toLocation);
+    setOrderProgressId(entry.orderProgressId ?? "");
+    setTrackingNumber(entry.trackingNumber);
+    setCarrier(entry.carrier);
+    setStatus(entry.status);
+    setNotes(entry.notes);
+    setMessage("");
+  }
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+
+    const payload = {
+      movementType,
+      productName: resolvedProductName,
+      sku: resolvedSku,
+      quantity: Number(quantity),
+      fromLocation,
+      toLocation,
+      orderProgressId: orderProgressId.trim() === "" ? null : orderProgressId.trim(),
+      trackingNumber,
+      carrier,
+      status,
+      notes,
+    };
+
+    const url =
+      editingId === null
+        ? "/api/logistics-shipments"
+        : `/api/logistics-shipments/${encodeURIComponent(editingId)}`;
+    const method = editingId === null ? "POST" : "PATCH";
+
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    setLoading(false);
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { message?: string };
+      setMessage(data.message || "Request failed");
+      return;
+    }
+
+    resetForm();
+    router.refresh();
+  }
+
+  async function onDelete(id: string) {
+    if (!window.confirm(t.deleteConfirm)) return;
+    setLoading(true);
+    const response = await fetch(`/api/logistics-shipments/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    setLoading(false);
+    if (!response.ok) {
+      setMessage("Delete failed");
+      return;
+    }
+    if (editingId === id) resetForm();
+    router.refresh();
+  }
+
+  function orderLineLabel(line: OrderProgressEntry) {
+    const num = line.orderNumber ? `${line.orderNumber} · ` : "";
+    return `${num}${line.productName} / ${line.sku} (${line.region})`;
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <h3 className="text-lg font-semibold text-zinc-900">{t.formTitle}</h3>
+        <p className="mt-2 text-sm text-zinc-600">{t.hintRecordOnly}</p>
+        {products.length === 0 ? (
+          <p className="mt-2 text-sm text-amber-800">
+            {language === "en"
+              ? "No active products. Add products in Product Database first."
+              : "没有启用中的产品，请先在产品数据库中维护。"}
+          </p>
+        ) : null}
+
+        <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={onSubmit}>
+          <label className="block md:col-span-2">
+            <span className="mb-1 block text-sm text-zinc-700">{t.movementType}</span>
+            <select
+              value={movementType}
+              onChange={(e) => applyMovementType(e.target.value as LogisticsMovementType)}
+              disabled={products.length === 0}
+              className="w-full max-w-md rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            >
+              {MOVEMENT_TYPES.map((m) => (
+                <option key={m} value={m}>
+                  {movementLabel(language, m)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm text-zinc-700">{t.from}</span>
+            <select
+              value={fromLocation}
+              onChange={(e) => setFromLocation(e.target.value as LogisticsLocation)}
+              disabled={movementType === "inbound" || products.length === 0}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            >
+              {(movementType === "inbound" ? (["FACTORY"] as const) : OFFICE_LOCATIONS).map((loc) => (
+                <option key={loc} value={loc}>
+                  {locationLabel(language, loc)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm text-zinc-700">{t.to}</span>
+            <select
+              value={toLocation}
+              onChange={(e) => setToLocation(e.target.value as LogisticsLocation)}
+              disabled={products.length === 0}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            >
+              {OFFICE_LOCATIONS.map((loc) => (
+                <option key={loc} value={loc}>
+                  {locationLabel(language, loc)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm text-zinc-700">{t.productName}</span>
+            <select
+              value={resolvedProductName}
+              onChange={(e) => onProductNameChange(e.target.value)}
+              required
+              disabled={products.length === 0}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            >
+              {productNameOptions.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm text-zinc-700">{t.sku}</span>
+            <select
+              value={resolvedSku}
+              onChange={(e) => setSku(e.target.value)}
+              required
+              disabled={products.length === 0}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            >
+              {skuOptions.map((p) => (
+                <option key={p.sku} value={p.sku}>
+                  {p.sku}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm text-zinc-700">{t.quantity}</span>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              required
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            />
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="mb-1 block text-sm text-zinc-700">{t.orderLine}</span>
+            <select
+              value={orderProgressId}
+              onChange={(e) => setOrderProgressId(e.target.value)}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            >
+              <option value="">{t.orderLineNone}</option>
+              {orderLines.map((line) => (
+                <option key={line.id} value={line.id}>
+                  {orderLineLabel(line)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm text-zinc-700">{t.trackingNumber}</span>
+            <input
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              maxLength={200}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm text-zinc-700">{t.carrier}</span>
+            <input
+              value={carrier}
+              onChange={(e) => setCarrier(e.target.value)}
+              maxLength={120}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm text-zinc-700">{t.status}</span>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as LogisticsShipmentStatus)}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {statusLabel(language, s)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="mb-1 block text-sm text-zinc-700">{t.notes}</span>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              maxLength={2000}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            />
+          </label>
+
+          <div className="flex flex-wrap items-end gap-2 md:col-span-2">
+            <button
+              type="submit"
+              disabled={loading || products.length === 0}
+              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+            >
+              {loading ? "..." : editingId ? t.save : t.create}
+            </button>
+            {editingId ? (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
+              >
+                {t.cancelEdit}
+              </button>
+            ) : null}
+          </div>
+        </form>
+
+        {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
+      </section>
+
+      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <h3 className="text-lg font-semibold text-zinc-900">{t.listTitle}</h3>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[1100px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 text-left text-zinc-600">
+                <th className="px-2 py-2">{t.colType}</th>
+                <th className="px-2 py-2">{t.colProduct}</th>
+                <th className="px-2 py-2">{t.sku}</th>
+                <th className="px-2 py-2">{t.colQty}</th>
+                <th className="px-2 py-2">{t.colFrom}</th>
+                <th className="px-2 py-2">{t.colTo}</th>
+                <th className="px-2 py-2">{t.colOrder}</th>
+                <th className="px-2 py-2">{t.colTracking}</th>
+                <th className="px-2 py-2">{t.colCarrier}</th>
+                <th className="px-2 py-2">{t.colStatus}</th>
+                <th className="px-2 py-2">{t.colBy}</th>
+                <th className="px-2 py-2">{t.colActions}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.length === 0 ? (
+                <tr>
+                  <td colSpan={12} className="px-2 py-6 text-center text-zinc-500">
+                    {t.empty}
+                  </td>
+                </tr>
+              ) : (
+                entries.map((row) => {
+                  const linkedOrder = row.orderProgressId
+                    ? orderLines.find((o) => o.id === row.orderProgressId)
+                    : undefined;
+                  return (
+                  <tr key={row.id} className="border-b border-zinc-100">
+                    <td className="px-2 py-2">{movementLabel(language, row.movementType)}</td>
+                    <td className="px-2 py-2">{row.productName}</td>
+                    <td className="px-2 py-2">{row.sku}</td>
+                    <td className="px-2 py-2 tabular-nums">{row.quantity}</td>
+                    <td className="px-2 py-2">{locationLabel(language, row.fromLocation)}</td>
+                    <td className="px-2 py-2">{locationLabel(language, row.toLocation)}</td>
+                    <td className="px-2 py-2 text-xs text-zinc-600">
+                      {row.orderProgressId
+                        ? linkedOrder
+                          ? orderLineLabel(linkedOrder)
+                          : `#${row.orderProgressId}`
+                        : "—"}
+                    </td>
+                    <td className="max-w-[8rem] truncate px-2 py-2" title={row.trackingNumber}>
+                      {row.trackingNumber || "—"}
+                    </td>
+                    <td className="px-2 py-2">{row.carrier || "—"}</td>
+                    <td className="px-2 py-2">{statusLabel(language, row.status)}</td>
+                    <td className="px-2 py-2">{row.createdBy}</td>
+                    <td className="px-2 py-2">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(row)}
+                          className="rounded border border-zinc-300 px-2 py-1 hover:bg-zinc-50"
+                        >
+                          {t.edit}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDelete(row.id)}
+                          className="rounded border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50"
+                        >
+                          {t.delete}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}

@@ -111,6 +111,28 @@ async function setupSchema() {
   `;
 
   await db`
+    create table if not exists logistics_shipments (
+      id bigserial primary key,
+      movement_type text not null check (movement_type in ('inbound', 'transfer')),
+      product_name text not null,
+      sku text not null,
+      quantity integer not null check (quantity >= 0),
+      from_location text not null check (from_location in ('FACTORY', 'APAC', 'EU', 'US')),
+      to_location text not null check (to_location in ('FACTORY', 'APAC', 'EU', 'US')),
+      order_progress_id bigint references order_progress(id) on delete set null,
+      tracking_number text not null default '',
+      carrier text not null default '',
+      status text not null default 'not_shipped'
+        check (status in ('not_shipped', 'in_transit', 'delivered', 'cancelled')),
+      notes text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      check (from_location <> to_location)
+    );
+  `;
+
+  await db`
     create table if not exists products (
       id bigserial primary key,
       product_name text not null,
