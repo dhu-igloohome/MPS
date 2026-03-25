@@ -1,7 +1,8 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
+import { PDFDocument, rgb } from "pdf-lib";
 
 export type PurchaseContractPdfInput = {
   poNumber: string;
@@ -50,11 +51,20 @@ export async function generatePurchaseContractPdf(input: PurchaseContractPdfInpu
     const msg = e instanceof Error ? e.message : String(e);
     throw new Error(`Template PDF load failed: ${msg}`);
   }
+  pdfDoc.registerFontkit(fontkit);
   const pages = pdfDoc.getPages();
   const page = pages[0];
 
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const msyhPath = path.join(process.cwd(), "public", "fonts", "msyh.ttc");
+  let fontBytes: Uint8Array;
+  try {
+    fontBytes = await fs.readFile(msyhPath);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(`CJK font read failed: ${msyhPath}. ${msg}`);
+  }
+  const font = await pdfDoc.embedFont(fontBytes);
+  const fontBold = font; // tc font doesn't provide separate bold in this bundle
 
   const black = rgb(0.1, 0.1, 0.1);
 
