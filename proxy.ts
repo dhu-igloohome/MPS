@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/potentials"];
 const SESSION_COOKIE_NAME = "mps_session";
 
 export function proxy(request: NextRequest) {
