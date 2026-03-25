@@ -744,9 +744,11 @@ async function loadDeliveryPlansByProgressIds(
     order by sort_order asc, id asc;
   `;
   for (const row of rows) {
-    const list = map.get(row.order_progress_id) ?? [];
+    // postgres.js returns int8/bigserial as BigInt; Map keys must match Number(id) used on lookup.
+    const progressId = Number(row.order_progress_id);
+    const list = map.get(progressId) ?? [];
     list.push(mapDeliveryPlanRow(row));
-    map.set(row.order_progress_id, list);
+    map.set(progressId, list);
   }
   return map;
 }
