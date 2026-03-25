@@ -76,6 +76,12 @@ type OrderProgressRow = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  po_number: string | null;
+  po_batch: string;
+  unit_cost_snapshot: string | number;
+  po_delivery_date: string | null;
+  po_serial_code: string;
+  po_bluetooth_id: string;
 };
 
 type OrderProgressDeliveryPlanRow = {
@@ -327,6 +333,24 @@ export async function findActiveProductByNameAndSku(productName: string, sku: st
     limit 1;
   `;
   return rows[0] ? mapProduct(rows[0]) : null;
+}
+
+export async function getActiveUnitCostByProductNameAndSku(
+  productName: string,
+  sku: string,
+): Promise<number | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ unit_cost: string }[]>`
+    select unit_cost::text as unit_cost
+    from products
+    where is_active = true and product_name = ${productName.trim()} and sku = ${sku.trim()}
+    order by id asc
+    limit 1;
+  `;
+  if (!rows[0]) return null;
+  const n = Number(rows[0].unit_cost);
+  return Number.isFinite(n) ? n : 0;
 }
 
 export async function getForecastsByRegions(regions: Region[]) {
@@ -768,6 +792,12 @@ function mapOrderProgress(
     updatedAt: row.updated_at,
     deliveryPlans,
     productionSteps,
+    poNumber: row.po_number,
+    poBatch: row.po_batch ?? "",
+    unitCostSnapshot: Number(row.unit_cost_snapshot ?? 0),
+    poDeliveryDate: row.po_delivery_date ? formatPgDateOnly(row.po_delivery_date) : null,
+    poSerialCode: row.po_serial_code ?? "",
+    poBluetoothId: row.po_bluetooth_id ?? "",
   };
 }
 
@@ -942,7 +972,13 @@ export async function listOrderProgressBySessionRegions(regions: Region[]) {
       region,
       created_by,
       created_at::text,
-      updated_at::text
+      updated_at::text,
+      po_number,
+      po_batch,
+      unit_cost_snapshot::text,
+      po_delivery_date::text,
+      po_serial_code,
+      po_bluetooth_id
     from order_progress
     where region = any(${allowed})
     order by updated_at desc, id desc
@@ -977,7 +1013,13 @@ export async function getOrderProgressById(id: string) {
       region,
       created_by,
       created_at::text,
-      updated_at::text
+      updated_at::text,
+      po_number,
+      po_batch,
+      unit_cost_snapshot::text,
+      po_delivery_date::text,
+      po_serial_code,
+      po_bluetooth_id
     from order_progress
     where id = ${Number(id)}
     limit 1;
@@ -1057,7 +1099,13 @@ export async function createOrderProgress(input: {
       region,
       created_by,
       created_at::text,
-      updated_at::text;
+      updated_at::text,
+      po_number,
+      po_batch,
+      unit_cost_snapshot::text,
+      po_delivery_date::text,
+      po_serial_code,
+      po_bluetooth_id;
   `;
   const newId = Number(rows[0].id);
   if (plans.length > 0) {
@@ -1128,7 +1176,13 @@ export async function updateOrderProgress(input: {
       region,
       created_by,
       created_at::text,
-      updated_at::text;
+      updated_at::text,
+      po_number,
+      po_batch,
+      unit_cost_snapshot::text,
+      po_delivery_date::text,
+      po_serial_code,
+      po_bluetooth_id;
   `;
   if (!rows[0]) {
     return null;

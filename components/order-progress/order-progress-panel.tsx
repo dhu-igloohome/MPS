@@ -115,6 +115,17 @@ function labels(language: Language) {
       ? "No template for this product + SKU. Super admin can define steps in Product Database."
       : "当前产品+SKU 无工序模板，超级管理员可在产品数据库中维护「生产工序」。",
     productionToggleFailed: en ? "Could not update step." : "更新工序状态失败。",
+    poPromptTitle: en ? "Generate purchase contract (PDF)?" : "是否生成采购合同（PDF）？",
+    poPromptHint: en
+      ? "You can save the attachment for forwarding to supplier. Batch is required; serial code and Bluetooth ID are optional."
+      : "可生成附件用于转发供应商。批次必填；流水码与蓝牙ID可选填。",
+    batch: en ? "Batch" : "批次",
+    serialCode: en ? "Serial code (optional)" : "流水码（选填）",
+    bluetoothId: en ? "Bluetooth ID (optional)" : "蓝牙ID（选填）",
+    generatePdf: en ? "Generate & download PDF" : "生成并下载 PDF",
+    skip: en ? "Skip" : "跳过",
+    generating: en ? "Generating..." : "生成中...",
+    generateFailed: en ? "Could not generate PDF." : "生成 PDF 失败。",
   };
 }
 
@@ -166,6 +177,11 @@ export function OrderProgressPanel({
     Record<string, Record<string, OrderProductionStep>>
   >({});
   const [togglingProductionKey, setTogglingProductionKey] = useState<string | null>(null);
+  const [poPrompt, setPoPrompt] = useState<{ orderId: string } | null>(null);
+  const [poBatch, setPoBatch] = useState("");
+  const [poSerialCode, setPoSerialCode] = useState("");
+  const [poBluetoothId, setPoBluetoothId] = useState("");
+  const [poGenerating, setPoGenerating] = useState(false);
 
   const productionStepsByOrderId = useMemo(() => {
     const next: Record<string, OrderProductionStep[]> = {};
@@ -364,7 +380,51 @@ export function OrderProgressPanel({
       return;
     }
 
+    const data = (await response.json().catch(() => ({}))) as {
+      entry?: OrderProgressEntry;
+      ok?: boolean;
+    };
+    const createdId = editingId === null ? data.entry?.id : null;
     resetForm();
+    if (createdId) {
+      setPoPrompt({ orderId: createdId });
+      setPoBatch("");
+      setPoSerialCode("");
+      setPoBluetoothId("");
+    }
+    router.refresh();
+  }
+
+  async function onGeneratePurchaseContractPdf(orderId: string) {
+    setPoGenerating(true);
+    setMessage("");
+    const res = await fetch(`/api/order-progress/${encodeURIComponent(orderId)}/purchase-contract-pdf`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        batch: poBatch.trim(),
+        serialCode: poSerialCode.trim(),
+        bluetoothId: poBluetoothId.trim(),
+      }),
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { message?: string };
+      setPoGenerating(false);
+      setMessage(data.message || t.generateFailed);
+      return;
+    }
+    const blob = await res.blob();
+    const cd = res.headers.get("Content-Disposition") || "";
+    const m = cd.match(/filename=\"([^\"]+)\"/);
+    const filename = m?.[1] || `purchase-contract-${orderId}.pdf`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    setPoGenerating(false);
+    setPoPrompt(null);
     router.refresh();
   }
 
@@ -790,6 +850,64 @@ export function OrderProgressPanel({
 
         {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
       </section>
+
+      {poPrompt ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-lg rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-lg">
+            <h4 className="text-lg font-semibold text-foreground">{t.poPromptTitle}</h4>
+            <p className="mt-2 text-sm text-app-muted">{t.poPromptHint}</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm text-foreground/85">{t.batch}</span>
+                <input
+                  value={poBatch}
+                  onChange={(e) => setPoBatch(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-foreground/85">{t.serialCode}</span>
+                <input
+                  value={poSerialCode}
+                  onChange={(e) => setPoSerialCode(e.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-foreground/85">{t.bluetoothId}</span>
+                <input
+                  value={poBluetoothId}
+                  onChange={(e) => setPoBluetoothId(e.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+                />
+              </label>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={poGenerating || !poBatch.trim()}
+                onClick={() => onGeneratePurchaseContractPdf(poPrompt.orderId)}
+                className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
+              >
+                {poGenerating ? t.generating : t.generatePdf}
+              </button>
+              <button
+                type="button"
+                disabled={poGenerating}
+                onClick={() => setPoPrompt(null)}
+                className="rounded-lg border border-app-border px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft disabled:opacity-60"
+              >
+                {t.skip}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

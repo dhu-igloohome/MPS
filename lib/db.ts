@@ -99,6 +99,23 @@ async function setupSchema() {
   `;
 
   await db`
+    create table if not exists po_sequences (
+      key text primary key,
+      next_number integer not null
+    );
+  `;
+
+  // Purchase contract / PO fields (saved per order line).
+  await db`alter table order_progress add column if not exists po_number text;`;
+  await db`alter table order_progress add column if not exists po_batch text not null default '';`;
+  await db`alter table order_progress add column if not exists po_serial_code text not null default '';`;
+  await db`alter table order_progress add column if not exists po_bluetooth_id text not null default '';`;
+  await db`alter table order_progress add column if not exists unit_cost_snapshot numeric(12, 2) not null default 0;`;
+  await db`alter table order_progress add column if not exists po_delivery_date date;`;
+
+  await db`create unique index if not exists idx_order_progress_po_number_unique on order_progress (po_number);`;
+
+  await db`
     create table if not exists order_progress_delivery_plans (
       id bigserial primary key,
       order_progress_id bigint not null references order_progress(id) on delete cascade,

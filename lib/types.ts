@@ -110,6 +110,13 @@ export type OrderProgressEntry = {
   deliveryPlans: OrderProgressDeliveryPlan[];
   /** 生产进度（工序打勾）；无模板时为空数组。 */
   productionSteps: OrderProductionStep[];
+  /** 采购合同/PO 信息（生成附件时回存）。 */
+  poNumber?: string | null;
+  poBatch?: string;
+  unitCostSnapshot?: number;
+  poDeliveryDate?: string | null;
+  poSerialCode?: string;
+  poBluetoothId?: string;
 };
 
 /** 物流节点：工厂/供应商侧或各区域办公室（仅记录，不做库存扣账）。 */
