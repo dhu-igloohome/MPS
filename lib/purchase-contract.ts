@@ -75,17 +75,21 @@ export async function generatePurchaseContractPdf(input: PurchaseContractPdfInpu
 
   // Note: Coordinates are tuned by eyeballing A4 defaults; adjust after first user feedback.
   // pdf-lib uses bottom-left origin.
+  // When template overlay coordinates are slightly off, apply a single global offset
+  // to all dynamic fields to keep their relative spacing consistent.
+  const TEXT_DX = 10;
+  const TEXT_DY = -5;
   const yTopLine = 770;
   page.drawText(padText(input.poNumber), {
-    x: 150,
-    y: yTopLine,
+    x: 150 + TEXT_DX,
+    y: yTopLine + TEXT_DY,
     size: 11,
     font: fontBold,
     color: black,
   });
   page.drawText(formatDateCN(input.signedDate), {
-    x: 360,
-    y: yTopLine,
+    x: 360 + TEXT_DX,
+    y: yTopLine + TEXT_DY,
     size: 11,
     font,
     color: black,
@@ -93,22 +97,22 @@ export async function generatePurchaseContractPdf(input: PurchaseContractPdfInpu
 
   // Table row
   const yRow = 595;
-  page.drawText(padText(input.sku), { x: 78, y: yRow, size: 10.5, font, color: black });
-  page.drawText(padText(input.productName), { x: 135, y: yRow, size: 10.5, font, color: black });
-  page.drawText(padText(input.batch), { x: 245, y: yRow, size: 10.5, font, color: black });
-  page.drawText("个", { x: 295, y: yRow, size: 10.5, font, color: black });
-  page.drawText(String(input.quantity), { x: 325, y: yRow, size: 10.5, font, color: black });
+  page.drawText(padText(input.sku), { x: 78 + TEXT_DX, y: yRow + TEXT_DY, size: 10.5, font, color: black });
+  page.drawText(padText(input.productName), { x: 135 + TEXT_DX, y: yRow + TEXT_DY, size: 10.5, font, color: black });
+  page.drawText(padText(input.batch), { x: 245 + TEXT_DX, y: yRow + TEXT_DY, size: 10.5, font, color: black });
+  page.drawText("个", { x: 295 + TEXT_DX, y: yRow + TEXT_DY, size: 10.5, font, color: black });
+  page.drawText(String(input.quantity), { x: 325 + TEXT_DX, y: yRow + TEXT_DY, size: 10.5, font, color: black });
 
   page.drawText(`￥${input.unitCost.toFixed(2)}`, {
-    x: 370,
-    y: yRow,
+    x: 370 + TEXT_DX,
+    y: yRow + TEXT_DY,
     size: 10.5,
     font,
     color: black,
   });
   page.drawText(formatDateCN(input.deliveryDate), {
-    x: 470,
-    y: yRow,
+    x: 470 + TEXT_DX,
+    y: yRow + TEXT_DY,
     size: 10.5,
     font,
     color: black,
@@ -117,8 +121,8 @@ export async function generatePurchaseContractPdf(input: PurchaseContractPdfInpu
   // Total lines (TOL)
   const yTol = 575;
   page.drawText(`￥${input.total.toFixed(2)}`, {
-    x: 130,
-    y: yTol,
+    x: 130 + TEXT_DX,
+    y: yTol + TEXT_DY,
     size: 11,
     font: fontBold,
     color: black,
@@ -126,9 +130,21 @@ export async function generatePurchaseContractPdf(input: PurchaseContractPdfInpu
 
   // Notes area
   const ySerial = 502;
-  page.drawText(padText(input.serialCode), { x: 100, y: ySerial, size: 10.5, font, color: black });
+  page.drawText(padText(input.serialCode), {
+    x: 100 + TEXT_DX,
+    y: ySerial + TEXT_DY,
+    size: 10.5,
+    font,
+    color: black,
+  });
   const yBt = 482;
-  page.drawText(padText(input.bluetoothId), { x: 100, y: yBt, size: 10.5, font, color: black });
+  page.drawText(padText(input.bluetoothId), {
+    x: 100 + TEXT_DX,
+    y: yBt + TEXT_DY,
+    size: 10.5,
+    font,
+    color: black,
+  });
 
   const bytes = await pdfDoc.save();
   return bytes;
