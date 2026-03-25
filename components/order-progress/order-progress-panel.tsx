@@ -10,6 +10,7 @@ import type {
   OrderProgressOrderType,
   OrderProgressRegion,
   OrderProgressStatus,
+  OrderProductionStep,
   ProductItem,
 } from "@/lib/types";
 
@@ -108,6 +109,12 @@ function labels(language: Language) {
     batchHint: en
       ? "Up to 500 rows. Header row required. Does not create delivery batches—use the form for splits. Region must be within your access."
       : "最多 500 行，首行为表头。不会导入分批次交货，分批请在表单中维护。region 须为您有权限的区域。",
+    colProduction: en ? "Production" : "生产进度",
+    productionTitle: en ? "Production steps (this order line)" : "生产进度（本订单行）",
+    productionEmpty: en
+      ? "No template for this product + SKU. Super admin can define steps in Product Database."
+      : "当前产品+SKU 无工序模板，超级管理员可在产品数据库中维护「生产工序」。",
+    productionToggleFailed: en ? "Could not update step." : "更新工序状态失败。",
   };
 }
 
@@ -154,6 +161,22 @@ export function OrderProgressPanel({
   const [batchSummary, setBatchSummary] = useState<string | null>(null);
   const [batchErrors, setBatchErrors] = useState<{ row: number; message: string }[]>([]);
   const batchFileRef = useRef<HTMLInputElement>(null);
+  /** Server steps keyed by order id; patched rows after checkbox toggles until refresh. */
+  const [productionStepPatches, setProductionStepPatches] = useState<
+    Record<string, Record<string, OrderProductionStep>>
+  >({});
+  const [togglingProductionKey, setTogglingProductionKey] = useState<string | null>(null);
+
+  const productionStepsByOrderId = useMemo(() => {
+    const next: Record<string, OrderProductionStep[]> = {};
+    for (const e of entries) {
+      const patch = productionStepPatches[e.id];
+      next[e.id] = patch
+        ? e.productionSteps.map((s) => patch[s.id] ?? s)
+        : e.productionSteps;
+    }
+    return next;
+  }, [entries, productionStepPatches]);
 
   const resolvedProductName =
     productName.length > 0 && productNameOptions.includes(productName)
@@ -343,6 +366,42 @@ export function OrderProgressPanel({
 
     resetForm();
     router.refresh();
+  }
+
+  function productionSummary(steps: OrderProductionStep[]): string {
+    if (steps.length === 0) return "—";
+    const done = steps.filter((s) => s.done).length;
+    return `${done}/${steps.length}`;
+  }
+
+  async function onToggleProductionStep(orderId: string, stepId: string, done: boolean) {
+    const key = `${orderId}:${stepId}`;
+    setTogglingProductionKey(key);
+    setMessage("");
+    const response = await fetch(
+      `/api/order-progress/${encodeURIComponent(orderId)}/production-steps`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stepId, done }),
+      },
+    );
+    const data = (await response.json().catch(() => ({}))) as {
+      message?: string;
+      step?: OrderProductionStep;
+    };
+    setTogglingProductionKey(null);
+    if (!response.ok || !data.step) {
+      setMessage(data.message || t.productionToggleFailed);
+      return;
+    }
+    setProductionStepPatches((prev) => ({
+      ...prev,
+      [orderId]: {
+        ...(prev[orderId] ?? {}),
+        [data.step!.id]: data.step!,
+      },
+    }));
   }
 
   async function onDelete(id: string) {
@@ -659,6 +718,53 @@ export function OrderProgressPanel({
               </button>
             ) : null}
           </div>
+
+          {editingId ? (
+            <div className="md:col-span-2 rounded-xl border border-zinc-200 bg-zinc-50/80 p-4">
+              <p className="text-sm font-medium text-zinc-800">{t.productionTitle}</p>
+              {(() => {
+                const steps = productionStepsByOrderId[editingId] ?? [];
+                if (steps.length === 0) {
+                  return <p className="mt-2 text-sm text-zinc-600">{t.productionEmpty}</p>;
+                }
+                return (
+                  <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto">
+                    {steps.map((s) => {
+                      const toggleKey = `${editingId}:${s.id}`;
+                      const busy = togglingProductionKey === toggleKey;
+                      return (
+                        <li
+                          key={s.id}
+                          className="flex items-start gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-0.5 shrink-0"
+                            checked={s.done}
+                            disabled={busy}
+                            onChange={(e) =>
+                              onToggleProductionStep(editingId, s.id, e.target.checked)
+                            }
+                          />
+                          <span className="min-w-0 text-zinc-800">
+                            <span className="tabular-nums text-zinc-500">{s.sortOrder + 1}. </span>
+                            {s.label}
+                            {s.done && s.completedBy ? (
+                              <span className="mt-0.5 block text-xs text-zinc-500">
+                                {s.completedAt ?? ""}
+                                {s.completedAt ? " · " : null}
+                                {s.completedBy}
+                              </span>
+                            ) : null}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              })()}
+            </div>
+          ) : null}
         </form>
 
         {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
@@ -676,7 +782,7 @@ export function OrderProgressPanel({
           </Link>
         </div>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[1040px] border-collapse text-sm">
+          <table className="w-full min-w-[1120px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-left text-zinc-600">
                 <th className="px-2 py-2">{t.colOrderNumber}</th>
@@ -687,6 +793,7 @@ export function OrderProgressPanel({
                 <th className="px-2 py-2">{t.colExpectedDate}</th>
                 <th className="px-2 py-2">{t.colType}</th>
                 <th className="px-2 py-2">{t.colProgress}</th>
+                <th className="px-2 py-2">{t.colProduction}</th>
                 <th className="px-2 py-2">{t.colFactory}</th>
                 <th className="px-2 py-2">{t.colRegion}</th>
                 <th className="px-2 py-2">{t.colBy}</th>
@@ -696,7 +803,7 @@ export function OrderProgressPanel({
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-2 py-6 text-center text-zinc-500">
+                  <td colSpan={13} className="px-2 py-6 text-center text-zinc-500">
                     {t.empty}
                   </td>
                 </tr>
@@ -729,6 +836,9 @@ export function OrderProgressPanel({
                     </td>
                     <td className="px-2 py-2">{orderTypeLabel(language, row.orderType)}</td>
                     <td className="px-2 py-2">{progressLabel(language, row.progress)}</td>
+                    <td className="px-2 py-2 tabular-nums text-zinc-700">
+                      {productionSummary(productionStepsByOrderId[row.id] ?? row.productionSteps)}
+                    </td>
                     <td className="px-2 py-2">{row.factoryName || "—"}</td>
                     <td className="px-2 py-2">{row.region}</td>
                     <td className="px-2 py-2">{row.createdBy}</td>

@@ -111,6 +111,41 @@ async function setupSchema() {
   `;
 
   await db`
+    create table if not exists production_step_templates (
+      id bigserial primary key,
+      product_name text not null,
+      sku text not null,
+      sort_order integer not null,
+      label text not null,
+      created_at timestamptz not null default now(),
+      unique (product_name, sku, sort_order)
+    );
+  `;
+
+  await db`
+    create index if not exists idx_production_step_templates_product
+    on production_step_templates (product_name, sku);
+  `;
+
+  await db`
+    create table if not exists order_production_steps (
+      id bigserial primary key,
+      order_progress_id bigint not null references order_progress(id) on delete cascade,
+      sort_order integer not null,
+      label text not null,
+      done boolean not null default false,
+      completed_at timestamptz,
+      completed_by text references users(username),
+      unique (order_progress_id, sort_order)
+    );
+  `;
+
+  await db`
+    create index if not exists idx_order_production_steps_order
+    on order_production_steps (order_progress_id);
+  `;
+
+  await db`
     create table if not exists logistics_shipments (
       id bigserial primary key,
       movement_type text not null check (movement_type in ('inbound', 'transfer')),

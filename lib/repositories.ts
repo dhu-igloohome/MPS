@@ -9,7 +9,9 @@ import {
   LogisticsMovementType,
   LogisticsShipmentEntry,
   LogisticsShipmentStatus,
+  OrderProductionStep,
   OrderProgressDeliveryPlan,
+  ProductionStepTemplateEntry,
   OrderProgressEntry,
   OrderProgressOrderType,
   OrderProgressRegion,
@@ -85,6 +87,19 @@ type OrderProgressDeliveryPlanRow = {
   sort_order: number;
   created_at: string;
 };
+
+type OrderProductionStepRow = {
+  id: number;
+  order_progress_id: number;
+  sort_order: number;
+  label: string;
+  done: boolean;
+  completed_at: string | null;
+  completed_by: string | null;
+};
+
+const MAX_PRODUCTION_TEMPLATE_STEPS = 40;
+const MAX_PRODUCTION_STEP_LABEL_LEN = 200;
 
 export function orderProgressRegionsForSession(regions: Region[]): OrderProgressRegion[] {
   const set = new Set<OrderProgressRegion>();
@@ -280,6 +295,18 @@ export async function findProductById(id: string) {
     limit 1;
   `;
   return rows[0] ? mapProduct(rows[0]) : null;
+}
+
+export async function productExistsByNameAndSku(productName: string, sku: string): Promise<boolean> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ ok: number }[]>`
+    select 1 as ok
+    from products
+    where product_name = ${productName.trim()} and sku = ${sku.trim()}
+    limit 1;
+  `;
+  return rows.length > 0;
 }
 
 export async function findActiveProductByNameAndSku(productName: string, sku: string) {
@@ -708,7 +735,22 @@ function mapDeliveryPlanRow(row: OrderProgressDeliveryPlanRow): OrderProgressDel
   };
 }
 
-function mapOrderProgress(row: OrderProgressRow, deliveryPlans: OrderProgressDeliveryPlan[]): OrderProgressEntry {
+function mapOrderProductionStepRow(row: OrderProductionStepRow): OrderProductionStep {
+  return {
+    id: String(row.id),
+    sortOrder: Number(row.sort_order ?? 0),
+    label: row.label || "",
+    done: Boolean(row.done),
+    completedAt: row.completed_at ? String(row.completed_at) : null,
+    completedBy: row.completed_by || null,
+  };
+}
+
+function mapOrderProgress(
+  row: OrderProgressRow,
+  deliveryPlans: OrderProgressDeliveryPlan[],
+  productionSteps: OrderProductionStep[],
+): OrderProgressEntry {
   return {
     id: String(row.id),
     orderNumber: row.order_number ?? "",
@@ -725,7 +767,95 @@ function mapOrderProgress(row: OrderProgressRow, deliveryPlans: OrderProgressDel
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     deliveryPlans,
+    productionSteps,
   };
+}
+
+async function loadOrderProductionStepsByIds(
+  db: ReturnType<typeof getSql>,
+  ids: number[],
+): Promise<Map<number, OrderProductionStep[]>> {
+  const map = new Map<number, OrderProductionStep[]>();
+  if (ids.length === 0) {
+    return map;
+  }
+  const rows = await db<OrderProductionStepRow[]>`
+    select
+      id,
+      order_progress_id,
+      sort_order,
+      label,
+      done,
+      completed_at::text,
+      completed_by
+    from order_production_steps
+    where order_progress_id = any(${ids})
+    order by sort_order asc, id asc;
+  `;
+  for (const row of rows) {
+    const oid = Number(row.order_progress_id);
+    const list = map.get(oid) ?? [];
+    list.push(mapOrderProductionStepRow(row));
+    map.set(oid, list);
+  }
+  return map;
+}
+
+async function seedOrderProductionStepsFromTemplate(
+  db: ReturnType<typeof getSql>,
+  orderProgressId: number,
+  productName: string,
+  sku: string,
+) {
+  const templates = await db<{ sort_order: number; label: string }[]>`
+    select sort_order, label
+    from production_step_templates
+    where product_name = ${productName.trim()} and sku = ${sku.trim()}
+    order by sort_order asc, id asc;
+  `;
+  for (const t of templates) {
+    await db`
+      insert into order_production_steps (
+        order_progress_id,
+        sort_order,
+        label,
+        done
+      )
+      values (${orderProgressId}, ${t.sort_order}, ${t.label}, false);
+    `;
+  }
+}
+
+async function replaceOrderProductionStepsForOrder(
+  db: ReturnType<typeof getSql>,
+  orderProgressId: number,
+  productName: string,
+  sku: string,
+) {
+  await db`
+    delete from order_production_steps
+    where order_progress_id = ${orderProgressId};
+  `;
+  await seedOrderProductionStepsFromTemplate(db, orderProgressId, productName, sku);
+}
+
+async function ensureOrderProductionStepsLoaded(
+  db: ReturnType<typeof getSql>,
+  rows: OrderProgressRow[],
+): Promise<Map<number, OrderProductionStep[]>> {
+  const ids = rows.map((r) => Number(r.id));
+  if (ids.length === 0) {
+    return new Map();
+  }
+  let stepMap = await loadOrderProductionStepsByIds(db, ids);
+  for (const row of rows) {
+    const oid = Number(row.id);
+    if ((stepMap.get(oid) ?? []).length === 0) {
+      await seedOrderProductionStepsFromTemplate(db, oid, row.product_name, row.sku);
+    }
+  }
+  stepMap = await loadOrderProductionStepsByIds(db, ids);
+  return stepMap;
 }
 
 async function loadDeliveryPlansByProgressIds(
@@ -822,7 +952,11 @@ export async function listOrderProgressBySessionRegions(regions: Region[]) {
     db,
     rows.map((r) => Number(r.id)),
   );
-  return rows.map((row) => mapOrderProgress(row, planMap.get(Number(row.id)) ?? []));
+  const stepMap = await ensureOrderProductionStepsLoaded(db, rows);
+  return rows.map((row) => {
+    const oid = Number(row.id);
+    return mapOrderProgress(row, planMap.get(oid) ?? [], stepMap.get(oid) ?? []);
+  });
 }
 
 export async function getOrderProgressById(id: string) {
@@ -831,6 +965,7 @@ export async function getOrderProgressById(id: string) {
   const rows = await db<OrderProgressRow[]>`
     select
       id,
+      coalesce(order_number, '') as order_number,
       product_name,
       sku,
       quantity,
@@ -850,8 +985,14 @@ export async function getOrderProgressById(id: string) {
   if (!rows[0]) {
     return null;
   }
-  const planMap = await loadDeliveryPlansByProgressIds(db, [Number(rows[0].id)]);
-  return mapOrderProgress(rows[0], planMap.get(Number(rows[0].id)) ?? []);
+  const oid = Number(rows[0].id);
+  const planMap = await loadDeliveryPlansByProgressIds(db, [oid]);
+  let stepMap = await loadOrderProductionStepsByIds(db, [oid]);
+  if ((stepMap.get(oid) ?? []).length === 0) {
+    await seedOrderProductionStepsFromTemplate(db, oid, rows[0].product_name, rows[0].sku);
+    stepMap = await loadOrderProductionStepsByIds(db, [oid]);
+  }
+  return mapOrderProgress(rows[0], planMap.get(oid) ?? [], stepMap.get(oid) ?? []);
 }
 
 export async function createOrderProgress(input: {
@@ -922,8 +1063,10 @@ export async function createOrderProgress(input: {
   if (plans.length > 0) {
     await replaceOrderProgressDeliveryPlans(db, newId, plans);
   }
+  await seedOrderProductionStepsFromTemplate(db, newId, input.productName.trim(), input.sku.trim());
   const planMap = await loadDeliveryPlansByProgressIds(db, [newId]);
-  return mapOrderProgress(rows[0], planMap.get(newId) ?? []);
+  const stepMap = await loadOrderProductionStepsByIds(db, [newId]);
+  return mapOrderProgress(rows[0], planMap.get(newId) ?? [], stepMap.get(newId) ?? []);
 }
 
 export async function updateOrderProgress(input: {
@@ -947,6 +1090,15 @@ export async function updateOrderProgress(input: {
     plans.length > 0
       ? plans.reduce((min, p) => (p.expectedDeliveryDate < min ? p.expectedDeliveryDate : min), plans[0].expectedDeliveryDate)
       : input.expectedDeliveryDate;
+
+  const beforeRows = await db<{ product_name: string; sku: string }[]>`
+    select product_name, sku
+    from order_progress
+    where id = ${Number(input.id)}
+    limit 1;
+  `;
+  const before = beforeRows[0];
+
   const rows = await db<OrderProgressRow[]>`
     update order_progress
     set
@@ -983,8 +1135,20 @@ export async function updateOrderProgress(input: {
   }
   const pid = Number(rows[0].id);
   await replaceOrderProgressDeliveryPlans(db, pid, plans);
+  if (
+    before &&
+    (before.product_name !== input.productName.trim() || before.sku !== input.sku.trim())
+  ) {
+    await replaceOrderProductionStepsForOrder(
+      db,
+      pid,
+      input.productName.trim(),
+      input.sku.trim(),
+    );
+  }
   const planMap = await loadDeliveryPlansByProgressIds(db, [pid]);
-  return mapOrderProgress(rows[0], planMap.get(pid) ?? []);
+  const stepMap = await loadOrderProductionStepsByIds(db, [pid]);
+  return mapOrderProgress(rows[0], planMap.get(pid) ?? [], stepMap.get(pid) ?? []);
 }
 
 export async function deleteOrderProgressById(id: string) {
@@ -994,6 +1158,99 @@ export async function deleteOrderProgressById(id: string) {
     delete from order_progress
     where id = ${Number(id)};
   `;
+}
+
+export async function listProductionStepTemplates(
+  productName: string,
+  sku: string,
+): Promise<ProductionStepTemplateEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ id: number; sort_order: number; label: string }[]>`
+    select id, sort_order, label
+    from production_step_templates
+    where product_name = ${productName.trim()} and sku = ${sku.trim()}
+    order by sort_order asc, id asc;
+  `;
+  return rows.map((r) => ({
+    id: String(r.id),
+    sortOrder: Number(r.sort_order),
+    label: r.label,
+  }));
+}
+
+export async function replaceProductionStepTemplates(
+  productName: string,
+  sku: string,
+  labels: string[],
+): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  const cleaned = labels
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
+    .map((l) => l.slice(0, MAX_PRODUCTION_STEP_LABEL_LEN));
+  if (cleaned.length > MAX_PRODUCTION_TEMPLATE_STEPS) {
+    throw new Error(`At most ${MAX_PRODUCTION_TEMPLATE_STEPS} steps allowed`);
+  }
+  await db`
+    delete from production_step_templates
+    where product_name = ${productName.trim()} and sku = ${sku.trim()};
+  `;
+  let sortOrder = 0;
+  for (const label of cleaned) {
+    await db`
+      insert into production_step_templates (product_name, sku, sort_order, label)
+      values (${productName.trim()}, ${sku.trim()}, ${sortOrder}, ${label});
+    `;
+    sortOrder += 1;
+  }
+}
+
+export async function updateOrderProductionStepDone(input: {
+  orderProgressId: string;
+  stepId: string;
+  done: boolean;
+  username: string;
+}): Promise<OrderProductionStep | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const sid = Number(input.stepId);
+  const oid = Number(input.orderProgressId);
+  const rows = input.done
+    ? await db<OrderProductionStepRow[]>`
+        update order_production_steps
+        set
+          done = true,
+          completed_at = now(),
+          completed_by = ${input.username}
+        where id = ${sid} and order_progress_id = ${oid}
+        returning
+          id,
+          order_progress_id,
+          sort_order,
+          label,
+          done,
+          completed_at::text,
+          completed_by;
+      `
+    : await db<OrderProductionStepRow[]>`
+        update order_production_steps
+        set
+          done = false,
+          completed_at = null,
+          completed_by = null
+        where id = ${sid} and order_progress_id = ${oid}
+        returning
+          id,
+          order_progress_id,
+          sort_order,
+          label,
+          done,
+          completed_at::text,
+          completed_by;
+      `;
+  return rows[0] ? mapOrderProductionStepRow(rows[0]) : null;
 }
 
 type LogisticsShipmentRow = {

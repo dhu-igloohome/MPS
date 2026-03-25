@@ -73,6 +73,23 @@ export type OrderProgressDeliveryPlan = {
   progress: OrderProgressStatus;
 };
 
+/** 按产品维护的工序模板（产品名称 + SKU，同 SKU 多 variant 共用）。 */
+export type ProductionStepTemplateEntry = {
+  id: string;
+  sortOrder: number;
+  label: string;
+};
+
+/** 订单行上的生产工序勾选实例（快照自模板）。 */
+export type OrderProductionStep = {
+  id: string;
+  sortOrder: number;
+  label: string;
+  done: boolean;
+  completedAt: string | null;
+  completedBy: string | null;
+};
+
 export type OrderProgressEntry = {
   id: string;
   /** 业务订单号（可与 ERP/客户单号对应）。 */
@@ -91,6 +108,8 @@ export type OrderProgressEntry = {
   updatedAt: string;
   /** 多批次交货；为空时表示仅使用主档 expectedDeliveryDate。 */
   deliveryPlans: OrderProgressDeliveryPlan[];
+  /** 生产进度（工序打勾）；无模板时为空数组。 */
+  productionSteps: OrderProductionStep[];
 };
 
 /** 物流节点：工厂/供应商侧或各区域办公室（仅记录，不做库存扣账）。 */

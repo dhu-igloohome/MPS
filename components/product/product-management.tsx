@@ -53,6 +53,17 @@ export function ProductManagement({ products, language }: ProductManagementProps
         : "确认删除产品 {name} / {sku} / {variant}？",
     deleteFailed: language === "en" ? "Delete product failed." : "删除产品失败。",
     deleted: language === "en" ? "Deleted {sku} ({variant})." : "已删除 {sku}（{variant}）。",
+    prodSteps: language === "en" ? "Production steps" : "生产工序",
+    prodStepsHint:
+      language === "en"
+        ? "One step per line (max 40). Applies to this product name + SKU (all variants)."
+        : "每行一道工序（最多 40 条）。按产品名称 + SKU 生效，同 SKU 下所有型号共用。",
+    prodStepsLoadFailed:
+      language === "en" ? "Could not load production steps." : "加载生产工序失败。",
+    prodStepsSaveFailed:
+      language === "en" ? "Could not save production steps." : "保存生产工序失败。",
+    prodStepsSaved: language === "en" ? "Production steps saved." : "生产工序已保存。",
+    close: language === "en" ? "Close" : "关闭",
   };
   const [editable, setEditable] = useState<ProductItem[]>(products);
   const [productName, setProductName] = useState("");
@@ -61,6 +72,12 @@ export function ProductManagement({ products, language }: ProductManagementProps
   const [unitCost, setUnitCost] = useState("");
   const [articleNumber, setArticleNumber] = useState("");
   const [message, setMessage] = useState("");
+  const [templateModal, setTemplateModal] = useState<{
+    productName: string;
+    sku: string;
+  } | null>(null);
+  const [templateDraft, setTemplateDraft] = useState("");
+  const [templateBusy, setTemplateBusy] = useState(false);
 
   function downloadCsvTemplate() {
     const headers = "product name,SKU,variant,unit cost,article number";
@@ -225,6 +242,48 @@ export function ProductManagement({ products, language }: ProductManagementProps
     setEditable((prev) => prev.map((item) => (item.id === idKey ? { ...item, ...patch } : item)));
   }
 
+  async function openProductionTemplate(item: ProductItem) {
+    setMessage("");
+    setTemplateModal({ productName: item.productName, sku: item.sku });
+    setTemplateDraft("");
+    setTemplateBusy(true);
+    const q = new URLSearchParams({ productName: item.productName, sku: item.sku });
+    const res = await fetch(`/api/admin/production-templates?${q.toString()}`);
+    setTemplateBusy(false);
+    if (!res.ok) {
+      setMessage(t.prodStepsLoadFailed);
+      setTemplateModal(null);
+      return;
+    }
+    const data = (await res.json()) as { steps?: { label: string }[] };
+    setTemplateDraft((data.steps ?? []).map((s) => s.label).join("\n"));
+  }
+
+  async function saveProductionTemplate() {
+    if (!templateModal) return;
+    setTemplateBusy(true);
+    setMessage("");
+    const labels = templateDraft.split(/\r?\n/).map((line) => line);
+    const res = await fetch("/api/admin/production-templates", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productName: templateModal.productName,
+        sku: templateModal.sku,
+        labels,
+      }),
+    });
+    setTemplateBusy(false);
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { message?: string };
+      setMessage(data.message || t.prodStepsSaveFailed);
+      return;
+    }
+    setMessage(t.prodStepsSaved);
+    setTemplateModal(null);
+    router.refresh();
+  }
+
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">
@@ -296,7 +355,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">
         <h3 className="text-lg font-semibold text-zinc-900">{t.tableTitle}</h3>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[980px] border-collapse text-sm">
+          <table className="w-full min-w-[1080px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-left text-zinc-600">
                 <th className="px-2 py-2">{t.productName}</th>
@@ -305,12 +364,13 @@ export function ProductManagement({ products, language }: ProductManagementProps
                 <th className="px-2 py-2">{language === "en" ? "Unit Cost" : "单价"}</th>
                 <th className="px-2 py-2">{language === "en" ? "Article Number" : "Article Number"}</th>
                 <th className="px-2 py-2">{t.active}</th>
+                <th className="px-2 py-2">{t.prodSteps}</th>
                 <th className="px-2 py-2">{t.actions}</th>
               </tr>
             </thead>
             <tbody>
               {editable.map((item) => (
-                <tr key={item.sku} className="border-b border-zinc-100">
+                <tr key={item.id} className="border-b border-zinc-100">
                   <td className="px-2 py-2">
                     <input
                       value={item.productName}
@@ -359,6 +419,15 @@ export function ProductManagement({ products, language }: ProductManagementProps
                     />
                   </td>
                   <td className="px-2 py-2">
+                    <button
+                      type="button"
+                      onClick={() => openProductionTemplate(item)}
+                      className="rounded border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50"
+                    >
+                      {t.prodSteps}
+                    </button>
+                  </td>
+                  <td className="px-2 py-2">
                     <div className="flex gap-2">
                       <button
                         type="button"
@@ -387,6 +456,50 @@ export function ProductManagement({ products, language }: ProductManagementProps
         <p className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-700">
           {message}
         </p>
+      ) : null}
+
+      {templateModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="prod-template-title"
+        >
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-5 shadow-lg">
+            <h4 id="prod-template-title" className="text-lg font-semibold text-zinc-900">
+              {t.prodSteps}
+            </h4>
+            <p className="mt-1 text-sm text-zinc-600">
+              {templateModal.productName} · {templateModal.sku}
+            </p>
+            <p className="mt-2 text-xs text-zinc-500">{t.prodStepsHint}</p>
+            <textarea
+              value={templateDraft}
+              onChange={(e) => setTemplateDraft(e.target.value)}
+              disabled={templateBusy}
+              rows={14}
+              className="mt-3 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2 disabled:opacity-60"
+            />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={templateBusy}
+                onClick={() => saveProductionTemplate()}
+                className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-700 disabled:opacity-50"
+              >
+                {t.save}
+              </button>
+              <button
+                type="button"
+                disabled={templateBusy}
+                onClick={() => setTemplateModal(null)}
+                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+              >
+                {t.close}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

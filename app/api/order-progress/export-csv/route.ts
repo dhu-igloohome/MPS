@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { toCsvLine } from "@/lib/csv";
 import { listOrderProgressBySessionRegions } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
-import type { OrderProgressDeliveryPlan } from "@/lib/types";
+import type { OrderProgressDeliveryPlan, OrderProductionStep } from "@/lib/types";
 
 function plansToCell(plans: OrderProgressDeliveryPlan[]): string {
   if (plans.length === 0) return "";
@@ -13,6 +13,20 @@ function plansToCell(plans: OrderProgressDeliveryPlan[]): string {
     progress: p.progress,
   }));
   return JSON.stringify(payload);
+}
+
+function productionStepsToCell(steps: OrderProductionStep[]): string {
+  if (steps.length === 0) return "";
+  return JSON.stringify(
+    steps.map((s) => ({
+      id: s.id,
+      sortOrder: s.sortOrder,
+      label: s.label,
+      done: s.done,
+      completedAt: s.completedAt,
+      completedBy: s.completedBy,
+    })),
+  );
 }
 
 export async function GET() {
@@ -38,6 +52,7 @@ export async function GET() {
     "created_at",
     "updated_at",
     "delivery_plans_json",
+    "production_steps_json",
   ];
 
   const lines = [toCsvLine(header)];
@@ -59,6 +74,7 @@ export async function GET() {
         e.createdAt,
         e.updatedAt,
         plansToCell(e.deliveryPlans),
+        productionStepsToCell(e.productionSteps),
       ]),
     );
   }
