@@ -77,6 +77,7 @@ async function setupSchema() {
       product_name text not null,
       sku text not null,
       quantity integer not null check (quantity >= 0),
+      order_date date not null default current_date,
       delivery_date date not null,
       order_type text not null check (order_type in ('BTO', 'BTS')),
       progress text not null check (progress in ('not_started', 'in_production', 'ready_to_ship')),
@@ -86,6 +87,10 @@ async function setupSchema() {
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     );
+  `;
+  await db`
+    alter table order_progress
+    add column if not exists order_date date not null default current_date;
   `;
 
   await db`

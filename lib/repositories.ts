@@ -58,6 +58,7 @@ type OrderProgressRow = {
   product_name: string;
   sku: string;
   quantity: number;
+  order_date: string;
   delivery_date: string;
   order_type: OrderProgressOrderType;
   progress: OrderProgressStatus;
@@ -687,7 +688,8 @@ function mapOrderProgress(row: OrderProgressRow): OrderProgressEntry {
     productName: row.product_name,
     sku: row.sku,
     quantity: Number(row.quantity ?? 0),
-    deliveryDate: formatPgDateOnly(row.delivery_date),
+    orderDate: formatPgDateOnly(row.order_date),
+    expectedDeliveryDate: formatPgDateOnly(row.delivery_date),
     orderType: row.order_type,
     progress: row.progress,
     factoryName: row.factory_name || "",
@@ -711,6 +713,7 @@ export async function listOrderProgressBySessionRegions(regions: Region[]) {
       product_name,
       sku,
       quantity,
+      order_date::text,
       delivery_date::text,
       order_type,
       progress,
@@ -736,6 +739,7 @@ export async function getOrderProgressById(id: string) {
       product_name,
       sku,
       quantity,
+      order_date::text,
       delivery_date::text,
       order_type,
       progress,
@@ -755,7 +759,8 @@ export async function createOrderProgress(input: {
   productName: string;
   sku: string;
   quantity: number;
-  deliveryDate: string;
+  orderDate: string;
+  expectedDeliveryDate: string;
   orderType: OrderProgressOrderType;
   progress: OrderProgressStatus;
   factoryName: string;
@@ -769,6 +774,7 @@ export async function createOrderProgress(input: {
       product_name,
       sku,
       quantity,
+      order_date,
       delivery_date,
       order_type,
       progress,
@@ -780,7 +786,8 @@ export async function createOrderProgress(input: {
       ${input.productName.trim()},
       ${input.sku.trim()},
       ${input.quantity},
-      ${input.deliveryDate},
+      ${input.orderDate},
+      ${input.expectedDeliveryDate},
       ${input.orderType},
       ${input.progress},
       ${input.factoryName.trim()},
@@ -792,6 +799,7 @@ export async function createOrderProgress(input: {
       product_name,
       sku,
       quantity,
+      order_date::text,
       delivery_date::text,
       order_type,
       progress,
@@ -809,7 +817,8 @@ export async function updateOrderProgress(input: {
   productName: string;
   sku: string;
   quantity: number;
-  deliveryDate: string;
+  orderDate: string;
+  expectedDeliveryDate: string;
   orderType: OrderProgressOrderType;
   progress: OrderProgressStatus;
   factoryName: string;
@@ -823,7 +832,8 @@ export async function updateOrderProgress(input: {
       product_name = ${input.productName.trim()},
       sku = ${input.sku.trim()},
       quantity = ${input.quantity},
-      delivery_date = ${input.deliveryDate},
+      order_date = ${input.orderDate},
+      delivery_date = ${input.expectedDeliveryDate},
       order_type = ${input.orderType},
       progress = ${input.progress},
       factory_name = ${input.factoryName.trim()},
@@ -835,6 +845,7 @@ export async function updateOrderProgress(input: {
       product_name,
       sku,
       quantity,
+      order_date::text,
       delivery_date::text,
       order_type,
       progress,

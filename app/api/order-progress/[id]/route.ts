@@ -54,7 +54,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   const body = await request.json();
   const productName = String(body.productName || "");
   const sku = String(body.sku || "");
-  const deliveryDate = String(body.deliveryDate || "");
+  const orderDate = String(body.orderDate || "");
+  const expectedDeliveryDate = String(body.expectedDeliveryDate || "");
   const orderType = String(body.orderType || "");
   const progress = String(body.progress || "");
   const factoryName = String(body.factoryName || "");
@@ -65,8 +66,12 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ message: "Missing product or SKU" }, { status: 400 });
   }
 
-  if (!DATE_RE.test(deliveryDate)) {
-    return NextResponse.json({ message: "Invalid delivery date" }, { status: 400 });
+  if (!DATE_RE.test(orderDate)) {
+    return NextResponse.json({ message: "Invalid order date" }, { status: 400 });
+  }
+
+  if (!DATE_RE.test(expectedDeliveryDate)) {
+    return NextResponse.json({ message: "Invalid expected delivery date" }, { status: 400 });
   }
 
   if (!isOrderType(orderType)) {
@@ -99,7 +104,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     productName,
     sku,
     quantity,
-    deliveryDate,
+    orderDate,
+    expectedDeliveryDate,
     orderType,
     progress,
     factoryName,

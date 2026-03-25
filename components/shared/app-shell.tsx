@@ -30,7 +30,7 @@ export async function AppShell({ session, title, description, children }: AppShe
   return (
     <main className="min-h-screen bg-zinc-100">
       <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
+        <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between px-4 py-4 sm:px-6">
           <div className="space-y-1">
             <Image src="/igloo-logo-pinge.svg" alt="Igloo logo" width={87} height={24} priority />
             <p className="text-sm text-zinc-500">igloo ForeTracker | igloo订单追踪系统</p>
@@ -46,7 +46,7 @@ export async function AppShell({ session, title, description, children }: AppShe
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-6xl gap-4 px-4 py-5 sm:px-6">
+      <div className="mx-auto flex w-full max-w-[1400px] gap-4 px-4 py-5 sm:px-6">
         <nav className="hidden w-52 flex-none rounded-2xl border border-zinc-200 bg-white p-3 md:block">
           <ul className="space-y-1 text-sm">
             <li>

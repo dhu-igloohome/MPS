@@ -29,7 +29,8 @@ function labels(language: Language) {
     productName: en ? "Product name" : "产品名称",
     sku: "SKU",
     quantity: en ? "Quantity" : "数量",
-    deliveryDate: en ? "Delivery date" : "交货日期",
+    orderDate: en ? "Order date" : "下单日期",
+    expectedDeliveryDate: en ? "Expected delivery date" : "预计交货日期",
     dateHint: en
       ? "Calendar date (business: Singapore). Stored as YYYY-MM-DD."
       : "日历日期（业务按新加坡）。以 YYYY-MM-DD 存储。",
@@ -50,7 +51,8 @@ function labels(language: Language) {
     colProduct: en ? "Product" : "产品",
     colSku: "SKU",
     colQty: en ? "Qty" : "数量",
-    colDate: en ? "Delivery" : "交货日",
+    colOrderDate: en ? "Order date" : "下单日",
+    colExpectedDate: en ? "Expected delivery" : "预计交货日",
     colType: en ? "Type" : "类型",
     colProgress: en ? "Progress" : "进度",
     colFactory: en ? "Factory" : "工厂",
@@ -96,7 +98,8 @@ export function OrderProgressPanel({
   const [productName, setProductName] = useState("");
   const [sku, setSku] = useState("");
   const [quantity, setQuantity] = useState("0");
-  const [deliveryDate, setDeliveryDate] = useState("");
+  const [orderDate, setOrderDate] = useState("");
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
   const [orderType, setOrderType] = useState<OrderProgressOrderType>("BTO");
   const [progress, setProgress] = useState<OrderProgressStatus>("not_started");
   const [factoryName, setFactoryName] = useState("");
@@ -133,7 +136,8 @@ export function OrderProgressPanel({
     setProductName("");
     setSku("");
     setQuantity("0");
-    setDeliveryDate("");
+    setOrderDate("");
+    setExpectedDeliveryDate("");
     setOrderType("BTO");
     setProgress("not_started");
     setFactoryName("");
@@ -146,7 +150,8 @@ export function OrderProgressPanel({
     setProductName(entry.productName);
     setSku(entry.sku);
     setQuantity(String(entry.quantity));
-    setDeliveryDate(entry.deliveryDate);
+    setOrderDate(entry.orderDate);
+    setExpectedDeliveryDate(entry.expectedDeliveryDate);
     setOrderType(entry.orderType);
     setProgress(entry.progress);
     setFactoryName(entry.factoryName);
@@ -163,7 +168,8 @@ export function OrderProgressPanel({
       productName: resolvedProductName,
       sku: resolvedSku,
       quantity: Number(quantity),
-      deliveryDate,
+      orderDate,
+      expectedDeliveryDate,
       orderType,
       progress,
       factoryName,
@@ -278,11 +284,23 @@ export function OrderProgressPanel({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700">{t.deliveryDate}</span>
+            <span className="mb-1 block text-sm text-zinc-700">{t.orderDate}</span>
             <input
               type="date"
-              value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
+              value={orderDate}
+              onChange={(e) => setOrderDate(e.target.value)}
+              required
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            />
+            <span className="mt-1 block text-xs text-zinc-500">{t.dateHint}</span>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm text-zinc-700">{t.expectedDeliveryDate}</span>
+            <input
+              type="date"
+              value={expectedDeliveryDate}
+              onChange={(e) => setExpectedDeliveryDate(e.target.value)}
               required
               className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
             />
@@ -375,7 +393,8 @@ export function OrderProgressPanel({
                 <th className="px-2 py-2">{t.colProduct}</th>
                 <th className="px-2 py-2">{t.colSku}</th>
                 <th className="px-2 py-2">{t.colQty}</th>
-                <th className="px-2 py-2">{t.colDate}</th>
+                <th className="px-2 py-2">{t.colOrderDate}</th>
+                <th className="px-2 py-2">{t.colExpectedDate}</th>
                 <th className="px-2 py-2">{t.colType}</th>
                 <th className="px-2 py-2">{t.colProgress}</th>
                 <th className="px-2 py-2">{t.colFactory}</th>
@@ -387,7 +406,7 @@ export function OrderProgressPanel({
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-2 py-6 text-center text-zinc-500">
+                  <td colSpan={11} className="px-2 py-6 text-center text-zinc-500">
                     {t.empty}
                   </td>
                 </tr>
@@ -397,7 +416,8 @@ export function OrderProgressPanel({
                     <td className="px-2 py-2">{row.productName}</td>
                     <td className="px-2 py-2">{row.sku}</td>
                     <td className="px-2 py-2">{row.quantity}</td>
-                    <td className="px-2 py-2">{row.deliveryDate}</td>
+                    <td className="px-2 py-2">{row.orderDate}</td>
+                    <td className="px-2 py-2">{row.expectedDeliveryDate}</td>
                     <td className="px-2 py-2">{orderTypeLabel(language, row.orderType)}</td>
                     <td className="px-2 py-2">{progressLabel(language, row.progress)}</td>
                     <td className="px-2 py-2">{row.factoryName || "—"}</td>

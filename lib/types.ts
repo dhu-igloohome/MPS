@@ -71,7 +71,8 @@ export type OrderProgressEntry = {
   productName: string;
   sku: string;
   quantity: number;
-  deliveryDate: string;
+  orderDate: string;
+  expectedDeliveryDate: string;
   orderType: OrderProgressOrderType;
   progress: OrderProgressStatus;
   factoryName: string;
