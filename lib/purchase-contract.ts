@@ -35,8 +35,21 @@ export async function generatePurchaseContractPdf(input: PurchaseContractPdfInpu
     "templates",
     "purchase-contract-template.pdf",
   );
-  const templateBytes = await fs.readFile(templatePath);
-  const pdfDoc = await PDFDocument.load(templateBytes);
+  let templateBytes: Uint8Array;
+  try {
+    templateBytes = await fs.readFile(templatePath);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(`Template PDF read failed: ${templatePath}. ${msg}`);
+  }
+
+  let pdfDoc: PDFDocument;
+  try {
+    pdfDoc = await PDFDocument.load(templateBytes);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(`Template PDF load failed: ${msg}`);
+  }
   const pages = pdfDoc.getPages();
   const page = pages[0];
 

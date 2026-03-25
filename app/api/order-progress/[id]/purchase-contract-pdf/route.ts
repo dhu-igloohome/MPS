@@ -63,7 +63,9 @@ export async function POST(request: Request, context: RouteContext) {
   // We do this here (instead of on create) to avoid burning PO numbers when user clicks "No".
   await ensureDatabase();
   const db = getSql();
-  const persisted = await db<{ po_number: string }[]>`
+  let poNumber: string;
+  try {
+    const persisted = await db<{ po_number: string }[]>`
     with lock_row as (
       select po_number
       from order_progress
@@ -102,22 +104,33 @@ export async function POST(request: Request, context: RouteContext) {
       returning po_number
     )
     select po_number from upd;
-  `;
+    `;
 
-  const poNumber = persisted[0]?.po_number || `IG-PO-${pad6(0)}`;
-  const pdfBytes = await generatePurchaseContractPdf({
-    poNumber,
-    signedDate,
-    sku: existing.sku,
-    productName: existing.productName,
-    batch,
-    quantity: existing.quantity,
-    unitCost,
-    total,
-    deliveryDate,
-    serialCode,
-    bluetoothId,
-  });
+    poNumber = persisted[0]?.po_number || `IG-PO-${pad6(0)}`;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ message: `PO persist failed: ${msg}` }, { status: 500 });
+  }
+
+  let pdfBytes: Uint8Array;
+  try {
+    pdfBytes = await generatePurchaseContractPdf({
+      poNumber,
+      signedDate,
+      sku: existing.sku,
+      productName: existing.productName,
+      batch,
+      quantity: existing.quantity,
+      unitCost,
+      total,
+      deliveryDate,
+      serialCode,
+      bluetoothId,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ message: `PDF generate failed: ${msg}` }, { status: 500 });
+  }
 
   const filename = `${poNumber}-${existing.sku}.pdf`;
   const bodyBytes = Buffer.from(pdfBytes);
