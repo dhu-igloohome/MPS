@@ -58,3 +58,25 @@ export type ProductItem = {
   isActive: boolean;
   createdAt: string;
 };
+
+/** Order progress module uses US; session / forecasts use USA. */
+export type OrderProgressRegion = "APAC" | "EU" | "US";
+
+export type OrderProgressOrderType = "BTO" | "BTS";
+
+export type OrderProgressStatus = "not_started" | "in_production" | "ready_to_ship";
+
+export type OrderProgressEntry = {
+  id: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  deliveryDate: string;
+  orderType: OrderProgressOrderType;
+  progress: OrderProgressStatus;
+  factoryName: string;
+  region: OrderProgressRegion;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};

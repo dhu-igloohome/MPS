@@ -4,6 +4,10 @@ import {
   AdminAuditLog,
   AdminUser,
   ForecastEntry,
+  OrderProgressEntry,
+  OrderProgressOrderType,
+  OrderProgressRegion,
+  OrderProgressStatus,
   ProductItem,
   Region,
   SessionPayload,
@@ -48,6 +52,40 @@ type ProductRow = {
   is_active: boolean;
   created_at: string;
 };
+
+type OrderProgressRow = {
+  id: number;
+  product_name: string;
+  sku: string;
+  quantity: number;
+  delivery_date: string;
+  order_type: OrderProgressOrderType;
+  progress: OrderProgressStatus;
+  factory_name: string;
+  region: OrderProgressRegion;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export function orderProgressRegionsForSession(regions: Region[]): OrderProgressRegion[] {
+  const set = new Set<OrderProgressRegion>();
+  for (const r of regions) {
+    if (r === "USA") {
+      set.add("US");
+    } else if (r === "APAC" || r === "EU") {
+      set.add(r);
+    }
+  }
+  return Array.from(set);
+}
+
+export function sessionCanAccessOrderProgressRegion(
+  sessionRegions: Region[],
+  rowRegion: OrderProgressRegion,
+): boolean {
+  return orderProgressRegionsForSession(sessionRegions).includes(rowRegion);
+}
 
 export function isUppercaseSku(input: string) {
   return /^[A-Z][A-Z0-9]*$/.test(input);
@@ -631,6 +669,189 @@ export async function deleteProductById(id: string) {
   const db = getSql();
   await db`
     delete from products
+    where id = ${Number(id)};
+  `;
+}
+
+function formatPgDateOnly(value: string | Date): string {
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  const s = String(value);
+  return s.length >= 10 ? s.slice(0, 10) : s;
+}
+
+function mapOrderProgress(row: OrderProgressRow): OrderProgressEntry {
+  return {
+    id: String(row.id),
+    productName: row.product_name,
+    sku: row.sku,
+    quantity: Number(row.quantity ?? 0),
+    deliveryDate: formatPgDateOnly(row.delivery_date),
+    orderType: row.order_type,
+    progress: row.progress,
+    factoryName: row.factory_name || "",
+    region: row.region,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listOrderProgressBySessionRegions(regions: Region[]) {
+  await ensureDatabase();
+  const db = getSql();
+  const allowed = orderProgressRegionsForSession(regions);
+  if (allowed.length === 0) {
+    return [];
+  }
+  const rows = await db<OrderProgressRow[]>`
+    select
+      id,
+      product_name,
+      sku,
+      quantity,
+      delivery_date::text,
+      order_type,
+      progress,
+      factory_name,
+      region,
+      created_by,
+      created_at::text,
+      updated_at::text
+    from order_progress
+    where region = any(${allowed})
+    order by updated_at desc, id desc
+    limit 500;
+  `;
+  return rows.map(mapOrderProgress);
+}
+
+export async function getOrderProgressById(id: string) {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<OrderProgressRow[]>`
+    select
+      id,
+      product_name,
+      sku,
+      quantity,
+      delivery_date::text,
+      order_type,
+      progress,
+      factory_name,
+      region,
+      created_by,
+      created_at::text,
+      updated_at::text
+    from order_progress
+    where id = ${Number(id)}
+    limit 1;
+  `;
+  return rows[0] ? mapOrderProgress(rows[0]) : null;
+}
+
+export async function createOrderProgress(input: {
+  productName: string;
+  sku: string;
+  quantity: number;
+  deliveryDate: string;
+  orderType: OrderProgressOrderType;
+  progress: OrderProgressStatus;
+  factoryName: string;
+  region: OrderProgressRegion;
+  createdBy: string;
+}) {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<OrderProgressRow[]>`
+    insert into order_progress (
+      product_name,
+      sku,
+      quantity,
+      delivery_date,
+      order_type,
+      progress,
+      factory_name,
+      region,
+      created_by
+    )
+    values (
+      ${input.productName.trim()},
+      ${input.sku.trim()},
+      ${input.quantity},
+      ${input.deliveryDate},
+      ${input.orderType},
+      ${input.progress},
+      ${input.factoryName.trim()},
+      ${input.region},
+      ${input.createdBy}
+    )
+    returning
+      id,
+      product_name,
+      sku,
+      quantity,
+      delivery_date::text,
+      order_type,
+      progress,
+      factory_name,
+      region,
+      created_by,
+      created_at::text,
+      updated_at::text;
+  `;
+  return mapOrderProgress(rows[0]);
+}
+
+export async function updateOrderProgress(input: {
+  id: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  deliveryDate: string;
+  orderType: OrderProgressOrderType;
+  progress: OrderProgressStatus;
+  factoryName: string;
+  region: OrderProgressRegion;
+}) {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<OrderProgressRow[]>`
+    update order_progress
+    set
+      product_name = ${input.productName.trim()},
+      sku = ${input.sku.trim()},
+      quantity = ${input.quantity},
+      delivery_date = ${input.deliveryDate},
+      order_type = ${input.orderType},
+      progress = ${input.progress},
+      factory_name = ${input.factoryName.trim()},
+      region = ${input.region},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning
+      id,
+      product_name,
+      sku,
+      quantity,
+      delivery_date::text,
+      order_type,
+      progress,
+      factory_name,
+      region,
+      created_by,
+      created_at::text,
+      updated_at::text;
+  `;
+  return rows[0] ? mapOrderProgress(rows[0]) : null;
+}
+
+export async function deleteOrderProgressById(id: string) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    delete from order_progress
     where id = ${Number(id)};
   `;
 }

@@ -131,6 +131,23 @@ async function main() {
   await sql`alter table forecasts add column if not exists remark text not null default '';`;
 
   await sql`
+    create table if not exists order_progress (
+      id bigserial primary key,
+      product_name text not null,
+      sku text not null,
+      quantity integer not null check (quantity >= 0),
+      delivery_date date not null,
+      order_type text not null check (order_type in ('BTO', 'BTS')),
+      progress text not null check (progress in ('not_started', 'in_production', 'ready_to_ship')),
+      factory_name text not null default '',
+      region text not null check (region in ('APAC', 'EU', 'US')),
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+
+  await sql`
     create table if not exists products (
       id bigserial primary key,
       product_name text not null,
