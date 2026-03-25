@@ -6,12 +6,11 @@ import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
 import {
   getForecastsByRegions,
-  getSummaryByMonthAndRegion,
-  getSummaryByQuarterAndRegion,
   listLogisticsShipmentsBySession,
   listOrderProgressBySessionRegions,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
+import type { ForecastEntry, Region } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -19,19 +18,91 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
 }
 
-export default async function DashboardPage() {
+function quarterFromMonth(month: string) {
+  const m = Number(month.split("-")[1] || "1");
+  return `Q${Math.floor((Math.max(1, Math.min(12, m)) - 1) / 3) + 1}`;
+}
+
+function buildMonthlySummary(entries: ForecastEntry[]) {
+  const map = new Map<string, { month: string; region: Region; buildToOrder: number; buildToStock: number }>();
+  for (const e of entries) {
+    const key = `${e.month}::${e.region}`;
+    const curr = map.get(key) ?? { month: e.month, region: e.region, buildToOrder: 0, buildToStock: 0 };
+    curr.buildToOrder += e.buildToOrder;
+    curr.buildToStock += e.buildToStock;
+    map.set(key, curr);
+  }
+  return Array.from(map.values()).sort((a, b) =>
+    a.month === b.month ? a.region.localeCompare(b.region) : b.month.localeCompare(a.month),
+  );
+}
+
+function buildQuarterSummary(entries: ForecastEntry[]) {
+  const map = new Map<
+    string,
+    { quarter: string; region: Region; buildToOrder: number; buildToStock: number; skuSet: Set<string> }
+  >();
+  for (const e of entries) {
+    const quarter = `${e.month.slice(0, 4)}-${quarterFromMonth(e.month)}`;
+    const key = `${quarter}::${e.region}`;
+    const curr = map.get(key) ?? {
+      quarter,
+      region: e.region,
+      buildToOrder: 0,
+      buildToStock: 0,
+      skuSet: new Set<string>(),
+    };
+    curr.buildToOrder += e.buildToOrder;
+    curr.buildToStock += e.buildToStock;
+    curr.skuSet.add(e.sku);
+    map.set(key, curr);
+  }
+  return Array.from(map.values())
+    .map((x) => ({
+      quarter: x.quarter,
+      region: x.region,
+      buildToOrder: x.buildToOrder,
+      buildToStock: x.buildToStock,
+      skuCount: x.skuSet.size,
+    }))
+    .sort((a, b) =>
+      a.quarter === b.quarter ? a.region.localeCompare(b.region) : b.quarter.localeCompare(a.quarter),
+    );
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await getSession();
   if (!session) {
     redirect("/login");
   }
 
+  const params = (await searchParams) ?? {};
   const entries = await getForecastsByRegions(session.regions);
-  const summary = await getSummaryByMonthAndRegion(session.regions);
-  const quarterSummary = await getSummaryByQuarterAndRegion(session.regions);
   const orderProgressRows = await listOrderProgressBySessionRegions(session.regions);
   const logisticsRows = await listLogisticsShipmentsBySession(session);
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
+  const filterMonth = String(params.month ?? "").trim();
+  const filterRegion = String(params.region ?? "").trim();
+  const filterOffice = String(params.office ?? "").trim();
+  const filterProduct = String(params.productName ?? "").trim();
+  const monthOptions = [...new Set(entries.map((e) => e.month))].sort((a, b) => b.localeCompare(a));
+  const regionOptions = [...new Set(entries.map((e) => e.region))].sort();
+  const officeOptions = [...new Set(entries.map((e) => e.office).filter(Boolean))].sort();
+  const productOptions = [...new Set(entries.map((e) => e.productName))].sort();
+  const filteredEntries = entries.filter((e) => {
+    if (filterMonth && e.month !== filterMonth) return false;
+    if (filterRegion && e.region !== filterRegion) return false;
+    if (filterOffice && e.office !== filterOffice) return false;
+    if (filterProduct && e.productName !== filterProduct) return false;
+    return true;
+  });
+  const summary = buildMonthlySummary(filteredEntries);
+  const quarterSummary = buildQuarterSummary(filteredEntries);
   const t = {
     title: language === "en" ? "Cockpit" : "驾驶舱",
     description:
@@ -58,6 +129,8 @@ export default async function DashboardPage() {
     latestTitle: language === "en" ? "Latest Forecast Entries" : "最新 Forecast 记录",
     office: language === "en" ? "Office" : "办公室",
     productName: language === "en" ? "Product Name" : "产品名称",
+    filters: language === "en" ? "Filters" : "筛选",
+    clear: language === "en" ? "Clear" : "清空",
     by: language === "en" ? "By" : "提交人",
     noRecords: language === "en" ? "No records yet." : "暂无记录。",
     orderLogisticsTitle: language === "en" ? "Order & logistics snapshot" : "订单与物流概览",
@@ -69,8 +142,8 @@ export default async function DashboardPage() {
     exportLogisticsCsv: language === "en" ? "Export logistics CSV" : "导出物流 CSV",
   };
 
-  const totalBTO = entries.reduce((sum, item) => sum + item.buildToOrder, 0);
-  const totalBTS = entries.reduce((sum, item) => sum + item.buildToStock, 0);
+  const totalBTO = filteredEntries.reduce((sum, item) => sum + item.buildToOrder, 0);
+  const totalBTS = filteredEntries.reduce((sum, item) => sum + item.buildToStock, 0);
   const totalForecast = totalBTO + totalBTS;
 
   return (
@@ -79,6 +152,86 @@ export default async function DashboardPage() {
       title={t.title}
       description={t.description}
     >
+      <section className="rounded-2xl border border-app-border/90 bg-app-surface shadow-sm p-5">
+        <h3 className="mb-3 text-lg font-semibold text-foreground">{t.filters}</h3>
+        <form className="grid gap-3 md:grid-cols-4">
+          <label className="block">
+            <span className="mb-1 block text-sm text-app-muted">{t.month}</span>
+            <select
+              name="month"
+              defaultValue={filterMonth}
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+            >
+              <option value="">All</option>
+              {monthOptions.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm text-app-muted">{t.region}</span>
+            <select
+              name="region"
+              defaultValue={filterRegion}
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+            >
+              <option value="">All</option>
+              {regionOptions.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm text-app-muted">{t.office}</span>
+            <select
+              name="office"
+              defaultValue={filterOffice}
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+            >
+              <option value="">All</option>
+              {officeOptions.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm text-app-muted">{t.productName}</span>
+            <select
+              name="productName"
+              defaultValue={filterProduct}
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+            >
+              <option value="">All</option>
+              {productOptions.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="md:col-span-4 flex items-center gap-2">
+            <button
+              type="submit"
+              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover"
+            >
+              {t.filters}
+            </button>
+            <Link
+              href="/dashboard"
+              className="rounded-lg border border-app-border px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
+            >
+              {t.clear}
+            </Link>
+          </div>
+        </form>
+      </section>
+
       <section className="grid gap-4 sm:grid-cols-3">
         <article className="rounded-2xl border border-app-border/90 bg-app-surface shadow-sm p-5">
           <p className="text-sm text-app-muted">{t.totalForecast}</p>
@@ -259,7 +412,7 @@ export default async function DashboardPage() {
                   </td>
                 </tr>
               ) : (
-                entries.slice(0, 20).map((item) => (
+                filteredEntries.slice(0, 200).map((item) => (
                   <tr key={item.id} className="border-b border-app-border/40">
                     <td className="px-2 py-2">{item.month}</td>
                     <td className="px-2 py-2">{item.region}</td>

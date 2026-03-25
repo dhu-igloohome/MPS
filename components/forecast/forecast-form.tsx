@@ -4,16 +4,23 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Language } from "@/lib/i18n";
-import { ProductItem, Region } from "@/lib/types";
+import { ForecastEntry, ProductItem, Region } from "@/lib/types";
 
 type ForecastFormProps = {
   allowedRegions: Region[];
   officesByRegion: Record<Region, string[]>;
   products: ProductItem[];
+  entries: ForecastEntry[];
   language: Language;
 };
 
-export function ForecastForm({ allowedRegions, officesByRegion, products, language }: ForecastFormProps) {
+export function ForecastForm({
+  allowedRegions,
+  officesByRegion,
+  products,
+  entries,
+  language,
+}: ForecastFormProps) {
   const router = useRouter();
   const t = {
     title: language === "en" ? "Forecast Input" : "Forecast 录入",
@@ -45,6 +52,9 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
     saved: language === "en" ? "Saved successfully." : "保存成功。",
     saving: language === "en" ? "Saving..." : "保存中...",
     saveForecast: language === "en" ? "Save Forecast" : "保存 Forecast",
+    createdAt: language === "en" ? "Created At" : "创建日期",
+    allForecasts: language === "en" ? "All Forecast Records" : "全部 Forecast 记录",
+    noRecords: language === "en" ? "No forecast records yet." : "暂无 forecast 记录。",
   };
   const defaultRegion = allowedRegions[0];
   const defaultProductName = products[0]?.productName || "";
@@ -125,7 +135,7 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
 
   return (
     <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
-      <h2 className="text-lg font-semibold text-zinc-900">{t.title}</h2>
+      <h2 className="text-lg font-semibold text-foreground">{t.title}</h2>
       <p className="mt-1 text-sm text-app-muted">
         {t.subtitle}
       </p>
@@ -271,6 +281,48 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
           {message ? <span className="text-sm text-app-muted">{message}</span> : null}
         </div>
       </form>
+
+      <div className="mt-6">
+        <h3 className="text-base font-semibold text-foreground">{t.allForecasts}</h3>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[980px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-app-border text-left text-app-muted">
+                <th className="px-2 py-2">{t.forecastMonth}</th>
+                <th className="px-2 py-2">{t.region}</th>
+                <th className="px-2 py-2">{t.office}</th>
+                <th className="px-2 py-2">{t.productName}</th>
+                <th className="px-2 py-2">{t.sku}</th>
+                <th className="px-2 py-2">{t.bto}</th>
+                <th className="px-2 py-2">{t.bts}</th>
+                <th className="px-2 py-2">{t.createdAt}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-2 py-6 text-center text-app-muted">
+                    {t.noRecords}
+                  </td>
+                </tr>
+              ) : (
+                entries.map((item) => (
+                  <tr key={item.id} className="border-b border-app-border/40">
+                    <td className="px-2 py-2">{item.month}</td>
+                    <td className="px-2 py-2">{item.region}</td>
+                    <td className="px-2 py-2">{item.office || t.noOffice}</td>
+                    <td className="px-2 py-2">{item.productName}</td>
+                    <td className="px-2 py-2">{item.sku}</td>
+                    <td className="px-2 py-2 tabular-nums">{item.buildToOrder}</td>
+                    <td className="px-2 py-2 tabular-nums">{item.buildToStock}</td>
+                    <td className="px-2 py-2">{item.createdAt.slice(0, 10)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
   );
 }

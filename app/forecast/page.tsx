@@ -5,7 +5,7 @@ import { ForecastForm } from "@/components/forecast/forecast-form";
 import { AppShell } from "@/components/shared/app-shell";
 import { OFFICES_BY_REGION } from "@/lib/accounts";
 import { normalizeLanguage } from "@/lib/i18n";
-import { listActiveProducts } from "@/lib/repositories";
+import { getForecastsByRegions, listActiveProducts } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +16,7 @@ export default async function ForecastPage() {
     redirect("/login");
   }
   const products = await listActiveProducts();
+  const entries = await getForecastsByRegions(session.regions);
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
@@ -33,6 +34,7 @@ export default async function ForecastPage() {
         allowedRegions={session.regions}
         officesByRegion={OFFICES_BY_REGION}
         products={products}
+        entries={entries}
         language={language}
       />
     </AppShell>
