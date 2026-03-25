@@ -55,13 +55,18 @@ export async function generatePurchaseContractPdf(input: PurchaseContractPdfInpu
   const pages = pdfDoc.getPages();
   const page = pages[0];
 
-  const msyhPath = path.join(process.cwd(), "public", "fonts", "msyh.ttc");
+  const cjkFontPath = path.join(
+    process.cwd(),
+    "public",
+    "fonts",
+    "NotoSansSC-VF.ttf",
+  );
   let fontBytes: Uint8Array;
   try {
-    fontBytes = await fs.readFile(msyhPath);
+    fontBytes = await fs.readFile(cjkFontPath);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    throw new Error(`CJK font read failed: ${msyhPath}. ${msg}`);
+    throw new Error(`CJK font read failed: ${cjkFontPath}. ${msg}`);
   }
   const font = await pdfDoc.embedFont(fontBytes);
   const fontBold = font; // tc font doesn't provide separate bold in this bundle
