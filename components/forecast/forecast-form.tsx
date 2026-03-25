@@ -121,9 +121,9 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
       <h2 className="text-lg font-semibold text-zinc-900">{t.title}</h2>
-      <p className="mt-1 text-sm text-zinc-600">
+      <p className="mt-1 text-sm text-app-muted">
         {t.subtitle}
       </p>
       {products.length === 0 ? (
@@ -134,22 +134,22 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
 
       <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
         <label className="block">
-          <span className="mb-1 block text-sm text-zinc-700">{t.forecastMonth}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.forecastMonth}</span>
           <input
             type="month"
             value={month}
             onChange={(event) => setMonth(event.target.value)}
             required
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm text-zinc-700">{t.region}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
           <select
             value={region}
             onChange={(event) => onRegionChange(event.target.value as Region)}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           >
             {allowedRegions.map((item) => (
               <option key={item} value={item}>
@@ -160,11 +160,11 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm text-zinc-700">{t.office}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.office}</span>
           <select
             value={office}
             onChange={(event) => setOffice(event.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           >
             {officeOptions.map((item) => (
               <option key={item} value={item}>
@@ -175,12 +175,12 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm text-zinc-700">{t.productName}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
           <select
             value={productName}
             onChange={(event) => onProductNameChange(event.target.value)}
             required
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           >
             {productNameOptions.map((item) => (
               <option key={item} value={item}>
@@ -191,12 +191,12 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm text-zinc-700">{t.sku}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
           <select
             value={sku}
             onChange={(event) => setSku(event.target.value)}
             required
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           >
             {skuOptions.map((item) => (
               <option key={item.sku} value={item.sku}>
@@ -207,52 +207,52 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
         </label>
 
         <label className="block md:col-span-2">
-          <span className="mb-1 block text-sm text-zinc-700">{t.remark}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.remark}</span>
           <textarea
             value={remark}
             onChange={(event) => setRemark(event.target.value)}
             rows={3}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm text-zinc-700">{t.variant}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.variant}</span>
           <input
             value={selectedProduct?.variant || ""}
             readOnly
-            className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-700"
+            className="w-full rounded-lg border border-app-border/90 bg-app-accent-soft/45 px-3 py-2 text-foreground/85"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm text-zinc-700">{t.articleNumber}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.articleNumber}</span>
           <input
             value={selectedProduct?.articleNumber || ""}
             readOnly
-            className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-700"
+            className="w-full rounded-lg border border-app-border/90 bg-app-accent-soft/45 px-3 py-2 text-foreground/85"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm text-zinc-700">{t.bto}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
           <input
             type="number"
             min={0}
             value={buildToOrder}
             onChange={(event) => setBuildToOrder(event.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm text-zinc-700">{t.bts}</span>
+          <span className="mb-1 block text-sm text-foreground/85">{t.bts}</span>
           <input
             type="number"
             min={0}
             value={buildToStock}
             onChange={(event) => setBuildToStock(event.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           />
         </label>
 
@@ -260,11 +260,11 @@ export function ForecastForm({ allowedRegions, officesByRegion, products, langua
           <button
             type="submit"
             disabled={loading || products.length === 0}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60"
+            className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
           >
             {loading ? t.saving : t.saveForecast}
           </button>
-          {message ? <span className="text-sm text-zinc-600">{message}</span> : null}
+          {message ? <span className="text-sm text-app-muted">{message}</span> : null}
         </div>
       </form>
     </section>

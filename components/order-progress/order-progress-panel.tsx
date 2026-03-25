@@ -427,9 +427,9 @@ export function OrderProgressPanel({
     const compact = variant === "table";
     if (steps.length === 0) {
       if (compact) {
-        return <span className="text-xs text-zinc-400">—</span>;
+        return <span className="text-xs text-app-muted/80">—</span>;
       }
-      return <p className="mt-2 text-sm text-zinc-600">{t.productionEmpty}</p>;
+      return <p className="mt-2 text-sm text-app-muted">{t.productionEmpty}</p>;
     }
     return (
       <ul
@@ -447,8 +447,8 @@ export function OrderProgressPanel({
               key={s.id}
               className={
                 compact
-                  ? "flex items-start gap-1.5 rounded border border-zinc-100 bg-zinc-50/90 px-2 py-1 text-xs"
-                  : "flex items-start gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                  ? "flex items-start gap-1.5 rounded border border-app-border/35 bg-app-accent-soft/55 px-2 py-1 text-xs"
+                  : "flex items-start gap-2 rounded-lg border border-app-border/90 bg-app-surface px-3 py-2 text-sm"
               }
             >
               <input
@@ -458,11 +458,11 @@ export function OrderProgressPanel({
                 disabled={busy}
                 onChange={(e) => onToggleProductionStep(orderId, s.id, e.target.checked)}
               />
-              <span className="min-w-0 text-zinc-800">
-                <span className="tabular-nums text-zinc-500">{s.sortOrder + 1}. </span>
+              <span className="min-w-0 text-foreground/90">
+                <span className="tabular-nums text-app-muted">{s.sortOrder + 1}. </span>
                 {s.label}
                 {!compact && s.done && s.completedBy ? (
-                  <span className="mt-0.5 block text-xs text-zinc-500">
+                  <span className="mt-0.5 block text-xs text-app-muted">
                     {s.completedAt ?? ""}
                     {s.completedAt ? " · " : null}
                     {s.completedBy}
@@ -486,14 +486,14 @@ export function OrderProgressPanel({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <h3 className="text-lg font-semibold text-zinc-900">{t.formTitle}</h3>
+          <h3 className="text-lg font-semibold text-foreground">{t.formTitle}</h3>
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/api/order-progress/csv-template"
               prefetch={false}
-              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+              className="inline-flex rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft"
             >
               {t.downloadTemplate}
             </Link>
@@ -508,13 +508,13 @@ export function OrderProgressPanel({
               type="button"
               disabled={loading || products.length === 0}
               onClick={() => batchFileRef.current?.click()}
-              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+              className="inline-flex rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft disabled:opacity-50"
             >
               {t.batchImport}
             </button>
           </div>
         </div>
-        <p className="mt-2 text-xs text-zinc-500">{t.batchHint}</p>
+        <p className="mt-2 text-xs text-app-muted">{t.batchHint}</p>
         {batchSummary ? (
           <p className="mt-2 text-sm text-emerald-800">{batchSummary}</p>
         ) : null}
@@ -540,23 +540,23 @@ export function OrderProgressPanel({
 
         <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={onSubmit}>
           <label className="block md:col-span-2">
-            <span className="mb-1 block text-sm text-zinc-700">{t.orderNumber}</span>
+            <span className="mb-1 block text-sm text-foreground/85">{t.orderNumber}</span>
             <input
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
               maxLength={200}
               placeholder={language === "en" ? "Optional" : "选填"}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700">{t.productName}</span>
+            <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
             <select
               value={resolvedProductName}
               onChange={(e) => onProductNameChange(e.target.value)}
               required
               disabled={products.length === 0}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
             >
               {productNameOptions.map((name) => (
                 <option key={name} value={name}>
@@ -567,13 +567,13 @@ export function OrderProgressPanel({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700">{t.sku}</span>
+            <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
             <select
               value={resolvedSku}
               onChange={(e) => setSku(e.target.value)}
               required
               disabled={products.length === 0}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
             >
               {skuOptions.map((p) => (
                 <option key={p.sku} value={p.sku}>
@@ -584,7 +584,7 @@ export function OrderProgressPanel({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700">{t.quantity}</span>
+            <span className="mb-1 block text-sm text-foreground/85">{t.quantity}</span>
             <input
               type="number"
               min={0}
@@ -592,55 +592,55 @@ export function OrderProgressPanel({
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               required
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
             />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700">{t.orderDate}</span>
+            <span className="mb-1 block text-sm text-foreground/85">{t.orderDate}</span>
             <input
               type="date"
               value={orderDate}
               onChange={(e) => setOrderDate(e.target.value)}
               required
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
             />
-            <span className="mt-1 block text-xs text-zinc-500">{t.dateHint}</span>
+            <span className="mt-1 block text-xs text-app-muted">{t.dateHint}</span>
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700">{t.expectedDeliveryDate}</span>
+            <span className="mb-1 block text-sm text-foreground/85">{t.expectedDeliveryDate}</span>
             <input
               type="date"
               value={expectedDeliveryDate}
               onChange={(e) => setExpectedDeliveryDate(e.target.value)}
               required={planRows.length === 0}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
             />
-            <span className="mt-1 block text-xs text-zinc-500">{t.dateHint}</span>
+            <span className="mt-1 block text-xs text-app-muted">{t.dateHint}</span>
           </label>
 
-          <div className="md:col-span-2 rounded-xl border border-zinc-200 bg-zinc-50/80 p-4">
+          <div className="md:col-span-2 rounded-xl border border-app-border/90 bg-app-accent-soft/50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-medium text-zinc-800">{t.deliveryBatches}</span>
+              <span className="text-sm font-medium text-foreground/90">{t.deliveryBatches}</span>
               <button
                 type="button"
                 onClick={() => setPlanRows((rows) => [...rows, newPlanRow()])}
-                className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+                className="rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft"
               >
                 {t.addBatch}
               </button>
             </div>
-            <p className="mt-2 text-xs text-zinc-600">{t.deliveryBatchesHint}</p>
+            <p className="mt-2 text-xs text-app-muted">{t.deliveryBatchesHint}</p>
             {planRows.length > 0 ? (
               <div className="mt-3 space-y-3">
                 {planRows.map((row, index) => (
                   <div
                     key={row.key}
-                    className="grid gap-2 rounded-lg border border-zinc-200 bg-white p-3 sm:grid-cols-[1fr_7rem_1fr_auto] sm:items-end"
+                    className="grid gap-2 rounded-lg border border-app-border/90 bg-app-surface p-3 sm:grid-cols-[1fr_7rem_1fr_auto] sm:items-end"
                   >
                     <label className="block min-w-0">
-                      <span className="mb-1 block text-xs text-zinc-600">{t.batchDate}</span>
+                      <span className="mb-1 block text-xs text-app-muted">{t.batchDate}</span>
                       <input
                         type="date"
                         value={row.expectedDeliveryDate}
@@ -650,11 +650,11 @@ export function OrderProgressPanel({
                             rows.map((r, i) => (i === index ? { ...r, expectedDeliveryDate: v } : r)),
                           );
                         }}
-                        className="w-full rounded-lg border border-zinc-300 px-2 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+                        className="w-full rounded-lg border border-app-border px-2 py-2 text-sm outline-none ring-app-accent focus:ring-2"
                       />
                     </label>
                     <label className="block min-w-0">
-                      <span className="mb-1 block text-xs text-zinc-600">{t.batchQty}</span>
+                      <span className="mb-1 block text-xs text-app-muted">{t.batchQty}</span>
                       <input
                         type="number"
                         min={0}
@@ -666,11 +666,11 @@ export function OrderProgressPanel({
                             rows.map((r, i) => (i === index ? { ...r, quantity: v } : r)),
                           );
                         }}
-                        className="w-full rounded-lg border border-zinc-300 px-2 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+                        className="w-full rounded-lg border border-app-border px-2 py-2 text-sm outline-none ring-app-accent focus:ring-2"
                       />
                     </label>
                     <label className="block min-w-0">
-                      <span className="mb-1 block text-xs text-zinc-600">{t.batchProgress}</span>
+                      <span className="mb-1 block text-xs text-app-muted">{t.batchProgress}</span>
                       <select
                         value={row.progress}
                         onChange={(e) => {
@@ -679,7 +679,7 @@ export function OrderProgressPanel({
                             rows.map((r, i) => (i === index ? { ...r, progress: v } : r)),
                           );
                         }}
-                        className="w-full rounded-lg border border-zinc-300 px-2 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+                        className="w-full rounded-lg border border-app-border px-2 py-2 text-sm outline-none ring-app-accent focus:ring-2"
                       >
                         {PROGRESS.map((p) => (
                           <option key={p} value={p}>
@@ -704,11 +704,11 @@ export function OrderProgressPanel({
           </div>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700">{t.orderType}</span>
+            <span className="mb-1 block text-sm text-foreground/85">{t.orderType}</span>
             <select
               value={orderType}
               onChange={(e) => setOrderType(e.target.value as OrderProgressOrderType)}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
             >
               {ORDER_TYPES.map((o) => (
                 <option key={o} value={o}>
@@ -719,11 +719,11 @@ export function OrderProgressPanel({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700">{t.progress}</span>
+            <span className="mb-1 block text-sm text-foreground/85">{t.progress}</span>
             <select
               value={progress}
               onChange={(e) => setProgress(e.target.value as OrderProgressStatus)}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
             >
               {PROGRESS.map((p) => (
                 <option key={p} value={p}>
@@ -734,20 +734,20 @@ export function OrderProgressPanel({
           </label>
 
           <label className="block md:col-span-2">
-            <span className="mb-1 block text-sm text-zinc-700">{t.factoryName}</span>
+            <span className="mb-1 block text-sm text-foreground/85">{t.factoryName}</span>
             <input
               value={factoryName}
               onChange={(e) => setFactoryName(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
             />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700">{t.region}</span>
+            <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
             <select
               value={resolvedRegion}
               onChange={(e) => setRegion(e.target.value as OrderProgressRegion)}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
             >
               {allowedRegions.map((r) => (
                 <option key={r} value={r}>
@@ -761,7 +761,7 @@ export function OrderProgressPanel({
             <button
               type="submit"
               disabled={loading || products.length === 0}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
             >
               {loading ? "..." : editingId ? t.save : t.create}
             </button>
@@ -769,7 +769,7 @@ export function OrderProgressPanel({
               <button
                 type="button"
                 onClick={resetForm}
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
+                className="rounded-lg border border-app-border px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
               >
                 {t.cancelEdit}
               </button>
@@ -777,8 +777,8 @@ export function OrderProgressPanel({
           </div>
 
           {editingId ? (
-            <div className="md:col-span-2 rounded-xl border border-zinc-200 bg-zinc-50/80 p-4">
-              <p className="text-sm font-medium text-zinc-800">{t.productionTitle}</p>
+            <div className="md:col-span-2 rounded-xl border border-app-border/90 bg-app-accent-soft/50 p-4">
+              <p className="text-sm font-medium text-foreground/90">{t.productionTitle}</p>
               {renderProductionChecklist(
                 editingId,
                 productionStepsByOrderId[editingId] ?? [],
@@ -791,13 +791,13 @@ export function OrderProgressPanel({
         {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-lg font-semibold text-zinc-900">{t.listTitle}</h3>
+          <h3 className="text-lg font-semibold text-foreground">{t.listTitle}</h3>
           <Link
             href="/api/order-progress/export-csv"
             prefetch={false}
-            className="inline-flex w-fit items-center rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+            className="inline-flex w-fit items-center rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft"
           >
             {t.exportCsv}
           </Link>
@@ -805,7 +805,7 @@ export function OrderProgressPanel({
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[1280px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-600">
+              <tr className="border-b border-app-border/90 text-left text-app-muted">
                 <th className="px-2 py-2">{t.colOrderNumber}</th>
                 <th className="px-2 py-2">{t.colProduct}</th>
                 <th className="px-2 py-2">{t.colSku}</th>
@@ -824,14 +824,14 @@ export function OrderProgressPanel({
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="px-2 py-6 text-center text-zinc-500">
+                  <td colSpan={13} className="px-2 py-6 text-center text-app-muted">
                     {t.empty}
                   </td>
                 </tr>
               ) : (
                 entries.map((row) => (
-                  <tr key={row.id} className="border-b border-zinc-100">
-                    <td className="px-2 py-2 font-medium tabular-nums text-zinc-900">
+                  <tr key={row.id} className="border-b border-app-border/35">
+                    <td className="px-2 py-2 font-medium tabular-nums text-foreground">
                       {row.orderNumber || "—"}
                     </td>
                     <td className="px-2 py-2">{row.productName}</td>
@@ -840,13 +840,13 @@ export function OrderProgressPanel({
                     <td className="px-2 py-2">{row.orderDate}</td>
                     <td className="px-2 py-2 align-top">
                       {row.deliveryPlans.length > 0 ? (
-                        <ul className="max-w-[14rem] space-y-1 text-xs text-zinc-800">
+                        <ul className="max-w-[14rem] space-y-1 text-xs text-foreground/90">
                           {row.deliveryPlans.map((p) => (
                             <li key={p.id}>
                               <span className="font-medium tabular-nums">{p.expectedDeliveryDate}</span>
-                              <span className="text-zinc-500"> · </span>
+                              <span className="text-app-muted"> · </span>
                               <span className="tabular-nums">{p.quantity}</span>
-                              <span className="text-zinc-500"> · </span>
+                              <span className="text-app-muted"> · </span>
                               {progressLabel(language, p.progress)}
                             </li>
                           ))}
@@ -863,7 +863,7 @@ export function OrderProgressPanel({
                         return (
                           <div>
                             {steps.length > 0 ? (
-                              <p className="mb-1 text-xs font-medium tabular-nums text-zinc-600">
+                              <p className="mb-1 text-xs font-medium tabular-nums text-app-muted">
                                 {productionSummary(steps)}
                               </p>
                             ) : null}
@@ -880,7 +880,7 @@ export function OrderProgressPanel({
                         <button
                           type="button"
                           onClick={() => startEdit(row)}
-                          className="rounded border border-zinc-300 px-2 py-1 hover:bg-zinc-50"
+                          className="rounded border border-app-border px-2 py-1 hover:bg-app-accent-soft"
                         >
                           {t.edit}
                         </button>

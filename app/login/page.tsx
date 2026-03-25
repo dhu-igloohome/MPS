@@ -77,8 +77,8 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-100 px-4 py-10">
-      <section className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+    <main className="flex min-h-dvh items-center justify-center px-4 py-10">
+      <section className="w-full max-w-md rounded-2xl border border-app-border/90 bg-app-surface/95 p-6 shadow-lg shadow-slate-900/5 backdrop-blur-sm sm:p-8">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="space-y-2">
             <Image
@@ -94,7 +94,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={onToggleLanguage}
-            className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+            className="rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground hover:border-app-accent/40 hover:bg-app-accent-soft"
           >
             {t.toggle}
           </button>
@@ -102,23 +102,23 @@ export default function LoginPage() {
 
         <form className="space-y-4" onSubmit={onSubmit}>
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700">{t.username}</span>
+            <span className="mb-1 block text-sm text-foreground">{t.username}</span>
             <input
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               required
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border bg-app-surface px-3 py-2 outline-none ring-app-accent focus:ring-2"
             />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700">{t.password}</span>
+            <span className="mb-1 block text-sm text-foreground">{t.password}</span>
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-indigo-500 focus:ring-2"
+              className="w-full rounded-lg border border-app-border bg-app-surface px-3 py-2 outline-none ring-app-accent focus:ring-2"
             />
           </label>
 
@@ -127,7 +127,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-lg bg-app-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-app-accent-hover disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? "..." : t.login}
           </button>

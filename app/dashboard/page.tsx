@@ -80,62 +80,62 @@ export default async function DashboardPage() {
       description={t.description}
     >
       <section className="grid gap-4 sm:grid-cols-3">
-        <article className="rounded-2xl border border-zinc-200 bg-white p-5">
-          <p className="text-sm text-zinc-500">{t.totalForecast}</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-900">{formatNumber(totalForecast)}</p>
+        <article className="rounded-2xl border border-app-border/90 bg-app-surface shadow-sm p-5">
+          <p className="text-sm text-app-muted">{t.totalForecast}</p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(totalForecast)}</p>
         </article>
-        <article className="rounded-2xl border border-zinc-200 bg-white p-5">
-          <p className="text-sm text-zinc-500">{t.bto}</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-900">{formatNumber(totalBTO)}</p>
+        <article className="rounded-2xl border border-app-border/90 bg-app-surface shadow-sm p-5">
+          <p className="text-sm text-app-muted">{t.bto}</p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(totalBTO)}</p>
         </article>
-        <article className="rounded-2xl border border-zinc-200 bg-white p-5">
-          <p className="text-sm text-zinc-500">{t.bts}</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-900">{formatNumber(totalBTS)}</p>
+        <article className="rounded-2xl border border-app-border/90 bg-app-surface shadow-sm p-5">
+          <p className="text-sm text-app-muted">{t.bts}</p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(totalBTS)}</p>
         </article>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="mb-4 text-lg font-semibold text-zinc-900">{t.orderLogisticsTitle}</h3>
+      <section className="rounded-2xl border border-app-border/90 bg-app-surface shadow-sm p-5">
+        <h3 className="mb-4 text-lg font-semibold text-foreground">{t.orderLogisticsTitle}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <article className="rounded-xl border border-zinc-100 bg-zinc-50/80 p-4">
-            <p className="text-sm font-medium text-zinc-700">{t.orderProgressModule}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-zinc-900">
+          <article className="rounded-xl border border-app-border/50 bg-app-accent-soft/40 p-4">
+            <p className="text-sm font-medium text-foreground/85">{t.orderProgressModule}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">
               {orderProgressRows.length}
             </p>
-            <p className="text-xs text-zinc-500">{t.recordCountLabel}</p>
+            <p className="text-xs text-app-muted">{t.recordCountLabel}</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href="/order-progress"
-                className="inline-flex rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-700"
+                className="inline-flex rounded-lg bg-app-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-app-accent-hover"
               >
                 {t.openModule}
               </Link>
               <Link
                 href="/api/order-progress/export-csv"
                 prefetch={false}
-                className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+                className="inline-flex rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:border-app-accent/35 hover:bg-app-accent-soft"
               >
                 {t.exportOrderCsv}
               </Link>
             </div>
           </article>
-          <article className="rounded-xl border border-zinc-100 bg-zinc-50/80 p-4">
-            <p className="text-sm font-medium text-zinc-700">{t.logisticsModule}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-zinc-900">
+          <article className="rounded-xl border border-app-border/50 bg-app-accent-soft/40 p-4">
+            <p className="text-sm font-medium text-foreground/85">{t.logisticsModule}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">
               {logisticsRows.length}
             </p>
-            <p className="text-xs text-zinc-500">{t.recordCountLabel}</p>
+            <p className="text-xs text-app-muted">{t.recordCountLabel}</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href="/logistics-progress"
-                className="inline-flex rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-700"
+                className="inline-flex rounded-lg bg-app-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-app-accent-hover"
               >
                 {t.openModule}
               </Link>
               <Link
                 href="/api/logistics-shipments/export-csv"
                 prefetch={false}
-                className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+                className="inline-flex rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:border-app-accent/35 hover:bg-app-accent-soft"
               >
                 {t.exportLogisticsCsv}
               </Link>
@@ -144,17 +144,17 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
+      <section className="rounded-2xl border border-app-border/90 bg-app-surface shadow-sm p-5">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-zinc-900">{t.monthlyTitle}</h3>
+          <h3 className="text-lg font-semibold text-foreground">{t.monthlyTitle}</h3>
           <div className="flex items-center gap-3">
             <a
               href="/api/dashboard/export-csv"
-              className="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900"
+              className="inline-flex items-center rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:border-app-accent/35 hover:bg-app-accent-soft hover:text-foreground"
             >
               {t.exportCsv}
             </a>
-            <Link href="/forecast" className="text-sm text-indigo-600 hover:text-indigo-500">
+            <Link href="/forecast" className="text-sm font-medium text-app-accent hover:text-app-accent-hover">
               {t.addForecast}
             </Link>
           </div>
@@ -162,7 +162,7 @@ export default async function DashboardPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-600">
+              <tr className="border-b border-app-border text-left text-app-muted">
                 <th className="px-2 py-2">{t.month}</th>
                 <th className="px-2 py-2">{t.region}</th>
                 <th className="px-2 py-2">{t.bto}</th>
@@ -173,13 +173,13 @@ export default async function DashboardPage() {
             <tbody>
               {summary.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-2 py-6 text-center text-zinc-500">
+                  <td colSpan={5} className="px-2 py-6 text-center text-app-muted">
                     {t.noMonthlyData}
                   </td>
                 </tr>
               ) : (
                 summary.map((item) => (
-                  <tr key={`${item.month}-${item.region}`} className="border-b border-zinc-100">
+                  <tr key={`${item.month}-${item.region}`} className="border-b border-app-border/40">
                     <td className="px-2 py-2">{item.month}</td>
                     <td className="px-2 py-2">{item.region}</td>
                     <td className="px-2 py-2">{formatNumber(item.buildToOrder)}</td>
@@ -195,12 +195,12 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-zinc-900">{t.quarterTitle}</h3>
+      <section className="rounded-2xl border border-app-border/90 bg-app-surface shadow-sm p-5">
+        <h3 className="text-lg font-semibold text-foreground">{t.quarterTitle}</h3>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[700px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-600">
+              <tr className="border-b border-app-border text-left text-app-muted">
                 <th className="px-2 py-2">{t.quarter}</th>
                 <th className="px-2 py-2">{t.region}</th>
                 <th className="px-2 py-2">{t.bto}</th>
@@ -212,13 +212,13 @@ export default async function DashboardPage() {
             <tbody>
               {quarterSummary.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-2 py-6 text-center text-zinc-500">
+                  <td colSpan={6} className="px-2 py-6 text-center text-app-muted">
                     {t.noQuarterlyData}
                   </td>
                 </tr>
               ) : (
                 quarterSummary.map((item) => (
-                  <tr key={`${item.quarter}-${item.region}`} className="border-b border-zinc-100">
+                  <tr key={`${item.quarter}-${item.region}`} className="border-b border-app-border/40">
                     <td className="px-2 py-2">{item.quarter}</td>
                     <td className="px-2 py-2">{item.region}</td>
                     <td className="px-2 py-2">{formatNumber(item.buildToOrder)}</td>
@@ -235,12 +235,12 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-zinc-900">{t.latestTitle}</h3>
+      <section className="rounded-2xl border border-app-border/90 bg-app-surface shadow-sm p-5">
+        <h3 className="text-lg font-semibold text-foreground">{t.latestTitle}</h3>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-600">
+              <tr className="border-b border-app-border text-left text-app-muted">
                 <th className="px-2 py-2">{t.month}</th>
                 <th className="px-2 py-2">{t.region}</th>
                 <th className="px-2 py-2">{t.office}</th>
@@ -254,13 +254,13 @@ export default async function DashboardPage() {
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-2 py-6 text-center text-zinc-500">
+                  <td colSpan={8} className="px-2 py-6 text-center text-app-muted">
                     {t.noRecords}
                   </td>
                 </tr>
               ) : (
                 entries.slice(0, 20).map((item) => (
-                  <tr key={item.id} className="border-b border-zinc-100">
+                  <tr key={item.id} className="border-b border-app-border/40">
                     <td className="px-2 py-2">{item.month}</td>
                     <td className="px-2 py-2">{item.region}</td>
                     <td className="px-2 py-2">{item.office}</td>

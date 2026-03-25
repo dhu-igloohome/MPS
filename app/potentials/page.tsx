@@ -33,20 +33,20 @@ export default function PotentialsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-100 px-4 py-10">
-      <div className="mx-auto w-full max-w-2xl space-y-6">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <h1 className="text-xl font-semibold text-zinc-900">Potentials</h1>
-          <p className="mt-1 text-sm text-zinc-600">
+    <main className="min-h-dvh px-4 py-8 sm:py-10">
+      <div className="mx-auto w-full max-w-2xl space-y-5 sm:space-y-6">
+        <div className="rounded-2xl border border-app-border/90 bg-app-surface/95 p-5 shadow-sm backdrop-blur-sm sm:p-6">
+          <h1 className="text-xl font-semibold text-foreground">Potentials</h1>
+          <p className="mt-1 text-sm text-app-muted">
             四个父级目录（与 ForeTracker 无数据互通）。按分类填写后提交，仅在当前页回显。
           </p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+        <div className="rounded-2xl border border-app-border/90 bg-app-surface/95 p-4 shadow-sm backdrop-blur-sm">
+          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-app-muted">
             父级目录
           </p>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {PARENT_CATEGORIES.map((cat) => {
               const selected = cat.id === activeId;
               return (
@@ -56,12 +56,12 @@ export default function PotentialsPage() {
                   onClick={() => setActiveId(cat.id)}
                   className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
                     selected
-                      ? "border-zinc-900 bg-zinc-900 text-white"
-                      : "border-zinc-200 bg-zinc-50 text-zinc-800 hover:border-zinc-300"
+                      ? "border-app-accent bg-app-accent text-white shadow-md"
+                      : "border-app-border/90 bg-app-accent-soft/40 text-foreground/90 hover:border-app-accent/40"
                   }`}
                 >
                   <span className="font-semibold">{cat.label}</span>
-                  <span className={selected ? "text-zinc-300" : "text-zinc-500"}>
+                  <span className={selected ? "text-white/85" : "text-app-muted"}>
                     {" "}
                     （{cat.labelZh}）
                   </span>
@@ -71,15 +71,15 @@ export default function PotentialsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-zinc-900">
+        <div className="rounded-2xl border border-app-border/90 bg-app-surface/95 p-5 shadow-sm backdrop-blur-sm sm:p-6">
+          <h2 className="text-base font-semibold text-foreground">
             {active.label}（{active.labelZh}）
           </h2>
-          <p className="mt-1 text-sm text-zinc-600">在此分类下输入需求或备注。</p>
+          <p className="mt-1 text-sm text-app-muted">在此分类下输入需求或备注。</p>
 
           <form className="mt-4 space-y-4" onSubmit={onSubmit}>
             <label className="block">
-              <span className="mb-1 block text-sm text-zinc-700">内容</span>
+              <span className="mb-1 block text-sm text-foreground/85">内容</span>
               <textarea
                 value={draft}
                 onChange={(e) =>
@@ -87,12 +87,12 @@ export default function PotentialsPage() {
                 }
                 rows={5}
                 placeholder="例如：davidhuang testing..."
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
               />
             </label>
             <button
               type="submit"
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover"
             >
               提交（当前分类）
             </button>

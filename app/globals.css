@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
+/*
+ * Light-first app theme: cool slate page + blue accent (readable on desk / tablet / phone).
+ * color-scheme: light avoids OS dark mode fighting zinc-only components.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #e8eef7;
+  --foreground: #0f172a;
+  --app-surface: #ffffff;
+  --app-muted: #64748b;
+  --app-border: #c9d4e5;
+  --app-accent: #2563eb;
+  --app-accent-hover: #1d4ed8;
+  --app-accent-soft: #e8f0fe;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-app-surface: var(--app-surface);
+  --color-app-muted: var(--app-muted);
+  --color-app-border: var(--app-border);
+  --color-app-accent: var(--app-accent);
+  --color-app-accent-hover: var(--app-accent-hover);
+  --color-app-accent-soft: var(--app-accent-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
+  select,
+  textarea {
+    background-color: var(--app-surface);
   }
 }
 
 body {
+  min-height: 100dvh;
   background: var(--background);
+  background-image: radial-gradient(
+      ellipse 120% 80% at 50% -20%,
+      rgb(219 234 254 / 0.55),
+      transparent 55%
+    ),
+    radial-gradient(ellipse 70% 50% at 100% 0%, rgb(224 231 255 / 0.35), transparent 45%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgb(207 250 254 / 0.25), transparent 50%);
+  background-attachment: fixed;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }

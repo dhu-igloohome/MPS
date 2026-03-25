@@ -221,14 +221,14 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
+      <section className="rounded-2xl border border-app-border/90 bg-white p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <h3 className="text-lg font-semibold text-zinc-900">{t.createTitle}</h3>
+          <h3 className="text-lg font-semibold text-foreground">{t.createTitle}</h3>
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/api/admin/users/csv-template"
               prefetch={false}
-              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft"
             >
               {t.downloadTemplate}
             </Link>
@@ -243,13 +243,13 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
               type="button"
               disabled={loading}
               onClick={() => batchFileRef.current?.click()}
-              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
+              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft disabled:opacity-60"
             >
               {t.batchImport}
             </button>
           </div>
         </div>
-        <p className="mt-2 text-xs text-zinc-500">{t.batchHint}</p>
+        <p className="mt-2 text-xs text-app-muted">{t.batchHint}</p>
         {batchSummary ? (
           <p className="mt-2 text-sm text-emerald-800">{batchSummary}</p>
         ) : null}
@@ -317,7 +317,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
             <button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-700 disabled:opacity-60"
+              className="rounded-lg bg-app-accent px-4 py-2 text-sm text-white hover:bg-app-accent-hover disabled:opacity-60"
             >
               {loading ? t.creating : t.createUser}
             </button>
@@ -325,12 +325,12 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
         </form>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-zinc-900">{t.existingAccounts}</h3>
+      <section className="rounded-2xl border border-app-border/90 bg-white p-5">
+        <h3 className="text-lg font-semibold text-foreground">{t.existingAccounts}</h3>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-600">
+              <tr className="border-b border-app-border/90 text-left text-zinc-600">
                 <th className="px-2 py-2">{t.username}</th>
                 <th className="px-2 py-2">{t.displayName}</th>
                 <th className="px-2 py-2">{t.role}</th>
@@ -340,7 +340,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
             </thead>
             <tbody>
               {editableUsers.map((user) => (
-                <tr key={user.username} className="border-b border-zinc-100">
+                <tr key={user.username} className="border-b border-app-border/35">
                   <td className="px-2 py-2">{user.username}</td>
                   <td className="px-2 py-2">{user.displayName}</td>
                   <td className="px-2 py-2">
@@ -376,7 +376,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
                       <button
                         type="button"
                         onClick={() => updateUser(user)}
-                        className="rounded-lg border border-zinc-300 px-2 py-1 hover:bg-zinc-50"
+                        className="rounded-lg border border-zinc-300 px-2 py-1 hover:bg-app-accent-soft"
                       >
                         {t.saveResetPw}
                       </button>
@@ -397,15 +397,15 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
         </div>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-zinc-900">{t.operationLogs}</h3>
+      <section className="rounded-2xl border border-app-border/90 bg-white p-5">
+        <h3 className="text-lg font-semibold text-foreground">{t.operationLogs}</h3>
         <p className="mt-1 text-sm text-zinc-600">
           {t.operationLogsDesc}
         </p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-600">
+              <tr className="border-b border-app-border/90 text-left text-zinc-600">
                 <th className="px-2 py-2">{t.time}</th>
                 <th className="px-2 py-2">{t.actor}</th>
                 <th className="px-2 py-2">{t.action}</th>
@@ -416,13 +416,13 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
             <tbody>
               {auditLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-2 py-4 text-center text-zinc-500">
+                  <td colSpan={5} className="px-2 py-4 text-center text-app-muted">
                     {t.noLogs}
                   </td>
                 </tr>
               ) : (
                 auditLogs.map((log) => (
-                  <tr key={log.id} className="border-b border-zinc-100">
+                  <tr key={log.id} className="border-b border-app-border/35">
                     <td className="px-2 py-2">
                       {new Date(log.createdAt).toLocaleString("en-US", { hour12: false })}
                     </td>
@@ -439,7 +439,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
       </section>
 
       {message ? (
-        <p className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-700">
+        <p className="rounded-lg border border-app-border/90 bg-white px-4 py-2 text-sm text-foreground/85">
           {message}
         </p>
       ) : null}

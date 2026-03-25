@@ -1,7 +1,7 @@
-import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
 
+import { AppShellNav } from "@/components/shared/app-shell-nav";
 import { LanguageToggle } from "@/components/shared/language-toggle";
 import { LogoutButton } from "@/components/shared/logout-button";
 import { normalizeLanguage } from "@/lib/i18n";
@@ -27,18 +27,35 @@ export async function AppShell({ session, title, description, children }: AppShe
     productDatabase: language === "en" ? "Product Database" : "产品数据库",
   };
 
+  const navItems = [
+    { href: "/dashboard", label: navText.cockpit },
+    { href: "/forecast", label: navText.forecastInput },
+    { href: "/order-progress", label: navText.orderProgress },
+    { href: "/logistics-progress", label: navText.logisticsProgress },
+    ...(session.role === "super_admin"
+      ? [
+          { href: "/admin/users", label: navText.userManagement },
+          { href: "/admin/products", label: navText.productDatabase },
+        ]
+      : []),
+  ];
+
   return (
-    <main className="min-h-screen bg-zinc-100">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between px-4 py-4 sm:px-6">
-          <div className="space-y-1">
+    <main className="min-h-dvh">
+      <header className="border-b border-app-border/80 bg-app-surface/90 shadow-sm backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6 lg:py-5">
+          <div className="min-w-0 space-y-1">
             <Image src="/igloo-logo-pinge.svg" alt="Igloo logo" width={87} height={24} priority />
-            <p className="text-sm text-zinc-500">igloo ForeTracker | igloo订单追踪系统</p>
-            <h1 className="text-lg font-semibold text-zinc-900">{title}</h1>
+            <p className="text-xs text-app-muted sm:text-sm">
+              igloo ForeTracker | igloo订单追踪系统
+            </p>
+            <h1 className="text-base font-semibold text-foreground sm:text-lg">{title}</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-zinc-600 sm:inline">
-              {session.displayName} ({session.role})
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:gap-3">
+            <span className="max-w-[12rem] truncate text-xs text-app-muted sm:max-w-none sm:text-sm">
+              <span className="hidden sm:inline">{session.displayName}</span>
+              <span className="sm:hidden">{session.displayName.split(/\s+/)[0] || session.displayName}</span>
+              <span className="text-app-muted"> ({session.role})</span>
             </span>
             <LanguageToggle language={language} />
             <LogoutButton />
@@ -46,71 +63,14 @@ export async function AppShell({ session, title, description, children }: AppShe
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-[1400px] gap-4 px-4 py-5 sm:px-6">
-        <nav className="hidden w-52 flex-none rounded-2xl border border-zinc-200 bg-white p-3 md:block">
-          <ul className="space-y-1 text-sm">
-            <li>
-              <Link
-                href="/dashboard"
-                className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
-              >
-                {navText.cockpit}
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/forecast"
-                className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
-              >
-                {navText.forecastInput}
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/order-progress"
-                className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
-              >
-                {navText.orderProgress}
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/logistics-progress"
-                className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
-              >
-                {navText.logisticsProgress}
-              </Link>
-            </li>
-            {session.role === "super_admin" ? (
-              <li>
-                <Link
-                  href="/admin/users"
-                  className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
-                >
-                  {navText.userManagement}
-                </Link>
-              </li>
-            ) : null}
-            {session.role === "super_admin" ? (
-              <li>
-                <Link
-                  href="/admin/products"
-                  className="block rounded-lg px-3 py-2 text-zinc-700 hover:bg-zinc-100"
-                >
-                  {navText.productDatabase}
-                </Link>
-              </li>
-            ) : null}
-          </ul>
-        </nav>
-
-        <section className="min-w-0 flex-1 space-y-4">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5">
-            <h2 className="text-xl font-semibold text-zinc-900">{title}</h2>
-            <p className="mt-1 text-sm text-zinc-600">{description}</p>
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-4 sm:px-6 sm:py-6 lg:py-8">
+        <AppShellNav items={navItems}>
+          <div className="rounded-2xl border border-app-border/90 bg-app-surface/95 p-4 shadow-sm backdrop-blur-sm sm:p-5">
+            <h2 className="text-lg font-semibold text-foreground sm:text-xl">{title}</h2>
+            <p className="mt-1 text-sm text-app-muted">{description}</p>
           </div>
           {children}
-        </section>
+        </AppShellNav>
       </div>
     </main>
   );
