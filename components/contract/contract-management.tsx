@@ -36,6 +36,30 @@ function statusBadgeClass(status: ContractStatus) {
   return "bg-emerald-50 text-emerald-700 ring-emerald-200";
 }
 
+function getAvailableActions(
+  role: UserRole,
+  status: ContractStatus,
+): { key: string; label: string; next: ContractStatus }[] {
+  if (status === "draft") {
+    const actions = [{ key: "to-approved", label: "Submit for approval", next: "approved" as ContractStatus }];
+    if (role === "super_admin") {
+      actions.push({ key: "to-sent", label: "Mark as sent", next: "sent" });
+    }
+    return actions;
+  }
+  if (status === "approved") {
+    const actions = [{ key: "to-draft", label: "Return to draft", next: "draft" as ContractStatus }];
+    if (role === "super_admin") {
+      actions.push({ key: "to-sent", label: "Mark as sent", next: "sent" });
+    }
+    return actions;
+  }
+  if (role === "super_admin") {
+    return [{ key: "sent-to-approved", label: "Reopen to approved", next: "approved" }];
+  }
+  return [];
+}
+
 export function ContractManagement({ contracts, orders, suppliers, language: _language, role }: ContractManagementProps) {
   void _language;
   const router = useRouter();
@@ -184,15 +208,15 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
                     <div className="flex flex-wrap gap-2">
                       <Link className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/contracts/${encodeURIComponent(c.id)}`}>{t.details}</Link>
                       <a className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/api/contracts/${encodeURIComponent(c.id)}/pdf`}>{t.download}</a>
-                      {(["draft", "approved", "sent"] as ContractStatus[]).map((next) => (
+                      {getAvailableActions(role, c.status).map((action) => (
                         <button
-                          key={next}
+                          key={action.key}
                           type="button"
-                          disabled={loading || !canTransition(role, c.status, next)}
+                          disabled={loading || !canTransition(role, c.status, action.next)}
                           className="rounded border border-app-border px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                          onClick={() => onSetStatus(c.id, next)}
+                          onClick={() => onSetStatus(c.id, action.next)}
                         >
-                          {next}
+                          {action.label}
                         </button>
                       ))}
                     </div>
