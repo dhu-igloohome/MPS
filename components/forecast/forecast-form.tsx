@@ -14,6 +14,27 @@ type ForecastFormProps = {
   canDelete: boolean;
 };
 
+type DraftForecastLine = {
+  key: string;
+  sku: string;
+  productName: string;
+  buildToOrder: string;
+  buildToStock: string;
+  remark: string;
+};
+
+function newDraftForecastLine(products: ProductItem[]): DraftForecastLine {
+  const first = products[0];
+  return {
+    key: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `f-${Date.now()}-${Math.random()}`,
+    sku: first?.sku || "",
+    productName: first?.productName || "",
+    buildToOrder: "0",
+    buildToStock: "0",
+    remark: "",
+  };
+}
+
 export function ForecastForm({
   allowedRegions,
   products,
@@ -42,6 +63,8 @@ export function ForecastForm({
     productName: language === "en" ? "Product Name" : "产品名称",
     sku: "SKU",
     remark: language === "en" ? "Remark" : "备注",
+    addSku: language === "en" ? "+" : "+",
+    removeSku: language === "en" ? "Delete" : "删除",
     bto: language === "en" ? "Build to Order" : "按单生产",
     bts: language === "en" ? "Build to Stock" : "备货生产",
     saveFailed:
@@ -74,18 +97,11 @@ export function ForecastForm({
         : "请输入取消原因（必填）：",
   };
   const defaultRegion = allowedRegions[0];
-  const defaultProductName = products[0]?.productName || "";
-  const defaultSku =
-    products.find((item) => item.productName === defaultProductName)?.sku || "";
 
   const [month, setMonth] = useState("");
   const [region, setRegion] = useState<Region>(defaultRegion);
   const [destination, setDestination] = useState("");
-  const [productName, setProductName] = useState(defaultProductName);
-  const [sku, setSku] = useState(defaultSku);
-  const [remark, setRemark] = useState("");
-  const [buildToOrder, setBuildToOrder] = useState("0");
-  const [buildToStock, setBuildToStock] = useState("0");
+  const [lines, setLines] = useState<DraftForecastLine[]>([newDraftForecastLine(products)]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [useExistingPo, setUseExistingPo] = useState(false);
@@ -94,13 +110,9 @@ export function ForecastForm({
   const [batchSummary, setBatchSummary] = useState<string | null>(null);
   const [batchErrors, setBatchErrors] = useState<{ row: number; message: string }[]>([]);
   const batchFileRef = useRef<HTMLInputElement>(null);
-  const productNameOptions = useMemo(
-    () => [...new Set(products.map((item) => item.productName))],
-    [products],
-  );
   const skuOptions = useMemo(
-    () => products.filter((item) => item.productName === productName),
-    [products, productName],
+    () => [...new Set(products.map((item) => item.sku).filter(Boolean))].sort(),
+    [products],
   );
   const regionPoOptions = useMemo(
     () =>
@@ -150,10 +162,19 @@ export function ForecastForm({
     }
   }
 
-  function onProductNameChange(nextProductName: string) {
-    setProductName(nextProductName);
-    const firstSku = products.find((item) => item.productName === nextProductName)?.sku || "";
-    setSku(firstSku);
+  function updateLineSku(lineKey: string, nextSku: string) {
+    const matched = products.find((item) => item.sku === nextSku);
+    setLines((prev) =>
+      prev.map((line) =>
+        line.key === lineKey
+          ? {
+              ...line,
+              sku: nextSku,
+              productName: matched?.productName || "",
+            }
+          : line,
+      ),
+    );
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -163,40 +184,42 @@ export function ForecastForm({
     setBatchSummary(null);
     setBatchErrors([]);
 
-    const response = await fetch("/api/forecasts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        month,
-        region,
-        destination,
-        poNumber: useExistingPo ? selectedPoNumber : "",
-        productName,
-        sku,
-        remark,
-        buildToOrder: Number(buildToOrder || 0),
-        buildToStock: Number(buildToStock || 0),
-      }),
-    });
-
-    setLoading(false);
-
-    const data = (await response.json().catch(() => ({}))) as { entry?: { poNumber?: string } };
-
-    if (!response.ok) {
-      setMessage(t.saveFailed);
-      return;
+    let issuedPo = useExistingPo ? selectedPoNumber : "";
+    let created = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const response = await fetch("/api/forecasts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          month,
+          region,
+          destination,
+          poNumber: issuedPo,
+          productName: line.productName,
+          sku: line.sku,
+          remark: line.remark,
+          buildToOrder: Number(line.buildToOrder || 0),
+          buildToStock: Number(line.buildToStock || 0),
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as { entry?: { poNumber?: string } };
+      if (!response.ok) {
+        setLoading(false);
+        setMessage(`${t.saveFailed} ${language === "en" ? "Failed row:" : "失败行："} ${i + 1}`);
+        return;
+      }
+      created += 1;
+      if (!issuedPo) {
+        issuedPo = data.entry?.poNumber || "";
+      }
     }
 
-    const issued = data.entry?.poNumber;
-    setMessage(
-      issued ? `${t.saved} ${language === "en" ? "PO:" : "PO："} ${issued}` : t.saved,
-    );
-    setRemark("");
-    setBuildToOrder("0");
-    setBuildToStock("0");
+    setLoading(false);
+    setMessage(`${t.saved} (${created}) ${issuedPo ? `${language === "en" ? "PO:" : "PO："} ${issuedPo}` : ""}`);
+    setLines([newDraftForecastLine(products)]);
     router.refresh();
   }
   async function onDelete(id: string) {
@@ -296,6 +319,19 @@ export function ForecastForm({
             ))}
           </select>
         </label>
+        <label className="block">
+          <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
+          <input
+            value={destination}
+            onChange={(event) => setDestination(event.target.value)}
+            required
+            maxLength={80}
+            pattern="[A-Za-z0-9\u4E00-\u9FFF]+"
+            title={t.destinationHint}
+            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+          />
+          <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
+        </label>
         <label className="block md:col-span-2">
           <span className="mb-1 block text-sm text-foreground/85">{t.useExistingPo}</span>
           <div className="flex items-center gap-2">
@@ -332,83 +368,102 @@ export function ForecastForm({
           </label>
         ) : null}
 
-        <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
-          <input
-            value={destination}
-            onChange={(event) => setDestination(event.target.value)}
-            required
-            maxLength={80}
-            pattern="[A-Za-z0-9\u4E00-\u9FFF]+"
-            title={t.destinationHint}
-            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
-          />
-          <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
-          <select
-            value={productName}
-            onChange={(event) => onProductNameChange(event.target.value)}
-            required
-            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
-          >
-            {productNameOptions.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
-          <select
-            value={sku}
-            onChange={(event) => setSku(event.target.value)}
-            required
-            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
-          >
-            {skuOptions.map((item) => (
-              <option key={item.sku} value={item.sku}>
-                {item.sku}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block md:col-span-2">
-          <span className="mb-1 block text-sm text-foreground/85">{t.remark}</span>
-          <textarea
-            value={remark}
-            onChange={(event) => setRemark(event.target.value)}
-            rows={3}
-            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
-          <input
-            type="number"
-            min={0}
-            value={buildToOrder}
-            onChange={(event) => setBuildToOrder(event.target.value)}
-            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.bts}</span>
-          <input
-            type="number"
-            min={0}
-            value={buildToStock}
-            onChange={(event) => setBuildToStock(event.target.value)}
-            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
-          />
-        </label>
+        <div className="md:col-span-2 space-y-3">
+          {lines.map((line, idx) => (
+            <div key={line.key} className="rounded-lg border border-app-border/80 p-3">
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={line.sku}
+                      onChange={(event) => updateLineSku(line.key, event.target.value)}
+                      required
+                      className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+                    >
+                      {skuOptions.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                    {idx === lines.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setLines((prev) => [...prev, newDraftForecastLine(products)])}
+                        className="rounded-lg border border-app-border px-3 py-2 text-sm"
+                      >
+                        {t.addSku}
+                      </button>
+                    ) : null}
+                    {lines.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setLines((prev) => prev.filter((x) => x.key !== line.key))}
+                        className="rounded-lg border border-red-300 px-3 py-2 text-sm text-red-700"
+                      >
+                        {t.removeSku}
+                      </button>
+                    ) : null}
+                  </div>
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
+                  <input
+                    value={line.productName}
+                    readOnly
+                    className="w-full rounded-lg border border-app-border bg-gray-50 px-3 py-2 outline-none"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={line.buildToOrder}
+                    onChange={(event) =>
+                      setLines((prev) =>
+                        prev.map((x) =>
+                          x.key === line.key ? { ...x, buildToOrder: event.target.value } : x,
+                        ),
+                      )
+                    }
+                    className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm text-foreground/85">{t.bts}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={line.buildToStock}
+                    onChange={(event) =>
+                      setLines((prev) =>
+                        prev.map((x) =>
+                          x.key === line.key ? { ...x, buildToStock: event.target.value } : x,
+                        ),
+                      )
+                    }
+                    className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+                  />
+                </label>
+                <label className="block md:col-span-2">
+                  <span className="mb-1 block text-sm text-foreground/85">{t.remark}</span>
+                  <textarea
+                    value={line.remark}
+                    onChange={(event) =>
+                      setLines((prev) =>
+                        prev.map((x) => (x.key === line.key ? { ...x, remark: event.target.value } : x)),
+                      )
+                    }
+                    rows={2}
+                    className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+                  />
+                </label>
+              </div>
+            </div>
+          ))}
+        </div>
 
         <div className="md:col-span-2 flex items-center gap-3">
           <button
