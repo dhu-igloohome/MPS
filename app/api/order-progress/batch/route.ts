@@ -154,7 +154,6 @@ export async function POST(request: Request) {
       continue;
     }
 
-    const orderNumber = cell(row, col, "order_number").trim().slice(0, ORDER_NUMBER_MAX);
     const poNumber = cell(row, col, "po_number").trim().slice(0, ORDER_NUMBER_MAX);
     const productName = cell(row, col, "product_name").trim();
     const sku = cell(row, col, "sku").trim();
@@ -212,7 +211,6 @@ export async function POST(request: Request) {
 
     try {
       await createOrderProgress({
-        orderNumber,
         poNumber,
         productName,
         sku,

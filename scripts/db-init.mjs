@@ -200,6 +200,12 @@ async function main() {
       next_number integer not null
     );
   `;
+  await sql`
+    create table if not exists order_progress_number_sequences (
+      key text primary key,
+      next_number integer not null
+    );
+  `;
 
   await sql`alter table order_progress add column if not exists po_number text;`;
   await sql`alter table order_progress add column if not exists po_batch text not null default '';`;
@@ -352,6 +358,19 @@ async function main() {
       target_username text not null,
       details text not null default '',
       created_at timestamptz not null default now()
+    );
+  `;
+  await sql`
+    create table if not exists order_progress_deletion_logs (
+      id bigserial primary key,
+      order_progress_id bigint not null,
+      order_number text not null default '',
+      forecast_number text not null,
+      sku text not null,
+      region text not null check (region in ('APAC', 'EU', 'US')),
+      reason text not null,
+      deleted_by text not null references users(username),
+      deleted_at timestamptz not null default now()
     );
   `;
   await sql`

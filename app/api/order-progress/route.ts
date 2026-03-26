@@ -17,7 +17,6 @@ import type {
 } from "@/lib/types";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const ORDER_NUMBER_MAX = 200;
 
 function isOrderProgressRegion(value: string): value is OrderProgressRegion {
   return value === "APAC" || value === "EU" || value === "US";
@@ -48,8 +47,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const orderNumber = String(body.orderNumber ?? "").trim().slice(0, ORDER_NUMBER_MAX);
-  const poNumber = String(body.poNumber ?? "").trim().slice(0, ORDER_NUMBER_MAX);
+  const poNumber = String(body.poNumber ?? "").trim().slice(0, 200);
   const productName = String(body.productName || "");
   const sku = String(body.sku || "");
   const orderDate = String(body.orderDate || "");
@@ -121,7 +119,6 @@ export async function POST(request: Request) {
 
   try {
     const entry = await createOrderProgress({
-      orderNumber,
       poNumber,
       productName,
       sku,

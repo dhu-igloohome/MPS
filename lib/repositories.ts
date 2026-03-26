@@ -1297,7 +1297,6 @@ export async function getOrderProgressById(id: string) {
 }
 
 export async function createOrderProgress(input: {
-  orderNumber: string;
   poNumber: string;
   productName: string;
   sku: string;
@@ -1319,6 +1318,17 @@ export async function createOrderProgress(input: {
       ? plans.reduce((min, p) => (p.expectedDeliveryDate < min ? p.expectedDeliveryDate : min), plans[0].expectedDeliveryDate)
       : input.expectedDeliveryDate;
   const rows = await db<OrderProgressRow[]>`
+    with ensure_seq as (
+      insert into order_progress_number_sequences (key, next_number)
+      values ('IG-PO', 10000)
+      on conflict (key) do nothing
+    ),
+    seq as (
+      update order_progress_number_sequences
+      set next_number = next_number + 1
+      where key = 'IG-PO'
+      returning next_number - 1 as issue_number
+    )
     insert into order_progress (
       order_number,
       po_number,
@@ -1333,8 +1343,8 @@ export async function createOrderProgress(input: {
       region,
       created_by
     )
-    values (
-      ${input.orderNumber.trim()},
+    select
+      'IG-PO-' || lpad((select issue_number from seq)::text, 7, '0'),
       ${input.poNumber.trim() || null},
       ${input.productName.trim()},
       ${input.sku.trim()},
@@ -1346,7 +1356,6 @@ export async function createOrderProgress(input: {
       ${input.factoryName.trim()},
       ${input.region},
       ${input.createdBy}
-    )
     returning
       id,
       coalesce(order_number, '') as order_number,
@@ -1396,7 +1405,6 @@ export async function orderProgressPoSkuExists(poNumber: string, sku: string): P
 
 export async function updateOrderProgress(input: {
   id: string;
-  orderNumber: string;
   poNumber: string;
   productName: string;
   sku: string;
@@ -1428,7 +1436,6 @@ export async function updateOrderProgress(input: {
   const rows = await db<OrderProgressRow[]>`
     update order_progress
     set
-      order_number = ${input.orderNumber.trim()},
       po_number = ${input.poNumber.trim() || null},
       product_name = ${input.productName.trim()},
       sku = ${input.sku.trim()},
@@ -1482,6 +1489,39 @@ export async function updateOrderProgress(input: {
   const planMap = await loadDeliveryPlansByProgressIds(db, [pid]);
   const stepMap = await loadOrderProductionStepsByIds(db, [pid]);
   return mapOrderProgress(rows[0], planMap.get(pid) ?? [], stepMap.get(pid) ?? []);
+}
+
+export async function createOrderProgressDeletionLog(input: {
+  orderProgressId: string;
+  orderNumber: string;
+  forecastNumber: string;
+  sku: string;
+  region: OrderProgressRegion;
+  reason: string;
+  deletedBy: string;
+}) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    insert into order_progress_deletion_logs (
+      order_progress_id,
+      order_number,
+      forecast_number,
+      sku,
+      region,
+      reason,
+      deleted_by
+    )
+    values (
+      ${Number(input.orderProgressId)},
+      ${input.orderNumber.trim()},
+      ${input.forecastNumber.trim()},
+      ${input.sku.trim()},
+      ${input.region},
+      ${input.reason.trim()},
+      ${input.deletedBy}
+    );
+  `;
 }
 
 export async function deleteOrderProgressById(id: string) {

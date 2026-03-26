@@ -112,6 +112,8 @@ function labels(language: Language) {
     colForecastLink: en ? "Forecast match" : "Forecast 关联",
     colActions: en ? "Actions" : "操作",
     deleteConfirm: en ? "Delete this order line?" : "确认删除该订单行？",
+    deleteReasonPrompt:
+      en ? "Please enter deletion reason (required):" : "请输入删除原因（必填）：",
     bto: en ? "BTO (Build to Order)" : "BTO（按单生产）",
     bts: en ? "BTS (Build to Stock)" : "BTS（备货生产）",
     pNotStarted: en ? "Not started" : "未生产",
@@ -413,7 +415,6 @@ export function OrderProgressPanel({
         : expectedDeliveryDate;
 
     const payload = {
-      orderNumber: orderNumber.trim().slice(0, 200),
       poNumber: resolvedPoNumber.trim().slice(0, 200),
       productName: resolvedProductName,
       sku: resolvedSku,
@@ -542,9 +543,16 @@ export function OrderProgressPanel({
 
   async function onDelete(id: string) {
     if (!window.confirm(t.deleteConfirm)) return;
+    const reason = window.prompt(t.deleteReasonPrompt)?.trim() || "";
+    if (!reason) {
+      setMessage(language === "en" ? "Deletion reason is required." : "删除原因必填。");
+      return;
+    }
     setLoading(true);
     const response = await fetch(`/api/order-progress/${encodeURIComponent(id)}`, {
       method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
     });
     setLoading(false);
     if (!response.ok) {
@@ -680,10 +688,9 @@ export function OrderProgressPanel({
             <span className="mb-1 block text-sm text-foreground/85">{t.orderNumber}</span>
             <input
               value={orderNumber}
-              onChange={(e) => setOrderNumber(e.target.value)}
-              maxLength={200}
-              placeholder={language === "en" ? "Optional" : "选填"}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              readOnly
+              placeholder={language === "en" ? "Auto-generated on create (IG-PO-xxxxxxx)" : "创建时自动生成（IG-PO-xxxxxxx）"}
+              className="w-full rounded-lg border border-app-border bg-app-accent-soft/40 px-3 py-2 text-sm outline-none"
             />
           </label>
           <label className="block md:col-span-2">

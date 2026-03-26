@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { parseDeliveryPlansInput } from "@/lib/order-progress-delivery-plans";
 import {
+  createOrderProgressDeletionLog,
   deleteOrderProgressById,
   findActiveProductByNameAndSku,
   forecastPoSkuExistsInRegions,
@@ -18,7 +19,6 @@ import type {
 } from "@/lib/types";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const ORDER_NUMBER_MAX = 200;
 
 function isOrderProgressRegion(value: string): value is OrderProgressRegion {
   return value === "APAC" || value === "EU" || value === "US";
@@ -55,8 +55,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const body = await request.json();
-  const orderNumber = String(body.orderNumber ?? "").trim().slice(0, ORDER_NUMBER_MAX);
-  const poNumber = String(body.poNumber ?? "").trim().slice(0, ORDER_NUMBER_MAX);
+  const poNumber = String(body.poNumber ?? "").trim().slice(0, 200);
   const productName = String(body.productName || "");
   const sku = String(body.sku || "");
   const orderDate = String(body.orderDate || "");
@@ -121,7 +120,6 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const entry = await updateOrderProgress({
     id,
-    orderNumber,
     poNumber,
     productName,
     sku,
@@ -142,7 +140,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   return NextResponse.json({ ok: true, entry });
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -162,6 +160,20 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
+  const body = await request.json().catch(() => ({}));
+  const reason = String(body.reason || "").trim();
+  if (!reason) {
+    return NextResponse.json({ message: "Deletion reason is required" }, { status: 400 });
+  }
+  await createOrderProgressDeletionLog({
+    orderProgressId: existing.id,
+    orderNumber: existing.orderNumber || "",
+    forecastNumber: existing.poNumber || "",
+    sku: existing.sku,
+    region: existing.region,
+    reason,
+    deletedBy: session.username,
+  });
   await deleteOrderProgressById(id);
   return NextResponse.json({ ok: true });
 }

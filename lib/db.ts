@@ -141,6 +141,12 @@ async function setupSchema() {
       next_number integer not null
     );
   `;
+  await db`
+    create table if not exists order_progress_number_sequences (
+      key text primary key,
+      next_number integer not null
+    );
+  `;
 
   // Purchase contract / PO fields (saved per order line).
   await db`alter table order_progress add column if not exists po_number text;`;
@@ -310,6 +316,19 @@ async function setupSchema() {
       po_number text not null,
       sku text not null,
       region text not null check (region in ('APAC', 'EU', 'USA')),
+      reason text not null,
+      deleted_by text not null references users(username),
+      deleted_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create table if not exists order_progress_deletion_logs (
+      id bigserial primary key,
+      order_progress_id bigint not null,
+      order_number text not null default '',
+      forecast_number text not null,
+      sku text not null,
+      region text not null check (region in ('APAC', 'EU', 'US')),
       reason text not null,
       deleted_by text not null references users(username),
       deleted_at timestamptz not null default now()

@@ -4,7 +4,6 @@ import { toCsvLine } from "@/lib/csv";
 import { getSession } from "@/lib/session";
 
 const HEADER = [
-  "order_number",
   "po_number",
   "product_name",
   "sku",
@@ -18,7 +17,6 @@ const HEADER = [
 ];
 
 const EXAMPLE = [
-  "PO-2025-001",
   "POA202603260001",
   "Example product name",
   "SKU001",
