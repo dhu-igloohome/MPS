@@ -149,7 +149,7 @@ function inferOrderTypeAndQuantityFromForecast(forecast: ForecastEntry): {
   const bts = Number(forecast.buildToStock || 0);
   if (bto > 0 && bts <= 0) return { orderType: "BTO", quantity: bto };
   if (bts > 0 && bto <= 0) return { orderType: "BTS", quantity: bts };
-  if (bto > 0 && bts > 0) return { orderType: "BTO", quantity: bto + bts };
+  if (bto > 0 && bts > 0) return { orderType: bto >= bts ? "BTO" : "BTS", quantity: bto + bts };
   return { orderType: "BTO", quantity: 0 };
 }
 
@@ -267,9 +267,9 @@ export function OrderProgressPanel({
     setPoNumber(nextPo);
     const matchedList = poForecastMap.get(nextPo);
     if (!matchedList || matchedList.length === 0) return;
-    const poSkus = [...new Set(matchedList.map((x) => x.sku).filter(Boolean))];
+    const poSkus = [...new Set(matchedList.map((x) => x.sku).filter(Boolean))].sort();
     setSelectedSkus(poSkus.length > 0 ? [poSkus[0]] : []);
-    const matched = matchedList[0];
+    const matched = matchedList.find((x) => x.sku === poSkus[0]) ?? matchedList[0];
     const inferred = inferOrderTypeAndQuantityFromForecast(matched);
     setProductName(matched.productName);
     setSku(matched.sku);
@@ -718,12 +718,14 @@ export function OrderProgressPanel({
                       checked={selectedSkus.includes(p.sku)}
                       onChange={(e) => {
                         const checked = e.target.checked;
-                        setSelectedSkus((prev) =>
-                          checked ? [...new Set([...prev, p.sku])] : prev.filter((s) => s !== p.sku),
-                        );
-                        if (checked) {
+                        const nextSelected = checked
+                          ? [...new Set([...selectedSkus, p.sku])]
+                          : selectedSkus.filter((s) => s !== p.sku);
+                        setSelectedSkus(nextSelected);
+                        const focusSku = checked ? p.sku : (nextSelected[0] ?? "");
+                        if (focusSku) {
                           const matched = forecasts.find(
-                            (f) => f.poNumber === resolvedPoNumber && f.sku === p.sku,
+                            (f) => f.poNumber === resolvedPoNumber && f.sku === focusSku,
                           );
                           if (matched) {
                             const inferred = inferOrderTypeAndQuantityFromForecast(matched);
@@ -750,9 +752,9 @@ export function OrderProgressPanel({
               min={0}
               step={1}
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
+              readOnly
               required
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full rounded-lg border border-app-border bg-app-accent-soft/40 px-3 py-2 text-sm outline-none"
             />
           </label>
 
@@ -867,8 +869,8 @@ export function OrderProgressPanel({
             <span className="mb-1 block text-sm text-foreground/85">{t.orderType}</span>
             <select
               value={orderType}
-              onChange={(e) => setOrderType(e.target.value as OrderProgressOrderType)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              disabled
+              className="w-full rounded-lg border border-app-border bg-app-accent-soft/40 px-3 py-2 text-sm outline-none"
             >
               {ORDER_TYPES.map((o) => (
                 <option key={o} value={o}>
