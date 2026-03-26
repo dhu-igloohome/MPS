@@ -138,6 +138,18 @@ function orderTypeLabel(language: Language, o: OrderProgressOrderType) {
   return o === "BTO" ? t.bto : t.bts;
 }
 
+function inferOrderTypeAndQuantityFromForecast(forecast: ForecastEntry): {
+  orderType: OrderProgressOrderType;
+  quantity: number;
+} {
+  const bto = Number(forecast.buildToOrder || 0);
+  const bts = Number(forecast.buildToStock || 0);
+  if (bto > 0 && bts <= 0) return { orderType: "BTO", quantity: bto };
+  if (bts > 0 && bto <= 0) return { orderType: "BTS", quantity: bts };
+  if (bto > 0 && bts > 0) return { orderType: "BTO", quantity: bto + bts };
+  return { orderType: "BTO", quantity: 0 };
+}
+
 export function OrderProgressPanel({
   entries,
   forecasts,
@@ -203,25 +215,37 @@ export function OrderProgressPanel({
     productName.length > 0 && productNameOptions.includes(productName)
       ? productName
       : (productNameOptions[0] ?? "");
-
-  const skuOptions = useMemo(
-    () => products.filter((p) => p.productName === resolvedProductName),
-    [products, resolvedProductName],
-  );
-
-  const resolvedSku = skuOptions.some((p) => p.sku === sku)
-    ? sku
-    : (skuOptions[0]?.sku ?? "");
   const poForecastMap = useMemo(() => {
-    const map = new Map<string, ForecastEntry>();
+    const map = new Map<string, ForecastEntry[]>();
     for (const f of forecasts) {
       if (!f.poNumber) continue;
-      if (!map.has(f.poNumber)) map.set(f.poNumber, f);
+      const list = map.get(f.poNumber) ?? [];
+      list.push(f);
+      map.set(f.poNumber, list);
     }
     return map;
   }, [forecasts]);
   const poOptions = useMemo(() => Array.from(poForecastMap.keys()).sort(), [poForecastMap]);
   const resolvedPoNumber = poOptions.includes(poNumber) ? poNumber : (poOptions[0] ?? "");
+
+  const skuOptions = useMemo(() => {
+    const poLinked = poForecastMap.get(resolvedPoNumber) ?? [];
+    if (poLinked.length > 0) {
+      const poSkus = [...new Set(poLinked.map((f) => f.sku).filter(Boolean))];
+      return poSkus.map((s) => {
+        const matchedProduct = products.find((p) => p.sku === s);
+        return {
+          sku: s,
+          productName: matchedProduct?.productName || poLinked.find((f) => f.sku === s)?.productName || "",
+        };
+      });
+    }
+    return products.filter((p) => p.productName === resolvedProductName);
+  }, [products, resolvedProductName, poForecastMap, resolvedPoNumber]);
+
+  const resolvedSku = skuOptions.some((p) => p.sku === sku)
+    ? sku
+    : (skuOptions[0]?.sku ?? "");
 
   const resolvedRegion = allowedRegions.includes(region)
     ? region
@@ -237,10 +261,14 @@ export function OrderProgressPanel({
 
   function onPoNumberChange(nextPo: string) {
     setPoNumber(nextPo);
-    const matched = poForecastMap.get(nextPo);
-    if (!matched) return;
+    const matchedList = poForecastMap.get(nextPo);
+    if (!matchedList || matchedList.length === 0) return;
+    const matched = matchedList[0];
+    const inferred = inferOrderTypeAndQuantityFromForecast(matched);
     setProductName(matched.productName);
     setSku(matched.sku);
+    setOrderType(inferred.orderType);
+    setQuantity(String(inferred.quantity));
   }
 
   function resetForm() {
@@ -633,10 +661,20 @@ export function OrderProgressPanel({
               onChange={(e) => {
                 const nextSku = e.target.value;
                 setSku(nextSku);
-                setPoNumber(
-                  forecasts.find((f) => f.sku === nextSku && f.productName === resolvedProductName)
-                    ?.poNumber ?? "",
+                const matched = forecasts.find(
+                  (f) => f.poNumber === resolvedPoNumber && f.sku === nextSku,
                 );
+                if (matched) {
+                  const inferred = inferOrderTypeAndQuantityFromForecast(matched);
+                  setProductName(matched.productName);
+                  setOrderType(inferred.orderType);
+                  setQuantity(String(inferred.quantity));
+                } else {
+                  setPoNumber(
+                    forecasts.find((f) => f.sku === nextSku && f.productName === resolvedProductName)
+                      ?.poNumber ?? "",
+                  );
+                }
               }}
               required
               disabled={products.length === 0}
