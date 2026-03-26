@@ -429,6 +429,8 @@ export function OrderProgressPanel({
 
     if (editingId === null) {
       const createSkus = selectedSkus.length > 0 ? selectedSkus : [resolvedSku];
+      let createdCount = 0;
+      const skipped: string[] = [];
       for (let i = 0; i < createSkus.length; i++) {
         const currentSku = createSkus[i];
         const matched = forecasts.find(
@@ -453,11 +455,35 @@ export function OrderProgressPanel({
         });
         if (!response.ok) {
           const data = (await response.json().catch(() => ({}))) as { message?: string };
+          if (
+            response.status === 409 &&
+            (data.message || "").includes("Order line already exists for this PO number + SKU")
+          ) {
+            skipped.push(currentSku);
+            continue;
+          }
           setLoading(false);
           setMessage(data.message ? `${currentSku}: ${data.message}` : `${currentSku}: Request failed`);
           return;
         }
+        createdCount += 1;
       }
+      const summary =
+        language === "en"
+          ? `Created ${createdCount} SKU(s).`
+          : `成功创建 ${createdCount} 个 SKU。`;
+      const skippedSummary =
+        skipped.length > 0
+          ? language === "en"
+            ? ` Skipped duplicates: ${skipped.join(", ")}`
+            : ` 跳过重复 SKU：${skipped.join("，")}`
+          : "";
+      const finalMessage = summary + skippedSummary;
+      setLoading(false);
+      resetForm();
+      setMessage(finalMessage);
+      router.refresh();
+      return;
     } else {
       const response = await fetch(`/api/order-progress/${encodeURIComponent(editingId)}`, {
         method: "PATCH",
