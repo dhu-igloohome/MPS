@@ -150,7 +150,12 @@ async function setupSchema() {
   await db`alter table order_progress add column if not exists unit_cost_snapshot numeric(12, 2) not null default 0;`;
   await db`alter table order_progress add column if not exists po_delivery_date date;`;
 
-  await db`create unique index if not exists idx_order_progress_po_number_unique on order_progress (po_number);`;
+  await db`drop index if exists idx_order_progress_po_number_unique;`;
+  await db`
+    create unique index if not exists idx_order_progress_po_sku_unique
+    on order_progress (po_number, sku)
+    where po_number is not null and trim(po_number) <> '';
+  `;
 
   await db`
     create table if not exists suppliers (

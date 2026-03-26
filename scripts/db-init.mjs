@@ -208,7 +208,12 @@ async function main() {
   await sql`alter table order_progress add column if not exists unit_cost_snapshot numeric(12, 2) not null default 0;`;
   await sql`alter table order_progress add column if not exists po_delivery_date date;`;
 
-  await sql`create unique index if not exists idx_order_progress_po_number_unique on order_progress (po_number);`;
+  await sql`drop index if exists idx_order_progress_po_number_unique;`;
+  await sql`
+    create unique index if not exists idx_order_progress_po_sku_unique
+    on order_progress (po_number, sku)
+    where po_number is not null and trim(po_number) <> '';
+  `;
 
   await sql`
     create table if not exists suppliers (
