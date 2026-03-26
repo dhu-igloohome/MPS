@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Language } from "@/lib/i18n";
 import type {
   ForecastEntry,
+  OrderProgressDeletionLog,
   OrderProgressEntry,
   OrderProgressOrderType,
   OrderProgressRegion,
@@ -17,6 +18,7 @@ import type {
 
 type OrderProgressPanelProps = {
   entries: OrderProgressEntry[];
+  deletionLogs: OrderProgressDeletionLog[];
   forecasts: ForecastEntry[];
   products: ProductItem[];
   allowedRegions: OrderProgressRegion[];
@@ -131,6 +133,15 @@ function labels(language: Language) {
       ? "No template for this product + SKU. Super admin can define steps in Product Database."
       : "当前产品+SKU 无工序模板，超级管理员可在产品数据库中维护「生产工序」。",
     productionToggleFailed: en ? "Could not update step." : "更新工序状态失败。",
+    deletionLogTitle: en ? "Deletion logs" : "删除日志",
+    deletionLogEmpty: en ? "No deletion logs yet." : "暂无删除日志。",
+    colDeletedOrderNo: en ? "PO number" : "PO 编号",
+    colDeletedForecastNo: en ? "Forecast #" : "Forecast 编号",
+    colDeletedSku: "SKU",
+    colDeletedRegion: en ? "Region" : "区域",
+    colDeletedReason: en ? "Reason" : "原因",
+    colDeletedBy: en ? "Deleted by" : "删除人",
+    colDeletedAt: en ? "Deleted at" : "删除时间",
   };
 }
 
@@ -160,6 +171,7 @@ function inferOrderTypeAndQuantityFromForecast(forecast: ForecastEntry): {
 
 export function OrderProgressPanel({
   entries,
+  deletionLogs,
   forecasts,
   products,
   allowedRegions,
@@ -1103,6 +1115,45 @@ export function OrderProgressPanel({
                         </button>
                       </div>
                     </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+        <h3 className="text-lg font-semibold text-foreground">{t.deletionLogTitle}</h3>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[980px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-app-border/90 text-left text-app-muted">
+                <th className="px-2 py-2">{t.colDeletedOrderNo}</th>
+                <th className="px-2 py-2">{t.colDeletedForecastNo}</th>
+                <th className="px-2 py-2">{t.colDeletedSku}</th>
+                <th className="px-2 py-2">{t.colDeletedRegion}</th>
+                <th className="px-2 py-2">{t.colDeletedReason}</th>
+                <th className="px-2 py-2">{t.colDeletedBy}</th>
+                <th className="px-2 py-2">{t.colDeletedAt}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deletionLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-2 py-6 text-center text-app-muted">
+                    {t.deletionLogEmpty}
+                  </td>
+                </tr>
+              ) : (
+                deletionLogs.map((row) => (
+                  <tr key={row.id} className="border-b border-app-border/35">
+                    <td className="px-2 py-2">{row.orderNumber || "—"}</td>
+                    <td className="px-2 py-2">{row.forecastNumber || "—"}</td>
+                    <td className="px-2 py-2">{row.sku}</td>
+                    <td className="px-2 py-2">{row.region}</td>
+                    <td className="px-2 py-2">{row.reason}</td>
+                    <td className="px-2 py-2">{row.deletedBy}</td>
+                    <td className="px-2 py-2">{row.deletedAt.slice(0, 19).replace("T", " ")}</td>
                   </tr>
                 ))
               )}

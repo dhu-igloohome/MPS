@@ -19,6 +19,7 @@ import {
   OrderProgressOrderType,
   OrderProgressRegion,
   OrderProgressStatus,
+  OrderProgressDeletionLog,
   ProductItem,
   Region,
   SessionPayload,
@@ -96,6 +97,18 @@ type OrderProgressDeliveryPlanRow = {
   progress: OrderProgressStatus;
   sort_order: number;
   created_at: string;
+};
+
+type OrderProgressDeletionLogRow = {
+  id: number;
+  order_progress_id: number;
+  order_number: string;
+  forecast_number: string;
+  sku: string;
+  region: OrderProgressRegion;
+  reason: string;
+  deleted_by: string;
+  deleted_at: string;
 };
 
 type OrderProductionStepRow = {
@@ -1522,6 +1535,43 @@ export async function createOrderProgressDeletionLog(input: {
       ${input.deletedBy}
     );
   `;
+}
+
+export async function listOrderProgressDeletionLogsBySessionRegions(
+  regions: Region[],
+  limit = 100,
+): Promise<OrderProgressDeletionLog[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const allowed = orderProgressRegionsForSession(regions);
+  if (allowed.length === 0) return [];
+  const rows = await db<OrderProgressDeletionLogRow[]>`
+    select
+      id,
+      order_progress_id,
+      order_number,
+      forecast_number,
+      sku,
+      region,
+      reason,
+      deleted_by,
+      deleted_at::text
+    from order_progress_deletion_logs
+    where region = any(${allowed})
+    order by deleted_at desc, id desc
+    limit ${limit};
+  `;
+  return rows.map((r) => ({
+    id: String(r.id),
+    orderProgressId: String(r.order_progress_id),
+    orderNumber: r.order_number || "",
+    forecastNumber: r.forecast_number || "",
+    sku: r.sku,
+    region: r.region,
+    reason: r.reason || "",
+    deletedBy: r.deleted_by,
+    deletedAt: r.deleted_at,
+  }));
 }
 
 export async function deleteOrderProgressById(id: string) {

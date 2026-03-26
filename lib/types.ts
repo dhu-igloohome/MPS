@@ -154,6 +154,18 @@ export type OrderProgressEntry = {
   poBluetoothId?: string;
 };
 
+export type OrderProgressDeletionLog = {
+  id: string;
+  orderProgressId: string;
+  orderNumber: string;
+  forecastNumber: string;
+  sku: string;
+  region: OrderProgressRegion;
+  reason: string;
+  deletedBy: string;
+  deletedAt: string;
+};
+
 /** 物流节点：工厂/供应商侧或各区域办公室（仅记录，不做库存扣账）。 */
 export type LogisticsLocation = "FACTORY" | OrderProgressRegion;
 

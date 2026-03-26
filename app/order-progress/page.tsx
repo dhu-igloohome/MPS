@@ -7,6 +7,7 @@ import { normalizeLanguage } from "@/lib/i18n";
 import {
   getForecastsByRegions,
   listActiveProducts,
+  listOrderProgressDeletionLogsBySessionRegions,
   listOrderProgressBySessionRegions,
   orderProgressRegionsForSession,
 } from "@/lib/repositories";
@@ -24,6 +25,7 @@ export default async function OrderProgressPage() {
 
   const products = await listActiveProducts();
   const entries = await listOrderProgressBySessionRegions(session.regions);
+  const deletionLogs = await listOrderProgressDeletionLogsBySessionRegions(session.regions, 100);
   const forecasts = await getForecastsByRegions(session.regions);
   const allowedRegions = orderProgressRegionsForSession(session.regions);
 
@@ -40,6 +42,7 @@ export default async function OrderProgressPage() {
       <OrderProgressPanel
         entries={entries}
         forecasts={forecasts}
+        deletionLogs={deletionLogs}
         products={products}
         allowedRegions={allowedRegions}
         language={language}
