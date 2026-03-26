@@ -454,7 +454,7 @@ export function OrderProgressPanel({
         if (!response.ok) {
           const data = (await response.json().catch(() => ({}))) as { message?: string };
           setLoading(false);
-          setMessage(data.message || "Request failed");
+          setMessage(data.message ? `${currentSku}: ${data.message}` : `${currentSku}: Request failed`);
           return;
         }
       }

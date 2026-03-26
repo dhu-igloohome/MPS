@@ -6,6 +6,7 @@ import {
   findActiveProductByNameAndSku,
   forecastPoSkuExistsInRegions,
   listOrderProgressBySessionRegions,
+  orderProgressPoSkuExists,
   orderProgressRegionsForSession,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
@@ -110,22 +111,34 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  const duplicated = await orderProgressPoSkuExists(poNumber, sku);
+  if (duplicated) {
+    return NextResponse.json(
+      { message: "Order line already exists for this PO number + SKU" },
+      { status: 409 },
+    );
+  }
 
-  const entry = await createOrderProgress({
-    orderNumber,
-    poNumber,
-    productName,
-    sku,
-    quantity,
-    orderDate,
-    expectedDeliveryDate,
-    orderType,
-    progress,
-    factoryName,
-    region,
-    createdBy: session.username,
-    deliveryPlans,
-  });
+  try {
+    const entry = await createOrderProgress({
+      orderNumber,
+      poNumber,
+      productName,
+      sku,
+      quantity,
+      orderDate,
+      expectedDeliveryDate,
+      orderType,
+      progress,
+      factoryName,
+      region,
+      createdBy: session.username,
+      deliveryPlans,
+    });
 
-  return NextResponse.json({ ok: true, entry });
+    return NextResponse.json({ ok: true, entry });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Create order line failed";
+    return NextResponse.json({ message: msg }, { status: 500 });
+  }
 }

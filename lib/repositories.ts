@@ -1379,6 +1379,21 @@ export async function createOrderProgress(input: {
   return mapOrderProgress(rows[0], planMap.get(newId) ?? [], stepMap.get(newId) ?? []);
 }
 
+export async function orderProgressPoSkuExists(poNumber: string, sku: string): Promise<boolean> {
+  const po = poNumber.trim();
+  const sk = sku.trim();
+  if (!po || !sk) return false;
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ ok: number }[]>`
+    select 1 as ok
+    from order_progress
+    where po_number = ${po} and sku = ${sk}
+    limit 1;
+  `;
+  return rows.length > 0;
+}
+
 export async function updateOrderProgress(input: {
   id: string;
   orderNumber: string;
