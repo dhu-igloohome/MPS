@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   createForecast,
   findActiveProductByNameAndSku,
+  forecastPoExistsInRegion,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import { Region } from "@/lib/types";
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
   const productName = String(body.productName || "");
   const sku = String(body.sku || "");
   const destination = String(body.destination || "").trim();
+  const poNumber = String(body.poNumber || "").trim();
   const remark = String(body.remark || "");
   const buildToOrder = Number(body.buildToOrder || 0);
   const buildToStock = Number(body.buildToStock || 0);
@@ -57,10 +59,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Quantity cannot be negative" }, { status: 400 });
   }
 
+  if (poNumber && !(await forecastPoExistsInRegion(region, poNumber))) {
+    return NextResponse.json(
+      { message: "Provided PO number must already exist in the same region" },
+      { status: 400 },
+    );
+  }
+
   const entry = await createForecast({
     month,
     region,
     destination,
+    poNumber: poNumber || undefined,
     productName,
     sku,
     remark,

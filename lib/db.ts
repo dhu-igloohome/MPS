@@ -87,7 +87,8 @@ async function setupSchema() {
     set po_number = 'LEGACY-F-' || id::text
     where trim(po_number) = '' or po_number is null;
   `;
-  await db`create unique index if not exists idx_forecasts_po_number_unique on forecasts (po_number);`;
+  await db`drop index if exists idx_forecasts_po_number_unique;`;
+  await db`create index if not exists idx_forecasts_po_number on forecasts (po_number);`;
   await db`
     create or replace function prevent_forecast_po_number_update()
     returns trigger as $$

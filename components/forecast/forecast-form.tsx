@@ -11,6 +11,7 @@ type ForecastFormProps = {
   products: ProductItem[];
   entries: ForecastEntry[];
   language: Language;
+  canDelete: boolean;
 };
 
 export function ForecastForm({
@@ -18,6 +19,7 @@ export function ForecastForm({
   products,
   entries,
   language,
+  canDelete,
 }: ForecastFormProps) {
   const router = useRouter();
   const t = {
@@ -49,6 +51,8 @@ export function ForecastForm({
     saved: language === "en" ? "Saved successfully." : "保存成功。",
     saving: language === "en" ? "Saving..." : "保存中...",
     saveForecast: language === "en" ? "Save Forecast" : "保存 Forecast",
+    useExistingPo: language === "en" ? "Use existing PO number" : "复用已有 PO number",
+    existingPo: language === "en" ? "Existing PO number" : "已有 PO number",
     batchImport: language === "en" ? "Batch import (CSV)" : "CSV 批量导入",
     downloadTemplate: language === "en" ? "Download CSV template" : "下载 CSV 模板",
     batchHint:
@@ -58,6 +62,12 @@ export function ForecastForm({
     createdAt: language === "en" ? "Created At" : "创建日期",
     allForecasts: language === "en" ? "All Forecast Records" : "全部 Forecast 记录",
     noRecords: language === "en" ? "No forecast records yet." : "暂无 forecast 记录。",
+    actions: language === "en" ? "Actions" : "操作",
+    delete: language === "en" ? "Delete" : "删除",
+    deleteConfirm:
+      language === "en"
+        ? "Delete this forecast because customer cancelled it?"
+        : "确认删除该 forecast（客户已取消）？",
   };
   const defaultRegion = allowedRegions[0];
   const defaultProductName = products[0]?.productName || "";
@@ -73,6 +83,9 @@ export function ForecastForm({
   const [buildToOrder, setBuildToOrder] = useState("0");
   const [buildToStock, setBuildToStock] = useState("0");
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [useExistingPo, setUseExistingPo] = useState(false);
+  const [selectedPoNumber, setSelectedPoNumber] = useState("");
   const [message, setMessage] = useState("");
   const [batchSummary, setBatchSummary] = useState<string | null>(null);
   const [batchErrors, setBatchErrors] = useState<{ row: number; message: string }[]>([]);
@@ -84,6 +97,11 @@ export function ForecastForm({
   const skuOptions = useMemo(
     () => products.filter((item) => item.productName === productName),
     [products, productName],
+  );
+  const regionPoOptions = useMemo(
+    () =>
+      [...new Set(entries.filter((e) => e.region === region).map((e) => e.poNumber).filter(Boolean))].sort(),
+    [entries, region],
   );
   async function onBatchFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -122,6 +140,10 @@ export function ForecastForm({
   }
   function onRegionChange(nextRegion: Region) {
     setRegion(nextRegion);
+    if (useExistingPo) {
+      const first = entries.find((e) => e.region === nextRegion && e.poNumber)?.poNumber || "";
+      setSelectedPoNumber(first);
+    }
   }
 
   function onProductNameChange(nextProductName: string) {
@@ -146,6 +168,7 @@ export function ForecastForm({
         month,
         region,
         destination,
+        poNumber: useExistingPo ? selectedPoNumber : "",
         productName,
         sku,
         remark,
@@ -170,6 +193,20 @@ export function ForecastForm({
     setRemark("");
     setBuildToOrder("0");
     setBuildToStock("0");
+    router.refresh();
+  }
+  async function onDelete(id: string) {
+    if (!window.confirm(t.deleteConfirm)) return;
+    setDeletingId(id);
+    const response = await fetch(`/api/forecasts/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    setDeletingId(null);
+    if (!response.ok) {
+      setMessage(language === "en" ? "Delete failed." : "删除失败。");
+      return;
+    }
+    setMessage(language === "en" ? "Deleted." : "已删除。");
     router.refresh();
   }
 
@@ -248,6 +285,41 @@ export function ForecastForm({
             ))}
           </select>
         </label>
+        <label className="block md:col-span-2">
+          <span className="mb-1 block text-sm text-foreground/85">{t.useExistingPo}</span>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={useExistingPo}
+              disabled={regionPoOptions.length === 0}
+              onChange={(event) => {
+                const checked = event.target.checked;
+                setUseExistingPo(checked);
+                if (checked) {
+                  setSelectedPoNumber(regionPoOptions[0] || "");
+                }
+              }}
+            />
+            <span className="text-sm text-app-muted">{t.useExistingPo}</span>
+          </div>
+        </label>
+        {useExistingPo ? (
+          <label className="block md:col-span-2">
+            <span className="mb-1 block text-sm text-foreground/85">{t.existingPo}</span>
+            <select
+              value={selectedPoNumber}
+              onChange={(event) => setSelectedPoNumber(event.target.value)}
+              required
+              className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+            >
+              {regionPoOptions.map((po) => (
+                <option key={po} value={po}>
+                  {po}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
 
         <label className="block">
           <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
@@ -354,12 +426,13 @@ export function ForecastForm({
                 <th className="px-2 py-2">{t.bto}</th>
                 <th className="px-2 py-2">{t.bts}</th>
                 <th className="px-2 py-2">{t.createdAt}</th>
+                {canDelete ? <th className="px-2 py-2">{t.actions}</th> : null}
               </tr>
             </thead>
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-2 py-6 text-center text-app-muted">
+                  <td colSpan={canDelete ? 10 : 9} className="px-2 py-6 text-center text-app-muted">
                     {t.noRecords}
                   </td>
                 </tr>
@@ -375,6 +448,18 @@ export function ForecastForm({
                     <td className="px-2 py-2 tabular-nums">{item.buildToOrder}</td>
                     <td className="px-2 py-2 tabular-nums">{item.buildToStock}</td>
                     <td className="px-2 py-2">{item.createdAt.slice(0, 10)}</td>
+                    {canDelete ? (
+                      <td className="px-2 py-2">
+                        <button
+                          type="button"
+                          onClick={() => onDelete(item.id)}
+                          disabled={deletingId === item.id}
+                          className="rounded border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {t.delete}
+                        </button>
+                      </td>
+                    ) : null}
                   </tr>
                 ))
               )}

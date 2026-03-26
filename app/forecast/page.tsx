@@ -34,6 +34,7 @@ export default async function ForecastPage() {
         products={products}
         entries={entries}
         language={language}
+        canDelete={session.role === "regional_admin" || session.role === "super_admin"}
       />
     </AppShell>
   );

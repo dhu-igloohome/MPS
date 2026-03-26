@@ -204,6 +204,7 @@ export async function createForecast(input: {
   month: string;
   region: Region;
   destination: string;
+  poNumber?: string;
   productName: string;
   sku: string;
   remark: string;
@@ -213,6 +214,64 @@ export async function createForecast(input: {
 }) {
   await ensureDatabase();
   const db = getSql();
+  const manualPo = String(input.poNumber || "").trim();
+  if (manualPo) {
+    const rows = await db<
+      {
+        id: number;
+        forecast_month: string;
+        region: Region;
+        destination: string;
+        po_number: string;
+        product_name: string;
+        sku: string;
+        remark: string;
+        build_to_order: number;
+        build_to_stock: number;
+        created_by: string;
+        created_at: string;
+      }[]
+    >`
+      insert into forecasts (
+        forecast_month,
+        region,
+        destination,
+        po_number,
+        product_name,
+        sku,
+        remark,
+        build_to_order,
+        build_to_stock,
+        created_by
+      )
+      values (
+        ${input.month},
+        ${input.region},
+        ${input.destination.trim()},
+        ${manualPo},
+        ${input.productName.trim()},
+        ${input.sku.trim()},
+        ${input.remark.trim()},
+        ${input.buildToOrder},
+        ${input.buildToStock},
+        ${input.createdBy}
+      )
+      returning
+        id,
+        forecast_month,
+        region,
+        destination,
+        po_number,
+        product_name,
+        sku,
+        remark,
+        build_to_order,
+        build_to_stock,
+        created_by,
+        created_at::text;
+    `;
+    return mapForecast(rows[0]);
+  }
   const prefix = forecastPoPrefixForRegion(input.region);
   const ymd = singaporeYmdCompact();
   const bucket = `${prefix}-${ymd}`;
@@ -477,6 +536,68 @@ export async function findLatestForecastByPoAndSku(
     limit 1;
   `;
   return rows[0] ? mapForecast(rows[0]) : null;
+}
+
+export async function forecastPoExistsInRegion(region: Region, poNumber: string): Promise<boolean> {
+  await ensureDatabase();
+  const db = getSql();
+  const po = poNumber.trim();
+  if (!po) return false;
+  const rows = await db<{ ok: number }[]>`
+    select 1 as ok
+    from forecasts
+    where region = ${region} and po_number = ${po}
+    limit 1;
+  `;
+  return rows.length > 0;
+}
+
+export async function getForecastById(id: string): Promise<ForecastEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<
+    {
+      id: number;
+      forecast_month: string;
+      region: Region;
+      destination: string;
+      po_number: string;
+      product_name: string;
+      sku: string;
+      remark: string;
+      build_to_order: number;
+      build_to_stock: number;
+      created_by: string;
+      created_at: string;
+    }[]
+  >`
+    select
+      id,
+      forecast_month,
+      region,
+      destination,
+      po_number,
+      product_name,
+      sku,
+      remark,
+      build_to_order,
+      build_to_stock,
+      created_by,
+      created_at::text
+    from forecasts
+    where id = ${Number(id)}
+    limit 1;
+  `;
+  return rows[0] ? mapForecast(rows[0]) : null;
+}
+
+export async function deleteForecastById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    delete from forecasts
+    where id = ${Number(id)};
+  `;
 }
 
 export async function forecastPoSkuExistsInRegions(
