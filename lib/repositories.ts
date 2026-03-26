@@ -1331,15 +1331,11 @@ export async function createOrderProgress(input: {
       ? plans.reduce((min, p) => (p.expectedDeliveryDate < min ? p.expectedDeliveryDate : min), plans[0].expectedDeliveryDate)
       : input.expectedDeliveryDate;
   const rows = await db<OrderProgressRow[]>`
-    with ensure_seq as (
-      insert into order_progress_number_sequences (key, next_number)
-      values ('IG-PO', 10000)
-      on conflict (key) do nothing
-    ),
     seq as (
-      update order_progress_number_sequences
-      set next_number = next_number + 1
-      where key = 'IG-PO'
+      insert into order_progress_number_sequences (key, next_number)
+      values ('IG-PO', 10001)
+      on conflict (key) do update
+      set next_number = order_progress_number_sequences.next_number + 1
       returning next_number - 1 as issue_number
     )
     insert into order_progress (
@@ -1357,7 +1353,7 @@ export async function createOrderProgress(input: {
       created_by
     )
     select
-      'IG-PO-' || lpad((select issue_number from seq)::text, 7, '0'),
+      'IG-PO-' || lpad(coalesce((select issue_number from seq), 10000)::text, 7, '0'),
       ${input.poNumber.trim() || null},
       ${input.productName.trim()},
       ${input.sku.trim()},
