@@ -1331,7 +1331,7 @@ export async function createOrderProgress(input: {
       ? plans.reduce((min, p) => (p.expectedDeliveryDate < min ? p.expectedDeliveryDate : min), plans[0].expectedDeliveryDate)
       : input.expectedDeliveryDate;
   const rows = await db<OrderProgressRow[]>`
-    seq as (
+    with seq as (
       insert into order_progress_number_sequences (key, next_number)
       values ('IG-PO', 10001)
       on conflict (key) do update
