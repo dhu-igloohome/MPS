@@ -58,6 +58,9 @@ function labels(language: Language) {
     skuMultiHint: en
       ? "Select one or more SKUs under this PO."
       : "请勾选该 PO 下一个或多个 SKU。",
+    forecastAutoHint: en
+      ? "Product/SKU/Quantity/Order type are auto-linked from Forecast by PO + SKU."
+      : "Product/SKU/Quantity/Order type 会按 PO + SKU 自动关联 Forecast。",
     quantity: en ? "Quantity" : "数量",
     orderDate: en ? "Order date" : "下单日期",
     expectedDeliveryDate: en ? "Expected delivery date" : "预计交货日期",
@@ -622,6 +625,7 @@ export function OrderProgressPanel({
           </div>
         </div>
         <p className="mt-2 text-xs text-app-muted">{t.batchHint}</p>
+        <p className="mt-1 text-xs text-app-muted">{t.forecastAutoHint}</p>
         {batchSummary ? (
           <p className="mt-2 text-sm text-emerald-800">{batchSummary}</p>
         ) : null}
