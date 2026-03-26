@@ -47,8 +47,8 @@ export function ForecastForm({
     title: language === "en" ? "Forecast Input" : "Forecast 录入",
     subtitle:
       language === "en"
-        ? "Fill monthly forecast for Product/SKU with BTO and BTS quantities. A unique PO number is auto-assigned on save (region date + daily sequence)."
-        : "按产品/SKU 填写月度 forecast（BTO 与 BTS）。保存时系统自动分配唯一 PO 号（按区域前缀 + 新加坡日期 + 当日流水）。",
+        ? "Fill monthly forecast for Product/SKU with BTO and BTS quantities. A unique forecast number is auto-assigned on save (region date + daily sequence)."
+        : "按产品/SKU 填写月度 forecast（BTO 与 BTS）。保存时系统自动分配唯一 forecast number（按区域前缀 + 新加坡日期 + 当日流水）。",
     noProducts:
       language === "en"
         ? "No active products found. Please ask admin to add products in Product Database."
@@ -74,14 +74,14 @@ export function ForecastForm({
     saved: language === "en" ? "Saved successfully." : "保存成功。",
     saving: language === "en" ? "Saving..." : "保存中...",
     saveForecast: language === "en" ? "Save Forecast" : "保存 Forecast",
-    useExistingPo: language === "en" ? "Use existing PO number" : "复用已有 PO number",
-    existingPo: language === "en" ? "Existing PO number" : "已有 PO number",
+    useExistingPo: language === "en" ? "Use existing forecast number" : "复用已有 forecast number",
+    existingPo: language === "en" ? "Existing forecast number" : "已有 forecast number",
     batchImport: language === "en" ? "Batch import (CSV)" : "CSV 批量导入",
     downloadTemplate: language === "en" ? "Download CSV template" : "下载 CSV 模板",
     batchHint:
       language === "en"
-        ? "Header row required. PO number is still auto-generated server-side."
-        : "需包含表头。PO number 仍由服务端自动生成。",
+        ? "Header row required. Forecast number is still auto-generated server-side."
+        : "需包含表头。forecast number 仍由服务端自动生成。",
     createdAt: language === "en" ? "Created At" : "创建日期",
     allForecasts: language === "en" ? "All Forecast Records" : "全部 Forecast 记录",
     noRecords: language === "en" ? "No forecast records yet." : "暂无 forecast 记录。",
@@ -218,7 +218,9 @@ export function ForecastForm({
     }
 
     setLoading(false);
-    setMessage(`${t.saved} (${created}) ${issuedPo ? `${language === "en" ? "PO:" : "PO："} ${issuedPo}` : ""}`);
+    setMessage(
+      `${t.saved} (${created}) ${issuedPo ? `${language === "en" ? "Forecast #:" : "Forecast #："} ${issuedPo}` : ""}`,
+    );
     setLines([newDraftForecastLine(products)]);
     router.refresh();
   }
@@ -484,7 +486,7 @@ export function ForecastForm({
             <thead>
               <tr className="border-b border-app-border text-left text-app-muted">
                 <th className="px-2 py-2">{t.forecastMonth}</th>
-                <th className="px-2 py-2">PO</th>
+                <th className="px-2 py-2">{language === "en" ? "Forecast #" : "Forecast #"}</th>
                 <th className="px-2 py-2">{t.region}</th>
                 <th className="px-2 py-2">{t.destination}</th>
                 <th className="px-2 py-2">{t.productName}</th>
