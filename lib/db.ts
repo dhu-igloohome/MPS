@@ -181,7 +181,7 @@ async function setupSchema() {
       order_progress_id bigint not null references order_progress(id) on delete cascade,
       supplier_id bigint not null references suppliers(id) on delete restrict,
       supplier_name text not null,
-      po_number text not null unique,
+      po_number text not null,
       signed_date date not null,
       sku text not null,
       product_name text not null,
@@ -205,6 +205,12 @@ async function setupSchema() {
 
   await db`
     create index if not exists idx_contracts_order_progress_id on contracts (order_progress_id);
+  `;
+  await db`alter table contracts drop constraint if exists contracts_po_number_key;`;
+  await db`drop index if exists idx_contracts_po_number_unique;`;
+  await db`
+    create unique index if not exists idx_contracts_po_sku_unique
+    on contracts (po_number, sku);
   `;
   await db`alter table contracts add column if not exists currency text not null default 'USD';`;
   await db`alter table contracts add column if not exists payment_terms text not null default 'Cash';`;
