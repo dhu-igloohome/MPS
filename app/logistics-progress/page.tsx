@@ -5,6 +5,7 @@ import { LogisticsProgressPanel } from "@/components/logistics/logistics-progres
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
 import {
+  getForecastsByRegions,
   listActiveProducts,
   listLogisticsShipmentsBySession,
   listOrderProgressBySessionRegions,
@@ -24,6 +25,7 @@ export default async function LogisticsProgressPage() {
   const products = await listActiveProducts();
   const entries = await listLogisticsShipmentsBySession(session);
   const orderLines = await listOrderProgressBySessionRegions(session.regions);
+  const forecasts = await getForecastsByRegions(session.regions);
 
   return (
     <AppShell
@@ -39,6 +41,7 @@ export default async function LogisticsProgressPage() {
         entries={entries}
         products={products}
         orderLines={orderLines}
+        forecasts={forecasts}
         language={language}
       />
     </AppShell>

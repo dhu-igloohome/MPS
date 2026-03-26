@@ -201,6 +201,7 @@ export async function POST(request: Request) {
     try {
       await createOrderProgress({
         orderNumber,
+        poNumber: "",
         productName,
         sku,
         quantity,

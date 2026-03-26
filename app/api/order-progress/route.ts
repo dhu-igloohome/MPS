@@ -47,6 +47,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const orderNumber = String(body.orderNumber ?? "").trim().slice(0, ORDER_NUMBER_MAX);
+  const poNumber = String(body.poNumber ?? "").trim().slice(0, ORDER_NUMBER_MAX);
   const productName = String(body.productName || "");
   const sku = String(body.sku || "");
   const orderDate = String(body.orderDate || "");
@@ -101,6 +102,7 @@ export async function POST(request: Request) {
 
   const entry = await createOrderProgress({
     orderNumber,
+    poNumber,
     productName,
     sku,
     quantity,

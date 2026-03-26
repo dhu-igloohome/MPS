@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { Language } from "@/lib/i18n";
 import type {
+  ForecastEntry,
   OrderProgressEntry,
   OrderProgressOrderType,
   OrderProgressRegion,
@@ -16,6 +17,7 @@ import type {
 
 type OrderProgressPanelProps = {
   entries: OrderProgressEntry[];
+  forecasts: ForecastEntry[];
   products: ProductItem[];
   allowedRegions: OrderProgressRegion[];
   language: Language;
@@ -47,6 +49,7 @@ function labels(language: Language) {
   return {
     formTitle: en ? "Create / edit order line" : "创建 / 编辑订单行",
     orderNumber: en ? "Order number" : "订单号",
+    poNumber: en ? "PO Number" : "PO 号",
     productName: en ? "Product name" : "产品名称",
     sku: "SKU",
     quantity: en ? "Quantity" : "数量",
@@ -70,6 +73,7 @@ function labels(language: Language) {
       : "您的账号未分配区域，无法管理订单进度。",
     empty: en ? "No records yet." : "暂无记录。",
     colOrderNumber: en ? "Order #" : "订单号",
+    colPoNumber: en ? "PO #" : "PO 号",
     colProduct: en ? "Product" : "产品",
     colSku: "SKU",
     colQty: en ? "Qty" : "数量",
@@ -96,6 +100,7 @@ function labels(language: Language) {
     colFactory: en ? "Factory" : "工厂",
     colRegion: en ? "Region" : "地区",
     colBy: en ? "By" : "创建人",
+    colForecastLink: en ? "Forecast match" : "Forecast 关联",
     colActions: en ? "Actions" : "操作",
     deleteConfirm: en ? "Delete this order line?" : "确认删除该订单行？",
     bto: en ? "BTO (Build to Order)" : "BTO（按单生产）",
@@ -132,6 +137,7 @@ function orderTypeLabel(language: Language, o: OrderProgressOrderType) {
 
 export function OrderProgressPanel({
   entries,
+  forecasts,
   products,
   allowedRegions,
   language,
@@ -146,6 +152,7 @@ export function OrderProgressPanel({
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState("");
+  const [poNumber, setPoNumber] = useState("");
   const [productName, setProductName] = useState("");
   const [sku, setSku] = useState("");
   const [quantity, setQuantity] = useState("0");
@@ -177,6 +184,17 @@ export function OrderProgressPanel({
     }
     return next;
   }, [entries, productionStepPatches]);
+  const forecastByPoSku = useMemo(() => {
+    const map = new Map<string, ForecastEntry>();
+    for (const f of forecasts) {
+      const po = f.poNumber.trim();
+      const sk = f.sku.trim();
+      if (!po || !sk) continue;
+      const key = `${po}::${sk}`;
+      if (!map.has(key)) map.set(key, f);
+    }
+    return map;
+  }, [forecasts]);
 
   const resolvedProductName =
     productName.length > 0 && productNameOptions.includes(productName)
@@ -205,6 +223,7 @@ export function OrderProgressPanel({
   function resetForm() {
     setEditingId(null);
     setOrderNumber("");
+    setPoNumber("");
     setProductName("");
     setSku("");
     setQuantity("0");
@@ -223,6 +242,7 @@ export function OrderProgressPanel({
   function startEdit(entry: OrderProgressEntry) {
     setEditingId(entry.id);
     setOrderNumber(entry.orderNumber);
+    setPoNumber(entry.poNumber || "");
     setProductName(entry.productName);
     setSku(entry.sku);
     setQuantity(String(entry.quantity));
@@ -332,6 +352,7 @@ export function OrderProgressPanel({
 
     const payload = {
       orderNumber: orderNumber.trim().slice(0, 200),
+      poNumber: poNumber.trim().slice(0, 200),
       productName: resolvedProductName,
       sku: resolvedSku,
       quantity: Number(quantity),
@@ -544,6 +565,16 @@ export function OrderProgressPanel({
             <input
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
+              maxLength={200}
+              placeholder={language === "en" ? "Optional" : "选填"}
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+            />
+          </label>
+          <label className="block md:col-span-2">
+            <span className="mb-1 block text-sm text-foreground/85">{t.poNumber}</span>
+            <input
+              value={poNumber}
+              onChange={(e) => setPoNumber(e.target.value)}
               maxLength={200}
               placeholder={language === "en" ? "Optional" : "选填"}
               className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
@@ -807,6 +838,7 @@ export function OrderProgressPanel({
             <thead>
               <tr className="border-b border-app-border/90 text-left text-app-muted">
                 <th className="px-2 py-2">{t.colOrderNumber}</th>
+                <th className="px-2 py-2">{t.colPoNumber}</th>
                 <th className="px-2 py-2">{t.colProduct}</th>
                 <th className="px-2 py-2">{t.colSku}</th>
                 <th className="px-2 py-2">{t.colQty}</th>
@@ -818,13 +850,14 @@ export function OrderProgressPanel({
                 <th className="px-2 py-2">{t.colFactory}</th>
                 <th className="px-2 py-2">{t.colRegion}</th>
                 <th className="px-2 py-2">{t.colBy}</th>
+                <th className="px-2 py-2">{t.colForecastLink}</th>
                 <th className="px-2 py-2">{t.colActions}</th>
               </tr>
             </thead>
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="px-2 py-6 text-center text-app-muted">
+                  <td colSpan={15} className="px-2 py-6 text-center text-app-muted">
                     {t.empty}
                   </td>
                 </tr>
@@ -834,6 +867,7 @@ export function OrderProgressPanel({
                     <td className="px-2 py-2 font-medium tabular-nums text-foreground">
                       {row.orderNumber || "—"}
                     </td>
+                    <td className="px-2 py-2">{row.poNumber || "—"}</td>
                     <td className="px-2 py-2">{row.productName}</td>
                     <td className="px-2 py-2">{row.sku}</td>
                     <td className="px-2 py-2">{row.quantity}</td>
@@ -875,6 +909,14 @@ export function OrderProgressPanel({
                     <td className="px-2 py-2">{row.factoryName || "—"}</td>
                     <td className="px-2 py-2">{row.region}</td>
                     <td className="px-2 py-2">{row.createdBy}</td>
+                    <td className="px-2 py-2 text-xs text-app-muted">
+                      {(() => {
+                        const po = (row.poNumber || "").trim();
+                        if (!po) return "—";
+                        const match = forecastByPoSku.get(`${po}::${row.sku.trim()}`);
+                        return match ? `${match.month} · ${match.destination || "—"}` : "—";
+                      })()}
+                    </td>
                     <td className="px-2 py-2">
                       <div className="flex gap-2">
                         <button

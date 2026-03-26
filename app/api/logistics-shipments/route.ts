@@ -40,6 +40,7 @@ export async function POST(request: Request) {
   const movementType = String(body.movementType || "");
   const productName = String(body.productName || "");
   const sku = String(body.sku || "");
+  const poNumber = String(body.poNumber ?? "").trim().slice(0, 200);
   const quantity = Number(body.quantity);
   const fromLocation = String(body.fromLocation || "");
   const toLocation = String(body.toLocation || "");
@@ -102,6 +103,7 @@ export async function POST(request: Request) {
     movementType,
     productName,
     sku,
+    poNumber,
     quantity,
     fromLocation,
     toLocation,

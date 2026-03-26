@@ -64,6 +64,7 @@ export async function GET() {
   lines.push(
     toCsvLine([
       "Month",
+      "PO Number",
       "Region",
       "Office",
       "Destination",
@@ -79,6 +80,7 @@ export async function GET() {
     lines.push(
       toCsvLine([
         item.month,
+        item.poNumber,
         item.region,
         item.office,
         item.destination,

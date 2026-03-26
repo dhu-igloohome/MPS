@@ -55,6 +55,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const body = await request.json();
   const orderNumber = String(body.orderNumber ?? "").trim().slice(0, ORDER_NUMBER_MAX);
+  const poNumber = String(body.poNumber ?? "").trim().slice(0, ORDER_NUMBER_MAX);
   const productName = String(body.productName || "");
   const sku = String(body.sku || "");
   const orderDate = String(body.orderDate || "");
@@ -110,6 +111,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const entry = await updateOrderProgress({
     id,
     orderNumber,
+    poNumber,
     productName,
     sku,
     quantity,

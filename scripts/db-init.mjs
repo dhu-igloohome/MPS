@@ -120,6 +120,7 @@ async function main() {
       region text not null check (region in ('APAC', 'EU', 'USA')),
       office text not null,
       destination text not null default '',
+      po_number text not null default '',
       product_name text not null,
       sku text not null,
       remark text not null default '',
@@ -131,6 +132,7 @@ async function main() {
   `;
   await sql`alter table forecasts add column if not exists remark text not null default '';`;
   await sql`alter table forecasts add column if not exists destination text not null default '';`;
+  await sql`alter table forecasts add column if not exists po_number text not null default '';`;
 
   await sql`
     create table if not exists order_progress (
@@ -268,6 +270,7 @@ async function main() {
       movement_type text not null check (movement_type in ('inbound', 'transfer')),
       product_name text not null,
       sku text not null,
+      po_number text not null default '',
       quantity integer not null check (quantity >= 0),
       from_location text not null check (from_location in ('FACTORY', 'APAC', 'EU', 'US')),
       to_location text not null check (to_location in ('FACTORY', 'APAC', 'EU', 'US')),
@@ -283,6 +286,7 @@ async function main() {
       check (from_location <> to_location)
     );
   `;
+  await sql`alter table logistics_shipments add column if not exists po_number text not null default '';`;
 
   await sql`
     create table if not exists products (

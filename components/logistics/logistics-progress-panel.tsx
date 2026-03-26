@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { Language } from "@/lib/i18n";
 import type {
+  ForecastEntry,
   LogisticsLocation,
   LogisticsMovementType,
   LogisticsShipmentEntry,
@@ -19,6 +20,7 @@ type LogisticsProgressPanelProps = {
   entries: LogisticsShipmentEntry[];
   products: ProductItem[];
   orderLines: OrderProgressEntry[];
+  forecasts: ForecastEntry[];
   language: Language;
 };
 
@@ -43,6 +45,7 @@ function labels(language: Language) {
     to: en ? "To" : "终点",
     productName: en ? "Product name" : "产品名称",
     sku: "SKU",
+    poNumber: en ? "PO Number" : "PO 号",
     quantity: en ? "Quantity" : "数量",
     orderLine: en ? "Link order line (optional)" : "关联订单行（可选）",
     orderLineNone: en ? "None" : "不关联",
@@ -65,6 +68,7 @@ function labels(language: Language) {
     colTracking: en ? "Tracking" : "运单号",
     colCarrier: en ? "Carrier" : "承运商",
     colStatus: en ? "Status" : "状态",
+    colForecastLink: en ? "Forecast match" : "Forecast 关联",
     colBy: en ? "By" : "创建人",
     colActions: en ? "Actions" : "操作",
     deleteConfirm: en ? "Delete this shipment record?" : "确认删除该物流记录？",
@@ -108,6 +112,7 @@ export function LogisticsProgressPanel({
   entries,
   products,
   orderLines,
+  forecasts,
   language,
 }: LogisticsProgressPanelProps) {
   const router = useRouter();
@@ -122,6 +127,7 @@ export function LogisticsProgressPanel({
   const [movementType, setMovementType] = useState<LogisticsMovementType>("inbound");
   const [productName, setProductName] = useState("");
   const [sku, setSku] = useState("");
+  const [poNumber, setPoNumber] = useState("");
   const [quantity, setQuantity] = useState("0");
   const [fromLocation, setFromLocation] = useState<LogisticsLocation>("FACTORY");
   const [toLocation, setToLocation] = useState<LogisticsLocation>("APAC");
@@ -132,6 +138,17 @@ export function LogisticsProgressPanel({
   const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const forecastByPoSku = useMemo(() => {
+    const map = new Map<string, ForecastEntry>();
+    for (const f of forecasts) {
+      const po = f.poNumber.trim();
+      const sk = f.sku.trim();
+      if (!po || !sk) continue;
+      const key = `${po}::${sk}`;
+      if (!map.has(key)) map.set(key, f);
+    }
+    return map;
+  }, [forecasts]);
 
   const resolvedProductName =
     productName.length > 0 && productNameOptions.includes(productName)
@@ -169,6 +186,7 @@ export function LogisticsProgressPanel({
     setMovementType("inbound");
     setProductName("");
     setSku("");
+    setPoNumber("");
     setQuantity("0");
     setFromLocation("FACTORY");
     setToLocation("APAC");
@@ -185,6 +203,7 @@ export function LogisticsProgressPanel({
     setMovementType(entry.movementType);
     setProductName(entry.productName);
     setSku(entry.sku);
+    setPoNumber(entry.poNumber || "");
     setQuantity(String(entry.quantity));
     setFromLocation(entry.fromLocation);
     setToLocation(entry.toLocation);
@@ -205,6 +224,7 @@ export function LogisticsProgressPanel({
       movementType,
       productName: resolvedProductName,
       sku: resolvedSku,
+      poNumber: poNumber.trim(),
       quantity: Number(quantity),
       fromLocation,
       toLocation,
@@ -256,7 +276,8 @@ export function LogisticsProgressPanel({
 
   function orderLineLabel(line: OrderProgressEntry) {
     const num = line.orderNumber ? `${line.orderNumber} · ` : "";
-    return `${num}${line.productName} / ${line.sku} (${line.region})`;
+    const po = line.poNumber ? `PO:${line.poNumber} · ` : "";
+    return `${po}${num}${line.productName} / ${line.sku} (${line.region})`;
   }
 
   return (
@@ -353,6 +374,15 @@ export function LogisticsProgressPanel({
                 </option>
               ))}
             </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm text-foreground/85">{t.poNumber}</span>
+            <input
+              value={poNumber}
+              onChange={(e) => setPoNumber(e.target.value)}
+              maxLength={200}
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+            />
           </label>
 
           <label className="block">
@@ -475,9 +505,11 @@ export function LogisticsProgressPanel({
                 <th className="px-2 py-2">{t.colFrom}</th>
                 <th className="px-2 py-2">{t.colTo}</th>
                 <th className="px-2 py-2">{t.colOrder}</th>
+                <th className="px-2 py-2">{t.poNumber}</th>
                 <th className="px-2 py-2">{t.colTracking}</th>
                 <th className="px-2 py-2">{t.colCarrier}</th>
                 <th className="px-2 py-2">{t.colStatus}</th>
+                <th className="px-2 py-2">{t.colForecastLink}</th>
                 <th className="px-2 py-2">{t.colBy}</th>
                 <th className="px-2 py-2">{t.colActions}</th>
               </tr>
@@ -485,7 +517,7 @@ export function LogisticsProgressPanel({
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-2 py-6 text-center text-app-muted">
+                  <td colSpan={14} className="px-2 py-6 text-center text-app-muted">
                     {t.empty}
                   </td>
                 </tr>
@@ -509,11 +541,20 @@ export function LogisticsProgressPanel({
                           : `#${row.orderProgressId}`
                         : "—"}
                     </td>
+                    <td className="px-2 py-2">{row.poNumber || "—"}</td>
                     <td className="max-w-[8rem] truncate px-2 py-2" title={row.trackingNumber}>
                       {row.trackingNumber || "—"}
                     </td>
                     <td className="px-2 py-2">{row.carrier || "—"}</td>
                     <td className="px-2 py-2">{statusLabel(language, row.status)}</td>
+                    <td className="px-2 py-2 text-xs text-app-muted">
+                      {(() => {
+                        const po = (row.poNumber || "").trim();
+                        if (!po) return "—";
+                        const match = forecastByPoSku.get(`${po}::${row.sku.trim()}`);
+                        return match ? `${match.month} · ${match.destination || "—"}` : "—";
+                      })()}
+                    </td>
                     <td className="px-2 py-2">{row.createdBy}</td>
                     <td className="px-2 py-2">
                       <div className="flex gap-2">

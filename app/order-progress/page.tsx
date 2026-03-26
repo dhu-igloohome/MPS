@@ -5,6 +5,7 @@ import { OrderProgressPanel } from "@/components/order-progress/order-progress-p
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
 import {
+  getForecastsByRegions,
   listActiveProducts,
   listOrderProgressBySessionRegions,
   orderProgressRegionsForSession,
@@ -23,6 +24,7 @@ export default async function OrderProgressPage() {
 
   const products = await listActiveProducts();
   const entries = await listOrderProgressBySessionRegions(session.regions);
+  const forecasts = await getForecastsByRegions(session.regions);
   const allowedRegions = orderProgressRegionsForSession(session.regions);
 
   return (
@@ -37,6 +39,7 @@ export default async function OrderProgressPage() {
     >
       <OrderProgressPanel
         entries={entries}
+        forecasts={forecasts}
         products={products}
         allowedRegions={allowedRegions}
         language={language}

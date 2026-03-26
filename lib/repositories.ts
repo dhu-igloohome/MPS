@@ -216,6 +216,7 @@ export async function createForecast(input: {
   region: Region;
   office: string;
   destination: string;
+  poNumber: string;
   productName: string;
   sku: string;
   remark: string;
@@ -232,6 +233,7 @@ export async function createForecast(input: {
       region: Region;
       office: string;
       destination: string;
+      po_number: string;
       product_name: string;
       sku: string;
       remark: string;
@@ -246,6 +248,7 @@ export async function createForecast(input: {
       region,
       office,
       destination,
+      po_number,
       product_name,
       sku,
       remark,
@@ -258,6 +261,7 @@ export async function createForecast(input: {
       ${input.region},
       ${input.office},
       ${input.destination.trim()},
+      ${input.poNumber.trim()},
       ${input.productName.trim()},
       ${input.sku.trim()},
       ${input.remark.trim()},
@@ -271,6 +275,7 @@ export async function createForecast(input: {
       region,
       office,
       destination,
+      po_number,
       product_name,
       sku,
       remark,
@@ -403,6 +408,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       region: Region;
       office: string;
       destination: string;
+      po_number: string;
       product_name: string;
       sku: string;
       remark: string;
@@ -418,6 +424,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       region,
       office,
       destination,
+      po_number,
       product_name,
       sku,
       remark,
@@ -432,6 +439,55 @@ export async function getForecastsByRegions(regions: Region[]) {
   `;
 
   return rows.map(mapForecast);
+}
+
+export async function findLatestForecastByPoAndSku(
+  sessionRegions: Region[],
+  poNumber: string,
+  sku: string,
+): Promise<ForecastEntry | null> {
+  const po = poNumber.trim();
+  const sk = sku.trim();
+  if (!po || !sk) return null;
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<
+    {
+      id: number;
+      forecast_month: string;
+      region: Region;
+      office: string;
+      destination: string;
+      po_number: string;
+      product_name: string;
+      sku: string;
+      remark: string;
+      build_to_order: number;
+      build_to_stock: number;
+      created_by: string;
+      created_at: string;
+    }[]
+  >`
+    select
+      id,
+      forecast_month,
+      region,
+      office,
+      destination,
+      po_number,
+      product_name,
+      sku,
+      remark,
+      build_to_order,
+      build_to_stock,
+      created_by,
+      created_at::text
+    from forecasts
+    where region = any(${sessionRegions}) and po_number = ${po} and sku = ${sk}
+    order by created_at desc
+    limit 1;
+  `;
+  return rows[0] ? mapForecast(rows[0]) : null;
 }
 
 export async function getSummaryByMonthAndRegion(regions: Region[]) {
@@ -513,6 +569,7 @@ function mapForecast(row: {
   region: Region;
   office: string;
   destination: string;
+  po_number: string;
   product_name: string;
   sku: string;
   remark: string;
@@ -527,6 +584,7 @@ function mapForecast(row: {
     region: row.region,
     office: row.office,
     destination: row.destination || "",
+    poNumber: row.po_number || "",
     productName: row.product_name,
     sku: row.sku,
     remark: row.remark || "",
@@ -1083,6 +1141,7 @@ export async function getOrderProgressById(id: string) {
 
 export async function createOrderProgress(input: {
   orderNumber: string;
+  poNumber: string;
   productName: string;
   sku: string;
   quantity: number;
@@ -1105,6 +1164,7 @@ export async function createOrderProgress(input: {
   const rows = await db<OrderProgressRow[]>`
     insert into order_progress (
       order_number,
+      po_number,
       product_name,
       sku,
       quantity,
@@ -1118,6 +1178,7 @@ export async function createOrderProgress(input: {
     )
     values (
       ${input.orderNumber.trim()},
+      ${input.poNumber.trim() || null},
       ${input.productName.trim()},
       ${input.sku.trim()},
       ${input.quantity},
@@ -1164,6 +1225,7 @@ export async function createOrderProgress(input: {
 export async function updateOrderProgress(input: {
   id: string;
   orderNumber: string;
+  poNumber: string;
   productName: string;
   sku: string;
   quantity: number;
@@ -1195,6 +1257,7 @@ export async function updateOrderProgress(input: {
     update order_progress
     set
       order_number = ${input.orderNumber.trim()},
+      po_number = ${input.poNumber.trim() || null},
       product_name = ${input.productName.trim()},
       sku = ${input.sku.trim()},
       quantity = ${input.quantity},
@@ -1356,6 +1419,7 @@ type LogisticsShipmentRow = {
   movement_type: LogisticsMovementType;
   product_name: string;
   sku: string;
+  po_number: string;
   quantity: number;
   from_location: string;
   to_location: string;
@@ -1396,6 +1460,7 @@ function mapLogisticsShipment(row: LogisticsShipmentRow): LogisticsShipmentEntry
     movementType: row.movement_type,
     productName: row.product_name,
     sku: row.sku,
+    poNumber: row.po_number || "",
     quantity: Number(row.quantity ?? 0),
     fromLocation: fromL,
     toLocation: toL,
@@ -1420,6 +1485,7 @@ export async function listLogisticsShipmentsBySession(session: SessionPayload) {
         movement_type,
         product_name,
         sku,
+        po_number,
         quantity,
         from_location,
         to_location,
@@ -1447,6 +1513,7 @@ export async function listLogisticsShipmentsBySession(session: SessionPayload) {
       movement_type,
       product_name,
       sku,
+      po_number,
       quantity,
       from_location,
       to_location,
@@ -1475,6 +1542,7 @@ export async function getLogisticsShipmentById(id: string) {
       movement_type,
       product_name,
       sku,
+      po_number,
       quantity,
       from_location,
       to_location,
@@ -1497,6 +1565,7 @@ export async function createLogisticsShipment(input: {
   movementType: LogisticsMovementType;
   productName: string;
   sku: string;
+  poNumber: string;
   quantity: number;
   fromLocation: LogisticsLocation;
   toLocation: LogisticsLocation;
@@ -1518,6 +1587,7 @@ export async function createLogisticsShipment(input: {
       movement_type,
       product_name,
       sku,
+      po_number,
       quantity,
       from_location,
       to_location,
@@ -1532,6 +1602,7 @@ export async function createLogisticsShipment(input: {
       ${input.movementType},
       ${input.productName.trim()},
       ${input.sku.trim()},
+      ${input.poNumber.trim()},
       ${input.quantity},
       ${input.fromLocation},
       ${input.toLocation},
@@ -1547,6 +1618,7 @@ export async function createLogisticsShipment(input: {
       movement_type,
       product_name,
       sku,
+      po_number,
       quantity,
       from_location,
       to_location,
@@ -1567,6 +1639,7 @@ export async function updateLogisticsShipment(input: {
   movementType: LogisticsMovementType;
   productName: string;
   sku: string;
+  poNumber: string;
   quantity: number;
   fromLocation: LogisticsLocation;
   toLocation: LogisticsLocation;
@@ -1588,6 +1661,7 @@ export async function updateLogisticsShipment(input: {
       movement_type = ${input.movementType},
       product_name = ${input.productName.trim()},
       sku = ${input.sku.trim()},
+      po_number = ${input.poNumber.trim()},
       quantity = ${input.quantity},
       from_location = ${input.fromLocation},
       to_location = ${input.toLocation},
@@ -1603,6 +1677,7 @@ export async function updateLogisticsShipment(input: {
       movement_type,
       product_name,
       sku,
+      po_number,
       quantity,
       from_location,
       to_location,

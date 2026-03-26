@@ -31,6 +31,7 @@ export function ForecastForm({
         ? "No active products found. Please ask admin to add products in Product Database."
         : "未找到启用中的产品，请联系管理员在产品数据库中维护。",
     forecastMonth: language === "en" ? "Forecast Month" : "Forecast 月份",
+    poNumber: language === "en" ? "PO Number (optional)" : "PO Number（选填）",
     region: language === "en" ? "Region" : "区域",
     office: language === "en" ? "Office" : "办公室",
     noOffice: language === "en" ? "Not specified" : "未填写",
@@ -58,6 +59,7 @@ export function ForecastForm({
     products.find((item) => item.productName === defaultProductName)?.sku || "";
 
   const [month, setMonth] = useState("");
+  const [poNumber, setPoNumber] = useState("");
   const [region, setRegion] = useState<Region>(defaultRegion);
   const [destination, setDestination] = useState("");
   const [productName, setProductName] = useState(defaultProductName);
@@ -102,6 +104,7 @@ export function ForecastForm({
       },
       body: JSON.stringify({
         month,
+        poNumber,
         region,
         office: "",
         destination,
@@ -121,6 +124,7 @@ export function ForecastForm({
     }
 
     setMessage(t.saved);
+    setPoNumber("");
     setRemark("");
     setBuildToOrder("0");
     setBuildToStock("0");
@@ -147,6 +151,15 @@ export function ForecastForm({
             value={month}
             onChange={(event) => setMonth(event.target.value)}
             required
+            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-sm text-foreground/85">{t.poNumber}</span>
+          <input
+            value={poNumber}
+            onChange={(event) => setPoNumber(event.target.value)}
             className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           />
         </label>
@@ -265,6 +278,7 @@ export function ForecastForm({
             <thead>
               <tr className="border-b border-app-border text-left text-app-muted">
                 <th className="px-2 py-2">{t.forecastMonth}</th>
+                <th className="px-2 py-2">PO</th>
                 <th className="px-2 py-2">{t.region}</th>
                 <th className="px-2 py-2">{t.office}</th>
                 <th className="px-2 py-2">{t.destination}</th>
@@ -278,7 +292,7 @@ export function ForecastForm({
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-2 py-6 text-center text-app-muted">
+                  <td colSpan={10} className="px-2 py-6 text-center text-app-muted">
                     {t.noRecords}
                   </td>
                 </tr>
@@ -286,6 +300,7 @@ export function ForecastForm({
                 entries.map((item) => (
                   <tr key={item.id} className="border-b border-app-border/40">
                     <td className="px-2 py-2">{item.month}</td>
+                    <td className="px-2 py-2">{item.poNumber || "—"}</td>
                     <td className="px-2 py-2">{item.region}</td>
                     <td className="px-2 py-2">{item.office || t.noOffice}</td>
                     <td className="px-2 py-2">{item.destination || t.noDestination}</td>

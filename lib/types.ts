@@ -40,6 +40,7 @@ export type ForecastEntry = {
   region: Region;
   office: string;
   destination: string;
+  poNumber: string;
   productName: string;
   sku: string;
   remark: string;
@@ -166,6 +167,7 @@ export type LogisticsShipmentEntry = {
   movementType: LogisticsMovementType;
   productName: string;
   sku: string;
+  poNumber: string;
   quantity: number;
   fromLocation: LogisticsLocation;
   toLocation: LogisticsLocation;
