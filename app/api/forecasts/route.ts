@@ -12,7 +12,7 @@ function isRegion(value: string): value is Region {
   return value === "APAC" || value === "EU" || value === "USA";
 }
 
-const DESTINATION_RE = /^[A-Za-z0-9\u4E00-\u9FFF]+$/;
+const DESTINATION_RE = /^[A-Za-z0-9\u4E00-\u9FFF ]+$/;
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   }
   if (!DESTINATION_RE.test(destination)) {
     return NextResponse.json(
-      { message: "Invalid destination (letters, numbers, Chinese only)" },
+      { message: "Invalid destination (letters, numbers, spaces, Chinese only)" },
       { status: 400 },
     );
   }

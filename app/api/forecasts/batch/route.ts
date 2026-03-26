@@ -5,7 +5,7 @@ import { createForecast, findActiveProductByNameAndSku } from "@/lib/repositorie
 import { getSession } from "@/lib/session";
 import type { Region } from "@/lib/types";
 
-const DESTINATION_RE = /^[A-Za-z0-9\u4E00-\u9FFF]+$/;
+const DESTINATION_RE = /^[A-Za-z0-9\u4E00-\u9FFF ]+$/;
 const MONTH_RE = /^\d{4}-\d{2}$/;
 const MAX_ROWS = 500;
 

@@ -58,8 +58,8 @@ export function ForecastForm({
     destination: language === "en" ? "Destination" : "Destination",
     destinationHint:
       language === "en"
-        ? "Required. Letters/numbers/Chinese only."
-        : "必填，仅支持大小写字母、数字、汉字。",
+        ? "Required. Letters/numbers/spaces/Chinese only."
+        : "必填，仅支持大小写字母、数字、空格、汉字。",
     productName: language === "en" ? "Product Name" : "产品名称",
     sku: "SKU",
     remark: language === "en" ? "Remark" : "备注",
@@ -328,7 +328,7 @@ export function ForecastForm({
             onChange={(event) => setDestination(event.target.value)}
             required
             maxLength={80}
-            pattern="[A-Za-z0-9\u4E00-\u9FFF]+"
+            pattern="[A-Za-z0-9\u4E00-\u9FFF ]+"
             title={t.destinationHint}
             className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           />
