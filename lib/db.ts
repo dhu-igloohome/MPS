@@ -88,6 +88,24 @@ async function setupSchema() {
     where trim(po_number) = '' or po_number is null;
   `;
   await db`create unique index if not exists idx_forecasts_po_number_unique on forecasts (po_number);`;
+  await db`
+    create or replace function prevent_forecast_po_number_update()
+    returns trigger as $$
+    begin
+      if new.po_number is distinct from old.po_number then
+        raise exception 'Forecast PO number is system-generated and cannot be modified';
+      end if;
+      return new;
+    end;
+    $$ language plpgsql;
+  `;
+  await db`drop trigger if exists trg_prevent_forecast_po_number_update on forecasts;`;
+  await db`
+    create trigger trg_prevent_forecast_po_number_update
+    before update on forecasts
+    for each row
+    execute function prevent_forecast_po_number_update();
+  `;
 
   await db`
     create table if not exists order_progress (
