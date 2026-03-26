@@ -68,6 +68,10 @@ export function ForecastForm({
       language === "en"
         ? "Delete this forecast because customer cancelled it?"
         : "确认删除该 forecast（客户已取消）？",
+    reasonPrompt:
+      language === "en"
+        ? "Please enter cancellation reason (required):"
+        : "请输入取消原因（必填）：",
   };
   const defaultRegion = allowedRegions[0];
   const defaultProductName = products[0]?.productName || "";
@@ -197,9 +201,16 @@ export function ForecastForm({
   }
   async function onDelete(id: string) {
     if (!window.confirm(t.deleteConfirm)) return;
+    const reason = window.prompt(t.reasonPrompt)?.trim() || "";
+    if (!reason) {
+      setMessage(language === "en" ? "Deletion reason is required." : "删除原因必填。");
+      return;
+    }
     setDeletingId(id);
     const response = await fetch(`/api/forecasts/${encodeURIComponent(id)}`, {
       method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
     });
     setDeletingId(null);
     if (!response.ok) {

@@ -600,6 +600,36 @@ export async function deleteForecastById(id: string): Promise<void> {
   `;
 }
 
+export async function createForecastDeletionLog(input: {
+  forecastId: string;
+  poNumber: string;
+  sku: string;
+  region: Region;
+  reason: string;
+  deletedBy: string;
+}): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    insert into forecast_deletion_logs (
+      forecast_id,
+      po_number,
+      sku,
+      region,
+      reason,
+      deleted_by
+    )
+    values (
+      ${Number(input.forecastId)},
+      ${input.poNumber},
+      ${input.sku},
+      ${input.region},
+      ${input.reason.trim()},
+      ${input.deletedBy}
+    );
+  `;
+}
+
 export async function forecastPoSkuExistsInRegions(
   regions: Region[],
   poNumber: string,

@@ -349,6 +349,18 @@ async function main() {
       created_at timestamptz not null default now()
     );
   `;
+  await sql`
+    create table if not exists forecast_deletion_logs (
+      id bigserial primary key,
+      forecast_id bigint not null,
+      po_number text not null,
+      sku text not null,
+      region text not null check (region in ('APAC', 'EU', 'USA')),
+      reason text not null,
+      deleted_by text not null references users(username),
+      deleted_at timestamptz not null default now()
+    );
+  `;
 
   for (const user of users) {
     await sql`
