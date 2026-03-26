@@ -54,6 +54,12 @@ export default async function ContractDetailPage({ params }: PageProps) {
             >
               Print PO
             </Link>
+            <Link
+              className="rounded border border-app-border px-3 py-1.5 text-sm hover:bg-app-accent-soft"
+              href={`/contracts/po/${encodeURIComponent(contract.poNumber)}/print`}
+            >
+              Batch Print (Same PO)
+            </Link>
           </div>
         </div>
         <dl className="mt-4 grid gap-3 md:grid-cols-2">

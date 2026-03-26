@@ -2117,6 +2117,50 @@ export async function listContractsBySessionRegions(regions: Region[]): Promise<
   return rows.map(mapContract);
 }
 
+export async function listContractsByPoNumberInSessionRegions(
+  regions: Region[],
+  poNumber: string,
+): Promise<ContractEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const allowed = orderProgressRegionsForSession(regions);
+  if (allowed.length === 0) return [];
+  const normalizedPo = poNumber.trim();
+  if (!normalizedPo) return [];
+  const rows = await db<ContractRow[]>`
+    select
+      c.id,
+      c.order_progress_id,
+      c.supplier_id,
+      c.supplier_name,
+      c.po_number,
+      c.signed_date::text,
+      c.sku,
+      c.product_name,
+      c.batch,
+      c.quantity,
+      c.unit_cost::text,
+      c.total_amount::text,
+      c.delivery_date::text,
+      c.currency,
+      c.payment_terms,
+      c.quality_remarks,
+      c.delivery_address,
+      c.serial_code,
+      c.bluetooth_id,
+      c.status,
+      c.created_by,
+      c.created_at::text,
+      c.updated_at::text
+    from contracts c
+    join order_progress op on op.id = c.order_progress_id
+    where op.region = any(${allowed})
+      and c.po_number = ${normalizedPo}
+    order by c.sku asc, c.id asc;
+  `;
+  return rows.map(mapContract);
+}
+
 export async function createContractFromOrder(input: {
   orderProgressId: string;
   supplierId: string;
