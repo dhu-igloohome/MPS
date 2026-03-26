@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 
 import { ForecastForm } from "@/components/forecast/forecast-form";
 import { AppShell } from "@/components/shared/app-shell";
-import { OFFICES_BY_REGION } from "@/lib/accounts";
 import { normalizeLanguage } from "@/lib/i18n";
 import { getForecastsByRegions, listActiveProducts } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
@@ -32,7 +31,6 @@ export default async function ForecastPage() {
     >
       <ForecastForm
         allowedRegions={session.regions}
-        officesByRegion={OFFICES_BY_REGION}
         products={products}
         entries={entries}
         language={language}

@@ -8,7 +8,6 @@ import { ForecastEntry, ProductItem, Region } from "@/lib/types";
 
 type ForecastFormProps = {
   allowedRegions: Region[];
-  officesByRegion: Record<Region, string[]>;
   products: ProductItem[];
   entries: ForecastEntry[];
   language: Language;
@@ -16,7 +15,6 @@ type ForecastFormProps = {
 
 export function ForecastForm({
   allowedRegions,
-  officesByRegion,
   products,
   entries,
   language,
@@ -35,14 +33,12 @@ export function ForecastForm({
     forecastMonth: language === "en" ? "Forecast Month" : "Forecast 月份",
     region: language === "en" ? "Region" : "区域",
     office: language === "en" ? "Office" : "办公室",
-    officeOptional: language === "en" ? "Office (optional)" : "办公室（选填）",
     noOffice: language === "en" ? "Not specified" : "未填写",
     destination: language === "en" ? "Destination (optional)" : "Destination（选填）",
     noDestination: language === "en" ? "Not specified" : "未填写",
     productName: language === "en" ? "Product Name" : "产品名称",
     sku: "SKU",
     remark: language === "en" ? "Remark" : "备注",
-    articleNumber: language === "en" ? "Article Number" : "Article Number",
     bto: language === "en" ? "Build to Order" : "按单生产",
     bts: language === "en" ? "Build to Stock" : "备货生产",
     saveFailed:
@@ -63,7 +59,6 @@ export function ForecastForm({
 
   const [month, setMonth] = useState("");
   const [region, setRegion] = useState<Region>(defaultRegion);
-  const [office, setOffice] = useState("");
   const [destination, setDestination] = useState("");
   const [productName, setProductName] = useState(defaultProductName);
   const [sku, setSku] = useState(defaultSku);
@@ -73,7 +68,6 @@ export function ForecastForm({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const officeOptions = useMemo(() => officesByRegion[region], [officesByRegion, region]);
   const destinationOptions = useMemo(
     () => [...new Set(entries.map((e) => e.destination).filter(Boolean))].sort(),
     [entries],
@@ -86,14 +80,8 @@ export function ForecastForm({
     () => products.filter((item) => item.productName === productName),
     [products, productName],
   );
-  const selectedProduct = useMemo(
-    () => products.find((item) => item.sku === sku && item.productName === productName) || null,
-    [products, productName, sku],
-  );
-
   function onRegionChange(nextRegion: Region) {
     setRegion(nextRegion);
-    setOffice("");
   }
 
   function onProductNameChange(nextProductName: string) {
@@ -115,7 +103,7 @@ export function ForecastForm({
       body: JSON.stringify({
         month,
         region,
-        office,
+        office: "",
         destination,
         productName,
         sku,
@@ -179,22 +167,6 @@ export function ForecastForm({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.officeOptional}</span>
-          <select
-            value={office}
-            onChange={(event) => setOffice(event.target.value)}
-            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
-          >
-            <option value="">{t.noOffice}</option>
-            {officeOptions.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block">
           <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
           <select
             value={destination}
@@ -249,15 +221,6 @@ export function ForecastForm({
             onChange={(event) => setRemark(event.target.value)}
             rows={3}
             className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.articleNumber}</span>
-          <input
-            value={selectedProduct?.articleNumber || ""}
-            readOnly
-            className="w-full rounded-lg border border-app-border/90 bg-app-accent-soft/45 px-3 py-2 text-foreground/85"
           />
         </label>
 
