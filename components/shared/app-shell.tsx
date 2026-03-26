@@ -22,6 +22,8 @@ export async function AppShell({ session, title, description, children }: AppShe
     cockpit: language === "en" ? "Cockpit" : "驾驶舱",
     forecastInput: language === "en" ? "Forecast Input" : "Forecast 填报",
     orderProgress: language === "en" ? "Order Progress" : "订单进度",
+    suppliers: language === "en" ? "Suppliers" : "供应商管理",
+    contracts: language === "en" ? "Contracts" : "合同管理",
     logisticsProgress: language === "en" ? "Logistics Progress" : "物流进度",
     userManagement: language === "en" ? "User Management" : "用户管理",
     productDatabase: language === "en" ? "Product Database" : "产品数据库",
@@ -31,6 +33,8 @@ export async function AppShell({ session, title, description, children }: AppShe
     { href: "/dashboard", label: navText.cockpit },
     { href: "/forecast", label: navText.forecastInput },
     { href: "/order-progress", label: navText.orderProgress },
+    { href: "/suppliers", label: navText.suppliers },
+    { href: "/contracts", label: navText.contracts },
     { href: "/logistics-progress", label: navText.logisticsProgress },
     ...(session.role === "super_admin"
       ? [

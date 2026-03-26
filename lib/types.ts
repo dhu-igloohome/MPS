@@ -59,6 +59,40 @@ export type ProductItem = {
   createdAt: string;
 };
 
+export type SupplierEntry = {
+  id: string;
+  name: string;
+  address: string;
+  contactName: string;
+  contactPhone: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ContractStatus = "draft" | "generated";
+
+export type ContractEntry = {
+  id: string;
+  orderProgressId: string;
+  supplierId: string;
+  supplierName: string;
+  poNumber: string;
+  signedDate: string;
+  sku: string;
+  productName: string;
+  batch: string;
+  quantity: number;
+  unitCost: number;
+  totalAmount: number;
+  deliveryDate: string;
+  serialCode: string;
+  bluetoothId: string;
+  status: ContractStatus;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 /** Order progress module uses US; session / forecasts use USA. */
 export type OrderProgressRegion = "APAC" | "EU" | "US";
 

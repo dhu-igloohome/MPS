@@ -174,6 +174,46 @@ async function main() {
   await sql`create unique index if not exists idx_order_progress_po_number_unique on order_progress (po_number);`;
 
   await sql`
+    create table if not exists suppliers (
+      id bigserial primary key,
+      name text not null unique,
+      address text not null default '',
+      contact_name text not null default '',
+      contact_phone text not null default '',
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+
+  await sql`
+    create table if not exists contracts (
+      id bigserial primary key,
+      order_progress_id bigint not null references order_progress(id) on delete cascade,
+      supplier_id bigint not null references suppliers(id) on delete restrict,
+      supplier_name text not null,
+      po_number text not null unique,
+      signed_date date not null,
+      sku text not null,
+      product_name text not null,
+      batch text not null default '',
+      quantity integer not null check (quantity >= 0),
+      unit_cost numeric(12, 2) not null default 0,
+      total_amount numeric(14, 2) not null default 0,
+      delivery_date date not null,
+      serial_code text not null default '',
+      bluetooth_id text not null default '',
+      status text not null default 'draft' check (status in ('draft', 'generated')),
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+
+  await sql`
+    create index if not exists idx_contracts_order_progress_id on contracts (order_progress_id);
+  `;
+
+  await sql`
     create table if not exists order_progress_delivery_plans (
       id bigserial primary key,
       order_progress_id bigint not null references order_progress(id) on delete cascade,

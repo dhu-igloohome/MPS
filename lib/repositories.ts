@@ -9,6 +9,8 @@ import {
   LogisticsMovementType,
   LogisticsShipmentEntry,
   LogisticsShipmentStatus,
+  ContractEntry,
+  ContractStatus,
   OrderProductionStep,
   OrderProgressDeliveryPlan,
   ProductionStepTemplateEntry,
@@ -19,6 +21,7 @@ import {
   ProductItem,
   Region,
   SessionPayload,
+  SupplierEntry,
   UserRole,
 } from "@/lib/types";
 
@@ -102,6 +105,38 @@ type OrderProductionStepRow = {
   done: boolean;
   completed_at: string | null;
   completed_by: string | null;
+};
+
+type SupplierRow = {
+  id: number;
+  name: string;
+  address: string;
+  contact_name: string;
+  contact_phone: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type ContractRow = {
+  id: number;
+  order_progress_id: number;
+  supplier_id: number;
+  supplier_name: string;
+  po_number: string;
+  signed_date: string;
+  sku: string;
+  product_name: string;
+  batch: string;
+  quantity: number;
+  unit_cost: string | number;
+  total_amount: string | number;
+  delivery_date: string;
+  serial_code: string;
+  bluetooth_id: string;
+  status: ContractStatus;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 };
 
 const MAX_PRODUCTION_TEMPLATE_STEPS = 40;
@@ -1594,4 +1629,287 @@ function mapProduct(row: ProductRow): ProductItem {
     isActive: row.is_active,
     createdAt: row.created_at,
   };
+}
+
+function mapSupplier(row: SupplierRow): SupplierEntry {
+  return {
+    id: String(row.id),
+    name: row.name,
+    address: row.address || "",
+    contactName: row.contact_name || "",
+    contactPhone: row.contact_phone || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapContract(row: ContractRow): ContractEntry {
+  return {
+    id: String(row.id),
+    orderProgressId: String(row.order_progress_id),
+    supplierId: String(row.supplier_id),
+    supplierName: row.supplier_name,
+    poNumber: row.po_number,
+    signedDate: formatPgDateOnly(row.signed_date),
+    sku: row.sku,
+    productName: row.product_name,
+    batch: row.batch || "",
+    quantity: Number(row.quantity ?? 0),
+    unitCost: Number(row.unit_cost ?? 0),
+    totalAmount: Number(row.total_amount ?? 0),
+    deliveryDate: formatPgDateOnly(row.delivery_date),
+    serialCode: row.serial_code || "",
+    bluetoothId: row.bluetooth_id || "",
+    status: row.status,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listSuppliers(): Promise<SupplierEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<SupplierRow[]>`
+    select id, name, address, contact_name, contact_phone, created_at::text, updated_at::text
+    from suppliers
+    order by name asc, id asc;
+  `;
+  return rows.map(mapSupplier);
+}
+
+export async function createSupplier(input: {
+  name: string;
+  address: string;
+  contactName: string;
+  contactPhone: string;
+}): Promise<SupplierEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<SupplierRow[]>`
+    insert into suppliers (name, address, contact_name, contact_phone, updated_at)
+    values (
+      ${input.name.trim()},
+      ${input.address.trim()},
+      ${input.contactName.trim()},
+      ${input.contactPhone.trim()},
+      now()
+    )
+    returning id, name, address, contact_name, contact_phone, created_at::text, updated_at::text;
+  `;
+  return mapSupplier(rows[0]);
+}
+
+export async function updateSupplier(input: {
+  id: string;
+  name: string;
+  address: string;
+  contactName: string;
+  contactPhone: string;
+}): Promise<SupplierEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<SupplierRow[]>`
+    update suppliers
+    set
+      name = ${input.name.trim()},
+      address = ${input.address.trim()},
+      contact_name = ${input.contactName.trim()},
+      contact_phone = ${input.contactPhone.trim()},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning id, name, address, contact_name, contact_phone, created_at::text, updated_at::text;
+  `;
+  return rows[0] ? mapSupplier(rows[0]) : null;
+}
+
+export async function deleteSupplierById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from suppliers where id = ${Number(id)};`;
+}
+
+export async function listContractsBySessionRegions(regions: Region[]): Promise<ContractEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const allowed = orderProgressRegionsForSession(regions);
+  if (allowed.length === 0) return [];
+  const rows = await db<ContractRow[]>`
+    select
+      c.id,
+      c.order_progress_id,
+      c.supplier_id,
+      c.supplier_name,
+      c.po_number,
+      c.signed_date::text,
+      c.sku,
+      c.product_name,
+      c.batch,
+      c.quantity,
+      c.unit_cost::text,
+      c.total_amount::text,
+      c.delivery_date::text,
+      c.serial_code,
+      c.bluetooth_id,
+      c.status,
+      c.created_by,
+      c.created_at::text,
+      c.updated_at::text
+    from contracts c
+    join order_progress op on op.id = c.order_progress_id
+    where op.region = any(${allowed})
+    order by c.created_at desc, c.id desc;
+  `;
+  return rows.map(mapContract);
+}
+
+export async function createContractFromOrder(input: {
+  orderProgressId: string;
+  supplierId: string;
+  batch: string;
+  serialCode: string;
+  bluetoothId: string;
+  createdBy: string;
+}): Promise<ContractEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ContractRow[]>`
+    with src as (
+      select
+        op.id as order_progress_id,
+        op.product_name,
+        op.sku,
+        op.quantity,
+        op.created_at::date as signed_date,
+        (op.created_at::date + interval '56 days')::date as delivery_date,
+        s.id as supplier_id,
+        s.name as supplier_name,
+        p.unit_cost::numeric as unit_cost
+      from order_progress op
+      join suppliers s on s.id = ${Number(input.supplierId)}
+      left join products p on p.product_name = op.product_name and p.sku = op.sku and p.is_active = true
+      where op.id = ${Number(input.orderProgressId)}
+      order by p.id asc
+      limit 1
+    ),
+    ensure_seq as (
+      insert into po_sequences (key, next_number)
+      values ('IG-PO', 499)
+      on conflict (key) do nothing
+    ),
+    seq as (
+      update po_sequences
+      set next_number = next_number + 1
+      where key = 'IG-PO'
+      returning next_number
+    ),
+    ins as (
+      insert into contracts (
+        order_progress_id,
+        supplier_id,
+        supplier_name,
+        po_number,
+        signed_date,
+        sku,
+        product_name,
+        batch,
+        quantity,
+        unit_cost,
+        total_amount,
+        delivery_date,
+        serial_code,
+        bluetooth_id,
+        status,
+        created_by
+      )
+      select
+        src.order_progress_id,
+        src.supplier_id,
+        src.supplier_name,
+        'IG-PO-' || lpad((select next_number from seq)::text, 6, '0') as po_number,
+        src.signed_date,
+        src.sku,
+        src.product_name,
+        ${input.batch.trim()},
+        src.quantity,
+        coalesce(src.unit_cost, 0),
+        src.quantity * coalesce(src.unit_cost, 0),
+        src.delivery_date,
+        ${input.serialCode.trim()},
+        ${input.bluetoothId.trim()},
+        'generated',
+        ${input.createdBy}
+      from src
+      returning *
+    ),
+    upd as (
+      update order_progress op
+      set
+        po_number = ins.po_number,
+        po_batch = ins.batch,
+        po_serial_code = ins.serial_code,
+        po_bluetooth_id = ins.bluetooth_id,
+        unit_cost_snapshot = ins.unit_cost,
+        po_delivery_date = ins.delivery_date
+      from ins
+      where op.id = ins.order_progress_id
+      returning op.id
+    )
+    select
+      id,
+      order_progress_id,
+      supplier_id,
+      supplier_name,
+      po_number,
+      signed_date::text,
+      sku,
+      product_name,
+      batch,
+      quantity,
+      unit_cost::text,
+      total_amount::text,
+      delivery_date::text,
+      serial_code,
+      bluetooth_id,
+      status,
+      created_by,
+      created_at::text,
+      updated_at::text
+    from ins;
+  `;
+  if (!rows[0]) {
+    throw new Error("Create contract failed");
+  }
+  return mapContract(rows[0]);
+}
+
+export async function getContractById(id: string): Promise<ContractEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ContractRow[]>`
+    select
+      id,
+      order_progress_id,
+      supplier_id,
+      supplier_name,
+      po_number,
+      signed_date::text,
+      sku,
+      product_name,
+      batch,
+      quantity,
+      unit_cost::text,
+      total_amount::text,
+      delivery_date::text,
+      serial_code,
+      bluetooth_id,
+      status,
+      created_by,
+      created_at::text,
+      updated_at::text
+    from contracts
+    where id = ${Number(id)}
+    limit 1;
+  `;
+  return rows[0] ? mapContract(rows[0]) : null;
 }
