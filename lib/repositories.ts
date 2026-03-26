@@ -215,6 +215,7 @@ export async function createForecast(input: {
   month: string;
   region: Region;
   office: string;
+  destination: string;
   productName: string;
   sku: string;
   remark: string;
@@ -230,6 +231,7 @@ export async function createForecast(input: {
       forecast_month: string;
       region: Region;
       office: string;
+      destination: string;
       product_name: string;
       sku: string;
       remark: string;
@@ -243,6 +245,7 @@ export async function createForecast(input: {
       forecast_month,
       region,
       office,
+      destination,
       product_name,
       sku,
       remark,
@@ -254,6 +257,7 @@ export async function createForecast(input: {
       ${input.month},
       ${input.region},
       ${input.office},
+      ${input.destination.trim()},
       ${input.productName.trim()},
       ${input.sku.trim()},
       ${input.remark.trim()},
@@ -266,6 +270,7 @@ export async function createForecast(input: {
       forecast_month,
       region,
       office,
+      destination,
       product_name,
       sku,
       remark,
@@ -397,6 +402,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       forecast_month: string;
       region: Region;
       office: string;
+      destination: string;
       product_name: string;
       sku: string;
       remark: string;
@@ -411,6 +417,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       forecast_month,
       region,
       office,
+      destination,
       product_name,
       sku,
       remark,
@@ -505,6 +512,7 @@ function mapForecast(row: {
   forecast_month: string;
   region: Region;
   office: string;
+  destination: string;
   product_name: string;
   sku: string;
   remark: string;
@@ -518,6 +526,7 @@ function mapForecast(row: {
     month: row.forecast_month,
     region: row.region,
     office: row.office,
+    destination: row.destination || "",
     productName: row.product_name,
     sku: row.sku,
     remark: row.remark || "",

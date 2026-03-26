@@ -89,15 +89,18 @@ export default async function DashboardPage({
   const filterMonth = String(params.month ?? "").trim();
   const filterRegion = String(params.region ?? "").trim();
   const filterOffice = String(params.office ?? "").trim();
+  const filterDestination = String(params.destination ?? "").trim();
   const filterProduct = String(params.productName ?? "").trim();
   const monthOptions = [...new Set(entries.map((e) => e.month))].sort((a, b) => b.localeCompare(a));
   const regionOptions = [...new Set(entries.map((e) => e.region))].sort();
   const officeOptions = [...new Set(entries.map((e) => e.office).filter(Boolean))].sort();
+  const destinationOptions = [...new Set(entries.map((e) => e.destination).filter(Boolean))].sort();
   const productOptions = [...new Set(entries.map((e) => e.productName))].sort();
   const filteredEntries = entries.filter((e) => {
     if (filterMonth && e.month !== filterMonth) return false;
     if (filterRegion && e.region !== filterRegion) return false;
     if (filterOffice && e.office !== filterOffice) return false;
+    if (filterDestination && e.destination !== filterDestination) return false;
     if (filterProduct && e.productName !== filterProduct) return false;
     return true;
   });
@@ -128,6 +131,7 @@ export default async function DashboardPage({
       language === "en" ? "No quarterly forecast data yet." : "暂无季度 forecast 数据。",
     latestTitle: language === "en" ? "Latest Forecast Entries" : "最新 Forecast 记录",
     office: language === "en" ? "Office" : "办公室",
+    destination: language === "en" ? "Destination" : "Destination",
     productName: language === "en" ? "Product Name" : "产品名称",
     filters: language === "en" ? "Filters" : "筛选",
     clear: language === "en" ? "Clear" : "清空",
@@ -196,6 +200,21 @@ export default async function DashboardPage({
               {officeOptions.map((o) => (
                 <option key={o} value={o}>
                   {o}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm text-app-muted">{t.destination}</span>
+            <select
+              name="destination"
+              defaultValue={filterDestination}
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+            >
+              <option value="">All</option>
+              {destinationOptions.map((d) => (
+                <option key={d} value={d}>
+                  {d}
                 </option>
               ))}
             </select>

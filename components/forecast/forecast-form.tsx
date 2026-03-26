@@ -37,6 +37,8 @@ export function ForecastForm({
     office: language === "en" ? "Office" : "办公室",
     officeOptional: language === "en" ? "Office (optional)" : "办公室（选填）",
     noOffice: language === "en" ? "Not specified" : "未填写",
+    destination: language === "en" ? "Destination (optional)" : "Destination（选填）",
+    noDestination: language === "en" ? "Not specified" : "未填写",
     productName: language === "en" ? "Product Name" : "产品名称",
     sku: "SKU",
     remark: language === "en" ? "Remark" : "备注",
@@ -62,6 +64,7 @@ export function ForecastForm({
   const [month, setMonth] = useState("");
   const [region, setRegion] = useState<Region>(defaultRegion);
   const [office, setOffice] = useState("");
+  const [destination, setDestination] = useState("");
   const [productName, setProductName] = useState(defaultProductName);
   const [sku, setSku] = useState(defaultSku);
   const [remark, setRemark] = useState("");
@@ -71,6 +74,10 @@ export function ForecastForm({
   const [message, setMessage] = useState("");
 
   const officeOptions = useMemo(() => officesByRegion[region], [officesByRegion, region]);
+  const destinationOptions = useMemo(
+    () => [...new Set(entries.map((e) => e.destination).filter(Boolean))].sort(),
+    [entries],
+  );
   const productNameOptions = useMemo(
     () => [...new Set(products.map((item) => item.productName))],
     [products],
@@ -109,6 +116,7 @@ export function ForecastForm({
         month,
         region,
         office,
+        destination,
         productName,
         sku,
         remark,
@@ -179,6 +187,22 @@ export function ForecastForm({
           >
             <option value="">{t.noOffice}</option>
             {officeOptions.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
+          <select
+            value={destination}
+            onChange={(event) => setDestination(event.target.value)}
+            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+          >
+            <option value="">{t.noDestination}</option>
+            {destinationOptions.map((item) => (
               <option key={item} value={item}>
                 {item}
               </option>
@@ -280,6 +304,7 @@ export function ForecastForm({
                 <th className="px-2 py-2">{t.forecastMonth}</th>
                 <th className="px-2 py-2">{t.region}</th>
                 <th className="px-2 py-2">{t.office}</th>
+                <th className="px-2 py-2">{t.destination}</th>
                 <th className="px-2 py-2">{t.productName}</th>
                 <th className="px-2 py-2">{t.sku}</th>
                 <th className="px-2 py-2">{t.bto}</th>
@@ -290,7 +315,7 @@ export function ForecastForm({
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-2 py-6 text-center text-app-muted">
+                  <td colSpan={9} className="px-2 py-6 text-center text-app-muted">
                     {t.noRecords}
                   </td>
                 </tr>
@@ -300,6 +325,7 @@ export function ForecastForm({
                     <td className="px-2 py-2">{item.month}</td>
                     <td className="px-2 py-2">{item.region}</td>
                     <td className="px-2 py-2">{item.office || t.noOffice}</td>
+                    <td className="px-2 py-2">{item.destination || t.noDestination}</td>
                     <td className="px-2 py-2">{item.productName}</td>
                     <td className="px-2 py-2">{item.sku}</td>
                     <td className="px-2 py-2 tabular-nums">{item.buildToOrder}</td>

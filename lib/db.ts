@@ -60,6 +60,7 @@ async function setupSchema() {
       forecast_month text not null,
       region text not null check (region in ('APAC', 'EU', 'USA')),
       office text not null,
+      destination text not null default '',
       product_name text not null,
       sku text not null,
       remark text not null default '',
@@ -70,6 +71,7 @@ async function setupSchema() {
     );
   `;
   await db`alter table forecasts add column if not exists remark text not null default '';`;
+  await db`alter table forecasts add column if not exists destination text not null default '';`;
 
   await db`
     create table if not exists order_progress (
