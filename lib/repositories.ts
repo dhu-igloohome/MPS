@@ -1913,3 +1913,37 @@ export async function getContractById(id: string): Promise<ContractEntry | null>
   `;
   return rows[0] ? mapContract(rows[0]) : null;
 }
+
+export async function updateContractStatusById(
+  id: string,
+  status: ContractStatus,
+): Promise<ContractEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ContractRow[]>`
+    update contracts
+    set status = ${status}, updated_at = now()
+    where id = ${Number(id)}
+    returning
+      id,
+      order_progress_id,
+      supplier_id,
+      supplier_name,
+      po_number,
+      signed_date::text,
+      sku,
+      product_name,
+      batch,
+      quantity,
+      unit_cost::text,
+      total_amount::text,
+      delivery_date::text,
+      serial_code,
+      bluetooth_id,
+      status,
+      created_by,
+      created_at::text,
+      updated_at::text;
+  `;
+  return rows[0] ? mapContract(rows[0]) : null;
+}

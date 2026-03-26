@@ -20,15 +20,14 @@ export default async function SuppliersPage() {
   return (
     <AppShell
       session={session}
-      title={language === "en" ? "Supplier Management" : "供应商管理"}
+      title={language === "en" ? "Supplier Management" : "Supplier Management"}
       description={
         language === "en"
           ? "Maintain supplier records for contract generation."
-          : "维护供应商信息，供合同模块调用生成附件。"
+          : "Maintain supplier records for contract generation."
       }
     >
       <SupplierManagement suppliers={suppliers} language={language} />
     </AppShell>
   );
 }
-

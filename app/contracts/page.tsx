@@ -28,15 +28,14 @@ export default async function ContractsPage() {
   return (
     <AppShell
       session={session}
-      title={language === "en" ? "Contract Management" : "合同管理"}
+      title={language === "en" ? "Contract Management" : "Contract Management"}
       description={
         language === "en"
           ? "Create contract attachments by calling order data."
-          : "通过调用订单数据生成合同附件。"
+          : "Create contract attachments by calling order data."
       }
     >
       <ContractManagement contracts={contracts} orders={orders} suppliers={suppliers} language={language} />
     </AppShell>
   );
 }
-

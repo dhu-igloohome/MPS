@@ -1,10 +1,11 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { Language } from "@/lib/i18n";
-import type { ContractEntry, OrderProgressEntry, SupplierEntry } from "@/lib/types";
+import type { ContractEntry, ContractStatus, OrderProgressEntry, SupplierEntry } from "@/lib/types";
 
 type ContractManagementProps = {
   contracts: ContractEntry[];
@@ -13,19 +14,28 @@ type ContractManagementProps = {
   language: Language;
 };
 
-export function ContractManagement({ contracts, orders, suppliers, language }: ContractManagementProps) {
+export function ContractManagement({ contracts, orders, suppliers, language: _language }: ContractManagementProps) {
   const router = useRouter();
   const t = {
-    createTitle: language === "en" ? "Create Contract (from order)" : "创建合同（调用订单数据）",
-    orderLine: language === "en" ? "Order line" : "订单行",
-    supplier: language === "en" ? "Supplier" : "供应商",
-    batch: language === "en" ? "Batch" : "批次",
-    serialCode: language === "en" ? "Serial code" : "流水码",
-    bluetoothId: language === "en" ? "Bluetooth ID" : "蓝牙ID",
-    create: language === "en" ? "Create contract" : "创建合同",
-    listTitle: language === "en" ? "Contracts" : "合同列表",
-    download: language === "en" ? "Download PDF" : "下载 PDF",
-    empty: language === "en" ? "No contracts yet." : "暂无合同。",
+    createTitle: "Create Contract (from order)",
+    orderLine: "Order line",
+    supplier: "Supplier",
+    batch: "Batch",
+    serialCode: "Serial code",
+    bluetoothId: "Bluetooth ID",
+    create: "Create contract",
+    listTitle: "Contracts",
+    download: "Download PDF",
+    details: "Details",
+    empty: "No contracts yet.",
+    status: "Status",
+    filterStatus: "Filter by status",
+    filterSupplier: "Filter by supplier",
+    all: "All",
+    draft: "Draft",
+    generated: "Generated",
+    markDraft: "Mark Draft",
+    markGenerated: "Mark Generated",
   };
 
   const [orderProgressId, setOrderProgressId] = useState(orders[0]?.id ?? "");
@@ -33,8 +43,18 @@ export function ContractManagement({ contracts, orders, suppliers, language }: C
   const [batch, setBatch] = useState("");
   const [serialCode, setSerialCode] = useState("");
   const [bluetoothId, setBluetoothId] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | ContractStatus>("all");
+  const [supplierFilter, setSupplierFilter] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  const filteredContracts = useMemo(() => {
+    return contracts.filter((c) => {
+      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (supplierFilter !== "all" && c.supplierId !== supplierFilter) return false;
+      return true;
+    });
+  }, [contracts, statusFilter, supplierFilter]);
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -54,6 +74,23 @@ export function ContractManagement({ contracts, orders, suppliers, language }: C
     setBatch("");
     setSerialCode("");
     setBluetoothId("");
+    router.refresh();
+  }
+
+  async function onSetStatus(id: string, status: ContractStatus) {
+    setLoading(true);
+    setMessage("");
+    const res = await fetch(`/api/contracts/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { message?: string };
+    setLoading(false);
+    if (!res.ok) {
+      setMessage(data.message || "Status update failed");
+      return;
+    }
     router.refresh();
   }
 
@@ -86,13 +123,30 @@ export function ContractManagement({ contracts, orders, suppliers, language }: C
 
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-foreground">{t.listTitle}</h3>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <label className="text-sm text-app-muted">
+            {t.filterStatus}
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as "all" | ContractStatus)} className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm text-foreground">
+              <option value="all">{t.all}</option>
+              <option value="draft">{t.draft}</option>
+              <option value="generated">{t.generated}</option>
+            </select>
+          </label>
+          <label className="text-sm text-app-muted">
+            {t.filterSupplier}
+            <select value={supplierFilter} onChange={(e) => setSupplierFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm text-foreground">
+              <option value="all">{t.all}</option>
+              {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </label>
+        </div>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-collapse text-sm">
-            <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="px-2 py-2">PO</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">Product</th><th className="px-2 py-2">Supplier</th><th className="px-2 py-2">Qty</th><th className="px-2 py-2">Total</th><th className="px-2 py-2">Action</th></tr></thead>
+          <table className="w-full min-w-[1200px] border-collapse text-sm">
+            <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="px-2 py-2">PO</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">Product</th><th className="px-2 py-2">Supplier</th><th className="px-2 py-2">Qty</th><th className="px-2 py-2">Total</th><th className="px-2 py-2">{t.status}</th><th className="px-2 py-2">Action</th></tr></thead>
             <tbody>
-              {contracts.length === 0 ? (
-                <tr><td colSpan={7} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr>
-              ) : contracts.map((c) => (
+              {filteredContracts.length === 0 ? (
+                <tr><td colSpan={8} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr>
+              ) : filteredContracts.map((c) => (
                 <tr key={c.id} className="border-b border-app-border/35">
                   <td className="px-2 py-2 font-medium">{c.poNumber}</td>
                   <td className="px-2 py-2">{c.sku}</td>
@@ -100,7 +154,15 @@ export function ContractManagement({ contracts, orders, suppliers, language }: C
                   <td className="px-2 py-2">{c.supplierName}</td>
                   <td className="px-2 py-2">{c.quantity}</td>
                   <td className="px-2 py-2">{c.totalAmount.toFixed(2)}</td>
-                  <td className="px-2 py-2"><a className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/api/contracts/${encodeURIComponent(c.id)}/pdf`}>{t.download}</a></td>
+                  <td className="px-2 py-2">{c.status}</td>
+                  <td className="px-2 py-2">
+                    <div className="flex flex-wrap gap-2">
+                      <Link className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/contracts/${encodeURIComponent(c.id)}`}>{t.details}</Link>
+                      <a className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/api/contracts/${encodeURIComponent(c.id)}/pdf`}>{t.download}</a>
+                      <button type="button" className="rounded border border-app-border px-2 py-1 text-xs" onClick={() => onSetStatus(c.id, "draft")}>{t.markDraft}</button>
+                      <button type="button" className="rounded border border-app-border px-2 py-1 text-xs" onClick={() => onSetStatus(c.id, "generated")}>{t.markGenerated}</button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -110,4 +172,3 @@ export function ContractManagement({ contracts, orders, suppliers, language }: C
     </div>
   );
 }
-
