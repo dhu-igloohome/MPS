@@ -1,4 +1,5 @@
 import { ensureDatabase, getSql } from "@/lib/db";
+import { forecastPoPrefixForRegion, singaporeYmdCompact } from "@/lib/forecast-po";
 import type { ParsedOrderProgressDeliveryPlan } from "@/lib/order-progress-delivery-plans";
 import { hashPassword, verifyPassword } from "@/lib/security";
 import {
@@ -216,7 +217,6 @@ export async function createForecast(input: {
   region: Region;
   office: string;
   destination: string;
-  poNumber: string;
   productName: string;
   sku: string;
   remark: string;
@@ -226,6 +226,9 @@ export async function createForecast(input: {
 }) {
   await ensureDatabase();
   const db = getSql();
+  const prefix = forecastPoPrefixForRegion(input.region);
+  const ymd = singaporeYmdCompact();
+  const bucket = `${prefix}-${ymd}`;
   const rows = await db<
     {
       id: number;
@@ -243,6 +246,13 @@ export async function createForecast(input: {
       created_at: string;
     }[]
   >`
+    with alloc as (
+      insert into forecast_po_sequences (bucket, next_number)
+      values (${bucket}, 1)
+      on conflict (bucket) do update
+      set next_number = forecast_po_sequences.next_number + 1
+      returning next_number as seq_num
+    )
     insert into forecasts (
       forecast_month,
       region,
@@ -256,19 +266,19 @@ export async function createForecast(input: {
       build_to_stock,
       created_by
     )
-    values (
+    select
       ${input.month},
       ${input.region},
       ${input.office},
       ${input.destination.trim()},
-      ${input.poNumber.trim()},
+      ${prefix + ymd} || lpad(alloc.seq_num::text, 4, '0'),
       ${input.productName.trim()},
       ${input.sku.trim()},
       ${input.remark.trim()},
       ${input.buildToOrder},
       ${input.buildToStock},
       ${input.createdBy}
-    )
+    from alloc
     returning
       id,
       forecast_month,

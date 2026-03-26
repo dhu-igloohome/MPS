@@ -135,6 +135,20 @@ async function main() {
   await sql`alter table forecasts add column if not exists po_number text not null default '';`;
 
   await sql`
+    create table if not exists forecast_po_sequences (
+      bucket text primary key,
+      next_number integer not null
+    );
+  `;
+
+  await sql`
+    update forecasts
+    set po_number = 'LEGACY-F-' || id::text
+    where trim(po_number) = '' or po_number is null;
+  `;
+  await sql`create unique index if not exists idx_forecasts_po_number_unique on forecasts (po_number);`;
+
+  await sql`
     create table if not exists order_progress (
       id bigserial primary key,
       product_name text not null,

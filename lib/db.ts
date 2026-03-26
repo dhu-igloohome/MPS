@@ -76,6 +76,20 @@ async function setupSchema() {
   await db`alter table forecasts add column if not exists po_number text not null default '';`;
 
   await db`
+    create table if not exists forecast_po_sequences (
+      bucket text primary key,
+      next_number integer not null
+    );
+  `;
+
+  await db`
+    update forecasts
+    set po_number = 'LEGACY-F-' || id::text
+    where trim(po_number) = '' or po_number is null;
+  `;
+  await db`create unique index if not exists idx_forecasts_po_number_unique on forecasts (po_number);`;
+
+  await db`
     create table if not exists order_progress (
       id bigserial primary key,
       product_name text not null,

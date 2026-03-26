@@ -35,7 +35,6 @@ export async function POST(request: Request) {
   }
 
   const month = String(body.month || "");
-  const poNumber = String(body.poNumber || "").trim();
   const productName = String(body.productName || "");
   const sku = String(body.sku || "");
   const destination = String(body.destination || "").trim();
@@ -61,7 +60,6 @@ export async function POST(request: Request) {
     region,
     office,
     destination,
-    poNumber,
     productName,
     sku,
     remark,

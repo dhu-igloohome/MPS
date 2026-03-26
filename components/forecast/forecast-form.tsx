@@ -24,14 +24,13 @@ export function ForecastForm({
     title: language === "en" ? "Forecast Input" : "Forecast 录入",
     subtitle:
       language === "en"
-        ? "Fill monthly forecast for Product/SKU with BTO and BTS quantities."
-        : "按产品/SKU 填写月度 forecast（BTO 与 BTS 数量）。",
+        ? "Fill monthly forecast for Product/SKU with BTO and BTS quantities. A unique PO number is auto-assigned on save (region date + daily sequence)."
+        : "按产品/SKU 填写月度 forecast（BTO 与 BTS）。保存时系统自动分配唯一 PO 号（按区域前缀 + 新加坡日期 + 当日流水）。",
     noProducts:
       language === "en"
         ? "No active products found. Please ask admin to add products in Product Database."
         : "未找到启用中的产品，请联系管理员在产品数据库中维护。",
     forecastMonth: language === "en" ? "Forecast Month" : "Forecast 月份",
-    poNumber: language === "en" ? "PO Number (optional)" : "PO Number（选填）",
     region: language === "en" ? "Region" : "区域",
     office: language === "en" ? "Office" : "办公室",
     noOffice: language === "en" ? "Not specified" : "未填写",
@@ -59,7 +58,6 @@ export function ForecastForm({
     products.find((item) => item.productName === defaultProductName)?.sku || "";
 
   const [month, setMonth] = useState("");
-  const [poNumber, setPoNumber] = useState("");
   const [region, setRegion] = useState<Region>(defaultRegion);
   const [destination, setDestination] = useState("");
   const [productName, setProductName] = useState(defaultProductName);
@@ -104,7 +102,6 @@ export function ForecastForm({
       },
       body: JSON.stringify({
         month,
-        poNumber,
         region,
         office: "",
         destination,
@@ -118,13 +115,17 @@ export function ForecastForm({
 
     setLoading(false);
 
+    const data = (await response.json().catch(() => ({}))) as { entry?: { poNumber?: string } };
+
     if (!response.ok) {
       setMessage(t.saveFailed);
       return;
     }
 
-    setMessage(t.saved);
-    setPoNumber("");
+    const issued = data.entry?.poNumber;
+    setMessage(
+      issued ? `${t.saved} ${language === "en" ? "PO:" : "PO："} ${issued}` : t.saved,
+    );
     setRemark("");
     setBuildToOrder("0");
     setBuildToStock("0");
@@ -151,15 +152,6 @@ export function ForecastForm({
             value={month}
             onChange={(event) => setMonth(event.target.value)}
             required
-            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.poNumber}</span>
-          <input
-            value={poNumber}
-            onChange={(event) => setPoNumber(event.target.value)}
             className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
           />
         </label>
