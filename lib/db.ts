@@ -59,7 +59,6 @@ async function setupSchema() {
       id bigserial primary key,
       forecast_month text not null,
       region text not null check (region in ('APAC', 'EU', 'USA')),
-      office text not null,
       destination text not null default '',
       po_number text not null default '',
       product_name text not null,
@@ -74,6 +73,7 @@ async function setupSchema() {
   await db`alter table forecasts add column if not exists remark text not null default '';`;
   await db`alter table forecasts add column if not exists destination text not null default '';`;
   await db`alter table forecasts add column if not exists po_number text not null default '';`;
+  await db`alter table forecasts drop column if exists office;`;
 
   await db`
     create table if not exists forecast_po_sequences (

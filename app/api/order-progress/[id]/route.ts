@@ -4,6 +4,7 @@ import { parseDeliveryPlansInput } from "@/lib/order-progress-delivery-plans";
 import {
   deleteOrderProgressById,
   findActiveProductByNameAndSku,
+  forecastPoSkuExistsInRegions,
   getOrderProgressById,
   orderProgressRegionsForSession,
   sessionCanAccessOrderProgressRegion,
@@ -74,6 +75,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!productName.trim() || !sku.trim()) {
     return NextResponse.json({ message: "Missing product or SKU" }, { status: 400 });
   }
+  if (!poNumber) {
+    return NextResponse.json({ message: "PO number is required" }, { status: 400 });
+  }
 
   if (!DATE_RE.test(orderDate)) {
     return NextResponse.json({ message: "Invalid order date" }, { status: 400 });
@@ -106,6 +110,13 @@ export async function PATCH(request: Request, context: RouteContext) {
   const product = await findActiveProductByNameAndSku(productName.trim(), sku.trim());
   if (!product) {
     return NextResponse.json({ message: "Invalid product and SKU" }, { status: 400 });
+  }
+  const forecastLinked = await forecastPoSkuExistsInRegions(session.regions, poNumber, sku);
+  if (!forecastLinked) {
+    return NextResponse.json(
+      { message: "PO number + SKU must match an existing Forecast record" },
+      { status: 400 },
+    );
   }
 
   const entry = await updateOrderProgress({

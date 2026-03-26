@@ -200,22 +200,9 @@ export async function authenticateUser(username: string, password: string) {
   } satisfies SessionPayload;
 }
 
-export async function officeExistsByRegion(region: Region, office: string) {
-  await ensureDatabase();
-  const db = getSql();
-  const rows = await db<{ id: number }[]>`
-    select id
-    from offices
-    where region = ${region} and name = ${office}
-    limit 1;
-  `;
-  return rows.length > 0;
-}
-
 export async function createForecast(input: {
   month: string;
   region: Region;
-  office: string;
   destination: string;
   productName: string;
   sku: string;
@@ -234,7 +221,6 @@ export async function createForecast(input: {
       id: number;
       forecast_month: string;
       region: Region;
-      office: string;
       destination: string;
       po_number: string;
       product_name: string;
@@ -256,7 +242,6 @@ export async function createForecast(input: {
     insert into forecasts (
       forecast_month,
       region,
-      office,
       destination,
       po_number,
       product_name,
@@ -269,7 +254,6 @@ export async function createForecast(input: {
     select
       ${input.month},
       ${input.region},
-      ${input.office},
       ${input.destination.trim()},
       ${prefix + ymd} || lpad(alloc.seq_num::text, 4, '0'),
       ${input.productName.trim()},
@@ -283,7 +267,6 @@ export async function createForecast(input: {
       id,
       forecast_month,
       region,
-      office,
       destination,
       po_number,
       product_name,
@@ -416,7 +399,6 @@ export async function getForecastsByRegions(regions: Region[]) {
       id: number;
       forecast_month: string;
       region: Region;
-      office: string;
       destination: string;
       po_number: string;
       product_name: string;
@@ -432,7 +414,6 @@ export async function getForecastsByRegions(regions: Region[]) {
       id,
       forecast_month,
       region,
-      office,
       destination,
       po_number,
       product_name,
@@ -466,7 +447,6 @@ export async function findLatestForecastByPoAndSku(
       id: number;
       forecast_month: string;
       region: Region;
-      office: string;
       destination: string;
       po_number: string;
       product_name: string;
@@ -482,7 +462,6 @@ export async function findLatestForecastByPoAndSku(
       id,
       forecast_month,
       region,
-      office,
       destination,
       po_number,
       product_name,
@@ -498,6 +477,25 @@ export async function findLatestForecastByPoAndSku(
     limit 1;
   `;
   return rows[0] ? mapForecast(rows[0]) : null;
+}
+
+export async function forecastPoSkuExistsInRegions(
+  regions: Region[],
+  poNumber: string,
+  sku: string,
+): Promise<boolean> {
+  await ensureDatabase();
+  const db = getSql();
+  const po = poNumber.trim();
+  const sk = sku.trim();
+  if (!po || !sk || regions.length === 0) return false;
+  const rows = await db<{ ok: number }[]>`
+    select 1 as ok
+    from forecasts
+    where region = any(${regions}) and po_number = ${po} and sku = ${sk}
+    limit 1;
+  `;
+  return rows.length > 0;
 }
 
 export async function getSummaryByMonthAndRegion(regions: Region[]) {
@@ -577,7 +575,6 @@ function mapForecast(row: {
   id: number;
   forecast_month: string;
   region: Region;
-  office: string;
   destination: string;
   po_number: string;
   product_name: string;
@@ -592,7 +589,6 @@ function mapForecast(row: {
     id: String(row.id),
     month: row.forecast_month,
     region: row.region,
-    office: row.office,
     destination: row.destination || "",
     poNumber: row.po_number || "",
     productName: row.product_name,
@@ -1871,6 +1867,7 @@ export async function createContractFromOrder(input: {
     with src as (
       select
         op.id as order_progress_id,
+        op.po_number,
         op.product_name,
         op.sku,
         op.quantity,
@@ -1883,19 +1880,9 @@ export async function createContractFromOrder(input: {
       join suppliers s on s.id = ${Number(input.supplierId)}
       left join products p on p.product_name = op.product_name and p.sku = op.sku and p.is_active = true
       where op.id = ${Number(input.orderProgressId)}
+        and coalesce(trim(op.po_number), '') <> ''
       order by p.id asc
       limit 1
-    ),
-    ensure_seq as (
-      insert into po_sequences (key, next_number)
-      values ('IG-PO', 499)
-      on conflict (key) do nothing
-    ),
-    seq as (
-      update po_sequences
-      set next_number = next_number + 1
-      where key = 'IG-PO'
-      returning next_number
     ),
     ins as (
       insert into contracts (
@@ -1920,7 +1907,7 @@ export async function createContractFromOrder(input: {
         src.order_progress_id,
         src.supplier_id,
         src.supplier_name,
-        'IG-PO-' || lpad((select next_number from seq)::text, 6, '0') as po_number,
+        src.po_number as po_number,
         src.signed_date,
         src.sku,
         src.product_name,

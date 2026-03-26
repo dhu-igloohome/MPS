@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 
 const HEADER = [
   "order_number",
+  "po_number",
   "product_name",
   "sku",
   "quantity",
@@ -18,6 +19,7 @@ const HEADER = [
 
 const EXAMPLE = [
   "PO-2025-001",
+  "POA202603260001",
   "Example product name",
   "SKU001",
   "1000",

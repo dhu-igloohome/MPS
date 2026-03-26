@@ -88,18 +88,15 @@ export default async function DashboardPage({
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   const filterMonth = String(params.month ?? "").trim();
   const filterRegion = String(params.region ?? "").trim();
-  const filterOffice = String(params.office ?? "").trim();
   const filterDestination = String(params.destination ?? "").trim();
   const filterProduct = String(params.productName ?? "").trim();
   const monthOptions = [...new Set(entries.map((e) => e.month))].sort((a, b) => b.localeCompare(a));
   const regionOptions = [...new Set(entries.map((e) => e.region))].sort();
-  const officeOptions = [...new Set(entries.map((e) => e.office).filter(Boolean))].sort();
   const destinationOptions = [...new Set(entries.map((e) => e.destination).filter(Boolean))].sort();
   const productOptions = [...new Set(entries.map((e) => e.productName))].sort();
   const filteredEntries = entries.filter((e) => {
     if (filterMonth && e.month !== filterMonth) return false;
     if (filterRegion && e.region !== filterRegion) return false;
-    if (filterOffice && e.office !== filterOffice) return false;
     if (filterDestination && e.destination !== filterDestination) return false;
     if (filterProduct && e.productName !== filterProduct) return false;
     return true;
@@ -130,7 +127,6 @@ export default async function DashboardPage({
     noQuarterlyData:
       language === "en" ? "No quarterly forecast data yet." : "暂无季度 forecast 数据。",
     latestTitle: language === "en" ? "Latest Forecast Entries" : "最新 Forecast 记录",
-    office: language === "en" ? "Office" : "办公室",
     destination: language === "en" ? "Destination" : "Destination",
     productName: language === "en" ? "Product Name" : "产品名称",
     filters: language === "en" ? "Filters" : "筛选",
@@ -185,21 +181,6 @@ export default async function DashboardPage({
               {regionOptions.map((r) => (
                 <option key={r} value={r}>
                   {r}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm text-app-muted">{t.office}</span>
-            <select
-              name="office"
-              defaultValue={filterOffice}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
-            >
-              <option value="">All</option>
-              {officeOptions.map((o) => (
-                <option key={o} value={o}>
-                  {o}
                 </option>
               ))}
             </select>
@@ -415,7 +396,7 @@ export default async function DashboardPage({
               <tr className="border-b border-app-border text-left text-app-muted">
                 <th className="px-2 py-2">{t.month}</th>
                 <th className="px-2 py-2">{t.region}</th>
-                <th className="px-2 py-2">{t.office}</th>
+                <th className="px-2 py-2">{t.destination}</th>
                 <th className="px-2 py-2">{t.productName}</th>
                 <th className="px-2 py-2">SKU</th>
                 <th className="px-2 py-2">BTO</th>
@@ -435,7 +416,7 @@ export default async function DashboardPage({
                   <tr key={item.id} className="border-b border-app-border/40">
                     <td className="px-2 py-2">{item.month}</td>
                     <td className="px-2 py-2">{item.region}</td>
-                    <td className="px-2 py-2">{item.office}</td>
+                    <td className="px-2 py-2">{item.destination}</td>
                     <td className="px-2 py-2">{item.productName}</td>
                     <td className="px-2 py-2">{item.sku}</td>
                     <td className="px-2 py-2">{formatNumber(item.buildToOrder)}</td>

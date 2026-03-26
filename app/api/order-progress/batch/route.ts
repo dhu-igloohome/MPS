@@ -4,6 +4,7 @@ import { normalizeCsvHeader, parseCsvLine, splitCsvLines } from "@/lib/csv";
 import {
   createOrderProgress,
   findActiveProductByNameAndSku,
+  forecastPoSkuExistsInRegions,
   orderProgressRegionsForSession,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
@@ -31,6 +32,7 @@ function isProgress(value: string): value is OrderProgressStatus {
 
 type BatchKey =
   | "order_number"
+  | "po_number"
   | "product_name"
   | "sku"
   | "quantity"
@@ -44,6 +46,9 @@ type BatchKey =
 function resolveHeaderKey(normalized: string): BatchKey | null {
   const map: Record<string, BatchKey> = {
     order_number: "order_number",
+    po_number: "po_number",
+    ponumber: "po_number",
+    po: "po_number",
     order_no: "order_number",
     ordernumber: "order_number",
     product_name: "product_name",
@@ -81,6 +86,7 @@ function buildColumnIndex(headerCells: string[]): Map<BatchKey, number> | { erro
   }
   const required: BatchKey[] = [
     "product_name",
+    "po_number",
     "sku",
     "quantity",
     "order_date",
@@ -149,6 +155,7 @@ export async function POST(request: Request) {
     }
 
     const orderNumber = cell(row, col, "order_number").trim().slice(0, ORDER_NUMBER_MAX);
+    const poNumber = cell(row, col, "po_number").trim().slice(0, ORDER_NUMBER_MAX);
     const productName = cell(row, col, "product_name").trim();
     const sku = cell(row, col, "sku").trim();
     const quantity = Number(cell(row, col, "quantity"));
@@ -159,8 +166,8 @@ export async function POST(request: Request) {
     const factoryName = cell(row, col, "factory_name").trim();
     const region = cell(row, col, "region").trim();
 
-    if (!productName || !sku) {
-      errors.push({ row: rowNum, message: "Missing product_name or sku" });
+    if (!productName || !sku || !poNumber) {
+      errors.push({ row: rowNum, message: "Missing po_number/product_name/sku" });
       continue;
     }
     if (!DATE_RE.test(orderDate)) {
@@ -197,11 +204,16 @@ export async function POST(request: Request) {
       errors.push({ row: rowNum, message: "Invalid product_name and sku" });
       continue;
     }
+    const forecastLinked = await forecastPoSkuExistsInRegions(session.regions, poNumber, sku);
+    if (!forecastLinked) {
+      errors.push({ row: rowNum, message: "po_number + sku must exist in Forecast" });
+      continue;
+    }
 
     try {
       await createOrderProgress({
         orderNumber,
-        poNumber: "",
+        poNumber,
         productName,
         sku,
         quantity,

@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import {
   createForecast,
   findActiveProductByNameAndSku,
-  officeExistsByRegion,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import { Region } from "@/lib/types";
@@ -11,6 +10,8 @@ import { Region } from "@/lib/types";
 function isRegion(value: string): value is Region {
   return value === "APAC" || value === "EU" || value === "USA";
 }
+
+const DESTINATION_RE = /^[A-Za-z0-9\u4E00-\u9FFF]+$/;
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -20,7 +21,6 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const region = String(body.region || "");
-  const office = String(body.office || "").trim();
 
   if (!isRegion(region)) {
     return NextResponse.json({ message: "Invalid region" }, { status: 400 });
@@ -28,10 +28,6 @@ export async function POST(request: Request) {
 
   if (!session.regions.includes(region)) {
     return NextResponse.json({ message: "Forbidden region" }, { status: 403 });
-  }
-
-  if (office && !(await officeExistsByRegion(region, office))) {
-    return NextResponse.json({ message: "Invalid office" }, { status: 400 });
   }
 
   const month = String(body.month || "");
@@ -42,8 +38,14 @@ export async function POST(request: Request) {
   const buildToOrder = Number(body.buildToOrder || 0);
   const buildToStock = Number(body.buildToStock || 0);
 
-  if (!month || !productName.trim() || !sku.trim()) {
+  if (!month || !productName.trim() || !sku.trim() || !destination) {
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+  }
+  if (!DESTINATION_RE.test(destination)) {
+    return NextResponse.json(
+      { message: "Invalid destination (letters, numbers, Chinese only)" },
+      { status: 400 },
+    );
   }
 
   const product = await findActiveProductByNameAndSku(productName.trim(), sku.trim());
@@ -58,7 +60,6 @@ export async function POST(request: Request) {
   const entry = await createForecast({
     month,
     region,
-    office,
     destination,
     productName,
     sku,

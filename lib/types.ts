@@ -38,7 +38,6 @@ export type ForecastEntry = {
   id: string;
   month: string;
   region: Region;
-  office: string;
   destination: string;
   poNumber: string;
   productName: string;
