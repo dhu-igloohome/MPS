@@ -55,6 +55,9 @@ function labels(language: Language) {
       : "必填，必须选择 Forecast 模块已生成且匹配 SKU 的 PO。",
     productName: en ? "Product name" : "产品名称",
     sku: "SKU",
+    skuMultiHint: en
+      ? "Select one or more SKUs under this PO."
+      : "请勾选该 PO 下一个或多个 SKU。",
     quantity: en ? "Quantity" : "数量",
     orderDate: en ? "Order date" : "下单日期",
     expectedDeliveryDate: en ? "Expected delivery date" : "预计交货日期",
@@ -182,6 +185,7 @@ export function OrderProgressPanel({
   const [planRows, setPlanRows] = useState<DraftPlanRow[]>([]);
   const [batchSummary, setBatchSummary] = useState<string | null>(null);
   const [batchErrors, setBatchErrors] = useState<{ row: number; message: string }[]>([]);
+  const [selectedSkus, setSelectedSkus] = useState<string[]>([]);
   const batchFileRef = useRef<HTMLInputElement>(null);
   /** Server steps keyed by order id; patched rows after checkbox toggles until refresh. */
   const [productionStepPatches, setProductionStepPatches] = useState<
@@ -263,6 +267,8 @@ export function OrderProgressPanel({
     setPoNumber(nextPo);
     const matchedList = poForecastMap.get(nextPo);
     if (!matchedList || matchedList.length === 0) return;
+    const poSkus = [...new Set(matchedList.map((x) => x.sku).filter(Boolean))];
+    setSelectedSkus(poSkus.length > 0 ? [poSkus[0]] : []);
     const matched = matchedList[0];
     const inferred = inferOrderTypeAndQuantityFromForecast(matched);
     setProductName(matched.productName);
@@ -277,6 +283,7 @@ export function OrderProgressPanel({
     setPoNumber("");
     setProductName("");
     setSku("");
+    setSelectedSkus([]);
     setQuantity("0");
     setOrderDate("");
     setExpectedDeliveryDate("");
@@ -296,6 +303,7 @@ export function OrderProgressPanel({
     setPoNumber(entry.poNumber || "");
     setProductName(entry.productName);
     setSku(entry.sku);
+    setSelectedSkus([entry.sku]);
     setQuantity(String(entry.quantity));
     setOrderDate(entry.orderDate);
     setExpectedDeliveryDate(entry.expectedDeliveryDate);
@@ -416,25 +424,52 @@ export function OrderProgressPanel({
       deliveryPlans,
     };
 
-    const url =
-      editingId === null
-        ? "/api/order-progress"
-        : `/api/order-progress/${encodeURIComponent(editingId)}`;
-    const method = editingId === null ? "POST" : "PATCH";
-
-    const response = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    if (editingId === null) {
+      const createSkus = selectedSkus.length > 0 ? selectedSkus : [resolvedSku];
+      for (let i = 0; i < createSkus.length; i++) {
+        const currentSku = createSkus[i];
+        const matched = forecasts.find(
+          (f) => f.poNumber === resolvedPoNumber && f.sku === currentSku,
+        );
+        if (!matched) {
+          setLoading(false);
+          setMessage(`Missing forecast for SKU: ${currentSku}`);
+          return;
+        }
+        const inferred = inferOrderTypeAndQuantityFromForecast(matched);
+        const response = await fetch("/api/order-progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...payload,
+            productName: matched.productName,
+            sku: matched.sku,
+            quantity: inferred.quantity,
+            orderType: inferred.orderType,
+          }),
+        });
+        if (!response.ok) {
+          const data = (await response.json().catch(() => ({}))) as { message?: string };
+          setLoading(false);
+          setMessage(data.message || "Request failed");
+          return;
+        }
+      }
+    } else {
+      const response = await fetch(`/api/order-progress/${encodeURIComponent(editingId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { message?: string };
+        setLoading(false);
+        setMessage(data.message || "Request failed");
+        return;
+      }
+    }
 
     setLoading(false);
-
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { message?: string };
-      setMessage(data.message || "Request failed");
-      return;
-    }
 
     resetForm();
     router.refresh();
@@ -639,54 +674,74 @@ export function OrderProgressPanel({
           </label>
           <label className="block">
             <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
-            <select
+            <input
               value={resolvedProductName}
-              onChange={(e) => onProductNameChange(e.target.value)}
-              required
-              disabled={products.length === 0}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
-            >
-              {productNameOptions.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
+              readOnly
+              className="w-full rounded-lg border border-app-border bg-app-accent-soft/40 px-3 py-2 text-sm outline-none"
+            />
           </label>
 
-          <label className="block">
+          <div className="block">
             <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
-            <select
-              value={resolvedSku}
-              onChange={(e) => {
-                const nextSku = e.target.value;
-                setSku(nextSku);
-                const matched = forecasts.find(
-                  (f) => f.poNumber === resolvedPoNumber && f.sku === nextSku,
-                );
-                if (matched) {
-                  const inferred = inferOrderTypeAndQuantityFromForecast(matched);
-                  setProductName(matched.productName);
-                  setOrderType(inferred.orderType);
-                  setQuantity(String(inferred.quantity));
-                } else {
-                  setPoNumber(
-                    forecasts.find((f) => f.sku === nextSku && f.productName === resolvedProductName)
-                      ?.poNumber ?? "",
+            {editingId ? (
+              <select
+                value={resolvedSku}
+                onChange={(e) => {
+                  const nextSku = e.target.value;
+                  setSku(nextSku);
+                  const matched = forecasts.find(
+                    (f) => f.poNumber === resolvedPoNumber && f.sku === nextSku,
                   );
-                }
-              }}
-              required
-              disabled={products.length === 0}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
-            >
-              {skuOptions.map((p) => (
-                <option key={p.sku} value={p.sku}>
-                  {p.sku}
-                </option>
-              ))}
-            </select>
-          </label>
+                  if (matched) {
+                    const inferred = inferOrderTypeAndQuantityFromForecast(matched);
+                    setProductName(matched.productName);
+                    setOrderType(inferred.orderType);
+                    setQuantity(String(inferred.quantity));
+                  }
+                }}
+                required
+                disabled={products.length === 0}
+                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              >
+                {skuOptions.map((p) => (
+                  <option key={p.sku} value={p.sku}>
+                    {p.sku}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="space-y-1 rounded-lg border border-app-border px-3 py-2">
+                {skuOptions.map((p) => (
+                  <label key={p.sku} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={selectedSkus.includes(p.sku)}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setSelectedSkus((prev) =>
+                          checked ? [...new Set([...prev, p.sku])] : prev.filter((s) => s !== p.sku),
+                        );
+                        if (checked) {
+                          const matched = forecasts.find(
+                            (f) => f.poNumber === resolvedPoNumber && f.sku === p.sku,
+                          );
+                          if (matched) {
+                            const inferred = inferOrderTypeAndQuantityFromForecast(matched);
+                            setSku(matched.sku);
+                            setProductName(matched.productName);
+                            setOrderType(inferred.orderType);
+                            setQuantity(String(inferred.quantity));
+                          }
+                        }
+                      }}
+                    />
+                    <span>{p.sku}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <span className="mt-1 block text-xs text-app-muted">{t.skuMultiHint}</span>
+          </div>
 
           <label className="block">
             <span className="mb-1 block text-sm text-foreground/85">{t.quantity}</span>
