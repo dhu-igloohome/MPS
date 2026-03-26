@@ -166,16 +166,15 @@ export function LogisticsProgressPanel({
   const resolvedSku = skuOptions.some((p) => p.sku === sku)
     ? sku
     : (skuOptions[0]?.sku ?? "");
-  const poOptions = useMemo(
-    () =>
-      forecasts
-        .filter((f) => f.sku === resolvedSku)
-        .map((f) => f.poNumber)
-        .filter(Boolean)
-        .filter((v, i, arr) => arr.indexOf(v) === i)
-        .sort(),
-    [forecasts, resolvedSku],
-  );
+  const poForecastMap = useMemo(() => {
+    const map = new Map<string, ForecastEntry>();
+    for (const f of forecasts) {
+      if (!f.poNumber) continue;
+      if (!map.has(f.poNumber)) map.set(f.poNumber, f);
+    }
+    return map;
+  }, [forecasts]);
+  const poOptions = useMemo(() => Array.from(poForecastMap.keys()).sort(), [poForecastMap]);
   const resolvedPoNumber = poOptions.includes(poNumber) ? poNumber : (poOptions[0] ?? "");
 
   function onProductNameChange(nextName: string) {
@@ -183,7 +182,15 @@ export function LogisticsProgressPanel({
     const opts = products.filter((p) => p.productName === nextName);
     const nextSku = opts[0]?.sku ?? "";
     setSku(nextSku);
-    setPoNumber(forecasts.find((f) => f.sku === nextSku)?.poNumber ?? "");
+    setPoNumber(forecasts.find((f) => f.sku === nextSku && f.productName === nextName)?.poNumber ?? "");
+  }
+
+  function onPoNumberChange(nextPo: string) {
+    setPoNumber(nextPo);
+    const matched = poForecastMap.get(nextPo);
+    if (!matched) return;
+    setProductName(matched.productName);
+    setSku(matched.sku);
   }
 
   function applyMovementType(next: LogisticsMovementType) {
@@ -382,7 +389,10 @@ export function LogisticsProgressPanel({
               onChange={(e) => {
                 const nextSku = e.target.value;
                 setSku(nextSku);
-                setPoNumber(forecasts.find((f) => f.sku === nextSku)?.poNumber ?? "");
+                setPoNumber(
+                  forecasts.find((f) => f.sku === nextSku && f.productName === resolvedProductName)
+                    ?.poNumber ?? "",
+                );
               }}
               required
               disabled={products.length === 0}
@@ -399,7 +409,7 @@ export function LogisticsProgressPanel({
             <span className="mb-1 block text-sm text-foreground/85">{t.poNumber}</span>
             <select
               value={resolvedPoNumber}
-              onChange={(e) => setPoNumber(e.target.value)}
+              onChange={(e) => onPoNumberChange(e.target.value)}
               required
               className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
             >
