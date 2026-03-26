@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import { createContractFromOrder, listContractsBySessionRegions } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
@@ -19,10 +19,14 @@ export async function POST(request: Request) {
   const orderProgressId = String(body.orderProgressId || "").trim();
   const supplierId = String(body.supplierId || "").trim();
   const batch = String(body.batch || "").trim();
+  const currency = String(body.currency || "USD").trim();
+  const paymentTerms = String(body.paymentTerms || "Cash").trim();
+  const qualityRemarks = String(body.qualityRemarks || "").trim();
+  const deliveryAddress = String(body.deliveryAddress || "").trim();
   const serialCode = String(body.serialCode || "").trim();
   const bluetoothId = String(body.bluetoothId || "").trim();
 
-  if (!orderProgressId || !supplierId || !batch) {
+  if (!orderProgressId || !supplierId || !batch || !currency || !paymentTerms || !deliveryAddress) {
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
   }
 
@@ -31,6 +35,10 @@ export async function POST(request: Request) {
       orderProgressId,
       supplierId,
       batch,
+      currency,
+      paymentTerms,
+      qualityRemarks,
+      deliveryAddress,
       serialCode,
       bluetoothId,
       createdBy: session.username,

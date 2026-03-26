@@ -248,6 +248,10 @@ async function main() {
       unit_cost numeric(12, 2) not null default 0,
       total_amount numeric(14, 2) not null default 0,
       delivery_date date not null,
+      currency text not null default 'USD',
+      payment_terms text not null default 'Cash',
+      quality_remarks text not null default '',
+      delivery_address text not null default '',
       serial_code text not null default '',
       bluetooth_id text not null default '',
       status text not null default 'draft' check (status in ('draft', 'approved', 'sent')),
@@ -260,6 +264,10 @@ async function main() {
   await sql`
     create index if not exists idx_contracts_order_progress_id on contracts (order_progress_id);
   `;
+  await sql`alter table contracts add column if not exists currency text not null default 'USD';`;
+  await sql`alter table contracts add column if not exists payment_terms text not null default 'Cash';`;
+  await sql`alter table contracts add column if not exists quality_remarks text not null default '';`;
+  await sql`alter table contracts add column if not exists delivery_address text not null default '';`;
 
   await sql`
     create table if not exists order_progress_delivery_plans (

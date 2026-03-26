@@ -68,6 +68,10 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
     orderLine: "Order line",
     supplier: "Supplier",
     batch: "Batch",
+    currency: "Currency",
+    paymentTerms: "Payment terms",
+    deliveryAddress: "Delivery address",
+    qualityRemarks: "Quality remarks",
     serialCode: "Serial code",
     bluetoothId: "Bluetooth ID",
     create: "Create contract",
@@ -87,6 +91,10 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
   const [orderProgressId, setOrderProgressId] = useState(orders[0]?.id ?? "");
   const [supplierId, setSupplierId] = useState(suppliers[0]?.id ?? "");
   const [batch, setBatch] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [paymentTerms, setPaymentTerms] = useState("Cash");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [qualityRemarks, setQualityRemarks] = useState("");
   const [serialCode, setSerialCode] = useState("");
   const [bluetoothId, setBluetoothId] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ContractStatus>("all");
@@ -109,7 +117,17 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
     const res = await fetch("/api/contracts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderProgressId, supplierId, batch, serialCode, bluetoothId }),
+      body: JSON.stringify({
+        orderProgressId,
+        supplierId,
+        batch,
+        currency,
+        paymentTerms,
+        deliveryAddress,
+        qualityRemarks,
+        serialCode,
+        bluetoothId,
+      }),
     });
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     setLoading(false);
@@ -118,6 +136,10 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
       return;
     }
     setBatch("");
+    setCurrency("USD");
+    setPaymentTerms("Cash");
+    setDeliveryAddress("");
+    setQualityRemarks("");
     setSerialCode("");
     setBluetoothId("");
     router.refresh();
@@ -158,10 +180,14 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
             </select>
           </label>
           <input value={batch} onChange={(e) => setBatch(e.target.value)} required placeholder={t.batch} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} required placeholder={t.currency} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} required placeholder={t.paymentTerms} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} required placeholder={t.deliveryAddress} className="rounded-lg border border-app-border px-3 py-2 text-sm md:col-span-2" />
+          <input value={qualityRemarks} onChange={(e) => setQualityRemarks(e.target.value)} placeholder={t.qualityRemarks} className="rounded-lg border border-app-border px-3 py-2 text-sm md:col-span-2" />
           <input value={serialCode} onChange={(e) => setSerialCode(e.target.value)} placeholder={t.serialCode} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={bluetoothId} onChange={(e) => setBluetoothId(e.target.value)} placeholder={t.bluetoothId} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <div className="md:col-span-2">
-            <button type="submit" disabled={loading || !orderProgressId || !supplierId || !batch.trim()} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">{t.create}</button>
+            <button type="submit" disabled={loading || !orderProgressId || !supplierId || !batch.trim() || !currency.trim() || !paymentTerms.trim() || !deliveryAddress.trim()} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">{t.create}</button>
           </div>
         </form>
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
@@ -207,7 +233,6 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
                   <td className="px-2 py-2">
                     <div className="flex flex-wrap gap-2">
                       <Link className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/contracts/${encodeURIComponent(c.id)}`}>{t.details}</Link>
-                      <a className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/api/contracts/${encodeURIComponent(c.id)}/pdf`}>{t.download}</a>
                       {getAvailableActions(role, c.status).map((action) => (
                         <button
                           key={action.key}

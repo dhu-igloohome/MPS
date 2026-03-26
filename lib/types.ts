@@ -86,6 +86,10 @@ export type ContractEntry = {
   unitCost: number;
   totalAmount: number;
   deliveryDate: string;
+  currency: string;
+  paymentTerms: string;
+  qualityRemarks: string;
+  deliveryAddress: string;
   serialCode: string;
   bluetoothId: string;
   status: ContractStatus;
