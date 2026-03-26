@@ -5,16 +5,39 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { Language } from "@/lib/i18n";
-import type { ContractEntry, ContractStatus, OrderProgressEntry, SupplierEntry } from "@/lib/types";
+import type {
+  ContractEntry,
+  ContractStatus,
+  OrderProgressEntry,
+  SupplierEntry,
+  UserRole,
+} from "@/lib/types";
 
 type ContractManagementProps = {
   contracts: ContractEntry[];
   orders: OrderProgressEntry[];
   suppliers: SupplierEntry[];
   language: Language;
+  role: UserRole;
 };
 
-export function ContractManagement({ contracts, orders, suppliers, language: _language }: ContractManagementProps) {
+function canTransition(role: UserRole, current: ContractStatus, next: ContractStatus) {
+  if (current === next) return true;
+  if (role === "super_admin") return true;
+  return (
+    (current === "draft" && next === "approved") ||
+    (current === "approved" && next === "draft")
+  );
+}
+
+function statusBadgeClass(status: ContractStatus) {
+  if (status === "draft") return "bg-amber-50 text-amber-700 ring-amber-200";
+  if (status === "approved") return "bg-sky-50 text-sky-700 ring-sky-200";
+  return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+}
+
+export function ContractManagement({ contracts, orders, suppliers, language: _language, role }: ContractManagementProps) {
+  void _language;
   const router = useRouter();
   const t = {
     createTitle: "Create Contract (from order)",
@@ -33,9 +56,8 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
     filterSupplier: "Filter by supplier",
     all: "All",
     draft: "Draft",
-    generated: "Generated",
-    markDraft: "Mark Draft",
-    markGenerated: "Mark Generated",
+    approved: "Approved",
+    sent: "Sent",
   };
 
   const [orderProgressId, setOrderProgressId] = useState(orders[0]?.id ?? "");
@@ -129,7 +151,8 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as "all" | ContractStatus)} className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm text-foreground">
               <option value="all">{t.all}</option>
               <option value="draft">{t.draft}</option>
-              <option value="generated">{t.generated}</option>
+              <option value="approved">{t.approved}</option>
+              <option value="sent">{t.sent}</option>
             </select>
           </label>
           <label className="text-sm text-app-muted">
@@ -141,7 +164,7 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
           </label>
         </div>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[1200px] border-collapse text-sm">
+          <table className="w-full min-w-[1220px] border-collapse text-sm">
             <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="px-2 py-2">PO</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">Product</th><th className="px-2 py-2">Supplier</th><th className="px-2 py-2">Qty</th><th className="px-2 py-2">Total</th><th className="px-2 py-2">{t.status}</th><th className="px-2 py-2">Action</th></tr></thead>
             <tbody>
               {filteredContracts.length === 0 ? (
@@ -154,13 +177,24 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
                   <td className="px-2 py-2">{c.supplierName}</td>
                   <td className="px-2 py-2">{c.quantity}</td>
                   <td className="px-2 py-2">{c.totalAmount.toFixed(2)}</td>
-                  <td className="px-2 py-2">{c.status}</td>
+                  <td className="px-2 py-2">
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ring-1 ${statusBadgeClass(c.status)}`}>{c.status}</span>
+                  </td>
                   <td className="px-2 py-2">
                     <div className="flex flex-wrap gap-2">
                       <Link className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/contracts/${encodeURIComponent(c.id)}`}>{t.details}</Link>
                       <a className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/api/contracts/${encodeURIComponent(c.id)}/pdf`}>{t.download}</a>
-                      <button type="button" className="rounded border border-app-border px-2 py-1 text-xs" onClick={() => onSetStatus(c.id, "draft")}>{t.markDraft}</button>
-                      <button type="button" className="rounded border border-app-border px-2 py-1 text-xs" onClick={() => onSetStatus(c.id, "generated")}>{t.markGenerated}</button>
+                      {(["draft", "approved", "sent"] as ContractStatus[]).map((next) => (
+                        <button
+                          key={next}
+                          type="button"
+                          disabled={loading || !canTransition(role, c.status, next)}
+                          className="rounded border border-app-border px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                          onClick={() => onSetStatus(c.id, next)}
+                        >
+                          {next}
+                        </button>
+                      ))}
                     </div>
                   </td>
                 </tr>

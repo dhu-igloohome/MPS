@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
@@ -14,6 +14,12 @@ import { getSession } from "@/lib/session";
 type PageProps = { params: Promise<{ id: string }> };
 
 export const dynamic = "force-dynamic";
+
+function statusBadgeClass(status: "draft" | "approved" | "sent") {
+  if (status === "draft") return "bg-amber-50 text-amber-700 ring-amber-200";
+  if (status === "approved") return "bg-sky-50 text-sky-700 ring-sky-200";
+  return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+}
 
 export default async function ContractDetailPage({ params }: PageProps) {
   const session = await getSession();
@@ -47,7 +53,16 @@ export default async function ContractDetailPage({ params }: PageProps) {
         </div>
         <dl className="mt-4 grid gap-3 md:grid-cols-2">
           <div><dt className="text-xs text-app-muted">PO Number</dt><dd className="text-sm text-foreground">{contract.poNumber}</dd></div>
-          <div><dt className="text-xs text-app-muted">Status</dt><dd className="text-sm text-foreground">{contract.status}</dd></div>
+          <div>
+            <dt className="text-xs text-app-muted">Status</dt>
+            <dd className="text-sm text-foreground">
+              <span
+                className={`inline-flex rounded-full px-2 py-0.5 text-xs ring-1 ${statusBadgeClass(contract.status)}`}
+              >
+                {contract.status}
+              </span>
+            </dd>
+          </div>
           <div><dt className="text-xs text-app-muted">Supplier</dt><dd className="text-sm text-foreground">{contract.supplierName}</dd></div>
           <div><dt className="text-xs text-app-muted">Order Number</dt><dd className="text-sm text-foreground">{order.orderNumber || "-"}</dd></div>
           <div><dt className="text-xs text-app-muted">Product</dt><dd className="text-sm text-foreground">{contract.productName}</dd></div>

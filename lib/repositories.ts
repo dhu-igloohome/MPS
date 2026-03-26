@@ -1837,7 +1837,7 @@ export async function createContractFromOrder(input: {
         src.delivery_date,
         ${input.serialCode.trim()},
         ${input.bluetoothId.trim()},
-        'generated',
+        'draft',
         ${input.createdBy}
       from src
       returning *

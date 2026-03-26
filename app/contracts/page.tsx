@@ -35,7 +35,13 @@ export default async function ContractsPage() {
           : "Create contract attachments by calling order data."
       }
     >
-      <ContractManagement contracts={contracts} orders={orders} suppliers={suppliers} language={language} />
+      <ContractManagement
+        contracts={contracts}
+        orders={orders}
+        suppliers={suppliers}
+        language={language}
+        role={session.role}
+      />
     </AppShell>
   );
 }

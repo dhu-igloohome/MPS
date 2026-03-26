@@ -202,7 +202,7 @@ async function main() {
       delivery_date date not null,
       serial_code text not null default '',
       bluetooth_id text not null default '',
-      status text not null default 'draft' check (status in ('draft', 'generated')),
+      status text not null default 'draft' check (status in ('draft', 'approved', 'sent')),
       created_by text not null references users(username),
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()

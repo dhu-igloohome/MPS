@@ -69,7 +69,7 @@ export type SupplierEntry = {
   updatedAt: string;
 };
 
-export type ContractStatus = "draft" | "generated";
+export type ContractStatus = "draft" | "approved" | "sent";
 
 export type ContractEntry = {
   id: string;

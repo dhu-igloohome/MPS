@@ -144,7 +144,7 @@ async function setupSchema() {
       delivery_date date not null,
       serial_code text not null default '',
       bluetooth_id text not null default '',
-      status text not null default 'draft' check (status in ('draft', 'generated')),
+      status text not null default 'draft' check (status in ('draft', 'approved', 'sent')),
       created_by text not null references users(username),
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
@@ -153,6 +153,12 @@ async function setupSchema() {
 
   await db`
     create index if not exists idx_contracts_order_progress_id on contracts (order_progress_id);
+  `;
+  await db`alter table contracts drop constraint if exists contracts_status_check;`;
+  await db`
+    alter table contracts
+    add constraint contracts_status_check
+    check (status in ('draft', 'approved', 'sent'));
   `;
 
   await db`

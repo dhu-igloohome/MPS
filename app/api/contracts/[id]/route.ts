@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import {
   getContractById,
@@ -12,7 +12,21 @@ import type { ContractStatus } from "@/lib/types";
 type RouteContext = { params: Promise<{ id: string }> };
 
 function isContractStatus(input: string): input is ContractStatus {
-  return input === "draft" || input === "generated";
+  return input === "draft" || input === "approved" || input === "sent";
+}
+
+function canTransition(
+  role: "super_admin" | "regional_admin",
+  currentStatus: ContractStatus,
+  nextStatus: ContractStatus,
+) {
+  if (currentStatus === nextStatus) return true;
+  if (role === "super_admin") {
+    return true;
+  }
+  if (currentStatus === "draft" && nextStatus === "approved") return true;
+  if (currentStatus === "approved" && nextStatus === "draft") return true;
+  return false;
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -35,6 +49,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   const status = String(body.status || "").trim();
   if (!isContractStatus(status)) {
     return NextResponse.json({ message: "Invalid status" }, { status: 400 });
+  }
+  if (!canTransition(session.role, contract.status, status)) {
+    return NextResponse.json({ message: "Transition not allowed for your role" }, { status: 403 });
   }
 
   const updated = await updateContractStatusById(id, status);
