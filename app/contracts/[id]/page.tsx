@@ -36,6 +36,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
+  const canPrint = contract.status === "approved" || contract.status === "sent";
 
   return (
     <AppShell
@@ -48,18 +49,26 @@ export default async function ContractDetailPage({ params }: PageProps) {
           <h3 className="text-lg font-semibold text-foreground">Contract Detail</h3>
           <div className="flex gap-2">
             <Link className="rounded border border-app-border px-3 py-1.5 text-sm hover:bg-app-accent-soft" href="/contracts">Back to list</Link>
-            <Link
-              className="rounded border border-app-border px-3 py-1.5 text-sm hover:bg-app-accent-soft"
-              href={`/contracts/${encodeURIComponent(contract.id)}/print`}
-            >
-              Print PO
-            </Link>
-            <Link
-              className="rounded border border-app-border px-3 py-1.5 text-sm hover:bg-app-accent-soft"
-              href={`/contracts/po/${encodeURIComponent(contract.poNumber)}/print`}
-            >
-              Batch Print (Same PO)
-            </Link>
+            {canPrint ? (
+              <>
+                <Link
+                  className="rounded border border-app-border px-3 py-1.5 text-sm hover:bg-app-accent-soft"
+                  href={`/contracts/${encodeURIComponent(contract.id)}/print`}
+                >
+                  Print PO
+                </Link>
+                <Link
+                  className="rounded border border-app-border px-3 py-1.5 text-sm hover:bg-app-accent-soft"
+                  href={`/contracts/po/${encodeURIComponent(contract.poNumber)}/print`}
+                >
+                  Batch Print (Same PO)
+                </Link>
+              </>
+            ) : (
+              <span className="rounded border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-700">
+                Waiting for super admin approval to print/forward
+              </span>
+            )}
           </div>
         </div>
         <dl className="mt-4 grid gap-3 md:grid-cols-2">

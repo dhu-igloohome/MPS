@@ -21,12 +21,7 @@ function canTransition(
   nextStatus: ContractStatus,
 ) {
   if (currentStatus === nextStatus) return true;
-  if (role === "super_admin") {
-    return true;
-  }
-  if (currentStatus === "draft" && nextStatus === "approved") return true;
-  if (currentStatus === "approved" && nextStatus === "draft") return true;
-  return false;
+  return role === "super_admin";
 }
 
 export async function PATCH(request: Request, context: RouteContext) {

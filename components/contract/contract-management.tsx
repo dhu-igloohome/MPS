@@ -23,11 +23,7 @@ type ContractManagementProps = {
 
 function canTransition(role: UserRole, current: ContractStatus, next: ContractStatus) {
   if (current === next) return true;
-  if (role === "super_admin") return true;
-  return (
-    (current === "draft" && next === "approved") ||
-    (current === "approved" && next === "draft")
-  );
+  return role === "super_admin";
 }
 
 function statusBadgeClass(status: ContractStatus) {
@@ -40,24 +36,20 @@ function getAvailableActions(
   role: UserRole,
   status: ContractStatus,
 ): { key: string; label: string; next: ContractStatus }[] {
+  if (role !== "super_admin") return [];
   if (status === "draft") {
-    const actions = [{ key: "to-approved", label: "Submit for approval", next: "approved" as ContractStatus }];
-    if (role === "super_admin") {
-      actions.push({ key: "to-sent", label: "Mark as sent", next: "sent" });
-    }
-    return actions;
+    return [
+      { key: "to-approved", label: "Approve", next: "approved" as ContractStatus },
+      { key: "to-sent", label: "Mark as sent", next: "sent" },
+    ];
   }
   if (status === "approved") {
-    const actions = [{ key: "to-draft", label: "Return to draft", next: "draft" as ContractStatus }];
-    if (role === "super_admin") {
-      actions.push({ key: "to-sent", label: "Mark as sent", next: "sent" });
-    }
-    return actions;
+    return [
+      { key: "to-draft", label: "Return to draft", next: "draft" as ContractStatus },
+      { key: "to-sent", label: "Mark as sent", next: "sent" },
+    ];
   }
-  if (role === "super_admin") {
-    return [{ key: "sent-to-approved", label: "Reopen to approved", next: "approved" }];
-  }
-  return [];
+  return [{ key: "sent-to-approved", label: "Reopen to approved", next: "approved" }];
 }
 
 export function ContractManagement({ contracts, orders, suppliers, language: _language, role }: ContractManagementProps) {
@@ -86,6 +78,10 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
     draft: "Draft",
     approved: "Approved",
     sent: "Sent",
+    approvalHint:
+      role === "super_admin"
+        ? "You can approve contracts and unlock print/forward actions."
+        : "New contracts remain draft until approved by super admin. Print/forward is locked before approval.",
   };
 
   const [orderProgressId, setOrderProgressId] = useState(orders[0]?.id ?? "");
@@ -142,6 +138,7 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
     setQualityRemarks("");
     setSerialCode("");
     setBluetoothId("");
+    setMessage("Contract created in draft. Waiting for super admin approval before print/forward.");
     router.refresh();
   }
 
@@ -195,6 +192,7 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
 
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-foreground">{t.listTitle}</h3>
+        <p className="mt-1 text-xs text-app-muted">{t.approvalHint}</p>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <label className="text-sm text-app-muted">
             {t.filterStatus}

@@ -19,6 +19,9 @@ export default async function ContractBatchPrintByPoPage({ params }: PageProps) 
   if (contracts.length === 0) {
     notFound();
   }
+  if (contracts.some((c) => !(c.status === "approved" || c.status === "sent"))) {
+    notFound();
+  }
 
   const first = contracts[0];
   const poData: PrintablePOData = {

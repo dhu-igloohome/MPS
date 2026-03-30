@@ -21,6 +21,9 @@ export default async function ContractPrintPage({ params }: PageProps) {
   const { id } = await params;
   const contract = await getContractById(id);
   if (!contract) notFound();
+  if (!(contract.status === "approved" || contract.status === "sent")) {
+    notFound();
+  }
 
   const order = await getOrderProgressById(contract.orderProgressId);
   if (!order || !sessionCanAccessOrderProgressRegion(session.regions, order.region)) {
