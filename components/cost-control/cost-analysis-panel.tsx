@@ -7,6 +7,9 @@ import { suggestCheckTotalVsQtyUnit } from "@/lib/cost-analysis-validation";
 import type { Language } from "@/lib/i18n";
 import type { CostAnalysisEntry, CostFreightMode } from "@/lib/types";
 
+/** 与 Excel「CM region」列一致，可点选或手输 */
+const CM_REGION_SUGGESTIONS = ["CN", "MAL", "VIETNAM", "KOREA", "TW", "TH", "SG", "IN", "PH", "ID"];
+
 const SUPPLIER_SUGGESTIONS = [
   "达美",
   "bolan-DK",
@@ -305,6 +308,11 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
       <form className="rounded-2xl border border-app-border/90 bg-app-surface/50 p-4" onSubmit={onSubmit}>
         <p className="mb-3 text-sm font-medium text-foreground">{editingId ? (language === "en" ? "Edit row" : "编辑行") : t.add}</p>
 
+        <datalist id="cm-region-suggestions-cost">
+          {CM_REGION_SUGGESTIONS.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
         <datalist id="supplier-suggestions-cost">
           {SUPPLIER_SUGGESTIONS.map((s) => (
             <option key={s} value={s} />
@@ -314,7 +322,13 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <label className="text-sm">
             {t.cmRegion}
-            <input className={inputBase} value={form.cmRegion} onChange={(e) => setForm((f) => ({ ...f, cmRegion: e.target.value }))} />
+            <input
+              className={inputBase}
+              list="cm-region-suggestions-cost"
+              value={form.cmRegion}
+              onChange={(e) => setForm((f) => ({ ...f, cmRegion: e.target.value }))}
+              autoComplete="off"
+            />
           </label>
           <label className="text-sm">
             {t.supplier}
