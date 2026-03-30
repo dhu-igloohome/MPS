@@ -1,4 +1,4 @@
-import { monthKeysBetween, type RangePreset } from "@/lib/cash-flow-dashboard-agg";
+import { monthKeysBetween, paymentMonthWindowAroundToday, type RangePreset } from "@/lib/cash-flow-dashboard-agg";
 import type {
   ForecastEntry,
   LogisticsShipmentEntry,
@@ -330,6 +330,11 @@ export function getForecastMonthRangePreset(
   }
   if (preset === "ytd") {
     return { from: `${today.getFullYear()}-01`, to: toM };
+  }
+  if (preset === "pm3") {
+    const months = paymentMonthWindowAroundToday(3, 3);
+    if (months.length === 0) return { from: "", to: "" };
+    return { from: months[0], to: months[months.length - 1] };
   }
   const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
   d.setUTCMonth(d.getUTCMonth() - 11);

@@ -103,7 +103,7 @@ type DrillState =
 export function CockpitVisualizations({ language, forecasts, orderProgress, logistics }: Props) {
   const en = language === "en";
 
-  const [fPreset, setFPreset] = useState<RangePreset>("12m");
+  const [fPreset, setFPreset] = useState<RangePreset>("pm3");
   const [fMonthFrom, setFMonthFrom] = useState("");
   const [fMonthTo, setFMonthTo] = useState("");
   const [fRegion, setFRegion] = useState("");
@@ -119,7 +119,7 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
   const [oProgress, setOProgress] = useState("");
   const [oGrain, setOGrain] = useState<Grain>("month");
 
-  const [lPreset, setLPreset] = useState<RangePreset>("12m");
+  const [lPreset, setLPreset] = useState<RangePreset>("pm3");
   const [lFrom, setLFrom] = useState("");
   const [lTo, setLTo] = useState("");
   const [lStatus, setLStatus] = useState("");
@@ -250,7 +250,9 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               {en ? "Forecast input" : "Forecast 填报"}
             </h3>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {en ? "BTO / BTS by month — click chart to drill down." : "按单 / 备货 — 点击图表下钻明细。"}
+              {en
+                ? "BTO / BTS by forecast month — default range is current month ±3 months; click chart to drill down."
+                : "按填报月份 — 默认区间为当前月前后各 3 个自然月；点击图表下钻明细。"}
             </p>
           </div>
           <Link
@@ -269,6 +271,7 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               value={fPreset}
               onChange={(e) => setFPreset(e.target.value as RangePreset)}
             >
+              <option value="pm3">{en ? "Current month ±3 months" : "当前月 ±3 个月"}</option>
               <option value="12m">{en ? "Last 12 months" : "近 12 个月"}</option>
               <option value="ytd">{en ? "YTD" : "本年"}</option>
               <option value="custom">{en ? "Custom" : "自定义"}</option>
@@ -429,7 +432,9 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               {en ? "Order progress" : "订单进度"}
             </h3>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {en ? "By order date — click chart to drill down." : "按下单日 — 点击图表下钻。"}
+              {en
+                ? "By order date — default range is current month ±3 months; click chart to drill down."
+                : "按下单日 — 默认区间为当前月前后各 3 个自然月；点击图表下钻。"}
             </p>
           </div>
           <Link
@@ -448,6 +453,7 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               value={oPreset}
               onChange={(e) => setOPreset(e.target.value as RangePreset)}
             >
+              <option value="pm3">{en ? "Current month ±3 months" : "当前月 ±3 个月"}</option>
               <option value="12m">{en ? "Last 12 months" : "近 12 个月"}</option>
               <option value="ytd">{en ? "YTD" : "本年"}</option>
               <option value="custom">{en ? "Custom" : "自定义"}</option>
@@ -606,7 +612,9 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               {en ? "Logistics progress" : "物流进度"}
             </h3>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {en ? "By shipment create date — click chart to drill down." : "按物流记录创建时间 — 点击图表下钻。"}
+              {en
+                ? "By shipment create date — default range is current month ±3 months; click chart to drill down."
+                : "按物流记录创建时间 — 默认区间为当前月前后各 3 个自然月；点击图表下钻。"}
             </p>
           </div>
           <Link
@@ -625,6 +633,7 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               value={lPreset}
               onChange={(e) => setLPreset(e.target.value as RangePreset)}
             >
+              <option value="pm3">{en ? "Current month ±3 months" : "当前月 ±3 个月"}</option>
               <option value="12m">{en ? "Last 12 months" : "近 12 个月"}</option>
               <option value="ytd">{en ? "YTD" : "本年"}</option>
               <option value="custom">{en ? "Custom" : "自定义"}</option>

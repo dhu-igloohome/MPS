@@ -121,6 +121,18 @@ export function paymentMonthWindowAroundToday(monthsBack: number, monthsForward:
   return monthKeysBetween(fromStr, toStr);
 }
 
+/** Inclusive YYYY-MM-DD range covering the same months as `paymentMonthWindowAroundToday` (first day of first month → last day of last month). */
+export function dateRangeForMonthWindowAroundToday(monthsBack: number, monthsForward: number): { from: string; to: string } {
+  const months = paymentMonthWindowAroundToday(monthsBack, monthsForward);
+  if (months.length === 0) return { from: "", to: "" };
+  const first = months[0];
+  const last = months[months.length - 1];
+  const y = Number(last.slice(0, 4));
+  const m = Number(last.slice(5, 7));
+  const lastDay = new Date(y, m, 0).getDate();
+  return { from: `${first}-01`, to: `${last}-${String(lastDay).padStart(2, "0")}` };
+}
+
 export function buildMonthlyChartSeries(rows: EnrichedCashFlow[], monthKeys: string[]): ChartPoint[] {
   return monthKeys.map((mk) => {
     let orderTotalInPeriod = 0;
@@ -188,7 +200,7 @@ export function drillOrdersForQuarter(rows: EnrichedCashFlow[], quarterKey: stri
   });
 }
 
-export type RangePreset = "12m" | "ytd" | "custom";
+export type RangePreset = "12m" | "ytd" | "custom" | "pm3";
 
 export function getDateRangePreset(preset: RangePreset, customFrom: string, customTo: string): { from: string; to: string } {
   const today = new Date();
@@ -199,6 +211,9 @@ export function getDateRangePreset(preset: RangePreset, customFrom: string, cust
   if (preset === "ytd") {
     const y = today.getFullYear();
     return { from: `${y}-01-01`, to: toStr };
+  }
+  if (preset === "pm3") {
+    return dateRangeForMonthWindowAroundToday(3, 3);
   }
   const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
   const start = new Date(end);
