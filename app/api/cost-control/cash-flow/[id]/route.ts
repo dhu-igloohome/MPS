@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { validateCashFlowAgainstCostAnalysis } from "@/lib/cash-flow-cost-analysis-link";
-import { validateCashFlowRow } from "@/lib/cash-flow-validation";
+import { computeCashFlowDerivedActuals, validateCashFlowRow } from "@/lib/cash-flow-validation";
 import { deleteCashFlowEntryById, listCostAnalysisEntries, updateCashFlowEntryById } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
@@ -26,19 +26,13 @@ export async function PATCH(request: Request, context: RouteContext) {
   const finalRatioPct = Number(body.finalRatioPct);
   const remarks = String(body.remarks ?? "").trim();
 
-  const advDateRaw = body.actualAdvanceDate;
-  const finDateRaw = body.actualFinalDate;
-  const actualAdvanceDate =
-    advDateRaw != null && String(advDateRaw).trim() !== "" ? String(advDateRaw).trim().slice(0, 10) : null;
-  const actualFinalDate =
-    finDateRaw != null && String(finDateRaw).trim() !== "" ? String(finDateRaw).trim().slice(0, 10) : null;
-
   const actualAdvanceAmount =
     body.actualAdvanceAmount != null && body.actualAdvanceAmount !== ""
       ? Number(body.actualAdvanceAmount)
       : null;
-  const actualFinalAmount =
-    body.actualFinalAmount != null && body.actualFinalAmount !== "" ? Number(body.actualFinalAmount) : null;
+  if (actualAdvanceAmount != null && Number.isNaN(actualAdvanceAmount)) {
+    return NextResponse.json({ message: "Invalid actual advance amount" }, { status: 400 });
+  }
 
   if (!sku || !orderDate || !orderNumber || Number.isNaN(quantity) || quantity < 0) {
     return NextResponse.json({ message: "Missing or invalid required fields" }, { status: 400 });
@@ -51,6 +45,13 @@ export async function PATCH(request: Request, context: RouteContext) {
   ) {
     return NextResponse.json({ message: "Invalid numeric fields" }, { status: 400 });
   }
+
+  const { actualAdvanceDate, actualFinalDate, actualFinalAmount } = computeCashFlowDerivedActuals(
+    orderDate,
+    paymentTermDays,
+    totalAmount,
+    actualAdvanceAmount,
+  );
 
   const v = validateCashFlowRow({
     quantity,

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
 import { findCostAnalysisForCashFlow } from "@/lib/cash-flow-cost-analysis-link";
 import { formatUsd } from "@/lib/format-usd";
-import { computeTotalAmount } from "@/lib/cash-flow-validation";
+import { computeCashFlowDerivedActuals, computeTotalAmount } from "@/lib/cash-flow-validation";
 import type { Language } from "@/lib/i18n";
 import type { CashFlowEntry, CostAnalysisEntry } from "@/lib/types";
 
@@ -19,7 +19,7 @@ type CashFlowPanelProps = {
 const LABELS = {
   en: {
     tableHint:
-      "Link to Cost analysis: pick an order line; Qty = Cost analysis Order qty; unit price = that row's unit cost (incl. tariff). Total = qty × unit price. Advance % + final % = 100%.",
+      "Link to Cost analysis: pick an order line; Qty = Cost analysis Order qty; unit price = that row's unit cost (incl. tariff). Total = qty × unit price. Advance % + final % = 100%. Actual advance date = order date + 7 calendar days; actual final date = that date + term days; actual final amount = total − actual advance.",
     add: "Add row",
     save: "Save",
     cancel: "Cancel edit",
@@ -51,7 +51,7 @@ const LABELS = {
   },
   zh: {
     tableHint:
-      "与成本分析强关联：先选择成本分析订单行；数量 = 成本分析「订单数量」；单价 = 该行 unit cost（含 tariff）；订单总金额 = 数量 × 单价；预付% + 尾款% = 100%。",
+      "与成本分析强关联：先选择成本分析订单行；数量 = 成本分析「订单数量」；单价 = 该行 unit cost（含 tariff）；订单总金额 = 数量 × 单价；预付% + 尾款% = 100%。实际预付日 = 下单日期 + 7 个自然日；实际尾款日 = 实际预付日 + 账期天数；实际尾款金额 = 订单总金额 − 实际预付金额。",
     add: "新增一行",
     save: "保存",
     cancel: "取消编辑",
@@ -130,6 +130,17 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
   const expectedFin = useMemo(
     () => (form.totalAmount * form.finalRatioPct) / 100,
     [form.totalAmount, form.finalRatioPct],
+  );
+
+  const derivedActuals = useMemo(
+    () =>
+      computeCashFlowDerivedActuals(
+        form.orderDate,
+        form.paymentTermDays,
+        form.totalAmount,
+        form.actualAdvanceAmount,
+      ),
+    [form.orderDate, form.paymentTermDays, form.totalAmount, form.actualAdvanceAmount],
   );
 
   function fillFromEntry(e: CashFlowEntry) {
@@ -216,10 +227,10 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
       advanceRatioPct: form.advanceRatioPct,
       paymentTermDays: form.paymentTermDays,
       finalRatioPct: form.finalRatioPct,
-      actualAdvanceDate: form.actualAdvanceDate,
+      actualAdvanceDate: derivedActuals.actualAdvanceDate,
       actualAdvanceAmount: form.actualAdvanceAmount,
-      actualFinalDate: form.actualFinalDate,
-      actualFinalAmount: form.actualFinalAmount,
+      actualFinalDate: derivedActuals.actualFinalDate,
+      actualFinalAmount: derivedActuals.actualFinalAmount,
       remarks: form.remarks,
     };
     const res = editingId
@@ -507,15 +518,11 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
           <label className="text-sm">
             {t.actAdvDate}
             <input
-              type="date"
-              className={inputBase}
-              value={form.actualAdvanceDate ?? ""}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  actualAdvanceDate: e.target.value ? e.target.value : null,
-                }))
-              }
+              type="text"
+              className={readOnlyMuted}
+              readOnly
+              tabIndex={-1}
+              value={derivedActuals.actualAdvanceDate}
             />
           </label>
           <label className="text-sm">
@@ -540,15 +547,11 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
           <label className="text-sm">
             {t.actFinDate}
             <input
-              type="date"
-              className={inputBase}
-              value={form.actualFinalDate ?? ""}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  actualFinalDate: e.target.value ? e.target.value : null,
-                }))
-              }
+              type="text"
+              className={readOnlyMuted}
+              readOnly
+              tabIndex={-1}
+              value={derivedActuals.actualFinalDate}
             />
           </label>
           <label className="text-sm">
@@ -556,17 +559,11 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
             <div className="relative mt-1">
               <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
               <input
-                type="number"
-                min={0}
-                step="0.01"
-                className={moneyInputBase}
-                value={form.actualFinalAmount ?? ""}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    actualFinalAmount: e.target.value === "" ? null : Number(e.target.value),
-                  }))
-                }
+                type="text"
+                className={`${moneyInputBase} cursor-not-allowed bg-app-muted/25`}
+                readOnly
+                tabIndex={-1}
+                value={formatUsd(derivedActuals.actualFinalAmount, 2)}
               />
             </div>
           </label>
