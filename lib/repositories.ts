@@ -7,6 +7,9 @@ import {
   AdminUser,
   BomEntry,
   BomStatus,
+  EcnEntry,
+  EcnPriority,
+  EcnStatus,
   ForecastEntry,
   LogisticsLocation,
   LogisticsMovementType,
@@ -29,6 +32,9 @@ import {
   Region,
   SessionPayload,
   SupplierEntry,
+  ToolingEntry,
+  ToolingStatus,
+  ToolingType,
   UserRole,
 } from "@/lib/types";
 
@@ -159,6 +165,49 @@ type BomRow = {
   moq: number;
   lead_time_days: number;
   is_critical: boolean;
+  remarks: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type ToolingRow = {
+  id: number;
+  tooling_code: string;
+  tooling_name: string;
+  tooling_type: ToolingType;
+  related_sku: string;
+  cm_name: string;
+  location: string;
+  status: ToolingStatus;
+  owner: string;
+  manufacturer: string;
+  start_use_date: string | null;
+  cycle_count: number;
+  cycle_limit: number;
+  last_maintenance_date: string | null;
+  next_maintenance_due: string | null;
+  cost: string | number;
+  currency: string;
+  remarks: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type EcnRow = {
+  id: number;
+  ecn_no: string;
+  title: string;
+  status: EcnStatus;
+  priority: EcnPriority;
+  requester: string;
+  owner: string;
+  target_effective_date: string | null;
+  actual_effective_date: string | null;
+  affected_skus: string;
+  impact_summary: string;
+  reason: string;
   remarks: string;
   created_by: string;
   created_at: string;
@@ -2054,6 +2103,53 @@ function mapBomEntry(row: BomRow): BomEntry {
   };
 }
 
+function mapToolingEntry(row: ToolingRow): ToolingEntry {
+  return {
+    id: String(row.id),
+    toolingCode: row.tooling_code || "",
+    toolingName: row.tooling_name || "",
+    toolingType: row.tooling_type,
+    relatedSku: row.related_sku || "",
+    cmName: row.cm_name || "",
+    location: row.location || "",
+    status: row.status,
+    owner: row.owner || "",
+    manufacturer: row.manufacturer || "",
+    startUseDate: row.start_use_date ? formatPgDateOnly(row.start_use_date) : null,
+    cycleCount: Number(row.cycle_count ?? 0),
+    cycleLimit: Number(row.cycle_limit ?? 0),
+    lastMaintenanceDate: row.last_maintenance_date ? formatPgDateOnly(row.last_maintenance_date) : null,
+    nextMaintenanceDue: row.next_maintenance_due ? formatPgDateOnly(row.next_maintenance_due) : null,
+    cost: Number(row.cost ?? 0),
+    currency: row.currency || "USD",
+    remarks: row.remarks || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapEcnEntry(row: EcnRow): EcnEntry {
+  return {
+    id: String(row.id),
+    ecnNo: row.ecn_no || "",
+    title: row.title || "",
+    status: row.status,
+    priority: row.priority,
+    requester: row.requester || "",
+    owner: row.owner || "",
+    targetEffectiveDate: row.target_effective_date ? formatPgDateOnly(row.target_effective_date) : null,
+    actualEffectiveDate: row.actual_effective_date ? formatPgDateOnly(row.actual_effective_date) : null,
+    affectedSkus: row.affected_skus || "",
+    impactSummary: row.impact_summary || "",
+    reason: row.reason || "",
+    remarks: row.remarks || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 function mapContract(row: ContractRow): ContractEntry {
   return {
     id: String(row.id),
@@ -2221,6 +2317,214 @@ export async function deleteBomEntryById(id: string): Promise<void> {
   await ensureDatabase();
   const db = getSql();
   await db`delete from npi_bom_entries where id = ${Number(id)};`;
+}
+
+export async function listToolingEntries(): Promise<ToolingEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ToolingRow[]>`
+    select
+      id, tooling_code, tooling_name, tooling_type, related_sku, cm_name, location, status, owner, manufacturer,
+      start_use_date::text, cycle_count, cycle_limit, last_maintenance_date::text, next_maintenance_due::text,
+      cost::text, currency, remarks, created_by, created_at::text, updated_at::text
+    from npi_tooling_entries
+    order by updated_at desc, id desc;
+  `;
+  return rows.map(mapToolingEntry);
+}
+
+export async function createToolingEntry(input: {
+  toolingCode: string;
+  toolingName: string;
+  toolingType: ToolingType;
+  relatedSku: string;
+  cmName: string;
+  location: string;
+  status: ToolingStatus;
+  owner: string;
+  manufacturer: string;
+  startUseDate: string | null;
+  cycleCount: number;
+  cycleLimit: number;
+  lastMaintenanceDate: string | null;
+  nextMaintenanceDue: string | null;
+  cost: number;
+  currency: string;
+  remarks: string;
+  createdBy: string;
+}): Promise<ToolingEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ToolingRow[]>`
+    insert into npi_tooling_entries (
+      tooling_code, tooling_name, tooling_type, related_sku, cm_name, location, status, owner, manufacturer,
+      start_use_date, cycle_count, cycle_limit, last_maintenance_date, next_maintenance_due,
+      cost, currency, remarks, created_by, updated_at
+    ) values (
+      ${input.toolingCode.trim()}, ${input.toolingName.trim()}, ${input.toolingType}, ${input.relatedSku.trim()},
+      ${input.cmName.trim()}, ${input.location.trim()}, ${input.status}, ${input.owner.trim()}, ${input.manufacturer.trim()},
+      ${input.startUseDate}, ${Math.max(0, Math.trunc(input.cycleCount))}, ${Math.max(0, Math.trunc(input.cycleLimit))},
+      ${input.lastMaintenanceDate}, ${input.nextMaintenanceDue},
+      ${Math.max(0, input.cost)}, ${input.currency.trim() || "USD"}, ${input.remarks.trim()},
+      ${input.createdBy}, now()
+    )
+    returning
+      id, tooling_code, tooling_name, tooling_type, related_sku, cm_name, location, status, owner, manufacturer,
+      start_use_date::text, cycle_count, cycle_limit, last_maintenance_date::text, next_maintenance_due::text,
+      cost::text, currency, remarks, created_by, created_at::text, updated_at::text;
+  `;
+  return mapToolingEntry(rows[0]);
+}
+
+export async function updateToolingEntry(input: {
+  id: string;
+  toolingCode: string;
+  toolingName: string;
+  toolingType: ToolingType;
+  relatedSku: string;
+  cmName: string;
+  location: string;
+  status: ToolingStatus;
+  owner: string;
+  manufacturer: string;
+  startUseDate: string | null;
+  cycleCount: number;
+  cycleLimit: number;
+  lastMaintenanceDate: string | null;
+  nextMaintenanceDue: string | null;
+  cost: number;
+  currency: string;
+  remarks: string;
+}): Promise<ToolingEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ToolingRow[]>`
+    update npi_tooling_entries
+    set
+      tooling_code = ${input.toolingCode.trim()},
+      tooling_name = ${input.toolingName.trim()},
+      tooling_type = ${input.toolingType},
+      related_sku = ${input.relatedSku.trim()},
+      cm_name = ${input.cmName.trim()},
+      location = ${input.location.trim()},
+      status = ${input.status},
+      owner = ${input.owner.trim()},
+      manufacturer = ${input.manufacturer.trim()},
+      start_use_date = ${input.startUseDate},
+      cycle_count = ${Math.max(0, Math.trunc(input.cycleCount))},
+      cycle_limit = ${Math.max(0, Math.trunc(input.cycleLimit))},
+      last_maintenance_date = ${input.lastMaintenanceDate},
+      next_maintenance_due = ${input.nextMaintenanceDue},
+      cost = ${Math.max(0, input.cost)},
+      currency = ${input.currency.trim() || "USD"},
+      remarks = ${input.remarks.trim()},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning
+      id, tooling_code, tooling_name, tooling_type, related_sku, cm_name, location, status, owner, manufacturer,
+      start_use_date::text, cycle_count, cycle_limit, last_maintenance_date::text, next_maintenance_due::text,
+      cost::text, currency, remarks, created_by, created_at::text, updated_at::text;
+  `;
+  return rows[0] ? mapToolingEntry(rows[0]) : null;
+}
+
+export async function deleteToolingEntryById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from npi_tooling_entries where id = ${Number(id)};`;
+}
+
+export async function listEcnEntries(): Promise<EcnEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<EcnRow[]>`
+    select
+      id, ecn_no, title, status, priority, requester, owner, target_effective_date::text, actual_effective_date::text,
+      affected_skus, impact_summary, reason, remarks, created_by, created_at::text, updated_at::text
+    from npi_ecn_entries
+    order by updated_at desc, id desc;
+  `;
+  return rows.map(mapEcnEntry);
+}
+
+export async function createEcnEntry(input: {
+  ecnNo: string;
+  title: string;
+  status: EcnStatus;
+  priority: EcnPriority;
+  requester: string;
+  owner: string;
+  targetEffectiveDate: string | null;
+  actualEffectiveDate: string | null;
+  affectedSkus: string;
+  impactSummary: string;
+  reason: string;
+  remarks: string;
+  createdBy: string;
+}): Promise<EcnEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<EcnRow[]>`
+    insert into npi_ecn_entries (
+      ecn_no, title, status, priority, requester, owner, target_effective_date, actual_effective_date,
+      affected_skus, impact_summary, reason, remarks, created_by, updated_at
+    ) values (
+      ${input.ecnNo.trim()}, ${input.title.trim()}, ${input.status}, ${input.priority}, ${input.requester.trim()}, ${input.owner.trim()},
+      ${input.targetEffectiveDate}, ${input.actualEffectiveDate}, ${input.affectedSkus.trim()}, ${input.impactSummary.trim()},
+      ${input.reason.trim()}, ${input.remarks.trim()}, ${input.createdBy}, now()
+    )
+    returning
+      id, ecn_no, title, status, priority, requester, owner, target_effective_date::text, actual_effective_date::text,
+      affected_skus, impact_summary, reason, remarks, created_by, created_at::text, updated_at::text;
+  `;
+  return mapEcnEntry(rows[0]);
+}
+
+export async function updateEcnEntry(input: {
+  id: string;
+  ecnNo: string;
+  title: string;
+  status: EcnStatus;
+  priority: EcnPriority;
+  requester: string;
+  owner: string;
+  targetEffectiveDate: string | null;
+  actualEffectiveDate: string | null;
+  affectedSkus: string;
+  impactSummary: string;
+  reason: string;
+  remarks: string;
+}): Promise<EcnEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<EcnRow[]>`
+    update npi_ecn_entries
+    set
+      ecn_no = ${input.ecnNo.trim()},
+      title = ${input.title.trim()},
+      status = ${input.status},
+      priority = ${input.priority},
+      requester = ${input.requester.trim()},
+      owner = ${input.owner.trim()},
+      target_effective_date = ${input.targetEffectiveDate},
+      actual_effective_date = ${input.actualEffectiveDate},
+      affected_skus = ${input.affectedSkus.trim()},
+      impact_summary = ${input.impactSummary.trim()},
+      reason = ${input.reason.trim()},
+      remarks = ${input.remarks.trim()},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning
+      id, ecn_no, title, status, priority, requester, owner, target_effective_date::text, actual_effective_date::text,
+      affected_skus, impact_summary, reason, remarks, created_by, created_at::text, updated_at::text;
+  `;
+  return rows[0] ? mapEcnEntry(rows[0]) : null;
+}
+
+export async function deleteEcnEntryById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from npi_ecn_entries where id = ${Number(id)};`;
 }
 
 export async function listSuppliers(): Promise<SupplierEntry[]> {

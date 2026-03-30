@@ -103,6 +103,55 @@ export type BomEntry = {
   updatedAt: string;
 };
 
+export type ToolingStatus = "design" | "in_use" | "maintenance" | "scrapped";
+export type ToolingType = "mold" | "fixture" | "gauge" | "tester";
+
+export type ToolingEntry = {
+  id: string;
+  toolingCode: string;
+  toolingName: string;
+  toolingType: ToolingType;
+  relatedSku: string;
+  cmName: string;
+  location: string;
+  status: ToolingStatus;
+  owner: string;
+  manufacturer: string;
+  startUseDate: string | null;
+  cycleCount: number;
+  cycleLimit: number;
+  lastMaintenanceDate: string | null;
+  nextMaintenanceDue: string | null;
+  cost: number;
+  currency: string;
+  remarks: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EcnStatus = "draft" | "under_review" | "approved" | "implemented" | "rejected";
+export type EcnPriority = "low" | "medium" | "high";
+
+export type EcnEntry = {
+  id: string;
+  ecnNo: string;
+  title: string;
+  status: EcnStatus;
+  priority: EcnPriority;
+  requester: string;
+  owner: string;
+  targetEffectiveDate: string | null;
+  actualEffectiveDate: string | null;
+  affectedSkus: string;
+  impactSummary: string;
+  reason: string;
+  remarks: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ContractEntry = {
   id: string;
   orderProgressId: string;

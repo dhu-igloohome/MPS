@@ -478,6 +478,124 @@ async function setupSchema() {
     add constraint npi_bom_entries_status_check
     check (status in ('draft', 'released', 'obsolete'));
   `;
+
+  await db`
+    create table if not exists npi_tooling_entries (
+      id bigserial primary key,
+      tooling_code text not null default '',
+      tooling_name text not null default '',
+      tooling_type text not null default 'fixture'
+        check (tooling_type in ('mold', 'fixture', 'gauge', 'tester')),
+      related_sku text not null default '',
+      cm_name text not null default '',
+      location text not null default '',
+      status text not null default 'design'
+        check (status in ('design', 'in_use', 'maintenance', 'scrapped')),
+      owner text not null default '',
+      manufacturer text not null default '',
+      start_use_date date,
+      cycle_count integer not null default 0,
+      cycle_limit integer not null default 0,
+      last_maintenance_date date,
+      next_maintenance_due date,
+      cost numeric(14, 2) not null default 0,
+      currency text not null default 'USD',
+      remarks text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_npi_tooling_entries_code
+    on npi_tooling_entries (tooling_code, id desc);
+  `;
+  await db`alter table npi_tooling_entries add column if not exists tooling_code text not null default '';`;
+  await db`alter table npi_tooling_entries add column if not exists tooling_name text not null default '';`;
+  await db`alter table npi_tooling_entries add column if not exists tooling_type text not null default 'fixture';`;
+  await db`alter table npi_tooling_entries add column if not exists related_sku text not null default '';`;
+  await db`alter table npi_tooling_entries add column if not exists cm_name text not null default '';`;
+  await db`alter table npi_tooling_entries add column if not exists location text not null default '';`;
+  await db`alter table npi_tooling_entries add column if not exists status text not null default 'design';`;
+  await db`alter table npi_tooling_entries add column if not exists owner text not null default '';`;
+  await db`alter table npi_tooling_entries add column if not exists manufacturer text not null default '';`;
+  await db`alter table npi_tooling_entries add column if not exists start_use_date date;`;
+  await db`alter table npi_tooling_entries add column if not exists cycle_count integer not null default 0;`;
+  await db`alter table npi_tooling_entries add column if not exists cycle_limit integer not null default 0;`;
+  await db`alter table npi_tooling_entries add column if not exists last_maintenance_date date;`;
+  await db`alter table npi_tooling_entries add column if not exists next_maintenance_due date;`;
+  await db`alter table npi_tooling_entries add column if not exists cost numeric(14, 2) not null default 0;`;
+  await db`alter table npi_tooling_entries add column if not exists currency text not null default 'USD';`;
+  await db`alter table npi_tooling_entries add column if not exists remarks text not null default '';`;
+  await db`alter table npi_tooling_entries add column if not exists created_by text;`;
+  await db`alter table npi_tooling_entries add column if not exists created_at timestamptz not null default now();`;
+  await db`alter table npi_tooling_entries add column if not exists updated_at timestamptz not null default now();`;
+  await db`alter table npi_tooling_entries drop constraint if exists npi_tooling_entries_tooling_type_check;`;
+  await db`alter table npi_tooling_entries drop constraint if exists npi_tooling_entries_status_check;`;
+  await db`
+    alter table npi_tooling_entries
+    add constraint npi_tooling_entries_tooling_type_check
+    check (tooling_type in ('mold', 'fixture', 'gauge', 'tester'));
+  `;
+  await db`
+    alter table npi_tooling_entries
+    add constraint npi_tooling_entries_status_check
+    check (status in ('design', 'in_use', 'maintenance', 'scrapped'));
+  `;
+
+  await db`
+    create table if not exists npi_ecn_entries (
+      id bigserial primary key,
+      ecn_no text not null default '',
+      title text not null default '',
+      status text not null default 'draft'
+        check (status in ('draft', 'under_review', 'approved', 'implemented', 'rejected')),
+      priority text not null default 'medium'
+        check (priority in ('low', 'medium', 'high')),
+      requester text not null default '',
+      owner text not null default '',
+      target_effective_date date,
+      actual_effective_date date,
+      affected_skus text not null default '',
+      impact_summary text not null default '',
+      reason text not null default '',
+      remarks text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_npi_ecn_entries_ecn_no
+    on npi_ecn_entries (ecn_no, id desc);
+  `;
+  await db`alter table npi_ecn_entries add column if not exists ecn_no text not null default '';`;
+  await db`alter table npi_ecn_entries add column if not exists title text not null default '';`;
+  await db`alter table npi_ecn_entries add column if not exists status text not null default 'draft';`;
+  await db`alter table npi_ecn_entries add column if not exists priority text not null default 'medium';`;
+  await db`alter table npi_ecn_entries add column if not exists requester text not null default '';`;
+  await db`alter table npi_ecn_entries add column if not exists owner text not null default '';`;
+  await db`alter table npi_ecn_entries add column if not exists target_effective_date date;`;
+  await db`alter table npi_ecn_entries add column if not exists actual_effective_date date;`;
+  await db`alter table npi_ecn_entries add column if not exists affected_skus text not null default '';`;
+  await db`alter table npi_ecn_entries add column if not exists impact_summary text not null default '';`;
+  await db`alter table npi_ecn_entries add column if not exists reason text not null default '';`;
+  await db`alter table npi_ecn_entries add column if not exists remarks text not null default '';`;
+  await db`alter table npi_ecn_entries add column if not exists created_by text;`;
+  await db`alter table npi_ecn_entries add column if not exists created_at timestamptz not null default now();`;
+  await db`alter table npi_ecn_entries add column if not exists updated_at timestamptz not null default now();`;
+  await db`alter table npi_ecn_entries drop constraint if exists npi_ecn_entries_status_check;`;
+  await db`alter table npi_ecn_entries drop constraint if exists npi_ecn_entries_priority_check;`;
+  await db`
+    alter table npi_ecn_entries
+    add constraint npi_ecn_entries_status_check
+    check (status in ('draft', 'under_review', 'approved', 'implemented', 'rejected'));
+  `;
+  await db`
+    alter table npi_ecn_entries
+    add constraint npi_ecn_entries_priority_check
+    check (priority in ('low', 'medium', 'high'));
+  `;
 }
 
 async function seedUsers() {
