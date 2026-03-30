@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 
+import {
+  computeCostAnalysisDerived,
+  parseChinaVat,
+  parseDestination,
+} from "@/lib/cost-analysis-compute";
 import { validateCostAnalysisRow } from "@/lib/cost-analysis-validation";
 import type { CostFreightMode } from "@/lib/types";
 import { deleteCostAnalysisEntryById, updateCostAnalysisEntryById } from "@/lib/repositories";
@@ -29,21 +34,16 @@ export async function PATCH(request: Request, context: RouteContext) {
   const sku = String(body.sku ?? "").trim();
   const orderNumber = String(body.orderNumber ?? "").trim();
   const quantity = Number(body.quantity);
-  const orderTotalWithTariff = Number(body.orderTotalWithTariff);
-  const orderTotalWithoutTariff = Number(body.orderTotalWithoutTariff);
-  const unitCostWithTariff = Number(body.unitCostWithTariff);
-  const unitCostWithoutTariff = Number(body.unitCostWithoutTariff);
-  const includesChinaVat = Boolean(body.includesChinaVat);
-  const baseUnitCostUsd = Number(body.baseUnitCostUsd);
   const eeCost = Number(body.eeCost);
   const meCost = Number(body.meCost);
   const assemblyCost = Number(body.assemblyCost);
   const tariffPct = Number(body.tariffPct);
   const airFreightPerUnit = Number(body.airFreightPerUnit);
   const seaFreightPerUnit = Number(body.seaFreightPerUnit);
-  const destinationCountry = String(body.destinationCountry ?? "").trim();
   const remarks = String(body.remarks ?? "").trim();
   const freightMode = parseFreightMode(body.freightMode);
+  const destinationCountry = parseDestination(body.destinationCountry);
+  const includesChinaVat = parseChinaVat(body.includesChinaVat);
 
   if (!sku || !orderNumber || Number.isNaN(quantity) || quantity < 0) {
     return NextResponse.json({ message: "Missing SKU, order number, or invalid quantity" }, { status: 400 });
@@ -51,25 +51,32 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!freightMode) {
     return NextResponse.json({ message: "Invalid freight mode" }, { status: 400 });
   }
+  if (!destinationCountry) {
+    return NextResponse.json({ message: "目的地须选择 APAC / EU / USA" }, { status: 400 });
+  }
 
-  const v = validateCostAnalysisRow({ quantity, tariffPct, freightMode });
-  if (!v.ok) return NextResponse.json({ message: v.message }, { status: 400 });
-
-  const nums = [
-    orderTotalWithTariff,
-    orderTotalWithoutTariff,
-    unitCostWithTariff,
-    unitCostWithoutTariff,
-    baseUnitCostUsd,
+  const v = validateCostAnalysisRow({
+    quantity,
+    tariffPct,
+    freightMode,
     eeCost,
     meCost,
     assemblyCost,
     airFreightPerUnit,
     seaFreightPerUnit,
-  ];
-  if (nums.some((n) => Number.isNaN(n) || !Number.isFinite(n))) {
-    return NextResponse.json({ message: "Invalid numeric field" }, { status: 400 });
-  }
+  });
+  if (!v.ok) return NextResponse.json({ message: v.message }, { status: 400 });
+
+  const derived = computeCostAnalysisDerived({
+    eeCost,
+    meCost,
+    assemblyCost,
+    tariffPct,
+    airFreightPerUnit,
+    seaFreightPerUnit,
+    freightMode,
+    quantity,
+  });
 
   try {
     const entry = await updateCostAnalysisEntryById(id, {
@@ -78,12 +85,12 @@ export async function PATCH(request: Request, context: RouteContext) {
       sku,
       quantity,
       orderNumber,
-      orderTotalWithTariff,
-      orderTotalWithoutTariff,
-      unitCostWithTariff,
-      unitCostWithoutTariff,
+      orderTotalWithTariff: derived.orderTotalWithTariff,
+      orderTotalWithoutTariff: derived.orderTotalWithoutTariff,
+      unitCostWithTariff: derived.unitCostWithTariff,
+      unitCostWithoutTariff: derived.unitCostWithoutTariff,
       includesChinaVat,
-      baseUnitCostUsd,
+      baseUnitCostUsd: derived.baseUnitCostUsd,
       eeCost,
       meCost,
       assemblyCost,

@@ -3,7 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { suggestCheckTotalVsQtyUnit } from "@/lib/cost-analysis-validation";
+import {
+  computeCostAnalysisDerived,
+  COST_DESTINATION_OPTIONS,
+  parseDestination,
+  type CostDestination,
+} from "@/lib/cost-analysis-compute";
 import type { Language } from "@/lib/i18n";
 import type { CostAnalysisEntry, CostFreightMode } from "@/lib/types";
 
@@ -33,39 +38,54 @@ type CostAnalysisPanelProps = {
   initialEntries: CostAnalysisEntry[];
 };
 
-function emptyRow(): Omit<CostAnalysisEntry, "id" | "createdBy" | "createdAt" | "updatedAt"> {
+type CostFormState = {
+  cmRegion: string;
+  supplierName: string;
+  sku: string;
+  quantity: number;
+  orderNumber: string;
+  eeCost: number;
+  meCost: number;
+  assemblyCost: number;
+  tariffPct: number;
+  airFreightPerUnit: number;
+  seaFreightPerUnit: number;
+  freightMode: CostFreightMode;
+  includesChinaVat: boolean;
+  destinationCountry: CostDestination;
+  remarks: string;
+};
+
+function emptyRow(): CostFormState {
   return {
     cmRegion: "",
     supplierName: "",
     sku: "",
     quantity: 0,
     orderNumber: "",
-    orderTotalWithTariff: 0,
-    orderTotalWithoutTariff: 0,
-    unitCostWithTariff: 0,
-    unitCostWithoutTariff: 0,
-    includesChinaVat: false,
-    baseUnitCostUsd: 0,
     eeCost: 0,
     meCost: 0,
     assemblyCost: 0,
     tariffPct: 0,
     airFreightPerUnit: 0,
     seaFreightPerUnit: 0,
-    destinationCountry: "",
     freightMode: "sea",
+    includesChinaVat: false,
+    destinationCountry: "APAC",
     remarks: "",
   };
 }
 
 const LABELS = {
   en: {
-    hint: "Rules: tariff 0–100%; freight = air or sea. Totals may be entered as in Excel (cross-check hints below).",
+    hint:
+      "Computed: Unit cost = EE+ME+assembly; without tariff = Unit cost + freight (air or sea per selection); with tariff = (1+tariff%)×Unit cost + freight; order totals = qty × unit.",
     add: "Add row",
     save: "Save",
     cancel: "Cancel edit",
     edit: "Edit",
     delete: "Delete",
+    computed: "Auto computed",
     cmRegion: "CM region",
     supplier: "Supplier",
     sku: "SKU",
@@ -83,21 +103,21 @@ const LABELS = {
     tariff: "Tariff %",
     airFreight: "Air freight / unit",
     seaFreight: "Sea freight / unit",
-    dest: "Destination country",
+    dest: "Destination",
     freight: "Air / Sea",
     remark: "Remarks",
-    hintWith: "Check incl. tariff",
-    hintWo: "Check excl. tariff",
     yes: "Yes",
     no: "No",
   },
   zh: {
-    hint: "规则：关税 0～100%；运输方式为空运或海运。订单全额可与 Excel 手填一致，下方仅作参考提示。",
+    hint:
+      "自动计算：Unit cost = EE+ME+assembly；不含关税单价 = Unit cost + 所选运输方式对应运费；含关税单价 = (1+关税%)×Unit cost + 运费；订单全额 = 数量 × 对应单价。",
     add: "新增一行",
     save: "保存",
     cancel: "取消编辑",
     edit: "编辑",
     delete: "删除",
+    computed: "自动计算",
     cmRegion: "CM region",
     supplier: "Supplier name",
     sku: "SKU",
@@ -118,10 +138,8 @@ const LABELS = {
     dest: "目的地国家",
     freight: "选择空运还是海运",
     remark: "备注",
-    hintWith: "参考：数量×含关税单价",
-    hintWo: "参考：数量×不含关税单价",
     yes: "是",
-    no: "不",
+    no: "否",
   },
 };
 
@@ -132,43 +150,54 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [form, setForm] = useState(emptyRow);
+  const [form, setForm] = useState(() => emptyRow());
 
   useEffect(() => {
     setEntries(initialEntries);
   }, [initialEntries]);
 
-  const checkWith = useMemo(
-    () => suggestCheckTotalVsQtyUnit(form.quantity, form.unitCostWithTariff, form.orderTotalWithTariff),
-    [form.quantity, form.unitCostWithTariff, form.orderTotalWithTariff],
-  );
-  const checkWo = useMemo(
-    () => suggestCheckTotalVsQtyUnit(form.quantity, form.unitCostWithoutTariff, form.orderTotalWithoutTariff),
-    [form.quantity, form.unitCostWithoutTariff, form.orderTotalWithoutTariff],
+  const derived = useMemo(
+    () =>
+      computeCostAnalysisDerived({
+        eeCost: form.eeCost,
+        meCost: form.meCost,
+        assemblyCost: form.assemblyCost,
+        tariffPct: form.tariffPct,
+        airFreightPerUnit: form.airFreightPerUnit,
+        seaFreightPerUnit: form.seaFreightPerUnit,
+        freightMode: form.freightMode,
+        quantity: form.quantity,
+      }),
+    [
+      form.eeCost,
+      form.meCost,
+      form.assemblyCost,
+      form.tariffPct,
+      form.airFreightPerUnit,
+      form.seaFreightPerUnit,
+      form.freightMode,
+      form.quantity,
+    ],
   );
 
   function fillFromEntry(e: CostAnalysisEntry) {
     setEditingId(e.id);
+    const dest = parseDestination(e.destinationCountry) ?? "APAC";
     setForm({
       cmRegion: e.cmRegion,
       supplierName: e.supplierName,
       sku: e.sku,
       quantity: e.quantity,
       orderNumber: e.orderNumber,
-      orderTotalWithTariff: e.orderTotalWithTariff,
-      orderTotalWithoutTariff: e.orderTotalWithoutTariff,
-      unitCostWithTariff: e.unitCostWithTariff,
-      unitCostWithoutTariff: e.unitCostWithoutTariff,
-      includesChinaVat: e.includesChinaVat,
-      baseUnitCostUsd: e.baseUnitCostUsd,
       eeCost: e.eeCost,
       meCost: e.meCost,
       assemblyCost: e.assemblyCost,
       tariffPct: e.tariffPct,
       airFreightPerUnit: e.airFreightPerUnit,
       seaFreightPerUnit: e.seaFreightPerUnit,
-      destinationCountry: e.destinationCountry,
       freightMode: e.freightMode,
+      includesChinaVat: e.includesChinaVat,
+      destinationCountry: dest,
       remarks: e.remarks,
     });
   }
@@ -190,7 +219,23 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
     e.preventDefault();
     setLoading(true);
     setMessage("");
-    const payload = { ...form };
+    const payload = {
+      cmRegion: form.cmRegion,
+      supplierName: form.supplierName,
+      sku: form.sku,
+      quantity: form.quantity,
+      orderNumber: form.orderNumber,
+      eeCost: form.eeCost,
+      meCost: form.meCost,
+      assemblyCost: form.assemblyCost,
+      tariffPct: form.tariffPct,
+      airFreightPerUnit: form.airFreightPerUnit,
+      seaFreightPerUnit: form.seaFreightPerUnit,
+      freightMode: form.freightMode,
+      includesChinaVat: form.includesChinaVat,
+      destinationCountry: form.destinationCountry,
+      remarks: form.remarks,
+    };
     const res = editingId
       ? await fetch(`/api/cost-control/cost-analysis/${encodeURIComponent(editingId)}`, {
           method: "PATCH",
@@ -277,10 +322,10 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
                   <td className="max-w-[10rem] break-all px-1 py-2">{row.orderNumber}</td>
                   <td className="px-1 py-2 text-right">{row.orderTotalWithTariff.toFixed(2)}</td>
                   <td className="px-1 py-2 text-right">{row.orderTotalWithoutTariff.toFixed(2)}</td>
-                  <td className="px-1 py-2 text-right">{row.unitCostWithTariff.toFixed(2)}</td>
-                  <td className="px-1 py-2 text-right">{row.unitCostWithoutTariff.toFixed(2)}</td>
+                  <td className="px-1 py-2 text-right">{row.unitCostWithTariff.toFixed(4)}</td>
+                  <td className="px-1 py-2 text-right">{row.unitCostWithoutTariff.toFixed(4)}</td>
                   <td className="px-1 py-2">{row.includesChinaVat ? t.yes : t.no}</td>
-                  <td className="px-1 py-2 text-right">{row.baseUnitCostUsd.toFixed(2)}</td>
+                  <td className="px-1 py-2 text-right">{row.baseUnitCostUsd.toFixed(4)}</td>
                   <td className="px-1 py-2 text-right">{row.eeCost.toFixed(2)}</td>
                   <td className="px-1 py-2 text-right">{row.meCost.toFixed(2)}</td>
                   <td className="px-1 py-2 text-right">{row.assemblyCost.toFixed(2)}</td>
@@ -288,7 +333,9 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
                   <td className="px-1 py-2 text-right">{row.airFreightPerUnit.toFixed(2)}</td>
                   <td className="px-1 py-2 text-right">{row.seaFreightPerUnit.toFixed(2)}</td>
                   <td className="px-1 py-2">{row.destinationCountry || "—"}</td>
-                  <td className="px-1 py-2">{row.freightMode === "air" ? (language === "en" ? "Air" : "空运") : language === "en" ? "Sea" : "海运"}</td>
+                  <td className="px-1 py-2">
+                    {row.freightMode === "air" ? (language === "en" ? "Air" : "空运") : language === "en" ? "Sea" : "海运"}
+                  </td>
                   <td className="max-w-[8rem] break-words px-1 py-2">{row.remarks || "—"}</td>
                   <td className="whitespace-nowrap px-1 py-2">
                     <button type="button" className="mr-1 text-app-accent hover:underline" onClick={() => fillFromEntry(row)}>
@@ -319,6 +366,30 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
           ))}
         </datalist>
 
+        <p className="mb-2 text-xs font-medium text-app-muted">{t.computed}</p>
+        <div className="mb-4 grid gap-3 rounded-lg border border-dashed border-app-border/80 bg-app-surface/80 p-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="text-sm">
+            <span className="text-app-muted">{t.baseUnit}: </span>
+            <span className="font-medium tabular-nums">{derived.baseUnitCostUsd.toFixed(4)}</span>
+          </div>
+          <div className="text-sm">
+            <span className="text-app-muted">{t.ucWoTariff}: </span>
+            <span className="font-medium tabular-nums">{derived.unitCostWithoutTariff.toFixed(4)}</span>
+          </div>
+          <div className="text-sm">
+            <span className="text-app-muted">{t.ucWithTariff}: </span>
+            <span className="font-medium tabular-nums">{derived.unitCostWithTariff.toFixed(4)}</span>
+          </div>
+          <div className="text-sm">
+            <span className="text-app-muted">{t.totalWoTariff}: </span>
+            <span className="font-medium tabular-nums">{derived.orderTotalWithoutTariff.toFixed(2)}</span>
+          </div>
+          <div className="text-sm">
+            <span className="text-app-muted">{t.totalWithTariff}: </span>
+            <span className="font-medium tabular-nums">{derived.orderTotalWithTariff.toFixed(2)}</span>
+          </div>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <label className="text-sm">
             {t.cmRegion}
@@ -347,35 +418,6 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
             <input className={inputBase} value={form.orderNumber} onChange={(e) => setForm((f) => ({ ...f, orderNumber: e.target.value }))} required />
           </label>
           <label className="text-sm">
-            {t.totalWithTariff}
-            <input type="number" min={0} step="0.01" className={inputBase} value={form.orderTotalWithTariff || ""} onChange={(e) => setForm((f) => ({ ...f, orderTotalWithTariff: Number(e.target.value) || 0 }))} />
-          </label>
-          <label className="text-sm">
-            {t.totalWoTariff}
-            <input type="number" min={0} step="0.01" className={inputBase} value={form.orderTotalWithoutTariff || ""} onChange={(e) => setForm((f) => ({ ...f, orderTotalWithoutTariff: Number(e.target.value) || 0 }))} />
-          </label>
-          <label className="text-sm">
-            {t.ucWithTariff}
-            <input type="number" min={0} step="0.0001" className={inputBase} value={form.unitCostWithTariff || ""} onChange={(e) => setForm((f) => ({ ...f, unitCostWithTariff: Number(e.target.value) || 0 }))} />
-          </label>
-          <label className="text-sm">
-            {t.ucWoTariff}
-            <input type="number" min={0} step="0.0001" className={inputBase} value={form.unitCostWithoutTariff || ""} onChange={(e) => setForm((f) => ({ ...f, unitCostWithoutTariff: Number(e.target.value) || 0 }))} />
-          </label>
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-app-border"
-              checked={form.includesChinaVat}
-              onChange={(e) => setForm((f) => ({ ...f, includesChinaVat: e.target.checked }))}
-            />
-            <span>{t.chinaVat}</span>
-          </label>
-          <label className="text-sm">
-            {t.baseUnit}
-            <input type="number" min={0} step="0.01" className={inputBase} value={form.baseUnitCostUsd || ""} onChange={(e) => setForm((f) => ({ ...f, baseUnitCostUsd: Number(e.target.value) || 0 }))} />
-          </label>
-          <label className="text-sm">
             {t.ee}
             <input type="number" min={0} step="0.01" className={inputBase} value={form.eeCost || ""} onChange={(e) => setForm((f) => ({ ...f, eeCost: Number(e.target.value) || 0 }))} />
           </label>
@@ -400,10 +442,6 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
             <input type="number" min={0} step="0.01" className={inputBase} value={form.seaFreightPerUnit || ""} onChange={(e) => setForm((f) => ({ ...f, seaFreightPerUnit: Number(e.target.value) || 0 }))} />
           </label>
           <label className="text-sm">
-            {t.dest}
-            <input className={inputBase} value={form.destinationCountry} onChange={(e) => setForm((f) => ({ ...f, destinationCountry: e.target.value }))} />
-          </label>
-          <label className="text-sm">
             {t.freight}
             <select
               className={inputBase}
@@ -414,16 +452,36 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               <option value="sea">{language === "en" ? "Sea" : "海运"}</option>
             </select>
           </label>
+          <label className="text-sm">
+            {t.chinaVat}
+            <select
+              className={inputBase}
+              value={form.includesChinaVat ? "yes" : "no"}
+              onChange={(e) => setForm((f) => ({ ...f, includesChinaVat: e.target.value === "yes" }))}
+            >
+              <option value="no">{t.no}</option>
+              <option value="yes">{t.yes}</option>
+            </select>
+          </label>
+          <label className="text-sm">
+            {t.dest}
+            <select
+              className={inputBase}
+              value={form.destinationCountry}
+              onChange={(e) => setForm((f) => ({ ...f, destinationCountry: e.target.value as CostDestination }))}
+            >
+              {COST_DESTINATION_OPTIONS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="text-sm sm:col-span-2">
             {t.remark}
             <input className={inputBase} value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} />
           </label>
         </div>
-
-        <p className="mt-2 text-xs text-app-muted">
-          {t.hintWith}: {checkWith.close ? "✓" : `Δ ${checkWith.diff.toFixed(2)}`} · {t.hintWo}:{" "}
-          {checkWo.close ? "✓" : `Δ ${checkWo.diff.toFixed(2)}`}
-        </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="submit" disabled={loading} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">
