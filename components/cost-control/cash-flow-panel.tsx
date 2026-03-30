@@ -147,21 +147,21 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
     setEditingId(e.id);
     const ca = findCostAnalysisForCashFlow(costAnalysisEntries, e.orderNumber, e.sku);
     const qty = ca ? ca.quantity : e.quantity;
-    const unit = e.unitPrice;
+    const unit = ca ? ca.unitCostWithTariff : e.unitPrice;
     setForm({
       sku: e.sku,
       orderDate: e.orderDate,
       quantity: qty,
       orderNumber: e.orderNumber,
       unitPrice: unit,
-      totalAmount: ca ? computeTotalAmount(qty, unit) : e.totalAmount,
+      totalAmount: computeTotalAmount(qty, unit),
       advanceRatioPct: e.advanceRatioPct,
       paymentTermDays: e.paymentTermDays,
       finalRatioPct: e.finalRatioPct,
-      actualAdvanceDate: e.actualAdvanceDate,
+      actualAdvanceDate: null,
       actualAdvanceAmount: e.actualAdvanceAmount,
-      actualFinalDate: e.actualFinalDate,
-      actualFinalAmount: e.actualFinalAmount,
+      actualFinalDate: null,
+      actualFinalAmount: null,
       remarks: e.remarks,
     });
   }
