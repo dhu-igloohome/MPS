@@ -111,7 +111,7 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
   const [fProduct, setFProduct] = useState("");
   const [fGrain, setFGrain] = useState<Grain>("month");
 
-  const [oPreset, setOPreset] = useState<RangePreset>("12m");
+  const [oPreset, setOPreset] = useState<RangePreset>("pm3");
   const [oFrom, setOFrom] = useState("");
   const [oTo, setOTo] = useState("");
   const [oRegion, setORegion] = useState("");
