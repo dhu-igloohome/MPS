@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 
+import { CashFlowPanel } from "@/components/cost-control/cash-flow-panel";
 import type { Language } from "@/lib/i18n";
+import type { CashFlowEntry } from "@/lib/types";
 
 type CostControlPanelProps = {
   language: Language;
+  cashFlowEntries: CashFlowEntry[];
 };
 
 const COPY = {
@@ -27,7 +30,7 @@ const COPY = {
   },
 };
 
-export function CostControlPanel({ language }: CostControlPanelProps) {
+export function CostControlPanel({ language, cashFlowEntries }: CostControlPanelProps) {
   const t = COPY[language];
   const [section, setSection] = useState<"cost" | "cashflow">("cost");
 
@@ -66,12 +69,17 @@ export function CostControlPanel({ language }: CostControlPanelProps) {
         role="tabpanel"
         aria-labelledby={section === "cost" ? "tab-cost" : "tab-cash"}
       >
-        <h3 className="text-base font-semibold text-foreground">
-          {section === "cost" ? t.costAnalysis : t.cashFlow}
-        </h3>
-        <p className="mt-3 text-sm leading-relaxed text-app-muted">
-          {section === "cost" ? t.costPlaceholder : t.cashPlaceholder}
-        </p>
+        {section === "cost" ? (
+          <>
+            <h3 className="text-base font-semibold text-foreground">{t.costAnalysis}</h3>
+            <p className="mt-3 text-sm leading-relaxed text-app-muted">{t.costPlaceholder}</p>
+          </>
+        ) : (
+          <>
+            <h3 className="mb-2 text-base font-semibold text-foreground">{t.cashFlow}</h3>
+            <CashFlowPanel language={language} initialEntries={cashFlowEntries} />
+          </>
+        )}
       </section>
     </div>
   );

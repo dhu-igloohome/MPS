@@ -1,0 +1,486 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+
+import { computeTotalAmount } from "@/lib/cash-flow-validation";
+import type { Language } from "@/lib/i18n";
+import type { CashFlowEntry } from "@/lib/types";
+
+type CashFlowPanelProps = {
+  language: Language;
+  initialEntries: CashFlowEntry[];
+};
+
+const LABELS = {
+  en: {
+    tableHint: "Rules: total = qty × unit price; advance % + final % = 100%; actual advance + actual final = total.",
+    add: "Add row",
+    save: "Save",
+    cancel: "Cancel edit",
+    edit: "Edit",
+    delete: "Delete",
+    sku: "SKU",
+    orderDate: "Order date",
+    qty: "Qty",
+    orderNo: "Order no.",
+    unitPrice: "Unit price",
+    total: "Total",
+    advPct: "Advance %",
+    termDays: "Term days",
+    finPct: "Final %",
+    actAdvDate: "Actual advance date",
+    actAdvAmt: "Actual advance amt",
+    actFinDate: "Actual final date",
+    actFinAmt: "Actual final amt",
+    remark: "Remark",
+    expectedAdv: "Expected advance",
+    expectedFin: "Expected final",
+  },
+  zh: {
+    tableHint: "规则：订单总金额 = 订单数量 × 订单金额（单价）；预付%+尾款%=100%；实际预付+实际尾款=订单总金额。",
+    add: "新增一行",
+    save: "保存",
+    cancel: "取消编辑",
+    edit: "编辑",
+    delete: "删除",
+    sku: "SKU",
+    orderDate: "下单日期",
+    qty: "订单数量",
+    orderNo: "订单号",
+    unitPrice: "订单金额",
+    total: "订单总金额",
+    advPct: "预付款比例 %",
+    termDays: "账期天数",
+    finPct: "尾款比例 %",
+    actAdvDate: "实际预付款日期",
+    actAdvAmt: "实际预付款金额",
+    actFinDate: "实际支付尾款日期",
+    actFinAmt: "实际支付尾款金额",
+    remark: "备注",
+    expectedAdv: "按比例应付预付",
+    expectedFin: "按比例应付尾款",
+  },
+};
+
+function emptyForm(): Omit<CashFlowEntry, "id" | "createdBy" | "createdAt" | "updatedAt"> {
+  return {
+    sku: "",
+    orderDate: new Date().toISOString().slice(0, 10),
+    quantity: 0,
+    orderNumber: "",
+    unitPrice: 0,
+    totalAmount: 0,
+    advanceRatioPct: 30,
+    paymentTermDays: 75,
+    finalRatioPct: 70,
+    actualAdvanceDate: null,
+    actualAdvanceAmount: null,
+    actualFinalDate: null,
+    actualFinalAmount: null,
+    remarks: "",
+  };
+}
+
+export function CashFlowPanel({ language, initialEntries }: CashFlowPanelProps) {
+  const router = useRouter();
+  const t = LABELS[language];
+  const [entries, setEntries] = useState(initialEntries);
+  useEffect(() => {
+    setEntries(initialEntries);
+  }, [initialEntries]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [form, setForm] = useState(() => emptyForm());
+
+  const expectedAdv = useMemo(
+    () => (form.totalAmount * form.advanceRatioPct) / 100,
+    [form.totalAmount, form.advanceRatioPct],
+  );
+  const expectedFin = useMemo(
+    () => (form.totalAmount * form.finalRatioPct) / 100,
+    [form.totalAmount, form.finalRatioPct],
+  );
+
+  function syncTotal(qty: number, unit: number) {
+    setForm((f) => ({
+      ...f,
+      quantity: qty,
+      unitPrice: unit,
+      totalAmount: computeTotalAmount(qty, unit),
+    }));
+  }
+
+  function fillFromEntry(e: CashFlowEntry) {
+    setEditingId(e.id);
+    setForm({
+      sku: e.sku,
+      orderDate: e.orderDate,
+      quantity: e.quantity,
+      orderNumber: e.orderNumber,
+      unitPrice: e.unitPrice,
+      totalAmount: e.totalAmount,
+      advanceRatioPct: e.advanceRatioPct,
+      paymentTermDays: e.paymentTermDays,
+      finalRatioPct: e.finalRatioPct,
+      actualAdvanceDate: e.actualAdvanceDate,
+      actualAdvanceAmount: e.actualAdvanceAmount,
+      actualFinalDate: e.actualFinalDate,
+      actualFinalAmount: e.actualFinalAmount,
+      remarks: e.remarks,
+    });
+  }
+
+  function reset() {
+    setEditingId(null);
+    setForm(emptyForm());
+    setMessage("");
+  }
+
+  async function refresh() {
+    const res = await fetch("/api/cost-control/cash-flow");
+    const data = (await res.json()) as { entries?: CashFlowEntry[] };
+    if (data.entries) setEntries(data.entries);
+    router.refresh();
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+    const payload = {
+      sku: form.sku,
+      orderDate: form.orderDate,
+      quantity: form.quantity,
+      orderNumber: form.orderNumber,
+      unitPrice: form.unitPrice,
+      totalAmount: form.totalAmount,
+      advanceRatioPct: form.advanceRatioPct,
+      paymentTermDays: form.paymentTermDays,
+      finalRatioPct: form.finalRatioPct,
+      actualAdvanceDate: form.actualAdvanceDate,
+      actualAdvanceAmount: form.actualAdvanceAmount,
+      actualFinalDate: form.actualFinalDate,
+      actualFinalAmount: form.actualFinalAmount,
+      remarks: form.remarks,
+    };
+    const res = editingId
+      ? await fetch(`/api/cost-control/cash-flow/${encodeURIComponent(editingId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+      : await fetch("/api/cost-control/cash-flow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+    const data = (await res.json().catch(() => ({}))) as { message?: string };
+    setLoading(false);
+    if (!res.ok) {
+      setMessage(data.message || "Request failed");
+      return;
+    }
+    reset();
+    await refresh();
+  }
+
+  async function onDelete(id: string) {
+    if (!confirm(language === "en" ? "Delete this row?" : "确定删除此行？")) return;
+    setLoading(true);
+    const res = await fetch(`/api/cost-control/cash-flow/${encodeURIComponent(id)}`, { method: "DELETE" });
+    setLoading(false);
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { message?: string };
+      setMessage(data.message || "Delete failed");
+      return;
+    }
+    if (editingId === id) reset();
+    await refresh();
+  }
+
+  const inputBase =
+    "mt-1 w-full rounded-lg border border-app-border px-2 py-1.5 text-sm text-foreground";
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-app-muted">{t.tableHint}</p>
+
+      <div className="overflow-x-auto rounded-xl border border-app-border/90">
+        <table className="w-full min-w-[1200px] border-collapse text-xs sm:text-sm">
+          <thead>
+            <tr className="border-b border-app-border/80 bg-app-surface/80 text-left text-app-muted">
+              <th className="px-2 py-2">{t.sku}</th>
+              <th className="px-2 py-2">{t.orderDate}</th>
+              <th className="px-2 py-2">{t.qty}</th>
+              <th className="px-2 py-2">{t.orderNo}</th>
+              <th className="px-2 py-2">{t.unitPrice}</th>
+              <th className="px-2 py-2">{t.total}</th>
+              <th className="px-2 py-2">{t.advPct}</th>
+              <th className="px-2 py-2">{t.termDays}</th>
+              <th className="px-2 py-2">{t.finPct}</th>
+              <th className="px-2 py-2">{t.actAdvDate}</th>
+              <th className="px-2 py-2">{t.actAdvAmt}</th>
+              <th className="px-2 py-2">{t.actFinDate}</th>
+              <th className="px-2 py-2">{t.actFinAmt}</th>
+              <th className="px-2 py-2">{t.remark}</th>
+              <th className="px-2 py-2"> </th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.length === 0 ? (
+              <tr>
+                <td colSpan={15} className="px-2 py-6 text-center text-app-muted">
+                  {language === "en" ? "No rows yet." : "暂无数据。"}
+                </td>
+              </tr>
+            ) : (
+              entries.map((row) => (
+                <tr key={row.id} className="border-b border-app-border/40">
+                  <td className="px-2 py-2 font-medium">{row.sku}</td>
+                  <td className="px-2 py-2 whitespace-nowrap">{row.orderDate}</td>
+                  <td className="px-2 py-2 text-right">{row.quantity}</td>
+                  <td className="px-2 py-2 break-all">{row.orderNumber}</td>
+                  <td className="px-2 py-2 text-right">{row.unitPrice.toFixed(2)}</td>
+                  <td className="px-2 py-2 text-right">{row.totalAmount.toFixed(2)}</td>
+                  <td className="px-2 py-2 text-right">{row.advanceRatioPct}%</td>
+                  <td className="px-2 py-2 text-right">{row.paymentTermDays}</td>
+                  <td className="px-2 py-2 text-right">{row.finalRatioPct}%</td>
+                  <td className="px-2 py-2 whitespace-nowrap">{row.actualAdvanceDate ?? "—"}</td>
+                  <td className="px-2 py-2 text-right">
+                    {row.actualAdvanceAmount != null ? row.actualAdvanceAmount.toFixed(2) : "—"}
+                  </td>
+                  <td className="px-2 py-2 whitespace-nowrap">{row.actualFinalDate ?? "—"}</td>
+                  <td className="px-2 py-2 text-right">
+                    {row.actualFinalAmount != null ? row.actualFinalAmount.toFixed(2) : "—"}
+                  </td>
+                  <td className="max-w-[8rem] break-words px-2 py-2">{row.remarks || "—"}</td>
+                  <td className="whitespace-nowrap px-2 py-2">
+                    <button
+                      type="button"
+                      className="mr-1 text-app-accent hover:underline"
+                      onClick={() => fillFromEntry(row)}
+                    >
+                      {t.edit}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-red-600 hover:underline"
+                      onClick={() => onDelete(row.id)}
+                      disabled={loading}
+                    >
+                      {t.delete}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <form className="rounded-2xl border border-app-border/90 bg-app-surface/50 p-4" onSubmit={onSubmit}>
+        <p className="mb-3 text-sm font-medium text-foreground">
+          {editingId ? (language === "en" ? "Edit row" : "编辑行") : t.add}
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <label className="text-sm">
+            {t.sku}
+            <input
+              className={inputBase}
+              value={form.sku}
+              onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+              required
+            />
+          </label>
+          <label className="text-sm">
+            {t.orderDate}
+            <input
+              type="date"
+              className={inputBase}
+              value={form.orderDate}
+              onChange={(e) => setForm((f) => ({ ...f, orderDate: e.target.value }))}
+              required
+            />
+          </label>
+          <label className="text-sm">
+            {t.qty}
+            <input
+              type="number"
+              min={0}
+              step={1}
+              className={inputBase}
+              value={form.quantity || ""}
+              onChange={(e) => syncTotal(Number(e.target.value) || 0, form.unitPrice)}
+              required
+            />
+          </label>
+          <label className="text-sm">
+            {t.orderNo}
+            <input
+              className={inputBase}
+              value={form.orderNumber}
+              onChange={(e) => setForm((f) => ({ ...f, orderNumber: e.target.value }))}
+              required
+            />
+          </label>
+          <label className="text-sm">
+            {t.unitPrice}
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className={inputBase}
+              value={form.unitPrice || ""}
+              onChange={(e) => syncTotal(form.quantity, Number(e.target.value) || 0)}
+              required
+            />
+          </label>
+          <label className="text-sm">
+            {t.total}
+            <input type="number" className={`${inputBase} bg-app-muted/20`} readOnly value={form.totalAmount.toFixed(2)} />
+          </label>
+          <label className="text-sm">
+            {t.advPct}
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step="0.1"
+              className={inputBase}
+              value={form.advanceRatioPct || ""}
+              onChange={(e) => {
+                const adv = Number(e.target.value);
+                setForm((f) => ({
+                  ...f,
+                  advanceRatioPct: adv,
+                  finalRatioPct: Math.round((100 - adv) * 10) / 10,
+                }));
+              }}
+              required
+            />
+          </label>
+          <label className="text-sm">
+            {t.termDays}
+            <input
+              type="number"
+              min={0}
+              step={1}
+              className={inputBase}
+              value={form.paymentTermDays || ""}
+              onChange={(e) => setForm((f) => ({ ...f, paymentTermDays: Number(e.target.value) }))}
+              required
+            />
+          </label>
+          <label className="text-sm">
+            {t.finPct}
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step="0.1"
+              className={inputBase}
+              value={form.finalRatioPct || ""}
+              onChange={(e) => {
+                const fin = Number(e.target.value);
+                setForm((f) => ({
+                  ...f,
+                  finalRatioPct: fin,
+                  advanceRatioPct: Math.round((100 - fin) * 10) / 10,
+                }));
+              }}
+              required
+            />
+          </label>
+          <label className="text-sm">
+            {t.actAdvDate}
+            <input
+              type="date"
+              className={inputBase}
+              value={form.actualAdvanceDate ?? ""}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  actualAdvanceDate: e.target.value ? e.target.value : null,
+                }))
+              }
+            />
+          </label>
+          <label className="text-sm">
+            {t.actAdvAmt}
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className={inputBase}
+              value={form.actualAdvanceAmount ?? ""}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  actualAdvanceAmount: e.target.value === "" ? null : Number(e.target.value),
+                }))
+              }
+            />
+          </label>
+          <label className="text-sm">
+            {t.actFinDate}
+            <input
+              type="date"
+              className={inputBase}
+              value={form.actualFinalDate ?? ""}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  actualFinalDate: e.target.value ? e.target.value : null,
+                }))
+              }
+            />
+          </label>
+          <label className="text-sm">
+            {t.actFinAmt}
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className={inputBase}
+              value={form.actualFinalAmount ?? ""}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  actualFinalAmount: e.target.value === "" ? null : Number(e.target.value),
+                }))
+              }
+            />
+          </label>
+          <label className="text-sm sm:col-span-2">
+            {t.remark}
+            <input
+              className={inputBase}
+              value={form.remarks}
+              onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
+            />
+          </label>
+        </div>
+        <p className="mt-2 text-xs text-app-muted">
+          {t.expectedAdv}: {expectedAdv.toFixed(2)} · {t.expectedFin}: {expectedFin.toFixed(2)}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
+          >
+            {t.save}
+          </button>
+          {editingId ? (
+            <button type="button" className="rounded-lg border border-app-border px-4 py-2 text-sm" onClick={reset}>
+              {t.cancel}
+            </button>
+          ) : null}
+        </div>
+        {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
+      </form>
+    </div>
+  );
+}

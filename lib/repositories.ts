@@ -10,6 +10,7 @@ import {
   LogisticsMovementType,
   LogisticsShipmentEntry,
   LogisticsShipmentStatus,
+  CashFlowEntry,
   ContractEntry,
   ContractStatus,
   OrderProductionStep,
@@ -2359,4 +2360,240 @@ export async function updateContractStatusById(
       updated_at::text;
   `;
   return rows[0] ? mapContract(rows[0]) : null;
+}
+
+type CashFlowRow = {
+  id: number;
+  sku: string;
+  order_date: string;
+  quantity: number;
+  order_number: string;
+  unit_price: string | number;
+  total_amount: string | number;
+  advance_ratio_pct: string | number;
+  payment_term_days: number;
+  final_ratio_pct: string | number;
+  actual_advance_date: string | null;
+  actual_advance_amount: string | number | null;
+  actual_final_date: string | null;
+  actual_final_amount: string | number | null;
+  remarks: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+function mapCashFlow(row: CashFlowRow): CashFlowEntry {
+  return {
+    id: String(row.id),
+    sku: row.sku,
+    orderDate: formatPgDateOnly(row.order_date),
+    quantity: Number(row.quantity ?? 0),
+    orderNumber: row.order_number,
+    unitPrice: Number(row.unit_price ?? 0),
+    totalAmount: Number(row.total_amount ?? 0),
+    advanceRatioPct: Number(row.advance_ratio_pct ?? 0),
+    paymentTermDays: Number(row.payment_term_days ?? 0),
+    finalRatioPct: Number(row.final_ratio_pct ?? 0),
+    actualAdvanceDate: row.actual_advance_date ? formatPgDateOnly(row.actual_advance_date) : null,
+    actualAdvanceAmount:
+      row.actual_advance_amount != null && row.actual_advance_amount !== ""
+        ? Number(row.actual_advance_amount)
+        : null,
+    actualFinalDate: row.actual_final_date ? formatPgDateOnly(row.actual_final_date) : null,
+    actualFinalAmount:
+      row.actual_final_amount != null && row.actual_final_amount !== ""
+        ? Number(row.actual_final_amount)
+        : null,
+    remarks: row.remarks || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listCashFlowEntries(): Promise<CashFlowEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<CashFlowRow[]>`
+    select
+      id,
+      sku,
+      order_date::text,
+      quantity,
+      order_number,
+      unit_price::text,
+      total_amount::text,
+      advance_ratio_pct::text,
+      payment_term_days,
+      final_ratio_pct::text,
+      actual_advance_date::text,
+      actual_advance_amount::text,
+      actual_final_date::text,
+      actual_final_amount::text,
+      remarks,
+      created_by,
+      created_at::text,
+      updated_at::text
+    from cash_flow_entries
+    order by order_date desc, id desc
+    limit 2000;
+  `;
+  return rows.map(mapCashFlow);
+}
+
+export async function createCashFlowEntry(input: {
+  sku: string;
+  orderDate: string;
+  quantity: number;
+  orderNumber: string;
+  unitPrice: number;
+  totalAmount: number;
+  advanceRatioPct: number;
+  paymentTermDays: number;
+  finalRatioPct: number;
+  actualAdvanceDate: string | null;
+  actualAdvanceAmount: number | null;
+  actualFinalDate: string | null;
+  actualFinalAmount: number | null;
+  remarks: string;
+  createdBy: string;
+}): Promise<CashFlowEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const advDate = input.actualAdvanceDate?.trim() || null;
+  const finDate = input.actualFinalDate?.trim() || null;
+  const rows = await db<CashFlowRow[]>`
+    insert into cash_flow_entries (
+      sku,
+      order_date,
+      quantity,
+      order_number,
+      unit_price,
+      total_amount,
+      advance_ratio_pct,
+      payment_term_days,
+      final_ratio_pct,
+      actual_advance_date,
+      actual_advance_amount,
+      actual_final_date,
+      actual_final_amount,
+      remarks,
+      created_by
+    )
+    values (
+      ${input.sku.trim()},
+      ${input.orderDate.trim()},
+      ${input.quantity},
+      ${input.orderNumber.trim()},
+      ${input.unitPrice},
+      ${input.totalAmount},
+      ${input.advanceRatioPct},
+      ${input.paymentTermDays},
+      ${input.finalRatioPct},
+      ${advDate},
+      ${input.actualAdvanceAmount},
+      ${finDate},
+      ${input.actualFinalAmount},
+      ${input.remarks.trim()},
+      ${input.createdBy}
+    )
+    returning
+      id,
+      sku,
+      order_date::text,
+      quantity,
+      order_number,
+      unit_price::text,
+      total_amount::text,
+      advance_ratio_pct::text,
+      payment_term_days,
+      final_ratio_pct::text,
+      actual_advance_date::text,
+      actual_advance_amount::text,
+      actual_final_date::text,
+      actual_final_amount::text,
+      remarks,
+      created_by,
+      created_at::text,
+      updated_at::text;
+  `;
+  if (!rows[0]) throw new Error("Create cash flow entry failed");
+  return mapCashFlow(rows[0]);
+}
+
+export async function updateCashFlowEntryById(
+  id: string,
+  input: {
+    sku: string;
+    orderDate: string;
+    quantity: number;
+    orderNumber: string;
+    unitPrice: number;
+    totalAmount: number;
+    advanceRatioPct: number;
+    paymentTermDays: number;
+    finalRatioPct: number;
+    actualAdvanceDate: string | null;
+    actualAdvanceAmount: number | null;
+    actualFinalDate: string | null;
+    actualFinalAmount: number | null;
+    remarks: string;
+  },
+): Promise<CashFlowEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const advDate = input.actualAdvanceDate?.trim() || null;
+  const finDate = input.actualFinalDate?.trim() || null;
+  const rows = await db<CashFlowRow[]>`
+    update cash_flow_entries
+    set
+      sku = ${input.sku.trim()},
+      order_date = ${input.orderDate.trim()},
+      quantity = ${input.quantity},
+      order_number = ${input.orderNumber.trim()},
+      unit_price = ${input.unitPrice},
+      total_amount = ${input.totalAmount},
+      advance_ratio_pct = ${input.advanceRatioPct},
+      payment_term_days = ${input.paymentTermDays},
+      final_ratio_pct = ${input.finalRatioPct},
+      actual_advance_date = ${advDate},
+      actual_advance_amount = ${input.actualAdvanceAmount},
+      actual_final_date = ${finDate},
+      actual_final_amount = ${input.actualFinalAmount},
+      remarks = ${input.remarks.trim()},
+      updated_at = now()
+    where id = ${Number(id)}
+    returning
+      id,
+      sku,
+      order_date::text,
+      quantity,
+      order_number,
+      unit_price::text,
+      total_amount::text,
+      advance_ratio_pct::text,
+      payment_term_days,
+      final_ratio_pct::text,
+      actual_advance_date::text,
+      actual_advance_amount::text,
+      actual_final_date::text,
+      actual_final_amount::text,
+      remarks,
+      created_by,
+      created_at::text,
+      updated_at::text;
+  `;
+  return rows[0] ? mapCashFlow(rows[0]) : null;
+}
+
+export async function deleteCashFlowEntryById(id: string): Promise<boolean> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ id: number }[]>`
+    delete from cash_flow_entries
+    where id = ${Number(id)}
+    returning id;
+  `;
+  return rows.length > 0;
 }

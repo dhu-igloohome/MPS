@@ -196,3 +196,28 @@ export type LogisticsShipmentEntry = {
   createdAt: string;
   updatedAt: string;
 };
+
+/** 成本控制 — 现金流分析（与 Excel 列一致） */
+export type CashFlowEntry = {
+  id: string;
+  sku: string;
+  orderDate: string;
+  quantity: number;
+  /** 订单号（如 Forecast PO：POU…） */
+  orderNumber: string;
+  /** 订单金额：单价 */
+  unitPrice: number;
+  /** 订单总金额 */
+  totalAmount: number;
+  advanceRatioPct: number;
+  paymentTermDays: number;
+  finalRatioPct: number;
+  actualAdvanceDate: string | null;
+  actualAdvanceAmount: number | null;
+  actualFinalDate: string | null;
+  actualFinalAmount: number | null;
+  remarks: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};

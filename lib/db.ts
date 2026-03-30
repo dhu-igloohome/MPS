@@ -348,6 +348,35 @@ async function setupSchema() {
       deleted_at timestamptz not null default now()
     );
   `;
+
+  await db`
+    create table if not exists cash_flow_entries (
+      id bigserial primary key,
+      sku text not null,
+      order_date date not null,
+      quantity integer not null check (quantity >= 0),
+      order_number text not null,
+      unit_price numeric(14, 2) not null,
+      total_amount numeric(16, 2) not null,
+      advance_ratio_pct numeric(7, 3) not null
+        check (advance_ratio_pct >= 0 and advance_ratio_pct <= 100),
+      payment_term_days integer not null check (payment_term_days >= 0),
+      final_ratio_pct numeric(7, 3) not null
+        check (final_ratio_pct >= 0 and final_ratio_pct <= 100),
+      actual_advance_date date,
+      actual_advance_amount numeric(16, 2),
+      actual_final_date date,
+      actual_final_amount numeric(16, 2),
+      remarks text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_cash_flow_entries_order_date
+    on cash_flow_entries (order_date desc, id desc);
+  `;
 }
 
 async function seedUsers() {
