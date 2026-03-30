@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { findCostAnalysisForCashFlow } from "@/lib/cash-flow-cost-analysis-link";
+import { formatUsd } from "@/lib/format-usd";
 import { computeTotalAmount } from "@/lib/cash-flow-validation";
 import type { Language } from "@/lib/i18n";
 import type { CashFlowEntry, CostAnalysisEntry } from "@/lib/types";
@@ -243,6 +244,8 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
   const inputBase =
     "mt-1 w-full rounded-lg border border-app-border px-2 py-1.5 text-sm text-foreground";
   const readOnlyMuted = `${inputBase} cursor-not-allowed bg-app-muted/25`;
+  const moneyInputBase =
+    "w-full rounded-lg border border-app-border py-1.5 pr-2 pl-6 text-sm text-foreground";
 
   return (
     <div className="space-y-4">
@@ -283,8 +286,8 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
                   <td className="px-2 py-2 whitespace-nowrap">{row.orderDate}</td>
                   <td className="px-2 py-2 text-right">{row.quantity}</td>
                   <td className="px-2 py-2 break-all">{row.orderNumber}</td>
-                  <td className="px-2 py-2 text-right">{row.unitPrice.toFixed(2)}</td>
-                  <td className="px-2 py-2 text-right">{row.totalAmount.toFixed(2)}</td>
+                  <td className="px-2 py-2 text-right tabular-nums">{formatUsd(row.unitPrice, 4)}</td>
+                  <td className="px-2 py-2 text-right tabular-nums">{formatUsd(row.totalAmount, 2)}</td>
                   <td className="px-2 py-2 text-right">{row.advanceRatioPct}%</td>
                   <td className="px-2 py-2 text-right">{row.paymentTermDays}</td>
                   <td className="px-2 py-2 text-right">{row.finalRatioPct}%</td>
@@ -293,8 +296,8 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
                     {row.actualAdvanceAmount != null ? row.actualAdvanceAmount.toFixed(2) : "—"}
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap">{row.actualFinalDate ?? "—"}</td>
-                  <td className="px-2 py-2 text-right">
-                    {row.actualFinalAmount != null ? row.actualFinalAmount.toFixed(2) : "—"}
+                  <td className="px-2 py-2 text-right tabular-nums">
+                    {row.actualFinalAmount != null ? formatUsd(row.actualFinalAmount, 2) : "—"}
                   </td>
                   <td className="max-w-[8rem] break-words px-2 py-2">{row.remarks || "—"}</td>
                   <td className="whitespace-nowrap px-2 py-2">
@@ -408,11 +411,9 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
               <span className="text-xs font-normal text-app-muted">({t.unitPriceHint})</span>
             </span>
             <input
-              type="number"
-              min={0}
-              step="0.0001"
+              type="text"
               className={readOnlyMuted}
-              value={form.unitPrice ? form.unitPrice : ""}
+              value={form.unitPrice ? formatUsd(form.unitPrice, 4) : ""}
               readOnly
               tabIndex={-1}
               title={t.unitPriceReadOnly}
@@ -420,7 +421,13 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
           </label>
           <label className="text-sm">
             {t.total}
-            <input type="number" className={`${inputBase} bg-app-muted/20`} readOnly value={form.totalAmount.toFixed(2)} />
+            <input
+              type="text"
+              className={`${inputBase} bg-app-muted/20`}
+              readOnly
+              value={formatUsd(form.totalAmount, 2)}
+              tabIndex={-1}
+            />
           </label>
           <label className="text-sm">
             {t.advPct}
@@ -490,19 +497,22 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
           </label>
           <label className="text-sm">
             {t.actAdvAmt}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className={inputBase}
-              value={form.actualAdvanceAmount ?? ""}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  actualAdvanceAmount: e.target.value === "" ? null : Number(e.target.value),
-                }))
-              }
-            />
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className={moneyInputBase}
+                value={form.actualAdvanceAmount ?? ""}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    actualAdvanceAmount: e.target.value === "" ? null : Number(e.target.value),
+                  }))
+                }
+              />
+            </div>
           </label>
           <label className="text-sm">
             {t.actFinDate}
@@ -520,19 +530,22 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
           </label>
           <label className="text-sm">
             {t.actFinAmt}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className={inputBase}
-              value={form.actualFinalAmount ?? ""}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  actualFinalAmount: e.target.value === "" ? null : Number(e.target.value),
-                }))
-              }
-            />
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className={moneyInputBase}
+                value={form.actualFinalAmount ?? ""}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    actualFinalAmount: e.target.value === "" ? null : Number(e.target.value),
+                  }))
+                }
+              />
+            </div>
           </label>
           <label className="text-sm sm:col-span-2">
             {t.remark}
@@ -544,7 +557,7 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
           </label>
         </div>
         <p className="mt-2 text-xs text-app-muted">
-          {t.expectedAdv}: {expectedAdv.toFixed(2)} · {t.expectedFin}: {expectedFin.toFixed(2)}
+          {t.expectedAdv}: {formatUsd(expectedAdv, 2)} · {t.expectedFin}: {formatUsd(expectedFin, 2)}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button

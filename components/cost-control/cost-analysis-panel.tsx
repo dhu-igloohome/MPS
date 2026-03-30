@@ -9,6 +9,7 @@ import {
   parseDestination,
   type CostDestination,
 } from "@/lib/cost-analysis-compute";
+import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
 import type { CostAnalysisEntry, CostFreightMode } from "@/lib/types";
 
@@ -273,6 +274,8 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
 
   const inputBase =
     "mt-1 w-full rounded-lg border border-app-border px-2 py-1.5 text-sm text-foreground";
+  const moneyInputBase =
+    "w-full rounded-lg border border-app-border py-1.5 pr-2 pl-6 text-sm text-foreground";
 
   return (
     <div className="space-y-4">
@@ -320,18 +323,18 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
                   <td className="px-1 py-2 font-medium">{row.sku}</td>
                   <td className="px-1 py-2 text-right">{row.quantity}</td>
                   <td className="max-w-[10rem] break-all px-1 py-2">{row.orderNumber}</td>
-                  <td className="px-1 py-2 text-right">{row.orderTotalWithTariff.toFixed(2)}</td>
-                  <td className="px-1 py-2 text-right">{row.orderTotalWithoutTariff.toFixed(2)}</td>
-                  <td className="px-1 py-2 text-right">{row.unitCostWithTariff.toFixed(4)}</td>
-                  <td className="px-1 py-2 text-right">{row.unitCostWithoutTariff.toFixed(4)}</td>
+                  <td className="px-1 py-2 text-right tabular-nums">{formatUsd(row.orderTotalWithTariff, 2)}</td>
+                  <td className="px-1 py-2 text-right tabular-nums">{formatUsd(row.orderTotalWithoutTariff, 2)}</td>
+                  <td className="px-1 py-2 text-right tabular-nums">{formatUsd(row.unitCostWithTariff, 4)}</td>
+                  <td className="px-1 py-2 text-right tabular-nums">{formatUsd(row.unitCostWithoutTariff, 4)}</td>
                   <td className="px-1 py-2">{row.includesChinaVat ? t.yes : t.no}</td>
-                  <td className="px-1 py-2 text-right">{row.baseUnitCostUsd.toFixed(4)}</td>
-                  <td className="px-1 py-2 text-right">{row.eeCost.toFixed(2)}</td>
-                  <td className="px-1 py-2 text-right">{row.meCost.toFixed(2)}</td>
-                  <td className="px-1 py-2 text-right">{row.assemblyCost.toFixed(2)}</td>
+                  <td className="px-1 py-2 text-right tabular-nums">{formatUsd(row.baseUnitCostUsd, 4)}</td>
+                  <td className="px-1 py-2 text-right tabular-nums">{formatUsd(row.eeCost, 2)}</td>
+                  <td className="px-1 py-2 text-right tabular-nums">{formatUsd(row.meCost, 2)}</td>
+                  <td className="px-1 py-2 text-right tabular-nums">{formatUsd(row.assemblyCost, 2)}</td>
                   <td className="px-1 py-2 text-right">{row.tariffPct}%</td>
-                  <td className="px-1 py-2 text-right">{row.airFreightPerUnit.toFixed(2)}</td>
-                  <td className="px-1 py-2 text-right">{row.seaFreightPerUnit.toFixed(2)}</td>
+                  <td className="px-1 py-2 text-right tabular-nums">{formatUsd(row.airFreightPerUnit, 2)}</td>
+                  <td className="px-1 py-2 text-right tabular-nums">{formatUsd(row.seaFreightPerUnit, 2)}</td>
                   <td className="px-1 py-2">{row.destinationCountry || "—"}</td>
                   <td className="px-1 py-2">
                     {row.freightMode === "air" ? (language === "en" ? "Air" : "空运") : language === "en" ? "Sea" : "海运"}
@@ -370,23 +373,23 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
         <div className="mb-4 grid gap-3 rounded-lg border border-dashed border-app-border/80 bg-app-surface/80 p-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="text-sm">
             <span className="text-app-muted">{t.baseUnit}: </span>
-            <span className="font-medium tabular-nums">{derived.baseUnitCostUsd.toFixed(4)}</span>
+            <span className="font-medium tabular-nums">{formatUsd(derived.baseUnitCostUsd, 4)}</span>
           </div>
           <div className="text-sm">
             <span className="text-app-muted">{t.ucWoTariff}: </span>
-            <span className="font-medium tabular-nums">{derived.unitCostWithoutTariff.toFixed(4)}</span>
+            <span className="font-medium tabular-nums">{formatUsd(derived.unitCostWithoutTariff, 4)}</span>
           </div>
           <div className="text-sm">
             <span className="text-app-muted">{t.ucWithTariff}: </span>
-            <span className="font-medium tabular-nums">{derived.unitCostWithTariff.toFixed(4)}</span>
+            <span className="font-medium tabular-nums">{formatUsd(derived.unitCostWithTariff, 4)}</span>
           </div>
           <div className="text-sm">
             <span className="text-app-muted">{t.totalWoTariff}: </span>
-            <span className="font-medium tabular-nums">{derived.orderTotalWithoutTariff.toFixed(2)}</span>
+            <span className="font-medium tabular-nums">{formatUsd(derived.orderTotalWithoutTariff, 2)}</span>
           </div>
           <div className="text-sm">
             <span className="text-app-muted">{t.totalWithTariff}: </span>
-            <span className="font-medium tabular-nums">{derived.orderTotalWithTariff.toFixed(2)}</span>
+            <span className="font-medium tabular-nums">{formatUsd(derived.orderTotalWithTariff, 2)}</span>
           </div>
         </div>
 
@@ -419,15 +422,45 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
           </label>
           <label className="text-sm">
             {t.ee}
-            <input type="number" min={0} step="0.01" className={inputBase} value={form.eeCost || ""} onChange={(e) => setForm((f) => ({ ...f, eeCost: Number(e.target.value) || 0 }))} />
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className={moneyInputBase}
+                value={form.eeCost || ""}
+                onChange={(e) => setForm((f) => ({ ...f, eeCost: Number(e.target.value) || 0 }))}
+              />
+            </div>
           </label>
           <label className="text-sm">
             {t.me}
-            <input type="number" min={0} step="0.01" className={inputBase} value={form.meCost || ""} onChange={(e) => setForm((f) => ({ ...f, meCost: Number(e.target.value) || 0 }))} />
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className={moneyInputBase}
+                value={form.meCost || ""}
+                onChange={(e) => setForm((f) => ({ ...f, meCost: Number(e.target.value) || 0 }))}
+              />
+            </div>
           </label>
           <label className="text-sm">
             {t.assembly}
-            <input type="number" min={0} step="0.01" className={inputBase} value={form.assemblyCost || ""} onChange={(e) => setForm((f) => ({ ...f, assemblyCost: Number(e.target.value) || 0 }))} />
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className={moneyInputBase}
+                value={form.assemblyCost || ""}
+                onChange={(e) => setForm((f) => ({ ...f, assemblyCost: Number(e.target.value) || 0 }))}
+              />
+            </div>
           </label>
           <label className="text-sm">
             {t.tariff}
@@ -435,11 +468,31 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
           </label>
           <label className="text-sm">
             {t.airFreight}
-            <input type="number" min={0} step="0.01" className={inputBase} value={form.airFreightPerUnit || ""} onChange={(e) => setForm((f) => ({ ...f, airFreightPerUnit: Number(e.target.value) || 0 }))} />
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className={moneyInputBase}
+                value={form.airFreightPerUnit || ""}
+                onChange={(e) => setForm((f) => ({ ...f, airFreightPerUnit: Number(e.target.value) || 0 }))}
+              />
+            </div>
           </label>
           <label className="text-sm">
             {t.seaFreight}
-            <input type="number" min={0} step="0.01" className={inputBase} value={form.seaFreightPerUnit || ""} onChange={(e) => setForm((f) => ({ ...f, seaFreightPerUnit: Number(e.target.value) || 0 }))} />
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className={moneyInputBase}
+                value={form.seaFreightPerUnit || ""}
+                onChange={(e) => setForm((f) => ({ ...f, seaFreightPerUnit: Number(e.target.value) || 0 }))}
+              />
+            </div>
           </label>
           <label className="text-sm">
             {t.freight}
