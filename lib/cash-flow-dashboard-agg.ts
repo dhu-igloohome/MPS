@@ -104,6 +104,23 @@ export function monthKeysBetween(from: string, to: string): string[] {
   return keys;
 }
 
+/** Inclusive month keys from `monthsBack` before the current calendar month through `monthsForward` after it (for payment-month charts). */
+export function paymentMonthWindowAroundToday(monthsBack: number, monthsForward: number): string[] {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  const idx = y * 12 + (m - 1);
+  const startIdx = idx - monthsBack;
+  const endIdx = idx + monthsForward;
+  const sy = Math.floor(startIdx / 12);
+  const sm = (startIdx % 12) + 1;
+  const ey = Math.floor(endIdx / 12);
+  const em = (endIdx % 12) + 1;
+  const fromStr = `${sy}-${String(sm).padStart(2, "0")}-01`;
+  const toStr = `${ey}-${String(em).padStart(2, "0")}-01`;
+  return monthKeysBetween(fromStr, toStr);
+}
+
 export function buildMonthlyChartSeries(rows: EnrichedCashFlow[], monthKeys: string[]): ChartPoint[] {
   return monthKeys.map((mk) => {
     let orderTotalInPeriod = 0;

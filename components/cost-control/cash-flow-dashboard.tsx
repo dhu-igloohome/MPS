@@ -29,6 +29,7 @@ import {
   getDateRangePreset,
   computeKpis,
   monthKeysBetween,
+  paymentMonthWindowAroundToday,
   sumActualPaid,
   type PeriodGrain,
   type RangePreset,
@@ -95,6 +96,9 @@ function labels(language: Language) {
       ? "Blue: sum of order totals for orders placed in the month. Green: advance+final payments recorded in the month."
       : "蓝线：该月下单订单金额合计；绿线：该月实际发生的预付款+尾款（按付款日期）。",
     barTitle: en ? "Actual advance vs actual final (by payment month)" : "实际预付 vs 实际尾款（按付款月）",
+    barHint: en
+      ? "Payment months: 6 months before through 6 months after the current month (rolling window)."
+      : "付款月范围：以当前月为基准，向前 6 个月至向后 6 个月（共 13 个自然月）。",
     waterfallTitle: en ? "Payment composition (filtered total)" : "资金构成（当前筛选合计）",
     wfOrder: en ? "Order total" : "订单合计",
     wfAdv: en ? "Paid advance" : "已付预付",
@@ -199,6 +203,14 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
     return grain === "month" ? monthly : aggregateToQuarters(monthly);
   }, [filtered, dateRange.from, dateRange.to, grain]);
 
+  /** Bar chart: fixed rolling payment-month window (current month ±6), independent of order-date range. */
+  const barChartPoints: ChartPoint[] = useMemo(() => {
+    const months = paymentMonthWindowAroundToday(6, 6);
+    if (months.length === 0) return [];
+    const monthly = buildMonthlyChartSeries(filtered, months);
+    return grain === "month" ? monthly : aggregateToQuarters(monthly);
+  }, [filtered, grain]);
+
   const wf = useMemo(() => {
     const advSum = filtered.reduce((s, e) => s + (e.actualAdvanceAmount ?? 0), 0);
     const finSum = filtered.reduce((s, e) => s + (e.actualFinalAmount ?? 0), 0);
@@ -232,6 +244,11 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
   };
 
   const chartData = chartPoints.map((p) => ({
+    ...p,
+    name: p.label,
+  }));
+
+  const barChartData = barChartPoints.map((p) => ({
     ...p,
     name: p.label,
   }));
@@ -486,12 +503,13 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
         </div>
 
         <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-          <h5 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">{t.barTitle}</h5>
+          <h5 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{t.barTitle}</h5>
+          <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">{t.barHint}</p>
           <div className="h-72 w-full">
-            {chartData.length > 0 ? (
+            {barChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={chartData}
+                  data={barChartData}
                   margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
                   onClick={(state) => {
                     const k =
@@ -513,7 +531,7 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
                     radius={[4, 4, 0, 0]}
                     cursor="pointer"
                   >
-                    {chartData.map((_, i) => (
+                    {barChartData.map((_, i) => (
                       <Cell key={`a-${i}`} cursor="pointer" />
                     ))}
                   </Bar>
@@ -524,7 +542,7 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
                     radius={[4, 4, 0, 0]}
                     cursor="pointer"
                   >
-                    {chartData.map((_, i) => (
+                    {barChartData.map((_, i) => (
                       <Cell key={`f-${i}`} cursor="pointer" />
                     ))}
                   </Bar>
