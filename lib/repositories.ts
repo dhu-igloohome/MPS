@@ -2243,6 +2243,18 @@ export async function createContractFromOrder(input: {
 }): Promise<ContractEntry> {
   await ensureDatabase();
   const db = getSql();
+  const duplicates = await db<{ id: number; po_number: string; sku: string }[]>`
+    select c.id, c.po_number, c.sku
+    from contracts c
+    join order_progress op on op.po_number = c.po_number and op.sku = c.sku
+    where op.id = ${Number(input.orderProgressId)}
+    limit 1;
+  `;
+  if (duplicates[0]) {
+    throw new Error(
+      `Contract already exists for PO ${duplicates[0].po_number} / SKU ${duplicates[0].sku}. Please edit the existing contract.`,
+    );
+  }
   const rows = await db<ContractRow[]>`
     with src as (
       select
