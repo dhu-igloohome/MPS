@@ -1,7 +1,7 @@
-/** Cash flow row rules aligned with Excel: 数量×单价=总金额；预付%+尾款%=100%；实际预付+实际尾款=总金额 */
+/** Cash flow: 数量×单价=总金额；预付%+尾款%=100%；实际预付+实际尾款=总金额（若均填写）。单价须与成本分析一致（见 cash-flow-cost-analysis-link）。 */
 
 const MONEY_EPS = 0.02;
-const PCT_EPS = 0.5;
+const PCT_EPS = 0.05;
 
 export function computeTotalAmount(quantity: number, unitPrice: number): number {
   return Math.round(quantity * unitPrice * 100) / 100;
@@ -23,7 +23,7 @@ export function validateCashFlowRow(input: CashFlowValidationInput): { ok: true 
     return {
       ok: false,
       message:
-        "订单总金额须等于 订单数量 × 订单金额（单价）。Total must equal quantity × unit price.",
+        "订单总金额须等于 订单数量 × 单价。Total must equal quantity × unit price.",
     };
   }
   if (Math.abs(input.advanceRatioPct + input.finalRatioPct - 100) > PCT_EPS) {

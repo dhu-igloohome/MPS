@@ -3,18 +3,21 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { findCostAnalysisForCashFlow } from "@/lib/cash-flow-cost-analysis-link";
 import { computeTotalAmount } from "@/lib/cash-flow-validation";
 import type { Language } from "@/lib/i18n";
-import type { CashFlowEntry } from "@/lib/types";
+import type { CashFlowEntry, CostAnalysisEntry } from "@/lib/types";
 
 type CashFlowPanelProps = {
   language: Language;
   initialEntries: CashFlowEntry[];
+  costAnalysisEntries: CostAnalysisEntry[];
 };
 
 const LABELS = {
   en: {
-    tableHint: "Rules: total = qty × unit price; advance % + final % = 100%; actual advance + actual final = total.",
+    tableHint:
+      "Link to Cost analysis: pick an order line; unit price = that row's unit cost (incl. tariff). Total = qty × unit price. Advance % + final % = 100%.",
     add: "Add row",
     save: "Save",
     cancel: "Cancel edit",
@@ -24,7 +27,13 @@ const LABELS = {
     orderDate: "Order date",
     qty: "Qty",
     orderNo: "Order no.",
-    unitPrice: "Unit price",
+    pickCostLine: "Cost analysis line (order no. · SKU · supplier)",
+    unitPrice: "Unit price (incl. tariff)",
+    unitPriceHint: "From Cost analysis",
+    noCostData: "No cost analysis rows. Add them in the Cost analysis tab first.",
+    orphanEdit: "This row no longer matches Cost analysis. Re-select a line below.",
+    pickRequired: "Select a Cost analysis line.",
+    unitPriceReadOnly: "Locked to Cost analysis",
     total: "Total",
     advPct: "Advance %",
     termDays: "Term days",
@@ -38,7 +47,8 @@ const LABELS = {
     expectedFin: "Expected final",
   },
   zh: {
-    tableHint: "规则：订单总金额 = 订单数量 × 订单金额（单价）；预付%+尾款%=100%；实际预付+实际尾款=订单总金额。",
+    tableHint:
+      "与成本分析强关联：先选择成本分析订单行；单价 = 该行 unit cost（含 tariff）；订单总金额 = 数量 × 单价；预付% + 尾款% = 100%。",
     add: "新增一行",
     save: "保存",
     cancel: "取消编辑",
@@ -48,7 +58,13 @@ const LABELS = {
     orderDate: "下单日期",
     qty: "订单数量",
     orderNo: "订单号",
-    unitPrice: "订单金额",
+    pickCostLine: "成本分析订单行（订单号 · SKU · 供应商）",
+    unitPrice: "单价（含 tariff，来自成本分析）",
+    unitPriceHint: "与成本分析一致",
+    noCostData: "暂无成本分析数据，请先在「成本分析」中录入。",
+    orphanEdit: "此行与成本分析不匹配，请在下方重新选择订单行。",
+    pickRequired: "请选择成本分析订单行。",
+    unitPriceReadOnly: "随成本分析锁定",
     total: "订单总金额",
     advPct: "预付款比例 %",
     termDays: "账期天数",
@@ -82,7 +98,7 @@ function emptyForm(): Omit<CashFlowEntry, "id" | "createdBy" | "createdAt" | "up
   };
 }
 
-export function CashFlowPanel({ language, initialEntries }: CashFlowPanelProps) {
+export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }: CashFlowPanelProps) {
   const router = useRouter();
   const t = LABELS[language];
   const [entries, setEntries] = useState(initialEntries);
@@ -93,6 +109,15 @@ export function CashFlowPanel({ language, initialEntries }: CashFlowPanelProps) 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [form, setForm] = useState(() => emptyForm());
+
+  const selectedCostLineId = useMemo(
+    () => findCostAnalysisForCashFlow(costAnalysisEntries, form.orderNumber, form.sku)?.id ?? "",
+    [costAnalysisEntries, form.orderNumber, form.sku],
+  );
+  const matchedCostRow = useMemo(
+    () => findCostAnalysisForCashFlow(costAnalysisEntries, form.orderNumber, form.sku),
+    [costAnalysisEntries, form.orderNumber, form.sku],
+  );
 
   const expectedAdv = useMemo(
     () => (form.totalAmount * form.advanceRatioPct) / 100,
@@ -149,6 +174,21 @@ export function CashFlowPanel({ language, initialEntries }: CashFlowPanelProps) 
     e.preventDefault();
     setLoading(true);
     setMessage("");
+    const ca = findCostAnalysisForCashFlow(costAnalysisEntries, form.orderNumber, form.sku);
+    if (!ca) {
+      setLoading(false);
+      setMessage(t.pickRequired);
+      return;
+    }
+    if (Math.abs(form.unitPrice - ca.unitCostWithTariff) > 0.02) {
+      setLoading(false);
+      setMessage(
+        language === "en"
+          ? "Unit price must match Cost analysis unit cost (incl. tariff) for this line."
+          : "单价须与成本分析该行「unit cost（含 tariff）」一致。",
+      );
+      return;
+    }
     const payload = {
       sku: form.sku,
       orderDate: form.orderDate,
@@ -202,6 +242,7 @@ export function CashFlowPanel({ language, initialEntries }: CashFlowPanelProps) 
 
   const inputBase =
     "mt-1 w-full rounded-lg border border-app-border px-2 py-1.5 text-sm text-foreground";
+  const readOnlyMuted = `${inputBase} cursor-not-allowed bg-app-muted/25`;
 
   return (
     <div className="space-y-4">
@@ -284,15 +325,60 @@ export function CashFlowPanel({ language, initialEntries }: CashFlowPanelProps) 
         <p className="mb-3 text-sm font-medium text-foreground">
           {editingId ? (language === "en" ? "Edit row" : "编辑行") : t.add}
         </p>
+        {costAnalysisEntries.length === 0 ? (
+          <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+            {t.noCostData}
+          </p>
+        ) : null}
+        {editingId && form.orderNumber && !matchedCostRow ? (
+          <p className="text-sm text-red-600">{t.orphanEdit}</p>
+        ) : null}
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <label className="text-sm sm:col-span-2 lg:col-span-2">
+            {t.pickCostLine}
+            <select
+              className={inputBase}
+              value={selectedCostLineId}
+              onChange={(e) => {
+                const id = e.target.value.trim();
+                if (!id) {
+                  setForm((f) => ({
+                    ...f,
+                    orderNumber: "",
+                    sku: "",
+                    unitPrice: 0,
+                    totalAmount: 0,
+                  }));
+                  return;
+                }
+                const row = costAnalysisEntries.find((c) => c.id === id);
+                if (!row) return;
+                setForm((f) => ({
+                  ...f,
+                  orderNumber: row.orderNumber,
+                  sku: row.sku,
+                  unitPrice: row.unitCostWithTariff,
+                  totalAmount: computeTotalAmount(f.quantity, row.unitCostWithTariff),
+                }));
+              }}
+              required
+            >
+              <option value="">{language === "en" ? "— Select —" : "— 请选择 —"}</option>
+              {costAnalysisEntries.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.orderNumber} · {c.sku} · {c.supplierName || "—"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            {t.orderNo}
+            <input className={readOnlyMuted} value={form.orderNumber} readOnly tabIndex={-1} />
+          </label>
           <label className="text-sm">
             {t.sku}
-            <input
-              className={inputBase}
-              value={form.sku}
-              onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
-              required
-            />
+            <input className={readOnlyMuted} value={form.sku} readOnly tabIndex={-1} />
           </label>
           <label className="text-sm">
             {t.orderDate}
@@ -317,24 +403,19 @@ export function CashFlowPanel({ language, initialEntries }: CashFlowPanelProps) 
             />
           </label>
           <label className="text-sm">
-            {t.orderNo}
-            <input
-              className={inputBase}
-              value={form.orderNumber}
-              onChange={(e) => setForm((f) => ({ ...f, orderNumber: e.target.value }))}
-              required
-            />
-          </label>
-          <label className="text-sm">
-            {t.unitPrice}
+            <span className="flex flex-wrap items-center gap-1">
+              {t.unitPrice}
+              <span className="text-xs font-normal text-app-muted">({t.unitPriceHint})</span>
+            </span>
             <input
               type="number"
               min={0}
-              step="0.01"
-              className={inputBase}
-              value={form.unitPrice || ""}
-              onChange={(e) => syncTotal(form.quantity, Number(e.target.value) || 0)}
-              required
+              step="0.0001"
+              className={readOnlyMuted}
+              value={form.unitPrice ? form.unitPrice : ""}
+              readOnly
+              tabIndex={-1}
+              title={t.unitPriceReadOnly}
             />
           </label>
           <label className="text-sm">
@@ -468,7 +549,7 @@ export function CashFlowPanel({ language, initialEntries }: CashFlowPanelProps) 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || costAnalysisEntries.length === 0}
             className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
           >
             {t.save}

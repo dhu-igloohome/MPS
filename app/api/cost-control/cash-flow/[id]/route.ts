@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { validateCashFlowAgainstCostAnalysis } from "@/lib/cash-flow-cost-analysis-link";
 import { validateCashFlowRow } from "@/lib/cash-flow-validation";
-import { deleteCashFlowEntryById, updateCashFlowEntryById } from "@/lib/repositories";
+import { deleteCashFlowEntryById, listCostAnalysisEntries, updateCashFlowEntryById } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -62,6 +63,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   });
   if (!v.ok) {
     return NextResponse.json({ message: v.message }, { status: 400 });
+  }
+
+  const costRows = await listCostAnalysisEntries();
+  const linkCheck = validateCashFlowAgainstCostAnalysis(orderNumber, sku, unitPrice, costRows);
+  if (!linkCheck.ok) {
+    return NextResponse.json({ message: linkCheck.message }, { status: 400 });
   }
 
   try {

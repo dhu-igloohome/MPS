@@ -71,7 +71,11 @@ export function CostControlPanel({ language, cashFlowEntries, costAnalysisEntrie
         ) : (
           <>
             <h3 className="mb-2 text-base font-semibold text-foreground">{t.cashFlow}</h3>
-            <CashFlowPanel language={language} initialEntries={cashFlowEntries} />
+            <CashFlowPanel
+              language={language}
+              initialEntries={cashFlowEntries}
+              costAnalysisEntries={costAnalysisEntries}
+            />
           </>
         )}
       </section>

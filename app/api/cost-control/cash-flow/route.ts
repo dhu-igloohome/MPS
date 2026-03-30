@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { validateCashFlowAgainstCostAnalysis } from "@/lib/cash-flow-cost-analysis-link";
 import { validateCashFlowRow } from "@/lib/cash-flow-validation";
-import { createCashFlowEntry, listCashFlowEntries } from "@/lib/repositories";
+import { createCashFlowEntry, listCostAnalysisEntries, listCashFlowEntries } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export async function GET() {
@@ -64,6 +65,12 @@ export async function POST(request: Request) {
   });
   if (!v.ok) {
     return NextResponse.json({ message: v.message }, { status: 400 });
+  }
+
+  const costRows = await listCostAnalysisEntries();
+  const linkCheck = validateCashFlowAgainstCostAnalysis(orderNumber, sku, unitPrice, costRows);
+  if (!linkCheck.ok) {
+    return NextResponse.json({ message: linkCheck.message }, { status: 400 });
   }
 
   try {
