@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
 import { findCostAnalysisForCashFlow } from "@/lib/cash-flow-cost-analysis-link";
 import { formatUsd } from "@/lib/format-usd";
 import { computeTotalAmount } from "@/lib/cash-flow-validation";
@@ -264,6 +265,7 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
 
   return (
     <div className="space-y-4">
+      <CashFlowDashboard language={language} entries={entries} costAnalysisEntries={costAnalysisEntries} />
       <p className="text-sm text-app-muted">{t.tableHint}</p>
 
       <div className="overflow-x-auto rounded-xl border border-app-border/90">
