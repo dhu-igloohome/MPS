@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import { deleteSupplierById, updateSupplier } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
@@ -16,9 +16,30 @@ export async function PATCH(request: Request, context: RouteContext) {
   const address = String(body.address || "").trim();
   const contactName = String(body.contactName || "").trim();
   const contactPhone = String(body.contactPhone || "").trim();
+  const email = String(body.email || "").trim();
+  const paymentTerms = String(body.paymentTerms || "").trim();
+  const leadTimeDays = Number(body.leadTimeDays ?? 0);
+  const moq = Number(body.moq ?? 0);
+  const incoterm = String(body.incoterm || "").trim();
+  const isActive = body.isActive === undefined ? true : Boolean(body.isActive);
   if (!name) return NextResponse.json({ message: "Missing supplier name" }, { status: 400 });
+  if (!Number.isFinite(leadTimeDays) || leadTimeDays < 0 || !Number.isFinite(moq) || moq < 0) {
+    return NextResponse.json({ message: "Invalid numeric fields" }, { status: 400 });
+  }
 
-  const supplier = await updateSupplier({ id, name, address, contactName, contactPhone });
+  const supplier = await updateSupplier({
+    id,
+    name,
+    address,
+    contactName,
+    contactPhone,
+    email,
+    paymentTerms,
+    leadTimeDays,
+    moq,
+    incoterm,
+    isActive,
+  });
   if (!supplier) return NextResponse.json({ message: "Supplier not found" }, { status: 404 });
   return NextResponse.json({ ok: true, supplier });
 }

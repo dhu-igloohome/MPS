@@ -170,10 +170,22 @@ async function setupSchema() {
       address text not null default '',
       contact_name text not null default '',
       contact_phone text not null default '',
+      email text not null default '',
+      payment_terms text not null default '',
+      lead_time_days integer not null default 0,
+      moq integer not null default 0,
+      incoterm text not null default '',
+      is_active boolean not null default true,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     );
   `;
+  await db`alter table suppliers add column if not exists email text not null default '';`;
+  await db`alter table suppliers add column if not exists payment_terms text not null default '';`;
+  await db`alter table suppliers add column if not exists lead_time_days integer not null default 0;`;
+  await db`alter table suppliers add column if not exists moq integer not null default 0;`;
+  await db`alter table suppliers add column if not exists incoterm text not null default '';`;
+  await db`alter table suppliers add column if not exists is_active boolean not null default true;`;
 
   await db`
     create table if not exists contracts (

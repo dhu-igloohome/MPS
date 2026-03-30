@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,14 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
     address: language === "en" ? "Address" : "Address",
     contactName: language === "en" ? "Contact person" : "Contact person",
     contactPhone: language === "en" ? "Phone" : "Phone",
+    email: language === "en" ? "Email" : "Email",
+    paymentTerms: language === "en" ? "Payment terms" : "Payment terms",
+    leadTimeDays: language === "en" ? "Lead time (days)" : "Lead time (days)",
+    moq: language === "en" ? "MOQ" : "MOQ",
+    incoterm: language === "en" ? "Incoterm" : "Incoterm",
+    status: language === "en" ? "Status" : "Status",
+    active: language === "en" ? "Active" : "Active",
+    inactive: language === "en" ? "Inactive" : "Inactive",
     create: language === "en" ? "Create supplier" : "Create supplier",
     save: language === "en" ? "Save" : "Save",
     cancel: language === "en" ? "Cancel" : "Cancel",
@@ -33,6 +41,12 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
   const [address, setAddress] = useState("");
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [paymentTerms, setPaymentTerms] = useState("");
+  const [leadTimeDays, setLeadTimeDays] = useState("0");
+  const [moq, setMoq] = useState("0");
+  const [incoterm, setIncoterm] = useState("");
+  const [isActive, setIsActive] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -45,6 +59,12 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
     setAddress(s.address);
     setContactName(s.contactName);
     setContactPhone(s.contactPhone);
+    setEmail(s.email);
+    setPaymentTerms(s.paymentTerms);
+    setLeadTimeDays(String(s.leadTimeDays));
+    setMoq(String(s.moq));
+    setIncoterm(s.incoterm);
+    setIsActive(s.isActive);
     setMessage("");
   }
 
@@ -54,18 +74,42 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
     setAddress("");
     setContactName("");
     setContactPhone("");
+    setEmail("");
+    setPaymentTerms("");
+    setLeadTimeDays("0");
+    setMoq("0");
+    setIncoterm("");
+    setIsActive(true);
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+    const leadDaysNum = Number(leadTimeDays);
+    const moqNum = Number(moq);
+    if (!Number.isFinite(leadDaysNum) || leadDaysNum < 0 || !Number.isFinite(moqNum) || moqNum < 0) {
+      setLoading(false);
+      setMessage("Lead time and MOQ must be non-negative numbers.");
+      return;
+    }
     const url = editingId ? `/api/suppliers/${encodeURIComponent(editingId)}` : "/api/suppliers";
     const method = editingId ? "PATCH" : "POST";
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, address, contactName, contactPhone }),
+      body: JSON.stringify({
+        name,
+        address,
+        contactName,
+        contactPhone,
+        email,
+        paymentTerms,
+        leadTimeDays: leadDaysNum,
+        moq: moqNum,
+        incoterm,
+        isActive,
+      }),
     });
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     setLoading(false);
@@ -97,12 +141,21 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-foreground">{t.title}</h3>
         {editingRow ? <p className="mt-2 text-sm text-app-muted">Editing: {editingRow.name}</p> : null}
-        <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={onSubmit}>
+        <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3" onSubmit={onSubmit}>
           <input value={name} onChange={(e) => setName(e.target.value)} required placeholder={t.name} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t.contactName} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder={t.contactPhone} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t.address} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <div className="md:col-span-2 flex gap-2">
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.email} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} placeholder={t.paymentTerms} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input type="number" min={0} step={1} value={leadTimeDays} onChange={(e) => setLeadTimeDays(e.target.value)} placeholder={t.leadTimeDays} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input type="number" min={0} step={1} value={moq} onChange={(e) => setMoq(e.target.value)} placeholder={t.moq} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={incoterm} onChange={(e) => setIncoterm(e.target.value)} placeholder={t.incoterm} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <label className="flex items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
+            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+            {t.active}
+          </label>
+          <div className="md:col-span-2 lg:col-span-3 flex gap-2">
             <button type="submit" disabled={loading || !name.trim()} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">{editingId ? t.save : t.create}</button>
             {editingId ? <button type="button" onClick={resetForm} className="rounded-lg border border-app-border px-4 py-2 text-sm">{t.cancel}</button> : null}
           </div>
@@ -112,25 +165,37 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
 
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] border-collapse text-sm">
+          <table className="w-full min-w-[1300px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-app-border/80 text-left text-app-muted">
                 <th className="px-2 py-2">{t.name}</th>
                 <th className="px-2 py-2">{t.contactName}</th>
                 <th className="px-2 py-2">{t.contactPhone}</th>
+                <th className="px-2 py-2">{t.email}</th>
                 <th className="px-2 py-2">{t.address}</th>
+                <th className="px-2 py-2">{t.paymentTerms}</th>
+                <th className="px-2 py-2">{t.leadTimeDays}</th>
+                <th className="px-2 py-2">{t.moq}</th>
+                <th className="px-2 py-2">{t.incoterm}</th>
+                <th className="px-2 py-2">{t.status}</th>
                 <th className="px-2 py-2">{t.actions}</th>
               </tr>
             </thead>
             <tbody>
               {suppliers.length === 0 ? (
-                <tr><td className="px-2 py-6 text-center text-app-muted" colSpan={5}>{t.empty}</td></tr>
+                <tr><td className="px-2 py-6 text-center text-app-muted" colSpan={11}>{t.empty}</td></tr>
               ) : suppliers.map((s) => (
                 <tr key={s.id} className="border-b border-app-border/35">
                   <td className="px-2 py-2">{s.name}</td>
                   <td className="px-2 py-2">{s.contactName || "-"}</td>
                   <td className="px-2 py-2">{s.contactPhone || "-"}</td>
+                  <td className="px-2 py-2">{s.email || "-"}</td>
                   <td className="px-2 py-2">{s.address || "-"}</td>
+                  <td className="px-2 py-2">{s.paymentTerms || "-"}</td>
+                  <td className="px-2 py-2">{s.leadTimeDays}</td>
+                  <td className="px-2 py-2">{s.moq}</td>
+                  <td className="px-2 py-2">{s.incoterm || "-"}</td>
+                  <td className="px-2 py-2">{s.isActive ? t.active : t.inactive}</td>
                   <td className="px-2 py-2">
                     <div className="flex gap-2">
                       <button type="button" className="rounded border border-app-border px-2 py-1 text-xs" onClick={() => startEdit(s)}>{t.edit}</button>

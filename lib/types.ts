@@ -66,6 +66,12 @@ export type SupplierEntry = {
   address: string;
   contactName: string;
   contactPhone: string;
+  email: string;
+  paymentTerms: string;
+  leadTimeDays: number;
+  moq: number;
+  incoterm: string;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 };

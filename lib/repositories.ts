@@ -130,6 +130,12 @@ type SupplierRow = {
   address: string;
   contact_name: string;
   contact_phone: string;
+  email: string;
+  payment_terms: string;
+  lead_time_days: number;
+  moq: number;
+  incoterm: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -1987,6 +1993,12 @@ function mapSupplier(row: SupplierRow): SupplierEntry {
     address: row.address || "",
     contactName: row.contact_name || "",
     contactPhone: row.contact_phone || "",
+    email: row.email || "",
+    paymentTerms: row.payment_terms || "",
+    leadTimeDays: Number(row.lead_time_days ?? 0),
+    moq: Number(row.moq ?? 0),
+    incoterm: row.incoterm || "",
+    isActive: Boolean(row.is_active),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -2024,7 +2036,20 @@ export async function listSuppliers(): Promise<SupplierEntry[]> {
   await ensureDatabase();
   const db = getSql();
   const rows = await db<SupplierRow[]>`
-    select id, name, address, contact_name, contact_phone, created_at::text, updated_at::text
+    select
+      id,
+      name,
+      address,
+      contact_name,
+      contact_phone,
+      email,
+      payment_terms,
+      lead_time_days,
+      moq,
+      incoterm,
+      is_active,
+      created_at::text,
+      updated_at::text
     from suppliers
     order by name asc, id asc;
   `;
@@ -2036,19 +2061,45 @@ export async function createSupplier(input: {
   address: string;
   contactName: string;
   contactPhone: string;
+  email: string;
+  paymentTerms: string;
+  leadTimeDays: number;
+  moq: number;
+  incoterm: string;
+  isActive: boolean;
 }): Promise<SupplierEntry> {
   await ensureDatabase();
   const db = getSql();
   const rows = await db<SupplierRow[]>`
-    insert into suppliers (name, address, contact_name, contact_phone, updated_at)
+    insert into suppliers (
+      name,
+      address,
+      contact_name,
+      contact_phone,
+      email,
+      payment_terms,
+      lead_time_days,
+      moq,
+      incoterm,
+      is_active,
+      updated_at
+    )
     values (
       ${input.name.trim()},
       ${input.address.trim()},
       ${input.contactName.trim()},
       ${input.contactPhone.trim()},
+      ${input.email.trim()},
+      ${input.paymentTerms.trim()},
+      ${Math.max(0, Math.trunc(input.leadTimeDays))},
+      ${Math.max(0, Math.trunc(input.moq))},
+      ${input.incoterm.trim()},
+      ${input.isActive},
       now()
     )
-    returning id, name, address, contact_name, contact_phone, created_at::text, updated_at::text;
+    returning
+      id, name, address, contact_name, contact_phone, email, payment_terms, lead_time_days, moq, incoterm, is_active,
+      created_at::text, updated_at::text;
   `;
   return mapSupplier(rows[0]);
 }
@@ -2059,6 +2110,12 @@ export async function updateSupplier(input: {
   address: string;
   contactName: string;
   contactPhone: string;
+  email: string;
+  paymentTerms: string;
+  leadTimeDays: number;
+  moq: number;
+  incoterm: string;
+  isActive: boolean;
 }): Promise<SupplierEntry | null> {
   await ensureDatabase();
   const db = getSql();
@@ -2069,9 +2126,17 @@ export async function updateSupplier(input: {
       address = ${input.address.trim()},
       contact_name = ${input.contactName.trim()},
       contact_phone = ${input.contactPhone.trim()},
+      email = ${input.email.trim()},
+      payment_terms = ${input.paymentTerms.trim()},
+      lead_time_days = ${Math.max(0, Math.trunc(input.leadTimeDays))},
+      moq = ${Math.max(0, Math.trunc(input.moq))},
+      incoterm = ${input.incoterm.trim()},
+      is_active = ${input.isActive},
       updated_at = now()
     where id = ${Number(input.id)}
-    returning id, name, address, contact_name, contact_phone, created_at::text, updated_at::text;
+    returning
+      id, name, address, contact_name, contact_phone, email, payment_terms, lead_time_days, moq, incoterm, is_active,
+      created_at::text, updated_at::text;
   `;
   return rows[0] ? mapSupplier(rows[0]) : null;
 }
