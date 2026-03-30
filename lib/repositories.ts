@@ -5,6 +5,8 @@ import { hashPassword, verifyPassword } from "@/lib/security";
 import {
   AdminAuditLog,
   AdminUser,
+  BomEntry,
+  BomStatus,
   ForecastEntry,
   LogisticsLocation,
   LogisticsMovementType,
@@ -136,6 +138,29 @@ type SupplierRow = {
   moq: number;
   incoterm: string;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type BomRow = {
+  id: number;
+  project_name: string;
+  sku: string;
+  bom_version: string;
+  status: BomStatus;
+  effective_date: string | null;
+  component_code: string;
+  component_name: string;
+  specification: string;
+  quantity_per: string | number;
+  uom: string;
+  supplier_name: string;
+  unit_cost: string | number;
+  moq: number;
+  lead_time_days: number;
+  is_critical: boolean;
+  remarks: string;
+  created_by: string;
   created_at: string;
   updated_at: string;
 };
@@ -2004,6 +2029,31 @@ function mapSupplier(row: SupplierRow): SupplierEntry {
   };
 }
 
+function mapBomEntry(row: BomRow): BomEntry {
+  return {
+    id: String(row.id),
+    projectName: row.project_name || "",
+    sku: row.sku,
+    bomVersion: row.bom_version || "",
+    status: row.status,
+    effectiveDate: row.effective_date ? formatPgDateOnly(row.effective_date) : null,
+    componentCode: row.component_code || "",
+    componentName: row.component_name || "",
+    specification: row.specification || "",
+    quantityPer: Number(row.quantity_per ?? 0),
+    uom: row.uom || "PCS",
+    supplierName: row.supplier_name || "",
+    unitCost: Number(row.unit_cost ?? 0),
+    moq: Number(row.moq ?? 0),
+    leadTimeDays: Number(row.lead_time_days ?? 0),
+    isCritical: Boolean(row.is_critical),
+    remarks: row.remarks || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 function mapContract(row: ContractRow): ContractEntry {
   return {
     id: String(row.id),
@@ -2030,6 +2080,147 @@ function mapContract(row: ContractRow): ContractEntry {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+export async function listBomEntries(): Promise<BomEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<BomRow[]>`
+    select
+      id,
+      project_name,
+      sku,
+      bom_version,
+      status,
+      effective_date::text,
+      component_code,
+      component_name,
+      specification,
+      quantity_per::text,
+      uom,
+      supplier_name,
+      unit_cost::text,
+      moq,
+      lead_time_days,
+      is_critical,
+      remarks,
+      created_by,
+      created_at::text,
+      updated_at::text
+    from npi_bom_entries
+    order by updated_at desc, id desc;
+  `;
+  return rows.map(mapBomEntry);
+}
+
+export async function createBomEntry(input: {
+  projectName: string;
+  sku: string;
+  bomVersion: string;
+  status: BomStatus;
+  effectiveDate: string | null;
+  componentCode: string;
+  componentName: string;
+  specification: string;
+  quantityPer: number;
+  uom: string;
+  supplierName: string;
+  unitCost: number;
+  moq: number;
+  leadTimeDays: number;
+  isCritical: boolean;
+  remarks: string;
+  createdBy: string;
+}): Promise<BomEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<BomRow[]>`
+    insert into npi_bom_entries (
+      project_name, sku, bom_version, status, effective_date,
+      component_code, component_name, specification, quantity_per, uom,
+      supplier_name, unit_cost, moq, lead_time_days, is_critical, remarks, created_by, updated_at
+    ) values (
+      ${input.projectName.trim()},
+      ${input.sku.trim()},
+      ${input.bomVersion.trim()},
+      ${input.status},
+      ${input.effectiveDate},
+      ${input.componentCode.trim()},
+      ${input.componentName.trim()},
+      ${input.specification.trim()},
+      ${Math.max(0, input.quantityPer)},
+      ${input.uom.trim() || "PCS"},
+      ${input.supplierName.trim()},
+      ${Math.max(0, input.unitCost)},
+      ${Math.max(0, Math.trunc(input.moq))},
+      ${Math.max(0, Math.trunc(input.leadTimeDays))},
+      ${input.isCritical},
+      ${input.remarks.trim()},
+      ${input.createdBy},
+      now()
+    )
+    returning
+      id, project_name, sku, bom_version, status, effective_date::text, component_code, component_name, specification,
+      quantity_per::text, uom, supplier_name, unit_cost::text, moq, lead_time_days, is_critical, remarks,
+      created_by, created_at::text, updated_at::text;
+  `;
+  return mapBomEntry(rows[0]);
+}
+
+export async function updateBomEntry(input: {
+  id: string;
+  projectName: string;
+  sku: string;
+  bomVersion: string;
+  status: BomStatus;
+  effectiveDate: string | null;
+  componentCode: string;
+  componentName: string;
+  specification: string;
+  quantityPer: number;
+  uom: string;
+  supplierName: string;
+  unitCost: number;
+  moq: number;
+  leadTimeDays: number;
+  isCritical: boolean;
+  remarks: string;
+}): Promise<BomEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<BomRow[]>`
+    update npi_bom_entries
+    set
+      project_name = ${input.projectName.trim()},
+      sku = ${input.sku.trim()},
+      bom_version = ${input.bomVersion.trim()},
+      status = ${input.status},
+      effective_date = ${input.effectiveDate},
+      component_code = ${input.componentCode.trim()},
+      component_name = ${input.componentName.trim()},
+      specification = ${input.specification.trim()},
+      quantity_per = ${Math.max(0, input.quantityPer)},
+      uom = ${input.uom.trim() || "PCS"},
+      supplier_name = ${input.supplierName.trim()},
+      unit_cost = ${Math.max(0, input.unitCost)},
+      moq = ${Math.max(0, Math.trunc(input.moq))},
+      lead_time_days = ${Math.max(0, Math.trunc(input.leadTimeDays))},
+      is_critical = ${input.isCritical},
+      remarks = ${input.remarks.trim()},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning
+      id, project_name, sku, bom_version, status, effective_date::text, component_code, component_name, specification,
+      quantity_per::text, uom, supplier_name, unit_cost::text, moq, lead_time_days, is_critical, remarks,
+      created_by, created_at::text, updated_at::text;
+  `;
+  return rows[0] ? mapBomEntry(rows[0]) : null;
+}
+
+export async function deleteBomEntryById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from npi_bom_entries where id = ${Number(id)};`;
 }
 
 export async function listSuppliers(): Promise<SupplierEntry[]> {

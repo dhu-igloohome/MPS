@@ -424,6 +424,60 @@ async function setupSchema() {
     create index if not exists idx_cost_analysis_entries_order_number
     on cost_analysis_entries (order_number);
   `;
+
+  await db`
+    create table if not exists npi_bom_entries (
+      id bigserial primary key,
+      project_name text not null default '',
+      sku text not null,
+      bom_version text not null default '',
+      status text not null default 'draft'
+        check (status in ('draft', 'released', 'obsolete')),
+      effective_date date,
+      component_code text not null default '',
+      component_name text not null default '',
+      specification text not null default '',
+      quantity_per numeric(14, 4) not null default 0,
+      uom text not null default 'PCS',
+      supplier_name text not null default '',
+      unit_cost numeric(14, 4) not null default 0,
+      moq integer not null default 0,
+      lead_time_days integer not null default 0,
+      is_critical boolean not null default false,
+      remarks text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_npi_bom_entries_sku
+    on npi_bom_entries (sku, id desc);
+  `;
+  await db`alter table npi_bom_entries add column if not exists project_name text not null default '';`;
+  await db`alter table npi_bom_entries add column if not exists bom_version text not null default '';`;
+  await db`alter table npi_bom_entries add column if not exists status text not null default 'draft';`;
+  await db`alter table npi_bom_entries add column if not exists effective_date date;`;
+  await db`alter table npi_bom_entries add column if not exists component_code text not null default '';`;
+  await db`alter table npi_bom_entries add column if not exists component_name text not null default '';`;
+  await db`alter table npi_bom_entries add column if not exists specification text not null default '';`;
+  await db`alter table npi_bom_entries add column if not exists quantity_per numeric(14, 4) not null default 0;`;
+  await db`alter table npi_bom_entries add column if not exists uom text not null default 'PCS';`;
+  await db`alter table npi_bom_entries add column if not exists supplier_name text not null default '';`;
+  await db`alter table npi_bom_entries add column if not exists unit_cost numeric(14, 4) not null default 0;`;
+  await db`alter table npi_bom_entries add column if not exists moq integer not null default 0;`;
+  await db`alter table npi_bom_entries add column if not exists lead_time_days integer not null default 0;`;
+  await db`alter table npi_bom_entries add column if not exists is_critical boolean not null default false;`;
+  await db`alter table npi_bom_entries add column if not exists remarks text not null default '';`;
+  await db`alter table npi_bom_entries add column if not exists created_by text;`;
+  await db`alter table npi_bom_entries add column if not exists created_at timestamptz not null default now();`;
+  await db`alter table npi_bom_entries add column if not exists updated_at timestamptz not null default now();`;
+  await db`alter table npi_bom_entries drop constraint if exists npi_bom_entries_status_check;`;
+  await db`
+    alter table npi_bom_entries
+    add constraint npi_bom_entries_status_check
+    check (status in ('draft', 'released', 'obsolete'));
+  `;
 }
 
 async function seedUsers() {

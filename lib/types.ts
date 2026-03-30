@@ -78,6 +78,31 @@ export type SupplierEntry = {
 
 export type ContractStatus = "draft" | "approved" | "sent";
 
+export type BomStatus = "draft" | "released" | "obsolete";
+
+export type BomEntry = {
+  id: string;
+  projectName: string;
+  sku: string;
+  bomVersion: string;
+  status: BomStatus;
+  effectiveDate: string | null;
+  componentCode: string;
+  componentName: string;
+  specification: string;
+  quantityPer: number;
+  uom: string;
+  supplierName: string;
+  unitCost: number;
+  moq: number;
+  leadTimeDays: number;
+  isCritical: boolean;
+  remarks: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ContractEntry = {
   id: string;
   orderProgressId: string;

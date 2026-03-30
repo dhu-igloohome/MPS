@@ -25,6 +25,7 @@ export async function AppShell({ session, title, description, children }: AppShe
     suppliers: language === "en" ? "Suppliers" : "供应商管理",
     contracts: language === "en" ? "Contracts" : "合同管理",
     logisticsProgress: language === "en" ? "Logistics Progress" : "物流进度",
+    npi: language === "en" ? "NPI" : "NPI",
     costControl: language === "en" ? "Cost Control" : "成本控制",
     userManagement: language === "en" ? "User Management" : "用户管理",
     productDatabase: language === "en" ? "Product Database" : "产品数据库",
@@ -37,6 +38,7 @@ export async function AppShell({ session, title, description, children }: AppShe
     { href: "/suppliers", label: navText.suppliers },
     { href: "/contracts", label: navText.contracts },
     { href: "/logistics-progress", label: navText.logisticsProgress },
+    { href: "/npi", label: navText.npi },
     { href: "/cost-control", label: navText.costControl },
     ...(session.role === "super_admin"
       ? [
