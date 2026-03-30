@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "igloo ForeTracker",
-  description: "igloo订单追踪系统",
+  title: "Igloo Foretracker",
+  description: "Igloo 订单追踪系统",
 };
 
 export const viewport: Viewport = {

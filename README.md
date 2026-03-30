@@ -1,4 +1,6 @@
-# MPS Forecast Platform
+# Igloo Foretracker
+
+（仓库目录名可能仍为 `MPS`，npm 包名为 `igloo-foretracker`。）
 
 Interactive website for collecting monthly order forecast from 13 offices across 3 regions:
 - APAC

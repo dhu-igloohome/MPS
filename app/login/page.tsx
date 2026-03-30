@@ -8,7 +8,7 @@ import { Language, normalizeLanguage } from "@/lib/i18n";
 
 const TEXT = {
   en: {
-    title: "igloo ForeTracker",
+    title: "Igloo Foretracker",
     subtitle: "For username and password setup, contact David Huang.",
     username: "Username",
     password: "Password",

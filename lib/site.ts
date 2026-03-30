@@ -1,4 +1,4 @@
 export const siteConfig = {
-  name: "MPS",
-  description: "A Next.js starter with Tailwind and Lucide React.",
+  name: "Igloo Foretracker",
+  description: "Igloo 订单追踪系统（Forecast、订单、物流、合同等）。",
 };

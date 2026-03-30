@@ -38,7 +38,7 @@ export default function PotentialsPage() {
         <div className="rounded-2xl border border-app-border/90 bg-app-surface/95 p-5 shadow-sm backdrop-blur-sm sm:p-6">
           <h1 className="text-xl font-semibold text-foreground">Potentials</h1>
           <p className="mt-1 text-sm text-app-muted">
-            四个父级目录（与 ForeTracker 无数据互通）。按分类填写后提交，仅在当前页回显。
+            四个父级目录（与 Igloo Foretracker 无数据互通）。按分类填写后提交，仅在当前页回显。
           </p>
         </div>
 
@@ -100,7 +100,7 @@ export default function PotentialsPage() {
 
           {lastSubmitted ? (
             <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-900">
-              <p className="font-medium">已收到（仅前端回显，未写入 ForeTracker 数据库）</p>
+              <p className="font-medium">已收到（仅前端回显，未写入 Igloo Foretracker 数据库）</p>
               <p className="mt-2 text-emerald-800">
                 分类：
                 {PARENT_CATEGORIES.find((c) => c.id === lastSubmitted.id)?.label}
