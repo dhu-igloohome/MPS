@@ -2,35 +2,29 @@
 
 import { useState } from "react";
 
+import { CostAnalysisPanel } from "@/components/cost-control/cost-analysis-panel";
 import { CashFlowPanel } from "@/components/cost-control/cash-flow-panel";
 import type { Language } from "@/lib/i18n";
-import type { CashFlowEntry } from "@/lib/types";
+import type { CashFlowEntry, CostAnalysisEntry } from "@/lib/types";
 
 type CostControlPanelProps = {
   language: Language;
   cashFlowEntries: CashFlowEntry[];
+  costAnalysisEntries: CostAnalysisEntry[];
 };
 
 const COPY = {
   en: {
     costAnalysis: "Cost analysis",
     cashFlow: "Cash flow analysis",
-    costPlaceholder:
-      "Connect your Excel logic here: cost breakdowns, margins, and comparisons. Share column headers and rules when ready.",
-    cashPlaceholder:
-      "Connect your Excel logic here: inflows, outflows, and period balances. Share column headers and rules when ready.",
   },
   zh: {
     costAnalysis: "成本分析",
     cashFlow: "现金流分析",
-    costPlaceholder:
-      "此处将对接你 Excel 中的成本逻辑（分项、毛利、对比等）。准备好后可提供表头与计算规则。",
-    cashPlaceholder:
-      "此处将对接你 Excel 中的现金流逻辑（流入、流出、期间余额等）。准备好后可提供表头与计算规则。",
   },
 };
 
-export function CostControlPanel({ language, cashFlowEntries }: CostControlPanelProps) {
+export function CostControlPanel({ language, cashFlowEntries, costAnalysisEntries }: CostControlPanelProps) {
   const t = COPY[language];
   const [section, setSection] = useState<"cost" | "cashflow">("cost");
 
@@ -71,8 +65,8 @@ export function CostControlPanel({ language, cashFlowEntries }: CostControlPanel
       >
         {section === "cost" ? (
           <>
-            <h3 className="text-base font-semibold text-foreground">{t.costAnalysis}</h3>
-            <p className="mt-3 text-sm leading-relaxed text-app-muted">{t.costPlaceholder}</p>
+            <h3 className="mb-2 text-base font-semibold text-foreground">{t.costAnalysis}</h3>
+            <CostAnalysisPanel language={language} initialEntries={costAnalysisEntries} />
           </>
         ) : (
           <>

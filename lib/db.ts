@@ -377,6 +377,41 @@ async function setupSchema() {
     create index if not exists idx_cash_flow_entries_order_date
     on cash_flow_entries (order_date desc, id desc);
   `;
+
+  await db`
+    create table if not exists cost_analysis_entries (
+      id bigserial primary key,
+      cm_region text not null default '',
+      supplier_name text not null default '',
+      sku text not null,
+      quantity integer not null check (quantity >= 0),
+      order_number text not null,
+      order_total_with_tariff numeric(16, 2) not null default 0,
+      order_total_without_tariff numeric(16, 2) not null default 0,
+      unit_cost_with_tariff numeric(14, 4) not null default 0,
+      unit_cost_without_tariff numeric(14, 4) not null default 0,
+      includes_china_vat boolean not null default false,
+      base_unit_cost_usd numeric(14, 4) not null default 0,
+      ee_cost numeric(14, 4) not null default 0,
+      me_cost numeric(14, 4) not null default 0,
+      assembly_cost numeric(14, 4) not null default 0,
+      tariff_pct numeric(7, 3) not null default 0
+        check (tariff_pct >= 0 and tariff_pct <= 100),
+      air_freight_per_unit numeric(14, 4) not null default 0,
+      sea_freight_per_unit numeric(14, 4) not null default 0,
+      destination_country text not null default '',
+      freight_mode text not null default 'sea'
+        check (freight_mode in ('air', 'sea')),
+      remarks text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_cost_analysis_entries_order_number
+    on cost_analysis_entries (order_number);
+  `;
 }
 
 async function seedUsers() {

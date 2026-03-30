@@ -197,6 +197,39 @@ export type LogisticsShipmentEntry = {
   updatedAt: string;
 };
 
+/** 空运 / 海运（DB 存 air | sea） */
+export type CostFreightMode = "air" | "sea";
+
+/** 成本控制 — 成本分析（与 Excel 列一致） */
+export type CostAnalysisEntry = {
+  id: string;
+  cmRegion: string;
+  supplierName: string;
+  sku: string;
+  quantity: number;
+  orderNumber: string;
+  orderTotalWithTariff: number;
+  orderTotalWithoutTariff: number;
+  unitCostWithTariff: number;
+  unitCostWithoutTariff: number;
+  includesChinaVat: boolean;
+  /** Excel「Unit cost」列（USD） */
+  baseUnitCostUsd: number;
+  eeCost: number;
+  meCost: number;
+  assemblyCost: number;
+  /** 关税比例，如 39 表示 39% */
+  tariffPct: number;
+  airFreightPerUnit: number;
+  seaFreightPerUnit: number;
+  destinationCountry: string;
+  freightMode: CostFreightMode;
+  remarks: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 /** 成本控制 — 现金流分析（与 Excel 列一致） */
 export type CashFlowEntry = {
   id: string;

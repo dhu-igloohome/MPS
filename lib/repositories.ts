@@ -10,6 +10,8 @@ import {
   LogisticsMovementType,
   LogisticsShipmentEntry,
   LogisticsShipmentStatus,
+  CostAnalysisEntry,
+  CostFreightMode,
   CashFlowEntry,
   ContractEntry,
   ContractStatus,
@@ -2592,6 +2594,275 @@ export async function deleteCashFlowEntryById(id: string): Promise<boolean> {
   const db = getSql();
   const rows = await db<{ id: number }[]>`
     delete from cash_flow_entries
+    where id = ${Number(id)}
+    returning id;
+  `;
+  return rows.length > 0;
+}
+
+type CostAnalysisRow = {
+  id: number;
+  cm_region: string;
+  supplier_name: string;
+  sku: string;
+  quantity: number;
+  order_number: string;
+  order_total_with_tariff: string | number;
+  order_total_without_tariff: string | number;
+  unit_cost_with_tariff: string | number;
+  unit_cost_without_tariff: string | number;
+  includes_china_vat: boolean;
+  base_unit_cost_usd: string | number;
+  ee_cost: string | number;
+  me_cost: string | number;
+  assembly_cost: string | number;
+  tariff_pct: string | number;
+  air_freight_per_unit: string | number;
+  sea_freight_per_unit: string | number;
+  destination_country: string;
+  freight_mode: string;
+  remarks: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+function mapCostAnalysis(row: CostAnalysisRow): CostAnalysisEntry {
+  const mode = row.freight_mode === "air" ? "air" : "sea";
+  return {
+    id: String(row.id),
+    cmRegion: row.cm_region || "",
+    supplierName: row.supplier_name || "",
+    sku: row.sku,
+    quantity: Number(row.quantity ?? 0),
+    orderNumber: row.order_number,
+    orderTotalWithTariff: Number(row.order_total_with_tariff ?? 0),
+    orderTotalWithoutTariff: Number(row.order_total_without_tariff ?? 0),
+    unitCostWithTariff: Number(row.unit_cost_with_tariff ?? 0),
+    unitCostWithoutTariff: Number(row.unit_cost_without_tariff ?? 0),
+    includesChinaVat: Boolean(row.includes_china_vat),
+    baseUnitCostUsd: Number(row.base_unit_cost_usd ?? 0),
+    eeCost: Number(row.ee_cost ?? 0),
+    meCost: Number(row.me_cost ?? 0),
+    assemblyCost: Number(row.assembly_cost ?? 0),
+    tariffPct: Number(row.tariff_pct ?? 0),
+    airFreightPerUnit: Number(row.air_freight_per_unit ?? 0),
+    seaFreightPerUnit: Number(row.sea_freight_per_unit ?? 0),
+    destinationCountry: row.destination_country || "",
+    freightMode: mode as CostFreightMode,
+    remarks: row.remarks || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listCostAnalysisEntries(): Promise<CostAnalysisEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<CostAnalysisRow[]>`
+    select
+      id,
+      cm_region,
+      supplier_name,
+      sku,
+      quantity,
+      order_number,
+      order_total_with_tariff::text,
+      order_total_without_tariff::text,
+      unit_cost_with_tariff::text,
+      unit_cost_without_tariff::text,
+      includes_china_vat,
+      base_unit_cost_usd::text,
+      ee_cost::text,
+      me_cost::text,
+      assembly_cost::text,
+      tariff_pct::text,
+      air_freight_per_unit::text,
+      sea_freight_per_unit::text,
+      destination_country,
+      freight_mode,
+      remarks,
+      created_by,
+      created_at::text,
+      updated_at::text
+    from cost_analysis_entries
+    order by id desc
+    limit 2000;
+  `;
+  return rows.map(mapCostAnalysis);
+}
+
+export type CostAnalysisInput = {
+  cmRegion: string;
+  supplierName: string;
+  sku: string;
+  quantity: number;
+  orderNumber: string;
+  orderTotalWithTariff: number;
+  orderTotalWithoutTariff: number;
+  unitCostWithTariff: number;
+  unitCostWithoutTariff: number;
+  includesChinaVat: boolean;
+  baseUnitCostUsd: number;
+  eeCost: number;
+  meCost: number;
+  assemblyCost: number;
+  tariffPct: number;
+  airFreightPerUnit: number;
+  seaFreightPerUnit: number;
+  destinationCountry: string;
+  freightMode: CostFreightMode;
+  remarks: string;
+};
+
+export async function createCostAnalysisEntry(
+  input: CostAnalysisInput & { createdBy: string },
+): Promise<CostAnalysisEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<CostAnalysisRow[]>`
+    insert into cost_analysis_entries (
+      cm_region,
+      supplier_name,
+      sku,
+      quantity,
+      order_number,
+      order_total_with_tariff,
+      order_total_without_tariff,
+      unit_cost_with_tariff,
+      unit_cost_without_tariff,
+      includes_china_vat,
+      base_unit_cost_usd,
+      ee_cost,
+      me_cost,
+      assembly_cost,
+      tariff_pct,
+      air_freight_per_unit,
+      sea_freight_per_unit,
+      destination_country,
+      freight_mode,
+      remarks,
+      created_by
+    )
+    values (
+      ${input.cmRegion.trim()},
+      ${input.supplierName.trim()},
+      ${input.sku.trim()},
+      ${input.quantity},
+      ${input.orderNumber.trim()},
+      ${input.orderTotalWithTariff},
+      ${input.orderTotalWithoutTariff},
+      ${input.unitCostWithTariff},
+      ${input.unitCostWithoutTariff},
+      ${input.includesChinaVat},
+      ${input.baseUnitCostUsd},
+      ${input.eeCost},
+      ${input.meCost},
+      ${input.assemblyCost},
+      ${input.tariffPct},
+      ${input.airFreightPerUnit},
+      ${input.seaFreightPerUnit},
+      ${input.destinationCountry.trim()},
+      ${input.freightMode},
+      ${input.remarks.trim()},
+      ${input.createdBy}
+    )
+    returning
+      id,
+      cm_region,
+      supplier_name,
+      sku,
+      quantity,
+      order_number,
+      order_total_with_tariff::text,
+      order_total_without_tariff::text,
+      unit_cost_with_tariff::text,
+      unit_cost_without_tariff::text,
+      includes_china_vat,
+      base_unit_cost_usd::text,
+      ee_cost::text,
+      me_cost::text,
+      assembly_cost::text,
+      tariff_pct::text,
+      air_freight_per_unit::text,
+      sea_freight_per_unit::text,
+      destination_country,
+      freight_mode,
+      remarks,
+      created_by,
+      created_at::text,
+      updated_at::text;
+  `;
+  if (!rows[0]) throw new Error("Create cost analysis entry failed");
+  return mapCostAnalysis(rows[0]);
+}
+
+export async function updateCostAnalysisEntryById(
+  id: string,
+  input: CostAnalysisInput,
+): Promise<CostAnalysisEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<CostAnalysisRow[]>`
+    update cost_analysis_entries
+    set
+      cm_region = ${input.cmRegion.trim()},
+      supplier_name = ${input.supplierName.trim()},
+      sku = ${input.sku.trim()},
+      quantity = ${input.quantity},
+      order_number = ${input.orderNumber.trim()},
+      order_total_with_tariff = ${input.orderTotalWithTariff},
+      order_total_without_tariff = ${input.orderTotalWithoutTariff},
+      unit_cost_with_tariff = ${input.unitCostWithTariff},
+      unit_cost_without_tariff = ${input.unitCostWithoutTariff},
+      includes_china_vat = ${input.includesChinaVat},
+      base_unit_cost_usd = ${input.baseUnitCostUsd},
+      ee_cost = ${input.eeCost},
+      me_cost = ${input.meCost},
+      assembly_cost = ${input.assemblyCost},
+      tariff_pct = ${input.tariffPct},
+      air_freight_per_unit = ${input.airFreightPerUnit},
+      sea_freight_per_unit = ${input.seaFreightPerUnit},
+      destination_country = ${input.destinationCountry.trim()},
+      freight_mode = ${input.freightMode},
+      remarks = ${input.remarks.trim()},
+      updated_at = now()
+    where id = ${Number(id)}
+    returning
+      id,
+      cm_region,
+      supplier_name,
+      sku,
+      quantity,
+      order_number,
+      order_total_with_tariff::text,
+      order_total_without_tariff::text,
+      unit_cost_with_tariff::text,
+      unit_cost_without_tariff::text,
+      includes_china_vat,
+      base_unit_cost_usd::text,
+      ee_cost::text,
+      me_cost::text,
+      assembly_cost::text,
+      tariff_pct::text,
+      air_freight_per_unit::text,
+      sea_freight_per_unit::text,
+      destination_country,
+      freight_mode,
+      remarks,
+      created_by,
+      created_at::text,
+      updated_at::text;
+  `;
+  return rows[0] ? mapCostAnalysis(rows[0]) : null;
+}
+
+export async function deleteCostAnalysisEntryById(id: string): Promise<boolean> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ id: number }[]>`
+    delete from cost_analysis_entries
     where id = ${Number(id)}
     returning id;
   `;

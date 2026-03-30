@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { CostControlPanel } from "@/components/cost-control/cost-control-panel";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
-import { listCashFlowEntries } from "@/lib/repositories";
+import { listCashFlowEntries, listCostAnalysisEntries } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,10 @@ export default async function CostControlPage() {
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const cashFlowEntries = await listCashFlowEntries();
+  const [cashFlowEntries, costAnalysisEntries] = await Promise.all([
+    listCashFlowEntries(),
+    listCostAnalysisEntries(),
+  ]);
 
   return (
     <AppShell
@@ -27,7 +30,11 @@ export default async function CostControlPage() {
           : "成本分析与现金流分析。后续可接入与你 Excel 一致的规则与数据。"
       }
     >
-      <CostControlPanel language={language} cashFlowEntries={cashFlowEntries} />
+      <CostControlPanel
+        language={language}
+        cashFlowEntries={cashFlowEntries}
+        costAnalysisEntries={costAnalysisEntries}
+      />
     </AppShell>
   );
 }
