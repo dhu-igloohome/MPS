@@ -2,10 +2,19 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { CashFlowOverview } from "@/components/dashboard/cash-flow-overview";
 import { AppShell } from "@/components/shared/app-shell";
+import {
+  aggregateByPeriod,
+  buildSkuCashMetaFromOrderProgress,
+  filterCashFlowForSession,
+  scheduleCashFlowSlices,
+  topSkuExposure,
+} from "@/lib/cash-flow-overview";
 import { normalizeLanguage } from "@/lib/i18n";
 import {
   getForecastsByRegions,
+  listCashFlowEntries,
   listLogisticsShipmentsBySession,
   listOrderProgressBySessionRegions,
 } from "@/lib/repositories";
@@ -84,6 +93,19 @@ export default async function DashboardPage({
   const entries = await getForecastsByRegions(session.regions);
   const orderProgressRows = await listOrderProgressBySessionRegions(session.regions);
   const logisticsRows = await listLogisticsShipmentsBySession(session);
+  const cashFlowEntries = await listCashFlowEntries();
+  const skuCashMeta = buildSkuCashMetaFromOrderProgress(orderProgressRows);
+  const cashFlowForSession = filterCashFlowForSession(cashFlowEntries, skuCashMeta, session);
+  const monthlySlices = scheduleCashFlowSlices(cashFlowForSession, skuCashMeta, "month");
+  const quarterlySlices = scheduleCashFlowSlices(cashFlowForSession, skuCashMeta, "quarter");
+  const cashFlowMonthly = {
+    periods: aggregateByPeriod(monthlySlices),
+    topSkus: topSkuExposure(monthlySlices, 12),
+  };
+  const cashFlowQuarterly = {
+    periods: aggregateByPeriod(quarterlySlices),
+    topSkus: topSkuExposure(quarterlySlices, 12),
+  };
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   const filterMonth = String(params.month ?? "").trim();
@@ -429,6 +451,8 @@ export default async function DashboardPage({
           </table>
         </div>
       </section>
+
+      <CashFlowOverview language={language} monthly={cashFlowMonthly} quarterly={cashFlowQuarterly} />
     </AppShell>
   );
 }
