@@ -148,8 +148,28 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t.address} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.email} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} placeholder={t.paymentTerms} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input type="number" min={0} step={1} value={leadTimeDays} onChange={(e) => setLeadTimeDays(e.target.value)} placeholder={t.leadTimeDays} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input type="number" min={0} step={1} value={moq} onChange={(e) => setMoq(e.target.value)} placeholder={t.moq} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <label className="text-sm text-app-muted">
+            <span className="mb-1 block">{t.leadTimeDays}</span>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={leadTimeDays}
+              onChange={(e) => setLeadTimeDays(e.target.value)}
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm text-foreground"
+            />
+          </label>
+          <label className="text-sm text-app-muted">
+            <span className="mb-1 block">{t.moq}</span>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={moq}
+              onChange={(e) => setMoq(e.target.value)}
+              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm text-foreground"
+            />
+          </label>
           <input value={incoterm} onChange={(e) => setIncoterm(e.target.value)} placeholder={t.incoterm} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <label className="flex items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
             <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
