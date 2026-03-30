@@ -230,7 +230,7 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
                   </td>
                   <td className="px-2 py-2">
                     <div className="flex flex-wrap gap-2">
-                      <Link className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/contracts/${encodeURIComponent(c.id)}`}>{t.details}</Link>
+                      <Link className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/supply-chain/contracts/${encodeURIComponent(c.id)}`}>{t.details}</Link>
                       {getAvailableActions(role, c.status).map((action) => (
                         <button
                           key={action.key}
