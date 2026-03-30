@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   }
 
   const costRows = await listCostAnalysisEntries();
-  const linkCheck = validateCashFlowAgainstCostAnalysis(orderNumber, sku, unitPrice, costRows);
+  const linkCheck = validateCashFlowAgainstCostAnalysis(orderNumber, sku, unitPrice, quantity, costRows);
   if (!linkCheck.ok) {
     return NextResponse.json({ message: linkCheck.message }, { status: 400 });
   }

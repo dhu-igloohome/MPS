@@ -21,12 +21,13 @@ export function findCostAnalysisById(entries: CostAnalysisEntry[], id: string): 
 }
 
 /**
- * 现金流订单号 + SKU + 单价须与成本分析某行一致（单价 = unit cost 含 tariff）。
+ * 现金流订单号 + SKU + 单价 + 数量须与成本分析某行一致（单价 = unit cost 含 tariff；数量 = Order qty）。
  */
 export function validateCashFlowAgainstCostAnalysis(
   orderNumber: string,
   sku: string,
   unitPrice: number,
+  quantity: number,
   costEntries: CostAnalysisEntry[],
 ): { ok: true; costRow: CostAnalysisEntry } | { ok: false; message: string } {
   const row = findCostAnalysisForCashFlow(costEntries, orderNumber, sku);
@@ -42,6 +43,13 @@ export function validateCashFlowAgainstCostAnalysis(
       ok: false,
       message:
         "单价须与成本分析该行「unit cost（含 tariff）」一致。Unit price must match that row's unit cost (incl. tariff) in Cost analysis.",
+    };
+  }
+  if (Number(row.quantity) !== Number(quantity)) {
+    return {
+      ok: false,
+      message:
+        "数量须与成本分析该行「订单数量」一致。Qty must equal Order qty in Cost analysis for this line.",
     };
   }
   return { ok: true, costRow: row };

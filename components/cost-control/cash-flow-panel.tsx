@@ -18,7 +18,7 @@ type CashFlowPanelProps = {
 const LABELS = {
   en: {
     tableHint:
-      "Link to Cost analysis: pick an order line; unit price = that row's unit cost (incl. tariff). Total = qty × unit price. Advance % + final % = 100%.",
+      "Link to Cost analysis: pick an order line; Qty = Cost analysis Order qty; unit price = that row's unit cost (incl. tariff). Total = qty × unit price. Advance % + final % = 100%.",
     add: "Add row",
     save: "Save",
     cancel: "Cancel edit",
@@ -27,6 +27,7 @@ const LABELS = {
     sku: "SKU",
     orderDate: "Order date",
     qty: "Qty",
+    qtyHint: "Same as Cost analysis Order qty",
     orderNo: "Order no.",
     pickCostLine: "Cost analysis line (order no. · SKU · supplier)",
     unitPrice: "Unit price (incl. tariff)",
@@ -49,7 +50,7 @@ const LABELS = {
   },
   zh: {
     tableHint:
-      "与成本分析强关联：先选择成本分析订单行；单价 = 该行 unit cost（含 tariff）；订单总金额 = 数量 × 单价；预付% + 尾款% = 100%。",
+      "与成本分析强关联：先选择成本分析订单行；数量 = 成本分析「订单数量」；单价 = 该行 unit cost（含 tariff）；订单总金额 = 数量 × 单价；预付% + 尾款% = 100%。",
     add: "新增一行",
     save: "保存",
     cancel: "取消编辑",
@@ -58,6 +59,7 @@ const LABELS = {
     sku: "SKU",
     orderDate: "下单日期",
     qty: "订单数量",
+    qtyHint: "与成本分析订单数量一致",
     orderNo: "订单号",
     pickCostLine: "成本分析订单行（订单号 · SKU · 供应商）",
     unitPrice: "单价（含 tariff，来自成本分析）",
@@ -129,24 +131,18 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
     [form.totalAmount, form.finalRatioPct],
   );
 
-  function syncTotal(qty: number, unit: number) {
-    setForm((f) => ({
-      ...f,
-      quantity: qty,
-      unitPrice: unit,
-      totalAmount: computeTotalAmount(qty, unit),
-    }));
-  }
-
   function fillFromEntry(e: CashFlowEntry) {
     setEditingId(e.id);
+    const ca = findCostAnalysisForCashFlow(costAnalysisEntries, e.orderNumber, e.sku);
+    const qty = ca ? ca.quantity : e.quantity;
+    const unit = e.unitPrice;
     setForm({
       sku: e.sku,
       orderDate: e.orderDate,
-      quantity: e.quantity,
+      quantity: qty,
       orderNumber: e.orderNumber,
-      unitPrice: e.unitPrice,
-      totalAmount: e.totalAmount,
+      unitPrice: unit,
+      totalAmount: ca ? computeTotalAmount(qty, unit) : e.totalAmount,
       advanceRatioPct: e.advanceRatioPct,
       paymentTermDays: e.paymentTermDays,
       finalRatioPct: e.finalRatioPct,
@@ -171,6 +167,16 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
     router.refresh();
   }
 
+  useEffect(() => {
+    if (!matchedCostRow) return;
+    setForm((f) => {
+      const q = matchedCostRow.quantity;
+      const total = computeTotalAmount(q, f.unitPrice);
+      if (f.quantity === q && f.totalAmount === total) return f;
+      return { ...f, quantity: q, totalAmount: total };
+    });
+  }, [matchedCostRow?.id, matchedCostRow?.quantity]);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -187,6 +193,15 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
         language === "en"
           ? "Unit price must match Cost analysis unit cost (incl. tariff) for this line."
           : "单价须与成本分析该行「unit cost（含 tariff）」一致。",
+      );
+      return;
+    }
+    if (Number(form.quantity) !== Number(ca.quantity)) {
+      setLoading(false);
+      setMessage(
+        language === "en"
+          ? "Qty must equal Order qty in Cost analysis for this line."
+          : "数量须与成本分析该行「订单数量」一致。",
       );
       return;
     }
@@ -351,6 +366,7 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
                     orderNumber: "",
                     sku: "",
                     unitPrice: 0,
+                    quantity: 0,
                     totalAmount: 0,
                   }));
                   return;
@@ -362,7 +378,8 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
                   orderNumber: row.orderNumber,
                   sku: row.sku,
                   unitPrice: row.unitCostWithTariff,
-                  totalAmount: computeTotalAmount(f.quantity, row.unitCostWithTariff),
+                  quantity: row.quantity,
+                  totalAmount: computeTotalAmount(row.quantity, row.unitCostWithTariff),
                 }));
               }}
               required
@@ -394,15 +411,19 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
             />
           </label>
           <label className="text-sm">
-            {t.qty}
+            <span className="flex flex-wrap items-center gap-1">
+              {t.qty}
+              <span className="text-xs font-normal text-app-muted">({t.qtyHint})</span>
+            </span>
             <input
               type="number"
               min={0}
               step={1}
-              className={inputBase}
-              value={form.quantity || ""}
-              onChange={(e) => syncTotal(Number(e.target.value) || 0, form.unitPrice)}
-              required
+              className={readOnlyMuted}
+              value={form.quantity === 0 && !form.orderNumber ? "" : form.quantity}
+              readOnly
+              tabIndex={-1}
+              title={t.qtyHint}
             />
           </label>
           <label className="text-sm">
