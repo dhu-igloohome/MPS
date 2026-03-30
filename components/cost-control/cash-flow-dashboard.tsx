@@ -28,7 +28,6 @@ import {
   filterEnriched,
   getDateRangePreset,
   computeKpis,
-  monthKeysBetween,
   paymentMonthWindowAroundToday,
   sumActualPaid,
   type PeriodGrain,
@@ -93,8 +92,8 @@ function labels(language: Language) {
     resetFilters: en ? "Reset filters" : "重置筛选",
     lineTitle: en ? "Order total (by order month) vs cash paid (by payment month)" : "下单额（按下单月）vs 实付发生额（按付款月）",
     lineHint: en
-      ? "Blue: sum of order totals for orders placed in the month. Green: advance+final payments recorded in the month."
-      : "蓝线：该月下单订单金额合计；绿线：该月实际发生的预付款+尾款（按付款日期）。",
+      ? "Same calendar window as the chart below (current month ±6). Blue: order totals by order month. Green: advance+final cash by payment month."
+      : "横轴与下图一致（当前月 ±6 个自然月）。蓝线：按下单月汇总订单金额；绿线：按付款月汇总实付（预付+尾款）。",
     barTitle: en ? "Actual advance vs actual final (by payment month)" : "实际预付 vs 实际尾款（按付款月）",
     barHint: en
       ? "Payment months: 6 months before through 6 months after the current month (rolling window)."
@@ -196,15 +195,8 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
 
-  const chartPoints: ChartPoint[] = useMemo(() => {
-    const months = monthKeysBetween(dateRange.from, dateRange.to);
-    if (months.length === 0) return [];
-    const monthly = buildMonthlyChartSeries(filtered, months);
-    return grain === "month" ? monthly : aggregateToQuarters(monthly);
-  }, [filtered, dateRange.from, dateRange.to, grain]);
-
-  /** Bar chart: fixed rolling payment-month window (current month ±6), independent of order-date range. */
-  const barChartPoints: ChartPoint[] = useMemo(() => {
+  /** Line + bar charts: fixed rolling month window (current month ±6) on the X-axis; still filtered by order-date range above. */
+  const rollingPaymentMonthChartPoints: ChartPoint[] = useMemo(() => {
     const months = paymentMonthWindowAroundToday(6, 6);
     if (months.length === 0) return [];
     const monthly = buildMonthlyChartSeries(filtered, months);
@@ -243,12 +235,7 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
     setFinMax("");
   };
 
-  const chartData = chartPoints.map((p) => ({
-    ...p,
-    name: p.label,
-  }));
-
-  const barChartData = barChartPoints.map((p) => ({
+  const rollingChartData = rollingPaymentMonthChartPoints.map((p) => ({
     ...p,
     name: p.label,
   }));
@@ -463,10 +450,10 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
           <h5 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{t.lineTitle}</h5>
           <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">{t.lineHint}</p>
           <div className="h-72 w-full">
-            {chartData.length > 0 ? (
+            {rollingChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
-                  data={chartData}
+                  data={rollingChartData}
                   margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
                   onClick={(state) => {
                     const k = state && typeof state === "object" && "activeLabel" in state ? String(state.activeLabel ?? "") : "";
@@ -506,10 +493,10 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
           <h5 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{t.barTitle}</h5>
           <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">{t.barHint}</p>
           <div className="h-72 w-full">
-            {barChartData.length > 0 ? (
+            {rollingChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={barChartData}
+                  data={rollingChartData}
                   margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
                   onClick={(state) => {
                     const k =
@@ -531,7 +518,7 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
                     radius={[4, 4, 0, 0]}
                     cursor="pointer"
                   >
-                    {barChartData.map((_, i) => (
+                    {rollingChartData.map((_, i) => (
                       <Cell key={`a-${i}`} cursor="pointer" />
                     ))}
                   </Bar>
@@ -542,7 +529,7 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
                     radius={[4, 4, 0, 0]}
                     cursor="pointer"
                   >
-                    {barChartData.map((_, i) => (
+                    {rollingChartData.map((_, i) => (
                       <Cell key={`f-${i}`} cursor="pointer" />
                     ))}
                   </Bar>
