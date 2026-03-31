@@ -3,12 +3,21 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import {
+  BarChart3,
+  Boxes,
+  BriefcaseBusiness,
+  ClipboardList,
+  Factory,
+  PackageSearch,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 
 export type ShellNavItem = {
   href: string;
   label: string;
-  icon?: LucideIcon;
+  icon?: "cockpit" | "forecast" | "order" | "supply" | "logistics" | "npi" | "quality" | "cost" | "users";
   children?: Array<{ href: string; label: string }>;
 };
 
@@ -21,6 +30,18 @@ function pathMatches(pathname: string, href: string) {
   if (pathname === href) return true;
   return pathname.startsWith(`${href}/`);
 }
+
+const ICONS = {
+  cockpit: BarChart3,
+  forecast: ClipboardList,
+  order: BriefcaseBusiness,
+  supply: Factory,
+  logistics: Boxes,
+  npi: PackageSearch,
+  quality: ShieldCheck,
+  cost: BarChart3,
+  users: Users,
+} as const;
 
 export function AppShellNav({ items, children }: AppShellNavProps) {
   const pathname = usePathname() || "";
@@ -40,7 +61,7 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
           const on =
             pathMatches(pathname, item.href) ||
             Boolean(item.children?.some((child) => pathMatches(pathname, child.href)));
-          const Icon = item.icon;
+          const Icon = item.icon ? ICONS[item.icon] : null;
           return (
             <Link
               key={item.href}
@@ -66,7 +87,7 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
               const on =
                 pathMatches(pathname, item.href) ||
                 Boolean(item.children?.some((child) => pathMatches(pathname, child.href)));
-              const Icon = item.icon;
+              const Icon = item.icon ? ICONS[item.icon] : null;
               return (
                 <li key={item.href} className="group relative">
                   <Link
