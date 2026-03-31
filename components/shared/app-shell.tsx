@@ -7,6 +7,8 @@ import { LogoutButton } from "@/components/shared/logout-button";
 import { normalizeLanguage } from "@/lib/i18n";
 import { SessionPayload } from "@/lib/types";
 
+import { AutoHideHeader } from "@/components/shared/auto-hide-header";
+
 type AppShellProps = {
   session: SessionPayload;
   title: string;
@@ -96,7 +98,7 @@ export async function AppShell({ session, title, description, children }: AppShe
 
   return (
     <main className="min-h-dvh">
-      <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/70 backdrop-blur-md">
+      <AutoHideHeader>
         <div className="mx-auto flex w-full max-w-[1520px] flex-col gap-4 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-8 lg:px-10 lg:py-5">
           <div className="min-w-0 space-y-1.5">
             <Image src="/igloo-logo-pinge.svg" alt="Igloo logo" width={87} height={24} priority />
@@ -114,7 +116,7 @@ export async function AppShell({ session, title, description, children }: AppShe
             <LogoutButton />
           </div>
         </div>
-      </header>
+      </AutoHideHeader>
 
       <div className="mx-auto w-full max-w-[1520px] px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
         <AppShellNav items={navItems}>
