@@ -39,12 +39,12 @@ const DEFAULT_FORM: BomForm = {
   componentCode: "",
   componentName: "",
   specification: "",
-  quantityPer: "1",
+  quantityPer: "",
   uom: "PCS",
   supplierName: "",
-  unitCost: "0",
-  moq: "0",
-  leadTimeDays: "0",
+  unitCost: "",
+  moq: "",
+  leadTimeDays: "",
   isCritical: false,
   remarks: "",
 };
@@ -104,10 +104,10 @@ export function BomManagement({ entries, language }: BomManagementProps) {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const quantityPer = Number(form.quantityPer);
-    const unitCost = Number(form.unitCost);
-    const moq = Number(form.moq);
-    const leadTimeDays = Number(form.leadTimeDays);
+    const quantityPer = form.quantityPer === "" ? 0 : Number(form.quantityPer);
+    const unitCost = form.unitCost === "" ? 0 : Number(form.unitCost);
+    const moq = form.moq === "" ? 0 : Number(form.moq);
+    const leadTimeDays = form.leadTimeDays === "" ? 0 : Number(form.leadTimeDays);
     if ([quantityPer, unitCost, moq, leadTimeDays].some((n) => Number.isNaN(n) || n < 0)) {
       setMessage("Invalid numeric fields");
       return;
@@ -172,12 +172,12 @@ export function BomManagement({ entries, language }: BomManagementProps) {
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.componentCode} onChange={(e) => setForm((f) => ({ ...f, componentCode: e.target.value.toUpperCase() }))} placeholder="Component code *" required />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.componentName} onChange={(e) => setForm((f) => ({ ...f, componentName: e.target.value }))} placeholder="Component name *" required />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.specification} onChange={(e) => setForm((f) => ({ ...f, specification: e.target.value }))} placeholder="Specification" />
-          <input type="number" min={0} step="0.0001" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.quantityPer} onChange={(e) => setForm((f) => ({ ...f, quantityPer: e.target.value }))} placeholder="Qty per" />
+          <input type="number" min={0} step="0.0001" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.quantityPer} onChange={(e) => setForm((f) => ({ ...f, quantityPer: e.target.value }))} placeholder="Qty per (default 0)" />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.uom} onChange={(e) => setForm((f) => ({ ...f, uom: e.target.value.toUpperCase() }))} placeholder="UOM" />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} placeholder="Supplier name" />
-          <input type="number" min={0} step="0.0001" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.unitCost} onChange={(e) => setForm((f) => ({ ...f, unitCost: e.target.value }))} placeholder="Unit cost" />
-          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.moq} onChange={(e) => setForm((f) => ({ ...f, moq: e.target.value }))} placeholder="MOQ" />
-          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.leadTimeDays} onChange={(e) => setForm((f) => ({ ...f, leadTimeDays: e.target.value }))} placeholder="Lead time days" />
+          <input type="number" min={0} step="0.0001" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.unitCost} onChange={(e) => setForm((f) => ({ ...f, unitCost: e.target.value }))} placeholder="Unit cost (optional)" />
+          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.moq} onChange={(e) => setForm((f) => ({ ...f, moq: e.target.value }))} placeholder="MOQ (0 = no MOQ)" />
+          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.leadTimeDays} onChange={(e) => setForm((f) => ({ ...f, leadTimeDays: e.target.value }))} placeholder="Lead time days (0 = unknown)" />
           <label className="flex items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
             <input type="checkbox" checked={form.isCritical} onChange={(e) => setForm((f) => ({ ...f, isCritical: e.target.checked }))} />
             Critical part
@@ -211,8 +211,13 @@ export function BomManagement({ entries, language }: BomManagementProps) {
                 <tr key={e.id} className="border-b border-app-border/35">
                   <td className="px-2 py-2">{e.projectName || "-"}</td><td className="px-2 py-2">{e.sku}</td><td className="px-2 py-2">{e.bomVersion || "-"}</td><td className="px-2 py-2">{e.status}</td>
                   <td className="px-2 py-2">{e.effectiveDate || "-"}</td><td className="px-2 py-2">{e.componentCode}</td><td className="px-2 py-2">{e.componentName}</td>
-                  <td className="px-2 py-2">{e.quantityPer}</td><td className="px-2 py-2">{e.uom}</td><td className="px-2 py-2">{e.supplierName || "-"}</td><td className="px-2 py-2">{e.unitCost.toFixed(4)}</td>
-                  <td className="px-2 py-2">{e.moq}</td><td className="px-2 py-2">{e.leadTimeDays}</td><td className="px-2 py-2">{e.isCritical ? "Y" : "N"}</td>
+                  <td className="px-2 py-2">{e.quantityPer === 0 ? "-" : e.quantityPer}</td>
+                  <td className="px-2 py-2">{e.uom}</td>
+                  <td className="px-2 py-2">{e.supplierName || "-"}</td>
+                  <td className="px-2 py-2">{e.unitCost === 0 ? "-" : e.unitCost.toFixed(4)}</td>
+                  <td className="px-2 py-2">{e.moq === 0 ? "-" : e.moq}</td>
+                  <td className="px-2 py-2">{e.leadTimeDays === 0 ? "-" : e.leadTimeDays}</td>
+                  <td className="px-2 py-2">{e.isCritical ? "Y" : "N"}</td>
                   <td className="px-2 py-2">
                     <div className="flex gap-2">
                       <button type="button" className="rounded border border-app-border px-2 py-1 text-xs" onClick={() => startEdit(e)}>{t.edit}</button>
