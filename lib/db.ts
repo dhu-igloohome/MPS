@@ -347,6 +347,69 @@ async function setupSchema() {
   `;
 
   await db`
+    create table if not exists inventory_global_entries (
+      id bigserial primary key,
+      main_sku text not null default '',
+      variant_sku text not null default '',
+      batch text not null default '',
+      batch_no_sn text not null default '',
+      good_to_release_shipment_from_cm integer not null default 0,
+      status text not null default '',
+      description text not null default '',
+      stock_qty_available_for_fulfillment integer not null default 0,
+      reserved_qty integer not null default 0,
+      batches_balance_qty integer not null default 0,
+      mp_batch_produced_qty integer not null default 0,
+      dkks_factory integer not null default 0,
+      huili_factory integer not null default 0,
+      bolan_factory integer not null default 0,
+      jiadun_factory integer not null default 0,
+      jinjian_factory integer not null default 0,
+      huamei_factory integer not null default 0,
+      shenzhen_office integer not null default 0,
+      taiwan_fuhshing integer not null default 0,
+      singapore_office integer not null default 0,
+      cargohub_warehouse integer not null default 0,
+      korea_solity_factory integer not null default 0,
+      vietnam_solity_factory integer not null default 0,
+      aztech_factory integer not null default 0,
+      swr_factory integer not null default 0,
+      vs_factory integer not null default 0,
+      ibe_factory integer not null default 0,
+      smart_warehousing integer not null default 0,
+      omni_warehouse integer not null default 0,
+      amazon_fba integer not null default 0,
+      safety_stock_at_amazon integer not null default 0,
+      jdm_warehouse integer not null default 0,
+      amazon integer not null default 0,
+      syw integer not null default 0,
+      in_transit_stock integer not null default 0,
+      inventory_received_date date,
+      aging_days_c integer not null default 0,
+      unit_price_rmb numeric(14, 4) not null default 0,
+      unit_price_usd numeric(14, 4) not null default 0,
+      batches_inventory_cost_usd numeric(16, 2) not null default 0,
+      sku_inventory_cost_usd numeric(16, 2) not null default 0,
+      china_inventory_cost_usd numeric(16, 2) not null default 0,
+      singapore_inventory_cost_usd numeric(16, 2) not null default 0,
+      singapore_cargohub_inventory_cost_usd numeric(16, 2) not null default 0,
+      korea_solity_inventory_cost numeric(16, 2) not null default 0,
+      vietnam_solity_inventory_cost_usd numeric(16, 2) not null default 0,
+      usa_omni_inventory_vost_usd numeric(16, 2) not null default 0,
+      us_amazon_fba numeric(16, 2) not null default 0,
+      europe_jdm_inventory_cost_usd numeric(16, 2) not null default 0,
+      in_transit_inventory_cost_usd numeric(16, 2) not null default 0,
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_inventory_global_entries_updated
+    on inventory_global_entries (updated_at desc, id desc);
+  `;
+
+  await db`
     create table if not exists products (
       id bigserial primary key,
       product_name text not null,

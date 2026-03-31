@@ -410,6 +410,63 @@ export type ShippingReportEntry = {
   updatedAt: string;
 };
 
+export type InventoryGlobalEntry = {
+  id: string;
+  mainSku: string;
+  variantSku: string;
+  batch: string;
+  batchNoSn: string;
+  goodToReleaseShipmentFromCm: number;
+  status: string;
+  description: string;
+  stockQtyAvailableForFulfillment: number;
+  reservedQty: number;
+  batchesBalanceQty: number;
+  mpBatchProducedQty: number;
+  dkksFactory: number;
+  huiliFactory: number;
+  bolanFactory: number;
+  jiadunFactory: number;
+  jinjianFactory: number;
+  huameiFactory: number;
+  shenzhenOffice: number;
+  taiwanFuhshing: number;
+  singaporeOffice: number;
+  cargohubWarehouse: number;
+  koreaSolityFactory: number;
+  vietnamSolityFactory: number;
+  aztechFactory: number;
+  swrFactory: number;
+  vsFactory: number;
+  ibeFactory: number;
+  smartWarehousing: number;
+  omniWarehouse: number;
+  amazonFba: number;
+  safetyStockAtAmazon: number;
+  jdmWarehouse: number;
+  amazon: number;
+  syw: number;
+  inTransitStock: number;
+  inventoryReceivedDate: string | null;
+  agingDaysC: number;
+  unitPriceRmb: number;
+  unitPriceUsd: number;
+  batchesInventoryCostUsd: number;
+  skuInventoryCostUsd: number;
+  chinaInventoryCostUsd: number;
+  singaporeInventoryCostUsd: number;
+  singaporeCargohubInventoryCostUsd: number;
+  koreaSolityInventoryCost: number;
+  vietnamSolityInventoryCostUsd: number;
+  usaOmniInventoryVostUsd: number;
+  usAmazonFba: number;
+  europeJdmInventoryCostUsd: number;
+  inTransitInventoryCostUsd: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 /** 空运 / 海运（DB 存 air | sea） */
 export type CostFreightMode = "air" | "sea";
 

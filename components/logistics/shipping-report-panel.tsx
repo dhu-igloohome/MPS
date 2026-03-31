@@ -8,7 +8,26 @@ import { SHIPPING_REPORT_SKU_OPTIONS } from "@/lib/shipping-report-skus";
 import type { ShippingReportEntry } from "@/lib/types";
 
 type Props = { entries: ShippingReportEntry[]; language: Language };
-type Form = Omit<ShippingReportEntry, "id" | "createdBy" | "createdAt" | "updatedAt">;
+type Form = Omit<
+  ShippingReportEntry,
+  | "id"
+  | "createdBy"
+  | "createdAt"
+  | "updatedAt"
+  | "accessoryQuantity"
+  | "paidByIgloo"
+  | "paidByCustomer"
+  | "sgdPaidByIgloo"
+  | "sgdPaidByCustomer"
+  | "usd"
+> & {
+  accessoryQuantity: string;
+  paidByIgloo: string;
+  paidByCustomer: string;
+  sgdPaidByIgloo: string;
+  sgdPaidByCustomer: string;
+  usd: string;
+};
 
 const DEFAULT_FORM: Form = {
   sn: "",
@@ -18,7 +37,7 @@ const DEFAULT_FORM: Form = {
   soCoReferenceNumber: "",
   podLink: "",
   sku: SHIPPING_REPORT_SKU_OPTIONS[0],
-  accessoryQuantity: 0,
+  accessoryQuantity: "",
   accessoryNumber: "",
   requestBy: "",
   poNumber: "",
@@ -31,11 +50,11 @@ const DEFAULT_FORM: Form = {
   shippingMethod: "",
   trackingNumber: "",
   costCentre: "",
-  paidByIgloo: 0,
-  paidByCustomer: 0,
-  sgdPaidByIgloo: 0,
-  sgdPaidByCustomer: 0,
-  usd: 0,
+  paidByIgloo: "",
+  paidByCustomer: "",
+  sgdPaidByIgloo: "",
+  sgdPaidByCustomer: "",
+  usd: "",
   productSerialNo: "",
   remarks: "",
 };
@@ -97,7 +116,7 @@ export function ShippingReportPanel({ entries, language }: Props) {
       soCoReferenceNumber: e.soCoReferenceNumber,
       podLink: e.podLink,
       sku: e.sku,
-      accessoryQuantity: e.accessoryQuantity,
+      accessoryQuantity: e.accessoryQuantity === 0 ? "" : String(e.accessoryQuantity),
       accessoryNumber: e.accessoryNumber,
       requestBy: e.requestBy,
       poNumber: e.poNumber,
@@ -110,11 +129,11 @@ export function ShippingReportPanel({ entries, language }: Props) {
       shippingMethod: e.shippingMethod,
       trackingNumber: e.trackingNumber,
       costCentre: e.costCentre,
-      paidByIgloo: e.paidByIgloo,
-      paidByCustomer: e.paidByCustomer,
-      sgdPaidByIgloo: e.sgdPaidByIgloo,
-      sgdPaidByCustomer: e.sgdPaidByCustomer,
-      usd: e.usd,
+      paidByIgloo: e.paidByIgloo === 0 ? "" : String(e.paidByIgloo),
+      paidByCustomer: e.paidByCustomer === 0 ? "" : String(e.paidByCustomer),
+      sgdPaidByIgloo: e.sgdPaidByIgloo === 0 ? "" : String(e.sgdPaidByIgloo),
+      sgdPaidByCustomer: e.sgdPaidByCustomer === 0 ? "" : String(e.sgdPaidByCustomer),
+      usd: e.usd === 0 ? "" : String(e.usd),
       productSerialNo: e.productSerialNo,
       remarks: e.remarks,
     });
@@ -125,12 +144,36 @@ export function ShippingReportPanel({ entries, language }: Props) {
     event.preventDefault();
     setLoading(true);
     setMessage("");
+    const accessoryQuantity =
+      form.accessoryQuantity.trim() === "" ? 0 : Number(form.accessoryQuantity);
+    const paidByIgloo = form.paidByIgloo.trim() === "" ? 0 : Number(form.paidByIgloo);
+    const paidByCustomer = form.paidByCustomer.trim() === "" ? 0 : Number(form.paidByCustomer);
+    const sgdPaidByIgloo = form.sgdPaidByIgloo.trim() === "" ? 0 : Number(form.sgdPaidByIgloo);
+    const sgdPaidByCustomer =
+      form.sgdPaidByCustomer.trim() === "" ? 0 : Number(form.sgdPaidByCustomer);
+    const usd = form.usd.trim() === "" ? 0 : Number(form.usd);
+    if (
+      [accessoryQuantity, paidByIgloo, paidByCustomer, sgdPaidByIgloo, sgdPaidByCustomer, usd].some(
+        (n) => Number.isNaN(n) || n < 0,
+      )
+    ) {
+      setLoading(false);
+      return setMessage(en ? "Invalid numeric fields" : "数值字段不合法");
+    }
     const response = await fetch(
       editingId ? `/api/logistics-shipping-reports/${encodeURIComponent(editingId)}` : "/api/logistics-shipping-reports",
       {
         method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          accessoryQuantity,
+          paidByIgloo,
+          paidByCustomer,
+          sgdPaidByIgloo,
+          sgdPaidByCustomer,
+          usd,
+        }),
       },
     );
     const data = (await response.json().catch(() => ({}))) as { message?: string };
@@ -146,6 +189,10 @@ export function ShippingReportPanel({ entries, language }: Props) {
     if (!response.ok) return setMessage("Delete failed");
     if (editingId === id) resetForm();
     router.refresh();
+  }
+
+  function showNum(value: number) {
+    return value === 0 ? "-" : value;
   }
 
   return (
@@ -168,7 +215,7 @@ export function ShippingReportPanel({ entries, language }: Props) {
               </option>
             ))}
           </select>
-          <input type="number" min={0} className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Accessory Quantity" value={form.accessoryQuantity} onChange={(e) => setForm((f) => ({ ...f, accessoryQuantity: Number(e.target.value) || 0 }))} />
+          <input type="number" min={0} className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Accessory Quantity (optional)" value={form.accessoryQuantity} onChange={(e) => setForm((f) => ({ ...f, accessoryQuantity: e.target.value }))} />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Accessory #" value={form.accessoryNumber} onChange={(e) => setForm((f) => ({ ...f, accessoryNumber: e.target.value }))} />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Request By" value={form.requestBy} onChange={(e) => setForm((f) => ({ ...f, requestBy: e.target.value }))} />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="P/O Number" value={form.poNumber} onChange={(e) => setForm((f) => ({ ...f, poNumber: e.target.value }))} />
@@ -181,11 +228,11 @@ export function ShippingReportPanel({ entries, language }: Props) {
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Shipping Method" value={form.shippingMethod} onChange={(e) => setForm((f) => ({ ...f, shippingMethod: e.target.value }))} />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Tracking number" value={form.trackingNumber} onChange={(e) => setForm((f) => ({ ...f, trackingNumber: e.target.value }))} />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Cost Centre" value={form.costCentre} onChange={(e) => setForm((f) => ({ ...f, costCentre: e.target.value }))} />
-          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Paid by Igloo" value={form.paidByIgloo} onChange={(e) => setForm((f) => ({ ...f, paidByIgloo: Number(e.target.value) || 0 }))} />
-          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Paid by Customer" value={form.paidByCustomer} onChange={(e) => setForm((f) => ({ ...f, paidByCustomer: Number(e.target.value) || 0 }))} />
-          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="SGD Paid by Igloo" value={form.sgdPaidByIgloo} onChange={(e) => setForm((f) => ({ ...f, sgdPaidByIgloo: Number(e.target.value) || 0 }))} />
-          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="SGD Paid by Customer" value={form.sgdPaidByCustomer} onChange={(e) => setForm((f) => ({ ...f, sgdPaidByCustomer: Number(e.target.value) || 0 }))} />
-          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="USD" value={form.usd} onChange={(e) => setForm((f) => ({ ...f, usd: Number(e.target.value) || 0 }))} />
+          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Paid by Igloo (optional)" value={form.paidByIgloo} onChange={(e) => setForm((f) => ({ ...f, paidByIgloo: e.target.value }))} />
+          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Paid by Customer (optional)" value={form.paidByCustomer} onChange={(e) => setForm((f) => ({ ...f, paidByCustomer: e.target.value }))} />
+          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="SGD Paid by Igloo (optional)" value={form.sgdPaidByIgloo} onChange={(e) => setForm((f) => ({ ...f, sgdPaidByIgloo: e.target.value }))} />
+          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="SGD Paid by Customer (optional)" value={form.sgdPaidByCustomer} onChange={(e) => setForm((f) => ({ ...f, sgdPaidByCustomer: e.target.value }))} />
+          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="USD (optional)" value={form.usd} onChange={(e) => setForm((f) => ({ ...f, usd: e.target.value }))} />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Product Serial No." value={form.productSerialNo} onChange={(e) => setForm((f) => ({ ...f, productSerialNo: e.target.value }))} />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-4" placeholder="Remarks" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} />
           <div className="lg:col-span-4 flex gap-2">
@@ -225,7 +272,7 @@ export function ShippingReportPanel({ entries, language }: Props) {
                     <td className="px-2 py-2">{e.soCoReferenceNumber || "-"}</td>
                     <td className="px-2 py-2">{e.podLink || "-"}</td>
                     <td className="px-2 py-2">{e.sku}</td>
-                    <td className="px-2 py-2">{e.accessoryQuantity}</td>
+                    <td className="px-2 py-2">{showNum(e.accessoryQuantity)}</td>
                     <td className="px-2 py-2">{e.accessoryNumber || "-"}</td>
                     <td className="px-2 py-2">{e.requestBy || "-"}</td>
                     <td className="px-2 py-2">{e.poNumber || "-"}</td>
@@ -238,11 +285,11 @@ export function ShippingReportPanel({ entries, language }: Props) {
                     <td className="px-2 py-2">{e.shippingMethod || "-"}</td>
                     <td className="px-2 py-2">{e.trackingNumber || "-"}</td>
                     <td className="px-2 py-2">{e.costCentre || "-"}</td>
-                    <td className="px-2 py-2">{e.paidByIgloo}</td>
-                    <td className="px-2 py-2">{e.paidByCustomer}</td>
-                    <td className="px-2 py-2">{e.sgdPaidByIgloo}</td>
-                    <td className="px-2 py-2">{e.sgdPaidByCustomer}</td>
-                    <td className="px-2 py-2">{e.usd}</td>
+                    <td className="px-2 py-2">{showNum(e.paidByIgloo)}</td>
+                    <td className="px-2 py-2">{showNum(e.paidByCustomer)}</td>
+                    <td className="px-2 py-2">{showNum(e.sgdPaidByIgloo)}</td>
+                    <td className="px-2 py-2">{showNum(e.sgdPaidByCustomer)}</td>
+                    <td className="px-2 py-2">{showNum(e.usd)}</td>
                     <td className="px-2 py-2">{e.productSerialNo || "-"}</td>
                     <td className="px-2 py-2">{e.remarks || "-"}</td>
                     <td className="px-2 py-2">

@@ -32,6 +32,7 @@ import {
   Region,
   SessionPayload,
   ShippingReportEntry,
+  InventoryGlobalEntry,
   SupplierEntry,
   ToolingEntry,
   ToolingStatus,
@@ -1912,6 +1913,63 @@ type ShippingReportRow = {
   updated_at: string;
 };
 
+type InventoryGlobalRow = {
+  id: number;
+  main_sku: string;
+  variant_sku: string;
+  batch: string;
+  batch_no_sn: string;
+  good_to_release_shipment_from_cm: number;
+  status: string;
+  description: string;
+  stock_qty_available_for_fulfillment: number;
+  reserved_qty: number;
+  batches_balance_qty: number;
+  mp_batch_produced_qty: number;
+  dkks_factory: number;
+  huili_factory: number;
+  bolan_factory: number;
+  jiadun_factory: number;
+  jinjian_factory: number;
+  huamei_factory: number;
+  shenzhen_office: number;
+  taiwan_fuhshing: number;
+  singapore_office: number;
+  cargohub_warehouse: number;
+  korea_solity_factory: number;
+  vietnam_solity_factory: number;
+  aztech_factory: number;
+  swr_factory: number;
+  vs_factory: number;
+  ibe_factory: number;
+  smart_warehousing: number;
+  omni_warehouse: number;
+  amazon_fba: number;
+  safety_stock_at_amazon: number;
+  jdm_warehouse: number;
+  amazon: number;
+  syw: number;
+  in_transit_stock: number;
+  inventory_received_date: string | null;
+  aging_days_c: number;
+  unit_price_rmb: string | number;
+  unit_price_usd: string | number;
+  batches_inventory_cost_usd: string | number;
+  sku_inventory_cost_usd: string | number;
+  china_inventory_cost_usd: string | number;
+  singapore_inventory_cost_usd: string | number;
+  singapore_cargohub_inventory_cost_usd: string | number;
+  korea_solity_inventory_cost: string | number;
+  vietnam_solity_inventory_cost_usd: string | number;
+  usa_omni_inventory_vost_usd: string | number;
+  us_amazon_fba: string | number;
+  europe_jdm_inventory_cost_usd: string | number;
+  in_transit_inventory_cost_usd: string | number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
 function isLogisticsLocation(value: string): value is LogisticsLocation {
   return value === "FACTORY" || value === "APAC" || value === "EU" || value === "US";
 }
@@ -2331,6 +2389,221 @@ export async function deleteShippingReportById(id: string): Promise<void> {
   await ensureDatabase();
   const db = getSql();
   await db`delete from shipping_reports where id = ${Number(id)};`;
+}
+
+function mapInventoryGlobal(row: InventoryGlobalRow): InventoryGlobalEntry {
+  return {
+    id: String(row.id),
+    mainSku: row.main_sku || "",
+    variantSku: row.variant_sku || "",
+    batch: row.batch || "",
+    batchNoSn: row.batch_no_sn || "",
+    goodToReleaseShipmentFromCm: Number(row.good_to_release_shipment_from_cm ?? 0),
+    status: row.status || "",
+    description: row.description || "",
+    stockQtyAvailableForFulfillment: Number(row.stock_qty_available_for_fulfillment ?? 0),
+    reservedQty: Number(row.reserved_qty ?? 0),
+    batchesBalanceQty: Number(row.batches_balance_qty ?? 0),
+    mpBatchProducedQty: Number(row.mp_batch_produced_qty ?? 0),
+    dkksFactory: Number(row.dkks_factory ?? 0),
+    huiliFactory: Number(row.huili_factory ?? 0),
+    bolanFactory: Number(row.bolan_factory ?? 0),
+    jiadunFactory: Number(row.jiadun_factory ?? 0),
+    jinjianFactory: Number(row.jinjian_factory ?? 0),
+    huameiFactory: Number(row.huamei_factory ?? 0),
+    shenzhenOffice: Number(row.shenzhen_office ?? 0),
+    taiwanFuhshing: Number(row.taiwan_fuhshing ?? 0),
+    singaporeOffice: Number(row.singapore_office ?? 0),
+    cargohubWarehouse: Number(row.cargohub_warehouse ?? 0),
+    koreaSolityFactory: Number(row.korea_solity_factory ?? 0),
+    vietnamSolityFactory: Number(row.vietnam_solity_factory ?? 0),
+    aztechFactory: Number(row.aztech_factory ?? 0),
+    swrFactory: Number(row.swr_factory ?? 0),
+    vsFactory: Number(row.vs_factory ?? 0),
+    ibeFactory: Number(row.ibe_factory ?? 0),
+    smartWarehousing: Number(row.smart_warehousing ?? 0),
+    omniWarehouse: Number(row.omni_warehouse ?? 0),
+    amazonFba: Number(row.amazon_fba ?? 0),
+    safetyStockAtAmazon: Number(row.safety_stock_at_amazon ?? 0),
+    jdmWarehouse: Number(row.jdm_warehouse ?? 0),
+    amazon: Number(row.amazon ?? 0),
+    syw: Number(row.syw ?? 0),
+    inTransitStock: Number(row.in_transit_stock ?? 0),
+    inventoryReceivedDate: row.inventory_received_date ? formatPgDateOnly(row.inventory_received_date) : null,
+    agingDaysC: Number(row.aging_days_c ?? 0),
+    unitPriceRmb: Number(row.unit_price_rmb ?? 0),
+    unitPriceUsd: Number(row.unit_price_usd ?? 0),
+    batchesInventoryCostUsd: Number(row.batches_inventory_cost_usd ?? 0),
+    skuInventoryCostUsd: Number(row.sku_inventory_cost_usd ?? 0),
+    chinaInventoryCostUsd: Number(row.china_inventory_cost_usd ?? 0),
+    singaporeInventoryCostUsd: Number(row.singapore_inventory_cost_usd ?? 0),
+    singaporeCargohubInventoryCostUsd: Number(row.singapore_cargohub_inventory_cost_usd ?? 0),
+    koreaSolityInventoryCost: Number(row.korea_solity_inventory_cost ?? 0),
+    vietnamSolityInventoryCostUsd: Number(row.vietnam_solity_inventory_cost_usd ?? 0),
+    usaOmniInventoryVostUsd: Number(row.usa_omni_inventory_vost_usd ?? 0),
+    usAmazonFba: Number(row.us_amazon_fba ?? 0),
+    europeJdmInventoryCostUsd: Number(row.europe_jdm_inventory_cost_usd ?? 0),
+    inTransitInventoryCostUsd: Number(row.in_transit_inventory_cost_usd ?? 0),
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+const INVENTORY_GLOBAL_SELECT = `
+  id, main_sku, variant_sku, batch, batch_no_sn, good_to_release_shipment_from_cm, status, description,
+  stock_qty_available_for_fulfillment, reserved_qty, batches_balance_qty, mp_batch_produced_qty, dkks_factory,
+  huili_factory, bolan_factory, jiadun_factory, jinjian_factory, huamei_factory, shenzhen_office, taiwan_fuhshing,
+  singapore_office, cargohub_warehouse, korea_solity_factory, vietnam_solity_factory, aztech_factory, swr_factory,
+  vs_factory, ibe_factory, smart_warehousing, omni_warehouse, amazon_fba, safety_stock_at_amazon, jdm_warehouse,
+  amazon, syw, in_transit_stock, inventory_received_date::text, aging_days_c, unit_price_rmb::text, unit_price_usd::text,
+  batches_inventory_cost_usd::text, sku_inventory_cost_usd::text, china_inventory_cost_usd::text, singapore_inventory_cost_usd::text,
+  singapore_cargohub_inventory_cost_usd::text, korea_solity_inventory_cost::text, vietnam_solity_inventory_cost_usd::text,
+  usa_omni_inventory_vost_usd::text, us_amazon_fba::text, europe_jdm_inventory_cost_usd::text, in_transit_inventory_cost_usd::text,
+  created_by, created_at::text, updated_at::text
+`;
+
+export async function listInventoryGlobalEntries(): Promise<InventoryGlobalEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<InventoryGlobalRow[]>`
+    select ${db.unsafe(INVENTORY_GLOBAL_SELECT)}
+    from inventory_global_entries
+    order by updated_at desc, id desc
+    limit 1000;
+  `;
+  return rows.map(mapInventoryGlobal);
+}
+
+export async function getInventoryGlobalEntryById(id: string): Promise<InventoryGlobalEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<InventoryGlobalRow[]>`
+    select ${db.unsafe(INVENTORY_GLOBAL_SELECT)}
+    from inventory_global_entries
+    where id = ${Number(id)}
+    limit 1;
+  `;
+  return rows[0] ? mapInventoryGlobal(rows[0]) : null;
+}
+
+export async function createInventoryGlobalEntry(
+  input: Omit<InventoryGlobalEntry, "id" | "createdAt" | "updatedAt">,
+): Promise<InventoryGlobalEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<InventoryGlobalRow[]>`
+    insert into inventory_global_entries (
+      main_sku, variant_sku, batch, batch_no_sn, good_to_release_shipment_from_cm, status, description,
+      stock_qty_available_for_fulfillment, reserved_qty, batches_balance_qty, mp_batch_produced_qty, dkks_factory,
+      huili_factory, bolan_factory, jiadun_factory, jinjian_factory, huamei_factory, shenzhen_office, taiwan_fuhshing,
+      singapore_office, cargohub_warehouse, korea_solity_factory, vietnam_solity_factory, aztech_factory, swr_factory,
+      vs_factory, ibe_factory, smart_warehousing, omni_warehouse, amazon_fba, safety_stock_at_amazon, jdm_warehouse,
+      amazon, syw, in_transit_stock, inventory_received_date, aging_days_c, unit_price_rmb, unit_price_usd,
+      batches_inventory_cost_usd, sku_inventory_cost_usd, china_inventory_cost_usd, singapore_inventory_cost_usd,
+      singapore_cargohub_inventory_cost_usd, korea_solity_inventory_cost, vietnam_solity_inventory_cost_usd,
+      usa_omni_inventory_vost_usd, us_amazon_fba, europe_jdm_inventory_cost_usd, in_transit_inventory_cost_usd,
+      created_by
+    ) values (
+      ${input.mainSku.trim()}, ${input.variantSku.trim()}, ${input.batch.trim()}, ${input.batchNoSn.trim()},
+      ${Math.max(0, Math.trunc(input.goodToReleaseShipmentFromCm))}, ${input.status.trim()}, ${input.description.trim()},
+      ${Math.max(0, Math.trunc(input.stockQtyAvailableForFulfillment))}, ${Math.max(0, Math.trunc(input.reservedQty))},
+      ${Math.max(0, Math.trunc(input.batchesBalanceQty))}, ${Math.max(0, Math.trunc(input.mpBatchProducedQty))},
+      ${Math.max(0, Math.trunc(input.dkksFactory))}, ${Math.max(0, Math.trunc(input.huiliFactory))},
+      ${Math.max(0, Math.trunc(input.bolanFactory))}, ${Math.max(0, Math.trunc(input.jiadunFactory))},
+      ${Math.max(0, Math.trunc(input.jinjianFactory))}, ${Math.max(0, Math.trunc(input.huameiFactory))},
+      ${Math.max(0, Math.trunc(input.shenzhenOffice))}, ${Math.max(0, Math.trunc(input.taiwanFuhshing))},
+      ${Math.max(0, Math.trunc(input.singaporeOffice))}, ${Math.max(0, Math.trunc(input.cargohubWarehouse))},
+      ${Math.max(0, Math.trunc(input.koreaSolityFactory))}, ${Math.max(0, Math.trunc(input.vietnamSolityFactory))},
+      ${Math.max(0, Math.trunc(input.aztechFactory))}, ${Math.max(0, Math.trunc(input.swrFactory))},
+      ${Math.max(0, Math.trunc(input.vsFactory))}, ${Math.max(0, Math.trunc(input.ibeFactory))},
+      ${Math.max(0, Math.trunc(input.smartWarehousing))}, ${Math.max(0, Math.trunc(input.omniWarehouse))},
+      ${Math.max(0, Math.trunc(input.amazonFba))}, ${Math.max(0, Math.trunc(input.safetyStockAtAmazon))},
+      ${Math.max(0, Math.trunc(input.jdmWarehouse))}, ${Math.max(0, Math.trunc(input.amazon))},
+      ${Math.max(0, Math.trunc(input.syw))}, ${Math.max(0, Math.trunc(input.inTransitStock))},
+      ${input.inventoryReceivedDate}, ${Math.max(0, Math.trunc(input.agingDaysC))}, ${Math.max(0, input.unitPriceRmb)},
+      ${Math.max(0, input.unitPriceUsd)}, ${Math.max(0, input.batchesInventoryCostUsd)},
+      ${Math.max(0, input.skuInventoryCostUsd)}, ${Math.max(0, input.chinaInventoryCostUsd)},
+      ${Math.max(0, input.singaporeInventoryCostUsd)}, ${Math.max(0, input.singaporeCargohubInventoryCostUsd)},
+      ${Math.max(0, input.koreaSolityInventoryCost)}, ${Math.max(0, input.vietnamSolityInventoryCostUsd)},
+      ${Math.max(0, input.usaOmniInventoryVostUsd)}, ${Math.max(0, input.usAmazonFba)},
+      ${Math.max(0, input.europeJdmInventoryCostUsd)}, ${Math.max(0, input.inTransitInventoryCostUsd)},
+      ${input.createdBy}
+    )
+    returning ${db.unsafe(INVENTORY_GLOBAL_SELECT)};
+  `;
+  return mapInventoryGlobal(rows[0]);
+}
+
+export async function updateInventoryGlobalEntry(
+  input: Omit<InventoryGlobalEntry, "createdAt" | "updatedAt">,
+): Promise<InventoryGlobalEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<InventoryGlobalRow[]>`
+    update inventory_global_entries
+    set
+      main_sku = ${input.mainSku.trim()},
+      variant_sku = ${input.variantSku.trim()},
+      batch = ${input.batch.trim()},
+      batch_no_sn = ${input.batchNoSn.trim()},
+      good_to_release_shipment_from_cm = ${Math.max(0, Math.trunc(input.goodToReleaseShipmentFromCm))},
+      status = ${input.status.trim()},
+      description = ${input.description.trim()},
+      stock_qty_available_for_fulfillment = ${Math.max(0, Math.trunc(input.stockQtyAvailableForFulfillment))},
+      reserved_qty = ${Math.max(0, Math.trunc(input.reservedQty))},
+      batches_balance_qty = ${Math.max(0, Math.trunc(input.batchesBalanceQty))},
+      mp_batch_produced_qty = ${Math.max(0, Math.trunc(input.mpBatchProducedQty))},
+      dkks_factory = ${Math.max(0, Math.trunc(input.dkksFactory))},
+      huili_factory = ${Math.max(0, Math.trunc(input.huiliFactory))},
+      bolan_factory = ${Math.max(0, Math.trunc(input.bolanFactory))},
+      jiadun_factory = ${Math.max(0, Math.trunc(input.jiadunFactory))},
+      jinjian_factory = ${Math.max(0, Math.trunc(input.jinjianFactory))},
+      huamei_factory = ${Math.max(0, Math.trunc(input.huameiFactory))},
+      shenzhen_office = ${Math.max(0, Math.trunc(input.shenzhenOffice))},
+      taiwan_fuhshing = ${Math.max(0, Math.trunc(input.taiwanFuhshing))},
+      singapore_office = ${Math.max(0, Math.trunc(input.singaporeOffice))},
+      cargohub_warehouse = ${Math.max(0, Math.trunc(input.cargohubWarehouse))},
+      korea_solity_factory = ${Math.max(0, Math.trunc(input.koreaSolityFactory))},
+      vietnam_solity_factory = ${Math.max(0, Math.trunc(input.vietnamSolityFactory))},
+      aztech_factory = ${Math.max(0, Math.trunc(input.aztechFactory))},
+      swr_factory = ${Math.max(0, Math.trunc(input.swrFactory))},
+      vs_factory = ${Math.max(0, Math.trunc(input.vsFactory))},
+      ibe_factory = ${Math.max(0, Math.trunc(input.ibeFactory))},
+      smart_warehousing = ${Math.max(0, Math.trunc(input.smartWarehousing))},
+      omni_warehouse = ${Math.max(0, Math.trunc(input.omniWarehouse))},
+      amazon_fba = ${Math.max(0, Math.trunc(input.amazonFba))},
+      safety_stock_at_amazon = ${Math.max(0, Math.trunc(input.safetyStockAtAmazon))},
+      jdm_warehouse = ${Math.max(0, Math.trunc(input.jdmWarehouse))},
+      amazon = ${Math.max(0, Math.trunc(input.amazon))},
+      syw = ${Math.max(0, Math.trunc(input.syw))},
+      in_transit_stock = ${Math.max(0, Math.trunc(input.inTransitStock))},
+      inventory_received_date = ${input.inventoryReceivedDate},
+      aging_days_c = ${Math.max(0, Math.trunc(input.agingDaysC))},
+      unit_price_rmb = ${Math.max(0, input.unitPriceRmb)},
+      unit_price_usd = ${Math.max(0, input.unitPriceUsd)},
+      batches_inventory_cost_usd = ${Math.max(0, input.batchesInventoryCostUsd)},
+      sku_inventory_cost_usd = ${Math.max(0, input.skuInventoryCostUsd)},
+      china_inventory_cost_usd = ${Math.max(0, input.chinaInventoryCostUsd)},
+      singapore_inventory_cost_usd = ${Math.max(0, input.singaporeInventoryCostUsd)},
+      singapore_cargohub_inventory_cost_usd = ${Math.max(0, input.singaporeCargohubInventoryCostUsd)},
+      korea_solity_inventory_cost = ${Math.max(0, input.koreaSolityInventoryCost)},
+      vietnam_solity_inventory_cost_usd = ${Math.max(0, input.vietnamSolityInventoryCostUsd)},
+      usa_omni_inventory_vost_usd = ${Math.max(0, input.usaOmniInventoryVostUsd)},
+      us_amazon_fba = ${Math.max(0, input.usAmazonFba)},
+      europe_jdm_inventory_cost_usd = ${Math.max(0, input.europeJdmInventoryCostUsd)},
+      in_transit_inventory_cost_usd = ${Math.max(0, input.inTransitInventoryCostUsd)},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning ${db.unsafe(INVENTORY_GLOBAL_SELECT)};
+  `;
+  return rows[0] ? mapInventoryGlobal(rows[0]) : null;
+}
+
+export async function deleteInventoryGlobalEntryById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from inventory_global_entries where id = ${Number(id)};`;
 }
 
 function mapProduct(row: ProductRow): ProductItem {
