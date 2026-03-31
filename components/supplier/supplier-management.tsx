@@ -205,7 +205,7 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
               {suppliers.length === 0 ? (
                 <tr><td className="px-2 py-6 text-center text-app-muted" colSpan={11}>{t.empty}</td></tr>
               ) : suppliers.map((s) => (
-                <tr key={s.id} className="border-b border-app-border/35">
+                <tr key={s.id}>
                   <td className="px-2 py-2">{s.name}</td>
                   <td className="px-2 py-2">{s.contactName || "-"}</td>
                   <td className="px-2 py-2">{s.contactPhone || "-"}</td>

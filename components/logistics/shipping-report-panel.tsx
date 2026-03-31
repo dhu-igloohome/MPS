@@ -309,7 +309,7 @@ export function ShippingReportPanel({ entries, language }: Props) {
       </section>
       <section className="app-card p-5">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[3200px] border-collapse text-sm">
+          <table className="app-table min-w-[3200px]">
             <thead>
               <tr className="border-b border-app-border/90 text-left text-[#4B5563]">
                 {columns.map((h) => (
@@ -327,7 +327,7 @@ export function ShippingReportPanel({ entries, language }: Props) {
                 </tr>
               ) : (
                 entries.map((e) => (
-                  <tr key={e.id} className="border-b border-app-border/35">
+                  <tr key={e.id}>
                     <td className="px-2 py-2">{e.sn}</td>
                     <td className="px-2 py-2">{e.dateReleased || "-"}</td>
                     <td className="px-2 py-2">{e.consigneeCompanyName || "-"}</td>

@@ -217,7 +217,7 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
             <div>
               <h4 className="mb-3 text-sm font-semibold text-[#111827]">{t.topSku}</h4>
               <div className="app-table-shell overflow-x-auto">
-                <table className="w-full min-w-[640px] border-collapse text-sm">
+                <table className="app-table min-w-[640px]">
                   <thead>
                     <tr className="border-b border-app-border bg-gray-50 text-left text-[#9CA3AF]">
                       <th className="px-3 py-2">{t.sku}</th>

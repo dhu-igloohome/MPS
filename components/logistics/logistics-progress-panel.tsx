@@ -531,7 +531,7 @@ export function LogisticsProgressPanel({
             {t.exportCsv}
           </Link>
         </div>
-        <div className="mt-3 overflow-x-auto">
+        <div className="app-table-shell mt-3 overflow-x-auto">
           <table className="w-full min-w-[1100px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-app-border/90 text-left text-[#4B5563]">
@@ -564,7 +564,7 @@ export function LogisticsProgressPanel({
                     ? orderLines.find((o) => o.id === row.orderProgressId)
                     : undefined;
                   return (
-                  <tr key={row.id} className="border-b border-app-border/35">
+                  <tr key={row.id}>
                     <td className="px-2 py-2">{movementLabel(language, row.movementType)}</td>
                     <td className="px-2 py-2">{row.productName}</td>
                     <td className="px-2 py-2">{row.sku}</td>

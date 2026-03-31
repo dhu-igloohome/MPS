@@ -211,14 +211,14 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
             </select>
           </label>
         </div>
-        <div className="mt-3 overflow-x-auto">
+        <div className="app-table-shell mt-3 overflow-x-auto">
           <table className="w-full min-w-[1220px] border-collapse text-sm">
             <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="px-2 py-2">PO</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">Product</th><th className="px-2 py-2">Supplier</th><th className="px-2 py-2">Qty</th><th className="px-2 py-2">Total</th><th className="px-2 py-2">{t.status}</th><th className="px-2 py-2">Action</th></tr></thead>
             <tbody>
               {filteredContracts.length === 0 ? (
                 <tr><td colSpan={8} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr>
               ) : filteredContracts.map((c) => (
-                <tr key={c.id} className="border-b border-app-border/35">
+                <tr key={c.id}>
                   <td className="px-2 py-2 font-medium">{c.poNumber}</td>
                   <td className="px-2 py-2">{c.sku}</td>
                   <td className="px-2 py-2">{c.productName}</td>

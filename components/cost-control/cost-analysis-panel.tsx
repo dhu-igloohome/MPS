@@ -281,7 +281,7 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
     <div className="space-y-4">
       <p className="text-sm text-app-muted">{t.hint}</p>
 
-      <div className="overflow-x-auto rounded-xl border border-app-border/90">
+      <div className="app-table-shell overflow-x-auto">
         <table className="w-full min-w-[1600px] border-collapse text-xs sm:text-sm">
           <thead>
             <tr className="border-b border-app-border/80 bg-app-surface/80 text-left text-app-muted">

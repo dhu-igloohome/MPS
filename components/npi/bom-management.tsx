@@ -177,7 +177,7 @@ export function BomManagement({ entries, language }: BomManagementProps) {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.title}</h3>
         <p className="mt-1 text-sm text-app-muted">{t.subtitle}</p>
         {editing ? <p className="mt-2 text-xs text-app-muted">Editing: {editing.sku} · {editing.componentCode}</p> : null}
@@ -216,7 +216,7 @@ export function BomManagement({ entries, language }: BomManagementProps) {
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
 
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
           <input
             className="rounded-lg border border-app-border px-3 py-2 text-sm"
@@ -270,7 +270,7 @@ export function BomManagement({ entries, language }: BomManagementProps) {
               {pageEntries.length === 0 ? (
                 <tr><td colSpan={15} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr>
               ) : pageEntries.map((e) => (
-                <tr key={e.id} className="border-b border-app-border/35">
+                <tr key={e.id}>
                   <td className="px-2 py-2">{e.projectName || "-"}</td><td className="px-2 py-2">{e.sku}</td><td className="px-2 py-2">{e.bomVersion || "-"}</td><td className="px-2 py-2">{e.status}</td>
                   <td className="px-2 py-2">{e.effectiveDate || "-"}</td><td className="px-2 py-2">{e.componentCode}</td><td className="px-2 py-2">{e.componentName}</td>
                   <td className="px-2 py-2">{e.quantityPer === 0 ? "-" : e.quantityPer}</td>

@@ -101,7 +101,7 @@ export function ToolingManagement({ entries, language }: Props) {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.title}</h3>
         {editing ? <p className="mt-1 text-xs text-app-muted">Editing: {editing.toolingCode}</p> : null}
         <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4" onSubmit={onSubmit}>
@@ -133,7 +133,7 @@ export function ToolingManagement({ entries, language }: Props) {
         </form>
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
           <input
             className="rounded-lg border border-app-border px-3 py-2 text-sm"
@@ -176,7 +176,7 @@ export function ToolingManagement({ entries, language }: Props) {
             <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="px-2 py-2">Code</th><th className="px-2 py-2">Name</th><th className="px-2 py-2">Type</th><th className="px-2 py-2">Status</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">CM</th><th className="px-2 py-2">Cycles</th><th className="px-2 py-2">Cost</th><th className="px-2 py-2">Next Maint.</th><th className="px-2 py-2">Actions</th></tr></thead>
             <tbody>
               {pageEntries.length === 0 ? <tr><td colSpan={10} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr> : pageEntries.map((e) => (
-                <tr key={e.id} className="border-b border-app-border/35">
+                <tr key={e.id}>
                   <td className="px-2 py-2">{e.toolingCode}</td><td className="px-2 py-2">{e.toolingName}</td><td className="px-2 py-2">{e.toolingType}</td><td className="px-2 py-2">{e.status}</td>
                   <td className="px-2 py-2">{e.relatedSku || "-"}</td>
                   <td className="px-2 py-2">{e.cmName || "-"}</td>

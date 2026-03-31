@@ -87,8 +87,8 @@ export type ChartPoint = {
 
 export function monthKeysBetween(from: string, to: string): string[] {
   const keys: string[] = [];
-  let y = Number(from.slice(0, 4));
-  let m = Number(from.slice(5, 7));
+  const y = Number(from.slice(0, 4));
+  const m = Number(from.slice(5, 7));
   const endY = Number(to.slice(0, 4));
   const endM = Number(to.slice(5, 7));
   let cy = y;

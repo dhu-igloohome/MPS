@@ -90,7 +90,7 @@ export function EcnManagement({ entries, language }: Props) {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.title}</h3>
         {editing ? <p className="mt-1 text-xs text-app-muted">Editing: {editing.ecnNo}</p> : null}
         <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4" onSubmit={onSubmit}>
@@ -117,7 +117,7 @@ export function EcnManagement({ entries, language }: Props) {
         </form>
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
           <input
             className="rounded-lg border border-app-border px-3 py-2 text-sm"
@@ -157,11 +157,11 @@ export function EcnManagement({ entries, language }: Props) {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1200px] border-collapse text-sm">
+          <table className="app-table min-w-[1200px]">
             <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="px-2 py-2">ECN No</th><th className="px-2 py-2">Title</th><th className="px-2 py-2">Status</th><th className="px-2 py-2">Priority</th><th className="px-2 py-2">Owner</th><th className="px-2 py-2">Target date</th><th className="px-2 py-2">Affected SKUs</th><th className="px-2 py-2">Actions</th></tr></thead>
             <tbody>
               {pageEntries.length === 0 ? <tr><td colSpan={8} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr> : pageEntries.map((e) => (
-                <tr key={e.id} className="border-b border-app-border/35">
+                <tr key={e.id}>
                   <td className="px-2 py-2">{e.ecnNo}</td><td className="px-2 py-2">{e.title}</td><td className="px-2 py-2">{e.status}</td><td className="px-2 py-2">{e.priority}</td><td className="px-2 py-2">{e.owner || "-"}</td><td className="px-2 py-2">{e.targetEffectiveDate || "-"}</td><td className="px-2 py-2">{e.affectedSkus || "-"}</td>
                   <td className="px-2 py-2"><div className="flex gap-2"><button type="button" className="rounded border border-app-border px-2 py-1 text-xs" onClick={() => startEdit(e)}>{t.edit}</button><button type="button" className="rounded border border-red-200 px-2 py-1 text-xs text-red-600" onClick={() => onDelete(e.id)}>{t.remove}</button></div></td>
                 </tr>

@@ -103,7 +103,6 @@ export async function AppShell({ session, title, description, children }: AppShe
             <p className="text-xs text-app-subtle sm:text-sm">
               Igloo Foretracker | Igloo 订单追踪系统
             </p>
-            <h1 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">{title}</h1>
           </div>
           <div className="flex flex-shrink-0 flex-wrap items-center gap-2.5 sm:gap-3">
             <span className="max-w-[12rem] truncate text-xs text-app-muted sm:max-w-none sm:text-sm">

@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import type { Language } from "@/lib/i18n";
 import type { QcTestCaseEntry, QcTestCaseStatus, QcTestCasePriority, QcTestCaseCategory } from "@/lib/types";
 
+import { Plus, Save, Trash2, Edit2 } from "lucide-react";
+
 type Props = { entries: QcTestCaseEntry[]; language: Language };
 type Form = Omit<QcTestCaseEntry, "id" | "createdAt" | "updatedAt" | "createdBy">;
 const EMPTY: Form = { testCaseId: "", title: "", productSku: "", firmwareVersion: "", moduleName: "", category: "functional", priority: "P1", status: "draft", preconditions: "", steps: "", expectedResult: "", environment: "", owner: "", remarks: "" };
@@ -55,7 +57,7 @@ export function TestCaseManagement({ entries }: Props) {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <form className="grid gap-3 md:grid-cols-2 lg:grid-cols-4" onSubmit={submit}>
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Test case ID *" required value={form.testCaseId} onChange={(e) => setForm((f) => ({ ...f, testCaseId: e.target.value.toUpperCase() }))} />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Title *" required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
@@ -71,12 +73,12 @@ export function TestCaseManagement({ entries }: Props) {
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Environment" value={form.environment} onChange={(e) => setForm((f) => ({ ...f, environment: e.target.value }))} />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="Owner" value={form.owner} onChange={(e) => setForm((f) => ({ ...f, owner: e.target.value }))} />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-2" placeholder="Remarks" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} />
-          <div className="lg:col-span-4 flex gap-2"><button className="rounded-lg bg-app-accent px-4 py-2 text-sm text-white" disabled={loading} type="submit">{editingId ? "Save" : "Create"}</button>{editingId ? <button type="button" className="rounded-lg border border-app-border px-4 py-2 text-sm" onClick={reset}>Cancel</button> : null}</div>
+          <div className="lg:col-span-4 flex gap-2"><button className="app-button-primary px-4 py-2 text-sm" disabled={loading} type="submit">{editingId ? <><Save className="h-4 w-4 mr-2 inline" />Save</> : <><Plus className="h-4 w-4 mr-2 inline" />Create</>}</button>{editingId ? <button type="button" className="app-button-secondary px-4 py-2 text-sm" onClick={reset}>Cancel</button> : null}</div>
         </form>
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm overflow-x-auto">
-        <table className="w-full min-w-[1200px] text-sm"><thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="px-2 py-2">ID</th><th className="px-2 py-2">Title</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">Category</th><th className="px-2 py-2">Priority</th><th className="px-2 py-2">Status</th><th className="px-2 py-2">Owner</th><th className="px-2 py-2">Actions</th></tr></thead><tbody>{entries.map((e) => <tr key={e.id} className="border-b border-app-border/35"><td className="px-2 py-2">{e.testCaseId}</td><td className="px-2 py-2">{e.title}</td><td className="px-2 py-2">{e.productSku}</td><td className="px-2 py-2">{e.category}</td><td className="px-2 py-2">{e.priority}</td><td className="px-2 py-2">{e.status}</td><td className="px-2 py-2">{e.owner || "-"}</td><td className="px-2 py-2"><div className="flex gap-2"><button className="rounded border border-app-border px-2 py-1" onClick={() => edit(e)}>Edit</button><button className="rounded border border-red-200 px-2 py-1 text-red-700" onClick={() => remove(e.id)}>Delete</button></div></td></tr>)}</tbody></table>
+      <section className="app-table-shell mt-4 overflow-x-auto">
+        <table className="app-table min-w-[1200px]"><thead><tr><th className="px-2 py-2">ID</th><th className="px-2 py-2">Title</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">Category</th><th className="px-2 py-2">Priority</th><th className="px-2 py-2">Status</th><th className="px-2 py-2">Owner</th><th className="px-2 py-2">Actions</th></tr></thead><tbody>{entries.map((e) => <tr key={e.id}><td className="px-2 py-2">{e.testCaseId}</td><td className="px-2 py-2">{e.title}</td><td className="px-2 py-2">{e.productSku}</td><td className="px-2 py-2">{e.category}</td><td className="px-2 py-2">{e.priority}</td><td className="px-2 py-2">{e.status}</td><td className="px-2 py-2">{e.owner || "-"}</td><td className="px-2 py-2"><div className="flex gap-2"><button type="button" className="app-button-secondary px-2 py-1 text-xs" onClick={() => edit(e)}><Edit2 className="h-3 w-3 inline mr-1" />Edit</button><button type="button" className="app-button-secondary text-red-600 px-2 py-1 text-xs" onClick={() => remove(e.id)}><Trash2 className="h-3 w-3 inline mr-1" />Delete</button></div></td></tr>)}</tbody></table>
       </section>
     </div>
   );

@@ -1013,10 +1013,10 @@ export function OrderProgressPanel({
             {t.exportCsv}
           </Link>
         </div>
-        <div className="mt-3 overflow-x-auto">
+        <div className="app-table-shell mt-3 overflow-x-auto">
           <table className="w-full min-w-[1280px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-app-border/90 text-left text-app-muted">
+              <tr>
                 <th className="px-2 py-2">{t.colOrderNumber}</th>
                 <th className="px-2 py-2">{t.colPoNumber}</th>
                 <th className="px-2 py-2">{t.colProduct}</th>
@@ -1043,7 +1043,7 @@ export function OrderProgressPanel({
                 </tr>
               ) : (
                 entries.map((row) => (
-                  <tr key={row.id} className="border-b border-app-border/35">
+                  <tr key={row.id}>
                     <td className="px-2 py-2 font-medium tabular-nums text-foreground">
                       {row.orderNumber || "—"}
                     </td>
@@ -1124,10 +1124,10 @@ export function OrderProgressPanel({
       </section>
       <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.deletionLogTitle}</h3>
-        <div className="mt-3 overflow-x-auto">
+        <div className="app-table-shell mt-3 overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-app-border/90 text-left text-app-muted">
+              <tr>
                 <th className="px-2 py-2">{t.colDeletedOrderNo}</th>
                 <th className="px-2 py-2">{t.colDeletedForecastNo}</th>
                 <th className="px-2 py-2">{t.colDeletedSku}</th>
@@ -1146,7 +1146,7 @@ export function OrderProgressPanel({
                 </tr>
               ) : (
                 deletionLogs.map((row) => (
-                  <tr key={row.id} className="border-b border-app-border/35">
+                  <tr key={row.id}>
                     <td className="px-2 py-2">{row.orderNumber || "—"}</td>
                     <td className="px-2 py-2">{row.forecastNumber || "—"}</td>
                     <td className="px-2 py-2">{row.sku}</td>

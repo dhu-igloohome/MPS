@@ -279,7 +279,7 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
       <CashFlowDashboard language={language} entries={entries} costAnalysisEntries={costAnalysisEntries} />
       <p className="text-sm text-app-muted">{t.tableHint}</p>
 
-      <div className="overflow-x-auto rounded-xl border border-app-border/90">
+      <div className="app-table-shell overflow-x-auto">
         <table className="w-full min-w-[1200px] border-collapse text-xs sm:text-sm">
           <thead>
             <tr className="border-b border-app-border/80 bg-app-surface/80 text-left text-app-muted">

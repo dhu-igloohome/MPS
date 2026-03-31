@@ -137,28 +137,28 @@ export function SopManagement({ entries, language }: Props) {
   return (
     <div className="space-y-4">
       <section className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+        <div className="app-card p-5">
           <p className="text-sm text-app-muted">{language === "en" ? "Released SOP" : "已发布 SOP"}</p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{releasedCount}</p>
         </div>
-        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+        <div className="app-card p-5">
           <p className="text-sm text-app-muted">{language === "en" ? "In Review SOP" : "审核中 SOP"}</p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{inReviewCount}</p>
         </div>
-        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+        <div className="app-card p-5">
           <p className="text-sm text-app-muted">
             {language === "en" ? "Training Required SOP" : "需培训 SOP"}
           </p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{trainingRequiredCount}</p>
         </div>
-        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+        <div className="app-card p-5">
           <p className="text-sm text-app-muted">
             {language === "en" ? "30-Day Effective Warning" : "30 天生效预警"}
           </p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{expiringSoonCount}</p>
         </div>
       </section>
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">
           {language === "en" ? "SOP Management" : "SOP 管理"}
         </h3>
@@ -199,7 +199,7 @@ export function SopManagement({ entries, language }: Props) {
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
 
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder={language === "en" ? "Quick search: SOP / title / SKU" : "快速搜索：SOP/标题/SKU"} value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} />
           <select className="rounded-lg border border-app-border px-3 py-2 text-sm" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as "all" | SopStatus); setPage(1); }}>
@@ -213,7 +213,7 @@ export function SopManagement({ entries, language }: Props) {
           <div className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-muted">{filteredEntries.length} {language === "en" ? "records" : "条记录"}</div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1200px] border-collapse text-sm">
+          <table className="app-table min-w-[1200px]">
             <thead>
               <tr className="border-b border-app-border/80 text-left text-app-muted">
                 <th className="px-2 py-2">SOP No</th>
@@ -232,7 +232,7 @@ export function SopManagement({ entries, language }: Props) {
                 <tr><td colSpan={9} className="px-2 py-6 text-center text-app-muted">{language === "en" ? "No SOP entries yet." : "暂无 SOP 数据。"}</td></tr>
               ) : (
                 pageEntries.map((e) => (
-                  <tr key={e.id} className="border-b border-app-border/35">
+                  <tr key={e.id}>
                     <td className="px-2 py-2">{e.sopNo}</td>
                     <td className="px-2 py-2">{e.title}</td>
                     <td className="px-2 py-2">{e.sku}</td>
