@@ -23,17 +23,15 @@ function pathMatches(pathname: string, href: string) {
 export function AppShellNav({ items, children }: AppShellNavProps) {
   const pathname = usePathname() || "";
 
-  const pill =
-    "rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150 sm:py-2";
-  const idle =
-    "border border-transparent text-foreground/85 hover:border-app-border hover:bg-app-surface hover:text-app-accent";
-  const active =
-    "border border-app-accent/25 bg-app-accent-soft text-app-accent shadow-sm";
+  const mobilePill =
+    "shrink-0 rounded-lg border border-transparent px-3.5 py-2 text-sm font-medium tracking-tight text-[#4B5563] transition-colors duration-150 hover:bg-gray-100";
+  const mobileActive =
+    "border-[rgba(238,100,84,0.18)] bg-[var(--app-accent-soft)] text-[var(--app-accent)]";
 
   return (
     <>
       <nav
-        className="-mx-1 mb-1 flex gap-2 overflow-x-auto px-1 pb-2 md:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-2 md:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         aria-label="Main navigation"
       >
         {items.map((item) => {
@@ -44,7 +42,7 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`${pill} shrink-0 ${on ? active : idle}`}
+              className={`${mobilePill} ${on ? mobileActive : ""}`}
             >
               {item.label}
             </Link>
@@ -52,12 +50,12 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
         })}
       </nav>
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6 lg:gap-8">
+      <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8 lg:gap-10">
         <nav
-          className="hidden w-52 shrink-0 md:block lg:w-56"
+          className="hidden w-56 shrink-0 md:block lg:w-60"
           aria-label="Main navigation"
         >
-          <ul className="space-y-1 rounded-2xl border border-app-border/90 bg-app-surface/95 p-3 shadow-sm backdrop-blur-sm">
+          <ul className="space-y-1 rounded-2xl bg-[#F3F4F6]/80 p-3">
             {items.map((item) => {
               const on =
                 pathMatches(pathname, item.href) ||
@@ -66,22 +64,27 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
                 <li key={item.href} className="group relative">
                   <Link
                     href={item.href}
-                    className={`block ${pill} ${on ? active : idle}`}
+                    className={`relative block rounded-lg px-4 py-2.5 text-sm font-medium tracking-tight transition-colors ${
+                      on
+                        ? "bg-white font-semibold text-[#111827]"
+                        : "text-[#4B5563] hover:bg-gray-100 hover:text-[#111827]"
+                    }`}
                   >
+                    {on ? <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-[var(--app-accent)]" /> : null}
                     {item.label}
                   </Link>
                   {item.children?.length ? (
-                    <div className="pointer-events-none absolute left-full top-0 z-20 ml-2 w-44 rounded-xl border border-app-border/90 bg-app-surface/95 p-1.5 opacity-0 shadow-lg transition-all duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
+                    <div className="pointer-events-none absolute left-full top-0 z-20 ml-3 w-52 rounded-xl border border-gray-100 bg-white p-2 opacity-0 shadow-[0_8px_24px_rgba(17,24,39,0.08)] transition-all duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
                       {item.children.map((child) => {
                         const childOn = pathMatches(pathname, child.href);
                         return (
                           <Link
                             key={child.href}
                             href={child.href}
-                            className={`mb-1 block rounded-lg px-2.5 py-2 text-sm transition-colors last:mb-0 ${
+                            className={`mb-1 block rounded-lg px-3 py-2 text-sm tracking-tight transition-colors last:mb-0 ${
                               childOn
-                                ? "border border-app-accent/25 bg-app-accent-soft font-semibold text-app-accent"
-                                : "border border-transparent text-foreground/85 hover:border-app-border hover:bg-app-accent-soft"
+                                ? "bg-[var(--app-accent-soft)] font-semibold text-[var(--app-accent)]"
+                                : "text-[#4B5563] hover:bg-gray-50 hover:text-[#111827]"
                             }`}
                           >
                             {child.label}
@@ -96,7 +99,7 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
           </ul>
         </nav>
 
-        <section className="min-w-0 flex-1 space-y-4">{children}</section>
+        <section className="min-w-0 flex-1 space-y-5">{children}</section>
       </div>
     </>
   );

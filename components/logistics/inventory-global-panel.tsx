@@ -406,7 +406,7 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
     <input
       type="number"
       min={0}
-      className="rounded-lg border border-app-border px-3 py-2 text-sm"
+      className="rounded-lg px-3 py-2 text-sm"
       placeholder={placeholder}
       value={form[key]}
       onChange={(e) => setField(key, e.target.value)}
@@ -418,7 +418,7 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
       type="number"
       min={0}
       step="0.01"
-      className="rounded-lg border border-app-border px-3 py-2 text-sm"
+      className="rounded-lg px-3 py-2 text-sm"
       placeholder={placeholder}
       value={form[key]}
       onChange={(e) => setField(key, e.target.value)}
@@ -427,7 +427,7 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-lg font-semibold text-foreground">
             {en ? "Inventory Global" : "Inventory Global"}
@@ -435,7 +435,7 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
           <div className="flex flex-wrap gap-2">
             <a
               href="/api/logistics-inventory-global/csv-template"
-              className="rounded-lg border border-app-border px-3 py-2 text-sm hover:bg-app-accent-soft"
+              className="rounded-lg px-3 py-2 text-sm hover:bg-app-accent-soft"
             >
               {en ? "Download Template" : "下载模板"}
             </a>
@@ -443,13 +443,13 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={batchLoading}
-              className="rounded-lg border border-app-border px-3 py-2 text-sm hover:bg-app-accent-soft disabled:opacity-60"
+              className="rounded-lg px-3 py-2 text-sm hover:bg-app-accent-soft disabled:opacity-60"
             >
               {batchLoading ? (en ? "Uploading..." : "上传中...") : en ? "Batch Upload CSV" : "批量上传 CSV"}
             </button>
             <a
               href="/api/logistics-inventory-global/export-csv"
-              className="rounded-lg border border-app-border px-3 py-2 text-sm hover:bg-app-accent-soft"
+              className="rounded-lg px-3 py-2 text-sm hover:bg-app-accent-soft"
             >
               {en ? "Export CSV" : "导出 CSV"}
             </a>
@@ -468,7 +468,7 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
         </div>
         <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4" onSubmit={onSubmit}>
           <select
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="rounded-lg px-3 py-2 text-sm"
             value={form.mainSku}
             onChange={(e) => setField("mainSku", e.target.value)}
             required
@@ -480,32 +480,32 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
             ))}
           </select>
           <input
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="rounded-lg px-3 py-2 text-sm"
             placeholder="Variant SKU"
             value={form.variantSku}
             onChange={(e) => setField("variantSku", e.target.value)}
           />
           <input
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="rounded-lg px-3 py-2 text-sm"
             placeholder="Batch"
             value={form.batch}
             onChange={(e) => setField("batch", e.target.value)}
           />
           <input
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="rounded-lg px-3 py-2 text-sm"
             placeholder="Batch No. (S/N)"
             value={form.batchNoSn}
             onChange={(e) => setField("batchNoSn", e.target.value)}
           />
           {intInput("goodToReleaseShipmentFromCm", "Good to Release Shipment from CM")}
           <input
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="rounded-lg px-3 py-2 text-sm"
             placeholder="Status"
             value={form.status}
             onChange={(e) => setField("status", e.target.value)}
           />
           <input
-            className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-2"
+            className="rounded-lg px-3 py-2 text-sm lg:col-span-2"
             placeholder="Description"
             value={form.description}
             onChange={(e) => setField("description", e.target.value)}
@@ -540,7 +540,7 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
           {intInput("inTransitStock", "In Transit Stock")}
           <input
             type="date"
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="rounded-lg px-3 py-2 text-sm"
             value={form.inventoryReceivedDate}
             onChange={(e) => setField("inventoryReceivedDate", e.target.value)}
           />
@@ -562,12 +562,12 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
+              className="app-button-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
             >
               {editingId ? (en ? "Save" : "保存") : en ? "Create" : "创建"}
             </button>
             {editingId ? (
-              <button type="button" onClick={resetForm} className="rounded-lg border border-app-border px-4 py-2 text-sm">
+              <button type="button" onClick={resetForm} className="app-button-secondary px-4 py-2 text-sm">
                 {en ? "Cancel" : "取消"}
               </button>
             ) : null}
@@ -575,11 +575,11 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
         </form>
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[7200px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-app-border/90 text-left text-zinc-600">
+              <tr className="border-b border-app-border/90 text-left text-[#4B5563]">
                 {columns.map((h) => (
                   <th key={h} className="whitespace-nowrap px-2 py-2">
                     {h}
@@ -656,14 +656,14 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
                         <button
                           type="button"
                           onClick={() => startEdit(e)}
-                          className="rounded border border-app-border px-2 py-1 text-xs"
+                          className="app-button-secondary px-2 py-1 text-xs"
                         >
                           {en ? "Edit" : "编辑"}
                         </button>
                         <button
                           type="button"
                           onClick={() => onDelete(e.id)}
-                          className="rounded border border-red-300 px-2 py-1 text-xs text-red-700"
+                          className="rounded-lg border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                         >
                           {en ? "Delete" : "删除"}
                         </button>

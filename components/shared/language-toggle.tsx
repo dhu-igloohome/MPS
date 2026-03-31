@@ -21,7 +21,7 @@ export function LanguageToggle({ language }: LanguageToggleProps) {
     <button
       type="button"
       onClick={toggleLanguage}
-      className="rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground hover:border-app-accent/40 hover:bg-app-accent-soft"
+      className="app-button-secondary px-3 py-1.5 text-sm"
     >
       {language === "en" ? "中文" : "EN"}
     </button>

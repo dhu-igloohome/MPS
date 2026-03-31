@@ -642,14 +642,14 @@ export function OrderProgressPanel({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <h3 className="text-lg font-semibold text-foreground">{t.formTitle}</h3>
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/api/order-progress/csv-template"
               prefetch={false}
-              className="inline-flex rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft"
+              className="app-button-secondary inline-flex px-3 py-1.5 text-sm"
             >
               {t.downloadTemplate}
             </Link>
@@ -664,7 +664,7 @@ export function OrderProgressPanel({
               type="button"
               disabled={loading || products.length === 0}
               onClick={() => batchFileRef.current?.click()}
-              className="inline-flex rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft disabled:opacity-50"
+              className="app-button-secondary inline-flex px-3 py-1.5 text-sm disabled:opacity-50"
             >
               {t.batchImport}
             </button>
@@ -702,7 +702,7 @@ export function OrderProgressPanel({
               value={orderNumber}
               readOnly
               placeholder={language === "en" ? "Auto-generated on create (IG-PO-xxxxxxx)" : "创建时自动生成（IG-PO-xxxxxxx）"}
-              className="w-full rounded-lg border border-app-border bg-app-accent-soft/40 px-3 py-2 text-sm outline-none"
+              className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm"
             />
           </label>
           <label className="block md:col-span-2">
@@ -711,7 +711,7 @@ export function OrderProgressPanel({
               value={resolvedPoNumber}
               onChange={(e) => onPoNumberChange(e.target.value)}
               required
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             >
               {poOptions.map((po) => (
                 <option key={po} value={po}>
@@ -726,7 +726,7 @@ export function OrderProgressPanel({
             <input
               value={resolvedProductName}
               readOnly
-              className="w-full rounded-lg border border-app-border bg-app-accent-soft/40 px-3 py-2 text-sm outline-none"
+              className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm"
             />
           </label>
 
@@ -750,7 +750,7 @@ export function OrderProgressPanel({
                 }}
                 required
                 disabled={products.length === 0}
-                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+                className="w-full px-3 py-2 text-sm"
               >
                 {skuOptions.map((p) => (
                   <option key={p.sku} value={p.sku}>
@@ -759,7 +759,7 @@ export function OrderProgressPanel({
                 ))}
               </select>
             ) : (
-              <div className="space-y-1 rounded-lg border border-app-border px-3 py-2">
+              <div className="space-y-1 rounded-lg px-3 py-2">
                 {skuOptions.map((p) => (
                   <label key={p.sku} className="flex items-center gap-2 text-sm">
                     <input
@@ -803,7 +803,7 @@ export function OrderProgressPanel({
               value={quantity}
               readOnly
               required
-              className="w-full rounded-lg border border-app-border bg-app-accent-soft/40 px-3 py-2 text-sm outline-none"
+              className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm"
             />
           </label>
 
@@ -814,7 +814,7 @@ export function OrderProgressPanel({
               value={orderDate}
               onChange={(e) => setOrderDate(e.target.value)}
               required
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             />
             <span className="mt-1 block text-xs text-app-muted">{t.dateHint}</span>
           </label>
@@ -826,7 +826,7 @@ export function OrderProgressPanel({
               value={expectedDeliveryDate}
               onChange={(e) => setExpectedDeliveryDate(e.target.value)}
               required={planRows.length === 0}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             />
             <span className="mt-1 block text-xs text-app-muted">{t.dateHint}</span>
           </label>
@@ -919,7 +919,7 @@ export function OrderProgressPanel({
             <select
               value={orderType}
               disabled
-              className="w-full rounded-lg border border-app-border bg-app-accent-soft/40 px-3 py-2 text-sm outline-none"
+              className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm"
             >
               {ORDER_TYPES.map((o) => (
                 <option key={o} value={o}>
@@ -934,7 +934,7 @@ export function OrderProgressPanel({
             <select
               value={progress}
               onChange={(e) => setProgress(e.target.value as OrderProgressStatus)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             >
               {PROGRESS.map((p) => (
                 <option key={p} value={p}>
@@ -949,7 +949,7 @@ export function OrderProgressPanel({
             <input
               value={factoryName}
               onChange={(e) => setFactoryName(e.target.value)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             />
           </label>
 
@@ -958,7 +958,7 @@ export function OrderProgressPanel({
             <select
               value={resolvedRegion}
               onChange={(e) => setRegion(e.target.value as OrderProgressRegion)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             >
               {allowedRegions.map((r) => (
                 <option key={r} value={r}>
@@ -980,7 +980,7 @@ export function OrderProgressPanel({
               <button
                 type="button"
                 onClick={resetForm}
-                className="rounded-lg border border-app-border px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
+                className="app-button-secondary px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
               >
                 {t.cancelEdit}
               </button>
@@ -1002,7 +1002,7 @@ export function OrderProgressPanel({
         {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
       </section>
 
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-lg font-semibold text-foreground">{t.listTitle}</h3>
           <Link
@@ -1122,7 +1122,7 @@ export function OrderProgressPanel({
           </table>
         </div>
       </section>
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.deletionLogTitle}</h3>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse text-sm">

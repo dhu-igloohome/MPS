@@ -60,26 +60,26 @@ export default async function NpiPage() {
       description={language === "en" ? "New Product Introduction management workbench." : "新产品导入管理工作台。"}
     >
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+        <div className="app-card p-5">
           <p className="text-sm text-app-muted">{language === "en" ? "Open ECN" : "未关闭 ECN"}</p>
-          <p className="mt-2 text-2xl font-semibold text-foreground">{openEcnCount}</p>
+          <p className="mt-2 text-3xl font-semibold tracking-tight text-[#111827]">{openEcnCount}</p>
         </div>
-        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+        <div className="app-card p-5">
           <p className="text-sm text-app-muted">{language === "en" ? "Tooling Due Maintenance" : "到期保养工装"}</p>
-          <p className="mt-2 text-2xl font-semibold text-foreground">{toolingDueCount}</p>
+          <p className="mt-2 text-3xl font-semibold tracking-tight text-[#111827]">{toolingDueCount}</p>
         </div>
-        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+        <div className="app-card p-5">
           <p className="text-sm text-app-muted">{language === "en" ? "Critical BOM Items" : "关键 BOM 项"}</p>
-          <p className="mt-2 text-2xl font-semibold text-foreground">{criticalBomCount}</p>
+          <p className="mt-2 text-3xl font-semibold tracking-tight text-[#111827]">{criticalBomCount}</p>
         </div>
       </div>
-      <div className="mt-4 rounded-2xl border border-app-border/90 bg-app-surface p-3 shadow-sm">
+      <div className="app-subnav mt-4 p-3">
         <div className="flex flex-wrap gap-2">
           {cards.map((card) => (
             <Link
               key={card.href}
               href={card.href}
-              className="rounded-xl border border-app-border px-3 py-2 text-sm font-medium text-foreground/85 transition-colors hover:bg-app-accent-soft"
+              className="app-subnav-link"
             >
               {card.title}
             </Link>

@@ -92,20 +92,20 @@ export async function AppShell({ session, title, description, children }: AppShe
 
   return (
     <main className="min-h-dvh">
-      <header className="border-b border-app-border/80 bg-app-surface/90 shadow-sm backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6 lg:py-5">
-          <div className="min-w-0 space-y-1">
+      <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/70 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-[1520px] flex-col gap-4 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-8 lg:px-10 lg:py-5">
+          <div className="min-w-0 space-y-1.5">
             <Image src="/igloo-logo-pinge.svg" alt="Igloo logo" width={87} height={24} priority />
-            <p className="text-xs text-app-muted sm:text-sm">
+            <p className="text-xs text-app-subtle sm:text-sm">
               Igloo Foretracker | Igloo 订单追踪系统
             </p>
-            <h1 className="text-base font-semibold text-foreground sm:text-lg">{title}</h1>
+            <h1 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">{title}</h1>
           </div>
-          <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-2.5 sm:gap-3">
             <span className="max-w-[12rem] truncate text-xs text-app-muted sm:max-w-none sm:text-sm">
               <span className="hidden sm:inline">{session.displayName}</span>
               <span className="sm:hidden">{session.displayName.split(/\s+/)[0] || session.displayName}</span>
-              <span className="text-app-muted"> ({session.role})</span>
+              <span className="text-app-subtle"> ({session.role})</span>
             </span>
             <LanguageToggle language={language} />
             <LogoutButton />
@@ -113,11 +113,11 @@ export async function AppShell({ session, title, description, children }: AppShe
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-[1400px] px-4 py-4 sm:px-6 sm:py-6 lg:py-8">
+      <div className="mx-auto w-full max-w-[1520px] px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
         <AppShellNav items={navItems}>
-          <div className="rounded-2xl border border-app-border/90 bg-app-surface/95 p-4 shadow-sm backdrop-blur-sm sm:p-5">
-            <h2 className="text-lg font-semibold text-foreground sm:text-xl">{title}</h2>
-            <p className="mt-1 text-sm text-app-muted">{description}</p>
+          <div className="app-panel p-5 sm:p-6">
+            <h2 className="text-xl font-semibold tracking-tight text-[#111827] sm:text-2xl">{title}</h2>
+            <p className="mt-1.5 text-sm text-[#4B5563]">{description}</p>
           </div>
           {children}
         </AppShellNav>

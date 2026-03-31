@@ -87,22 +87,22 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
   };
 
   return (
-    <section className="rounded-2xl border border-app-border/90 bg-gradient-to-b from-app-surface to-app-accent-soft/25 shadow-sm">
-      <div className="border-b border-app-border/60 bg-app-surface/90 px-5 py-4">
+    <section className="app-card">
+      <div className="border-b border-app-border/60 bg-white px-5 py-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">{t.title}</h3>
-            <p className="mt-1 max-w-3xl text-sm text-app-muted">{t.subtitle}</p>
+            <h3 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h3>
+            <p className="mt-1 max-w-3xl text-sm text-[#4B5563]">{t.subtitle}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-xl border border-app-border/80 bg-app-surface p-1 shadow-inner">
+            <div className="inline-flex rounded-xl border border-app-border bg-white p-1">
               <button
                 type="button"
                 onClick={() => setMode("month")}
                 className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                   mode === "month"
-                    ? "bg-app-accent text-white shadow"
-                    : "text-app-muted hover:text-foreground"
+                    ? "bg-app-accent text-white shadow-sm"
+                    : "text-[#4B5563] hover:bg-gray-50 hover:text-[#111827]"
                 }`}
               >
                 {t.month}
@@ -112,8 +112,8 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
                 onClick={() => setMode("quarter")}
                 className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                   mode === "quarter"
-                    ? "bg-app-accent text-white shadow"
-                    : "text-app-muted hover:text-foreground"
+                    ? "bg-app-accent text-white shadow-sm"
+                    : "text-[#4B5563] hover:bg-gray-50 hover:text-[#111827]"
                 }`}
               >
                 {t.quarter}
@@ -121,7 +121,7 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
             </div>
             <Link
               href="/cost-control"
-              className="inline-flex items-center rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm font-medium text-foreground/90 hover:border-app-accent/40 hover:bg-app-accent-soft"
+              className="app-button-secondary inline-flex items-center px-3 py-2 text-sm font-medium"
             >
               {t.openCost}
             </Link>
@@ -131,7 +131,7 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
 
       <div className="space-y-6 p-5">
         {data.periods.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-app-border/80 bg-app-muted/10 px-4 py-8 text-center text-sm text-app-muted">
+          <p className="rounded-xl border border-dashed border-app-border bg-gray-50 px-4 py-8 text-center text-sm text-[#9CA3AF]">
             {t.empty}
           </p>
         ) : (
@@ -140,39 +140,39 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
               {data.topSkus.slice(0, 4).map((row, i) => (
                 <article
                   key={row.sku}
-                  className="relative overflow-hidden rounded-2xl border border-app-border/70 bg-app-surface p-4 shadow-sm"
+                  className="app-card relative overflow-hidden p-4"
                 >
                   <div
                     className={`absolute right-0 top-0 h-16 w-16 -translate-y-4 translate-x-4 rounded-full opacity-20 ${
                       ["bg-sky-400", "bg-emerald-400", "bg-amber-400", "bg-violet-400"][i % 4]
                     }`}
                   />
-                  <p className="text-xs font-medium uppercase tracking-wide text-app-muted">{t.sku}</p>
-                  <p className="mt-1 truncate text-lg font-semibold text-foreground">{row.sku}</p>
-                  <p className="mt-2 text-xs text-app-muted">
-                    {t.region}: <span className="font-medium text-foreground/90">{row.region}</span>
+                  <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.sku}</p>
+                  <p className="mt-1 truncate text-lg font-semibold tracking-tight text-[#111827]">{row.sku}</p>
+                  <p className="mt-2 text-xs text-[#9CA3AF]">
+                    {t.region}: <span className="font-medium text-[#111827]">{row.region}</span>
                   </p>
-                  <p className="text-xs text-app-muted">
-                    {t.supplier}: <span className="font-medium text-foreground/90">{row.supplier}</span>
+                  <p className="text-xs text-[#9CA3AF]">
+                    {t.supplier}: <span className="font-medium text-[#111827]">{row.supplier}</span>
                   </p>
                   <p className="mt-3 text-2xl font-bold tabular-nums text-app-accent">
                     {formatMoney(row.totalScheduled, language)}
                   </p>
-                  <p className="text-xs text-app-muted">{t.total}</p>
+                  <p className="text-xs text-[#9CA3AF]">{t.total}</p>
                 </article>
               ))}
             </div>
 
             <div>
-              <h4 className="mb-3 text-sm font-semibold text-foreground">{t.byRegion}</h4>
+              <h4 className="mb-3 text-sm font-semibold text-[#111827]">{t.byRegion}</h4>
               <div className="space-y-3">
                 {data.periods.map((row) => (
-                  <div key={row.period} className="rounded-xl border border-app-border/50 bg-app-surface/80 p-3">
+                  <div key={row.period} className="app-card p-3">
                     <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                      <span className="font-mono text-sm font-semibold text-foreground">{row.period}</span>
-                      <span className="text-sm tabular-nums text-foreground">
+                      <span className="font-mono text-sm font-semibold text-[#111827]">{row.period}</span>
+                      <span className="text-sm tabular-nums text-[#111827]">
                         {formatMoney(row.total, language)}{" "}
-                        <span className="text-xs font-normal text-app-muted">
+                        <span className="text-xs font-normal text-[#9CA3AF]">
                           ({t.advance} {formatMoney(row.advancePart, language)} + {t.final}{" "}
                           {formatMoney(row.finalPart, language)})
                         </span>
@@ -203,8 +203,8 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
                         return (
                           <span key={reg} className="inline-flex items-center gap-1.5">
                             <span className={`inline-block h-2 w-2 rounded-sm ${regionBarClass(reg)}`} />
-                            <span className="text-app-muted">{reg}</span>
-                            <span className="font-medium tabular-nums text-foreground">{formatMoney(v, language)}</span>
+                            <span className="text-[#9CA3AF]">{reg}</span>
+                            <span className="font-medium tabular-nums text-[#111827]">{formatMoney(v, language)}</span>
                           </span>
                         );
                       })}
@@ -215,11 +215,11 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
             </div>
 
             <div>
-              <h4 className="mb-3 text-sm font-semibold text-foreground">{t.topSku}</h4>
-              <div className="overflow-x-auto rounded-xl border border-app-border/60">
+              <h4 className="mb-3 text-sm font-semibold text-[#111827]">{t.topSku}</h4>
+              <div className="app-table-shell overflow-x-auto">
                 <table className="w-full min-w-[640px] border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-app-border bg-app-muted/15 text-left text-app-muted">
+                    <tr className="border-b border-app-border bg-gray-50 text-left text-[#9CA3AF]">
                       <th className="px-3 py-2">{t.sku}</th>
                       <th className="px-3 py-2">{t.region}</th>
                       <th className="px-3 py-2">{t.supplier}</th>
@@ -228,11 +228,11 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
                   </thead>
                   <tbody>
                     {data.topSkus.map((row) => (
-                      <tr key={row.sku} className="border-b border-app-border/40 hover:bg-app-accent-soft/30">
+                      <tr key={row.sku} className="border-b border-app-border/40 hover:bg-gray-50">
                         <td className="px-3 py-2 font-medium">{row.sku}</td>
                         <td className="px-3 py-2">{row.region}</td>
                         <td className="max-w-[14rem] truncate px-3 py-2">{row.supplier}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-semibold text-foreground">
+                        <td className="px-3 py-2 text-right tabular-nums font-semibold text-[#111827]">
                           {formatMoney(row.totalScheduled, language)}
                         </td>
                       </tr>

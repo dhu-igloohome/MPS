@@ -81,10 +81,10 @@ function Tx({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-slate-200/80 bg-white/95 px-3 py-2 text-xs shadow-lg dark:border-slate-600 dark:bg-slate-900/95">
-      <p className="mb-1 font-medium text-slate-700 dark:text-slate-200">{label}</p>
+    <div className="rounded-lg border border-app-border bg-white/95 px-3 py-2 text-xs shadow-[0_8px_24px_rgba(17,24,39,0.08)]">
+      <p className="mb-1 font-medium text-[#111827]">{label}</p>
       {payload.map((p) => (
-        <p key={p.name} className="tabular-nums text-slate-600 dark:text-slate-300">
+        <p key={p.name} className="tabular-nums text-[#4B5563]">
           <span style={{ color: p.color }}>{p.name}: </span>
           {formatNum(Number(p.value))}
         </p>
@@ -243,13 +243,13 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
   return (
     <div className="space-y-10">
       {/* Forecast */}
-      <section className="rounded-2xl border border-slate-200/90 bg-gradient-to-br from-slate-50/90 to-white p-5 shadow-sm dark:border-slate-700 dark:from-slate-900/50 dark:to-slate-900/80">
+      <section className="app-card p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold tracking-tight text-slate-800 dark:text-slate-100">
+            <h3 className="text-base font-semibold tracking-tight text-[#111827]">
               {en ? "Forecast input" : "Forecast 填报"}
             </h3>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-sm text-[#4B5563]">
               {en
                 ? "BTO / BTS by forecast month — default range is current month ±3 months; click chart to drill down."
                 : "按填报月份 — 默认区间为当前月前后各 3 个自然月；点击图表下钻明细。"}
@@ -257,17 +257,17 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
           </div>
           <Link
             href="/forecast"
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-slate-50 dark:border-slate-600 dark:text-indigo-300 dark:hover:bg-slate-800"
+            className="app-button-secondary px-3 py-2 text-sm font-medium"
           >
             {en ? "Open Forecast" : "打开 Forecast"}
           </Link>
         </div>
 
         <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             {en ? "Range" : "区间"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={fPreset}
               onChange={(e) => setFPreset(e.target.value as RangePreset)}
             >
@@ -279,20 +279,20 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
           </label>
           {fPreset === "custom" ? (
             <>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              <label className="text-xs font-medium text-[#4B5563]">
                 {en ? "From" : "从"}
                 <input
                   type="month"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
                   value={fMonthFrom}
                   onChange={(e) => setFMonthFrom(e.target.value)}
                 />
               </label>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              <label className="text-xs font-medium text-[#4B5563]">
                 {en ? "To" : "至"}
                 <input
                   type="month"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
                   value={fMonthTo}
                   onChange={(e) => setFMonthTo(e.target.value)}
                 />
@@ -303,10 +303,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               {fMonthRange.from} → {fMonthRange.to}
             </p>
           )}
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             {en ? "Granularity" : "粒度"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={fGrain}
               onChange={(e) => setFGrain(e.target.value as Grain)}
             >
@@ -314,10 +314,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               <option value="quarter">{en ? "Quarter" : "季"}</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             {en ? "Region" : "区域"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={fRegion}
               onChange={(e) => setFRegion(e.target.value)}
             >
@@ -329,10 +329,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               ))}
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             Destination
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={fDest}
               onChange={(e) => setFDest(e.target.value)}
             >
@@ -344,10 +344,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               ))}
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300 xl:col-span-2">
+          <label className="text-xs font-medium text-[#4B5563] xl:col-span-2">
             {en ? "Product" : "产品"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={fProduct}
               onChange={(e) => setFProduct(e.target.value)}
             >
@@ -362,26 +362,26 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
         </div>
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "BTO" : "按单生产"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-blue-700 dark:text-blue-300">{formatNum(fKpi.bto)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "BTO" : "按单生产"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(fKpi.bto)}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "BTS" : "备货生产"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">{formatNum(fKpi.bts)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "BTS" : "备货生产"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(fKpi.bts)}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "Total" : "合计"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">{formatNum(fKpi.total)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Total" : "合计"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(fKpi.total)}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "SKU count" : "SKU 数"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-800 dark:text-slate-100">{formatNum(fKpi.skuCount)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "SKU count" : "SKU 数"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(fKpi.skuCount)}</p>
           </article>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-72 rounded-xl border border-slate-100 bg-white/50 p-2 dark:border-slate-800 dark:bg-slate-900/40">
+          <div className="app-card h-72 p-2">
             {chartDataF.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -398,10 +398,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <p className="flex h-full items-center justify-center text-sm text-slate-400">—</p>
+              <p className="flex h-full items-center justify-center text-sm text-[#9CA3AF]">—</p>
             )}
           </div>
-          <div className="h-72 rounded-xl border border-slate-100 bg-white/50 p-2 dark:border-slate-800 dark:bg-slate-900/40">
+          <div className="app-card h-72 p-2">
             {chartDataF.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -418,20 +418,20 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="flex h-full items-center justify-center text-sm text-slate-400">—</p>
+              <p className="flex h-full items-center justify-center text-sm text-[#9CA3AF]">—</p>
             )}
           </div>
         </div>
       </section>
 
       {/* Order progress */}
-      <section className="rounded-2xl border border-slate-200/90 bg-gradient-to-br from-slate-50/90 to-white p-5 shadow-sm dark:border-slate-700 dark:from-slate-900/50 dark:to-slate-900/80">
+      <section className="app-card p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold tracking-tight text-slate-800 dark:text-slate-100">
+            <h3 className="text-base font-semibold tracking-tight text-[#111827]">
               {en ? "Order progress" : "订单进度"}
             </h3>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-sm text-[#4B5563]">
               {en
                 ? "By order date — default range is current month ±3 months; click chart to drill down."
                 : "按下单日 — 默认区间为当前月前后各 3 个自然月；点击图表下钻。"}
@@ -439,17 +439,17 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
           </div>
           <Link
             href="/order-progress"
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-slate-50 dark:border-slate-600 dark:text-indigo-300 dark:hover:bg-slate-800"
+            className="app-button-secondary px-3 py-2 text-sm font-medium"
           >
             {en ? "Open module" : "进入模块"}
           </Link>
         </div>
 
         <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             {en ? "Range" : "区间"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={oPreset}
               onChange={(e) => setOPreset(e.target.value as RangePreset)}
             >
@@ -461,20 +461,20 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
           </label>
           {oPreset === "custom" ? (
             <>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              <label className="text-xs font-medium text-[#4B5563]">
                 {en ? "From" : "从"}
                 <input
                   type="date"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
                   value={oFrom}
                   onChange={(e) => setOFrom(e.target.value)}
                 />
               </label>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              <label className="text-xs font-medium text-[#4B5563]">
                 {en ? "To" : "至"}
                 <input
                   type="date"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
                   value={oTo}
                   onChange={(e) => setOTo(e.target.value)}
                 />
@@ -485,10 +485,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               {oDateRange.from} → {oDateRange.to}
             </p>
           )}
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             {en ? "Granularity" : "粒度"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={oGrain}
               onChange={(e) => setOGrain(e.target.value as Grain)}
             >
@@ -496,10 +496,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               <option value="quarter">{en ? "Quarter" : "季"}</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             {en ? "Region" : "区域"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={oRegion}
               onChange={(e) => setORegion(e.target.value)}
             >
@@ -511,10 +511,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               ))}
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             {en ? "Factory" : "工厂"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={oFactory}
               onChange={(e) => setOFactory(e.target.value)}
             >
@@ -526,10 +526,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               ))}
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300 xl:col-span-2">
+          <label className="text-xs font-medium text-[#4B5563] xl:col-span-2">
             {en ? "Progress" : "进度"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={oProgress}
               onChange={(e) => setOProgress(e.target.value)}
             >
@@ -542,26 +542,26 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
         </div>
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "Orders" : "订单行数"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">{formatNum(oKpi.total)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Orders" : "订单行数"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.total)}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "Qty" : "数量"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-800 dark:text-slate-100">{formatNum(oKpi.qty)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Qty" : "数量"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.qty)}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "In production" : "生产中"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-amber-700 dark:text-amber-300">{formatNum(oKpi.in_production)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "In production" : "生产中"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.in_production)}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "Ready to ship" : "待发货"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">{formatNum(oKpi.ready_to_ship)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Ready to ship" : "待发货"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.ready_to_ship)}</p>
           </article>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-72 rounded-xl border border-slate-100 bg-white/50 p-2 dark:border-slate-800 dark:bg-slate-900/40">
+          <div className="app-card h-72 p-2">
             {chartDataO.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -577,10 +577,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <p className="flex h-full items-center justify-center text-sm text-slate-400">—</p>
+              <p className="flex h-full items-center justify-center text-sm text-[#9CA3AF]">—</p>
             )}
           </div>
-          <div className="h-72 rounded-xl border border-slate-100 bg-white/50 p-2 dark:border-slate-800 dark:bg-slate-900/40">
+          <div className="app-card h-72 p-2">
             {chartDataO.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -598,20 +598,20 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="flex h-full items-center justify-center text-sm text-slate-400">—</p>
+              <p className="flex h-full items-center justify-center text-sm text-[#9CA3AF]">—</p>
             )}
           </div>
         </div>
       </section>
 
       {/* Logistics */}
-      <section className="rounded-2xl border border-slate-200/90 bg-gradient-to-br from-slate-50/90 to-white p-5 shadow-sm dark:border-slate-700 dark:from-slate-900/50 dark:to-slate-900/80">
+      <section className="app-card p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold tracking-tight text-slate-800 dark:text-slate-100">
+            <h3 className="text-base font-semibold tracking-tight text-[#111827]">
               {en ? "Logistics progress" : "物流进度"}
             </h3>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-sm text-[#4B5563]">
               {en
                 ? "By shipment create date — default range is current month ±3 months; click chart to drill down."
                 : "按物流记录创建时间 — 默认区间为当前月前后各 3 个自然月；点击图表下钻。"}
@@ -619,17 +619,17 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
           </div>
           <Link
             href="/logistics-progress"
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-slate-50 dark:border-slate-600 dark:text-indigo-300 dark:hover:bg-slate-800"
+            className="app-button-secondary px-3 py-2 text-sm font-medium"
           >
             {en ? "Open module" : "进入模块"}
           </Link>
         </div>
 
         <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             {en ? "Range" : "区间"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={lPreset}
               onChange={(e) => setLPreset(e.target.value as RangePreset)}
             >
@@ -641,20 +641,20 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
           </label>
           {lPreset === "custom" ? (
             <>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              <label className="text-xs font-medium text-[#4B5563]">
                 {en ? "From" : "从"}
                 <input
                   type="date"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
                   value={lFrom}
                   onChange={(e) => setLFrom(e.target.value)}
                 />
               </label>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              <label className="text-xs font-medium text-[#4B5563]">
                 {en ? "To" : "至"}
                 <input
                   type="date"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
                   value={lTo}
                   onChange={(e) => setLTo(e.target.value)}
                 />
@@ -665,10 +665,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               {lDateRange.from} → {lDateRange.to}
             </p>
           )}
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             {en ? "Granularity" : "粒度"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={lGrain}
               onChange={(e) => setLGrain(e.target.value as Grain)}
             >
@@ -676,10 +676,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               <option value="quarter">{en ? "Quarter" : "季"}</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             {en ? "Status" : "状态"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={lStatus}
               onChange={(e) => setLStatus(e.target.value)}
             >
@@ -690,10 +690,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               <option value="cancelled">cancelled</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             {en ? "Movement" : "类型"}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={lMove}
               onChange={(e) => setLMove(e.target.value)}
             >
@@ -702,10 +702,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               <option value="transfer">transfer</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             From
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={lFromLoc}
               onChange={(e) => setLFromLoc(e.target.value)}
             >
@@ -717,10 +717,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               ))}
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="text-xs font-medium text-[#4B5563]">
             To
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={lToLoc}
               onChange={(e) => setLToLoc(e.target.value)}
             >
@@ -735,26 +735,26 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
         </div>
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "Shipments" : "运单数"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">{formatNum(lKpi.total)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Shipments" : "运单数"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.total)}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "Qty" : "件数"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-800 dark:text-slate-100">{formatNum(lKpi.qty)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Qty" : "件数"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.qty)}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "In transit" : "运输中"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-amber-700 dark:text-amber-300">{formatNum(lKpi.in_transit)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "In transit" : "运输中"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.in_transit)}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{en ? "Delivered" : "已送达"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">{formatNum(lKpi.delivered)}</p>
+          <article className="app-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Delivered" : "已送达"}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.delivered)}</p>
           </article>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-72 rounded-xl border border-slate-100 bg-white/50 p-2 dark:border-slate-800 dark:bg-slate-900/40">
+          <div className="app-card h-72 p-2">
             {chartDataL.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -770,10 +770,10 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <p className="flex h-full items-center justify-center text-sm text-slate-400">—</p>
+              <p className="flex h-full items-center justify-center text-sm text-[#9CA3AF]">—</p>
             )}
           </div>
-          <div className="h-72 rounded-xl border border-slate-100 bg-white/50 p-2 dark:border-slate-800 dark:bg-slate-900/40">
+          <div className="app-card h-72 p-2">
             {chartDataL.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -792,7 +792,7 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="flex h-full items-center justify-center text-sm text-slate-400">—</p>
+              <p className="flex h-full items-center justify-center text-sm text-[#9CA3AF]">—</p>
             )}
           </div>
         </div>
@@ -804,14 +804,14 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
           role="dialog"
           aria-modal
         >
-          <div className="max-h-[85vh] w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900">
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+          <div className="max-h-[85vh] w-full max-w-5xl overflow-hidden rounded-2xl border border-app-border bg-white shadow-[0_24px_60px_rgba(17,24,39,0.18)]">
+            <div className="flex items-center justify-between border-b border-app-border px-4 py-3">
+              <h3 className="text-sm font-semibold text-[#111827]">
                 {en ? "Detail" : "明细"} · {drill.label}
               </h3>
               <button
                 type="button"
-                className="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="app-button-secondary px-3 py-1.5 text-sm"
                 onClick={() => setDrill(null)}
               >
                 {en ? "Close" : "关闭"}
@@ -821,7 +821,7 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               {drill.module === "forecast" ? (
                 <table className="w-full min-w-[640px] border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700">
+                    <tr className="border-b border-app-border text-left text-[#9CA3AF]">
                       <th className="py-2 pr-2">{en ? "Month" : "月份"}</th>
                       <th className="py-2 pr-2">{en ? "Region" : "区域"}</th>
                       <th className="py-2 pr-2">SKU</th>
@@ -831,7 +831,7 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
                   </thead>
                   <tbody>
                     {drill.rows.map((r) => (
-                      <tr key={r.id} className="border-b border-slate-100 dark:border-slate-800">
+                      <tr key={r.id} className="border-b border-app-border/60">
                         <td className="py-2 pr-2">{r.month}</td>
                         <td className="py-2 pr-2">{r.region}</td>
                         <td className="py-2 pr-2">{r.sku}</td>
@@ -844,7 +844,7 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               ) : drill.module === "order" ? (
                 <table className="w-full min-w-[720px] border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700">
+                    <tr className="border-b border-app-border text-left text-[#9CA3AF]">
                       <th className="py-2 pr-2">{en ? "Order no." : "订单号"}</th>
                       <th className="py-2 pr-2">SKU</th>
                       <th className="py-2 pr-2">{en ? "Qty" : "数量"}</th>
@@ -855,14 +855,14 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
                   </thead>
                   <tbody>
                     {drill.rows.map((r) => (
-                      <tr key={r.id} className="border-b border-slate-100 dark:border-slate-800">
+                      <tr key={r.id} className="border-b border-app-border/60">
                         <td className="py-2 pr-2 font-medium">{r.orderNumber}</td>
                         <td className="py-2 pr-2">{r.sku}</td>
                         <td className="py-2 pr-2 tabular-nums">{formatNum(r.quantity)}</td>
                         <td className="py-2 pr-2">{r.progress}</td>
                         <td className="py-2 pr-2 whitespace-nowrap">{r.orderDate}</td>
                         <td className="py-2 pr-2">
-                          <Link href="/order-progress" className="text-indigo-600 hover:underline dark:text-indigo-400">
+                          <Link href="/order-progress" className="text-[var(--app-accent)] hover:underline">
                             {en ? "Module" : "模块"}
                           </Link>
                         </td>
@@ -873,7 +873,7 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               ) : (
                 <table className="w-full min-w-[720px] border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700">
+                    <tr className="border-b border-app-border text-left text-[#9CA3AF]">
                       <th className="py-2 pr-2">PO</th>
                       <th className="py-2 pr-2">SKU</th>
                       <th className="py-2 pr-2 text-right">{en ? "Qty" : "数量"}</th>
@@ -884,14 +884,14 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
                   </thead>
                   <tbody>
                     {drill.rows.map((r) => (
-                      <tr key={r.id} className="border-b border-slate-100 dark:border-slate-800">
+                      <tr key={r.id} className="border-b border-app-border/60">
                         <td className="py-2 pr-2">{r.poNumber}</td>
                         <td className="py-2 pr-2">{r.sku}</td>
                         <td className="py-2 pr-2 text-right tabular-nums">{formatNum(r.quantity)}</td>
                         <td className="py-2 pr-2">{r.status}</td>
                         <td className="py-2 pr-2 whitespace-nowrap text-xs">{r.createdAt.slice(0, 19)}</td>
                         <td className="py-2 pr-2">
-                          <Link href="/logistics-progress" className="text-indigo-600 hover:underline dark:text-indigo-400">
+                          <Link href="/logistics-progress" className="text-[var(--app-accent)] hover:underline">
                             {en ? "Module" : "模块"}
                           </Link>
                         </td>

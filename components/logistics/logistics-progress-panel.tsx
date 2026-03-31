@@ -305,9 +305,9 @@ export function LogisticsProgressPanel({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-zinc-900">{t.formTitle}</h3>
-        <p className="mt-2 text-sm text-zinc-600">{t.hintRecordOnly}</p>
+      <section className="app-card p-5">
+        <h3 className="text-lg font-semibold text-[#111827]">{t.formTitle}</h3>
+        <p className="mt-2 text-sm text-[#4B5563]">{t.hintRecordOnly}</p>
         {products.length === 0 ? (
           <p className="mt-2 text-sm text-amber-800">
             {language === "en"
@@ -323,7 +323,7 @@ export function LogisticsProgressPanel({
               value={movementType}
               onChange={(e) => applyMovementType(e.target.value as LogisticsMovementType)}
               disabled={products.length === 0}
-              className="w-full max-w-md rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full max-w-md px-3 py-2 text-sm"
             >
               {MOVEMENT_TYPES.map((m) => (
                 <option key={m} value={m}>
@@ -339,7 +339,7 @@ export function LogisticsProgressPanel({
               value={fromLocation}
               onChange={(e) => setFromLocation(e.target.value as LogisticsLocation)}
               disabled={movementType === "inbound" || products.length === 0}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             >
               {(movementType === "inbound" ? (["FACTORY"] as const) : OFFICE_LOCATIONS).map((loc) => (
                 <option key={loc} value={loc}>
@@ -355,7 +355,7 @@ export function LogisticsProgressPanel({
               value={toLocation}
               onChange={(e) => setToLocation(e.target.value as LogisticsLocation)}
               disabled={products.length === 0}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             >
               {OFFICE_LOCATIONS.map((loc) => (
                 <option key={loc} value={loc}>
@@ -372,7 +372,7 @@ export function LogisticsProgressPanel({
               onChange={(e) => onProductNameChange(e.target.value)}
               required
               disabled={products.length === 0}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             >
               {productNameOptions.map((name) => (
                 <option key={name} value={name}>
@@ -396,7 +396,7 @@ export function LogisticsProgressPanel({
               }}
               required
               disabled={products.length === 0}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             >
               {skuOptions.map((p) => (
                 <option key={p.sku} value={p.sku}>
@@ -411,7 +411,7 @@ export function LogisticsProgressPanel({
               value={resolvedPoNumber}
               onChange={(e) => onPoNumberChange(e.target.value)}
               required
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             >
               {poOptions.map((po) => (
                 <option key={po} value={po}>
@@ -431,7 +431,7 @@ export function LogisticsProgressPanel({
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               required
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             />
           </label>
 
@@ -440,7 +440,7 @@ export function LogisticsProgressPanel({
             <select
               value={orderProgressId}
               onChange={(e) => setOrderProgressId(e.target.value)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             >
               <option value="">{t.orderLineNone}</option>
               {orderLines.map((line) => (
@@ -457,7 +457,7 @@ export function LogisticsProgressPanel({
               value={trackingNumber}
               onChange={(e) => setTrackingNumber(e.target.value)}
               maxLength={200}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             />
           </label>
 
@@ -467,7 +467,7 @@ export function LogisticsProgressPanel({
               value={carrier}
               onChange={(e) => setCarrier(e.target.value)}
               maxLength={120}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             />
           </label>
 
@@ -476,7 +476,7 @@ export function LogisticsProgressPanel({
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as LogisticsShipmentStatus)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -493,7 +493,7 @@ export function LogisticsProgressPanel({
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               maxLength={2000}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2 text-sm"
             />
           </label>
 
@@ -509,7 +509,7 @@ export function LogisticsProgressPanel({
               <button
                 type="button"
                 onClick={resetForm}
-                className="rounded-lg border border-app-border px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
+                className="app-button-secondary px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
               >
                 {t.cancelEdit}
               </button>
@@ -520,9 +520,9 @@ export function LogisticsProgressPanel({
         {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
       </section>
 
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="app-card p-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-lg font-semibold text-zinc-900">{t.listTitle}</h3>
+          <h3 className="text-lg font-semibold text-[#111827]">{t.listTitle}</h3>
           <Link
             href="/api/logistics-shipments/export-csv"
             prefetch={false}
@@ -534,7 +534,7 @@ export function LogisticsProgressPanel({
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[1100px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-app-border/90 text-left text-zinc-600">
+              <tr className="border-b border-app-border/90 text-left text-[#4B5563]">
                 <th className="px-2 py-2">{t.colType}</th>
                 <th className="px-2 py-2">{t.colProduct}</th>
                 <th className="px-2 py-2">{t.sku}</th>
@@ -571,7 +571,7 @@ export function LogisticsProgressPanel({
                     <td className="px-2 py-2 tabular-nums">{row.quantity}</td>
                     <td className="px-2 py-2">{locationLabel(language, row.fromLocation)}</td>
                     <td className="px-2 py-2">{locationLabel(language, row.toLocation)}</td>
-                    <td className="px-2 py-2 text-xs text-zinc-600">
+                    <td className="px-2 py-2 text-xs text-[#4B5563]">
                       {row.orderProgressId
                         ? linkedOrder
                           ? orderLineLabel(linkedOrder)

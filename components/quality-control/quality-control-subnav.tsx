@@ -16,17 +16,13 @@ export function QualityControlSubnav({ language }: { language: Language }) {
   const isOn = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <div className="rounded-2xl border border-app-border/90 bg-app-surface p-3 shadow-sm">
+    <div className="app-subnav p-3">
       <div className="flex flex-wrap gap-2">
         {items.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className={`rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
-              isOn(item.href)
-                ? "border-app-accent/30 bg-app-accent-soft text-app-accent"
-                : "border-app-border text-foreground/85 hover:bg-app-accent-soft"
-            }`}
+            className={`app-subnav-link ${isOn(item.href) ? "app-subnav-link-active" : ""}`}
           >
             {item.label}
           </Link>

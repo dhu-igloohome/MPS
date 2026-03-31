@@ -247,7 +247,7 @@ export function ForecastForm({
   }
 
   return (
-    <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+    <section className="app-card p-5">
       <h2 className="text-lg font-semibold text-foreground">{t.title}</h2>
       <p className="mt-1 text-sm text-app-muted">
         {t.subtitle}
@@ -255,7 +255,7 @@ export function ForecastForm({
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <a
           href="/api/forecasts/csv-template"
-          className="inline-flex rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft"
+          className="app-button-secondary inline-flex px-3 py-1.5 text-sm"
         >
           {t.downloadTemplate}
         </a>
@@ -270,7 +270,7 @@ export function ForecastForm({
           type="button"
           disabled={loading || products.length === 0}
           onClick={() => batchFileRef.current?.click()}
-          className="inline-flex rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft disabled:opacity-50"
+          className="app-button-secondary inline-flex px-3 py-1.5 text-sm disabled:opacity-50"
         >
           {t.batchImport}
         </button>
@@ -303,7 +303,7 @@ export function ForecastForm({
             value={month}
             onChange={(event) => setMonth(event.target.value)}
             required
-            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+            className="w-full px-3 py-2"
           />
         </label>
 
@@ -312,7 +312,7 @@ export function ForecastForm({
           <select
             value={region}
             onChange={(event) => onRegionChange(event.target.value as Region)}
-            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+            className="w-full px-3 py-2"
           >
             {allowedRegions.map((item) => (
               <option key={item} value={item}>
@@ -330,7 +330,7 @@ export function ForecastForm({
             maxLength={80}
             pattern="[A-Za-z0-9\u4E00-\u9FFF ]+"
             title={t.destinationHint}
-            className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+            className="w-full px-3 py-2"
           />
           <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
         </label>
@@ -359,7 +359,7 @@ export function ForecastForm({
               value={selectedPoNumber}
               onChange={(event) => setSelectedPoNumber(event.target.value)}
               required
-              className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+              className="w-full px-3 py-2"
             >
               {regionPoOptions.map((po) => (
                 <option key={po} value={po}>
@@ -381,7 +381,7 @@ export function ForecastForm({
                       value={line.sku}
                       onChange={(event) => updateLineSku(line.key, event.target.value)}
                       required
-                      className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+                      className="w-full px-3 py-2"
                     >
                       {skuOptions.map((item) => (
                         <option key={item} value={item}>
@@ -393,7 +393,7 @@ export function ForecastForm({
                       <button
                         type="button"
                         onClick={() => setLines((prev) => [...prev, newDraftForecastLine(products)])}
-                        className="rounded-lg border border-app-border px-3 py-2 text-sm"
+                        className="rounded-lg px-3 py-2 text-sm"
                       >
                         {t.addSku}
                       </button>
@@ -430,7 +430,7 @@ export function ForecastForm({
                         ),
                       )
                     }
-                    className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+                    className="w-full px-3 py-2"
                   />
                 </label>
                 <label className="block">
@@ -446,7 +446,7 @@ export function ForecastForm({
                         ),
                       )
                     }
-                    className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+                    className="w-full px-3 py-2"
                   />
                 </label>
                 <label className="block md:col-span-2">
@@ -459,7 +459,7 @@ export function ForecastForm({
                       )
                     }
                     rows={2}
-                    className="w-full rounded-lg border border-app-border px-3 py-2 outline-none ring-app-accent focus:ring-2"
+                    className="w-full px-3 py-2"
                   />
                 </label>
               </div>
@@ -471,7 +471,7 @@ export function ForecastForm({
           <button
             type="submit"
             disabled={loading || products.length === 0}
-            className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
+            className="app-button-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
           >
             {loading ? t.saving : t.saveForecast}
           </button>
