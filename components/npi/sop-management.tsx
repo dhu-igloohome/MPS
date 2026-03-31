@@ -60,6 +60,12 @@ export function SopManagement({ entries, language }: Props) {
     const start = (current - 1) * pageSize;
     return filteredEntries.slice(start, start + pageSize);
   }, [filteredEntries, page, totalPages]);
+  const releasedCount = useMemo(() => entries.filter((e) => e.status === "released").length, [entries]);
+  const inReviewCount = useMemo(() => entries.filter((e) => e.status === "in_review").length, [entries]);
+  const trainingRequiredCount = useMemo(
+    () => entries.filter((e) => e.trainingRequired && e.status !== "obsolete").length,
+    [entries],
+  );
 
   function startEdit(e: SopEntry) {
     setEditingId(e.id);
@@ -120,6 +126,22 @@ export function SopManagement({ entries, language }: Props) {
 
   return (
     <div className="space-y-4">
+      <section className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+          <p className="text-sm text-app-muted">{language === "en" ? "Released SOP" : "已发布 SOP"}</p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{releasedCount}</p>
+        </div>
+        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+          <p className="text-sm text-app-muted">{language === "en" ? "In Review SOP" : "审核中 SOP"}</p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{inReviewCount}</p>
+        </div>
+        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+          <p className="text-sm text-app-muted">
+            {language === "en" ? "Training Required SOP" : "需培训 SOP"}
+          </p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{trainingRequiredCount}</p>
+        </div>
+      </section>
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-foreground">
           {language === "en" ? "SOP Management" : "SOP 管理"}
