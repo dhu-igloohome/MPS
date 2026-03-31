@@ -44,7 +44,17 @@ export async function AppShell({ session, title, description, children }: AppShe
         { href: "/supply-chain/cost-control", label: language === "en" ? "Cost Control" : "成本控制" },
       ],
     },
-    { href: "/logistics-progress", label: navText.logisticsProgress },
+    {
+      href: "/logistics-progress",
+      label: navText.logisticsProgress,
+      children: [
+        { href: "/logistics-progress", label: language === "en" ? "Logistics Progress" : "物流进度" },
+        {
+          href: "/logistics-progress/shipping-report",
+          label: language === "en" ? "Shipping Report" : "Shipping Report",
+        },
+      ],
+    },
     {
       href: "/npi",
       label: navText.npi,

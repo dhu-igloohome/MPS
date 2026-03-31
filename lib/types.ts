@@ -376,6 +376,40 @@ export type LogisticsShipmentEntry = {
   updatedAt: string;
 };
 
+export type ShippingReportEntry = {
+  id: string;
+  sn: string;
+  dateReleased: string | null;
+  consigneeCompanyName: string;
+  doGrnNumber: string;
+  soCoReferenceNumber: string;
+  podLink: string;
+  sku: string;
+  accessoryQuantity: number;
+  accessoryNumber: string;
+  requestBy: string;
+  poNumber: string;
+  btoBts: string;
+  purpose: string;
+  shipFrom: string;
+  shipTo: string;
+  shipToRegion: string;
+  shippingMode: string;
+  shippingMethod: string;
+  trackingNumber: string;
+  costCentre: string;
+  paidByIgloo: number;
+  paidByCustomer: number;
+  sgdPaidByIgloo: number;
+  sgdPaidByCustomer: number;
+  usd: number;
+  productSerialNo: string;
+  remarks: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 /** 空运 / 海运（DB 存 air | sea） */
 export type CostFreightMode = "air" | "sea";
 

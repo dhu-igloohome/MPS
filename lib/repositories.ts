@@ -31,6 +31,7 @@ import {
   ProductItem,
   Region,
   SessionPayload,
+  ShippingReportEntry,
   SupplierEntry,
   ToolingEntry,
   ToolingStatus,
@@ -1877,6 +1878,40 @@ type LogisticsShipmentRow = {
   updated_at: string;
 };
 
+type ShippingReportRow = {
+  id: number;
+  sn: string;
+  date_released: string | null;
+  consignee_company_name: string;
+  do_grn_number: string;
+  so_co_reference_number: string;
+  pod_link: string;
+  sku: string;
+  accessory_quantity: number;
+  accessory_number: string;
+  request_by: string;
+  po_number: string;
+  bto_bts: string;
+  purpose: string;
+  ship_from: string;
+  ship_to: string;
+  ship_to_region: string;
+  shipping_mode: string;
+  shipping_method: string;
+  tracking_number: string;
+  cost_centre: string;
+  paid_by_igloo: string | number;
+  paid_by_customer: string | number;
+  sgd_paid_by_igloo: string | number;
+  sgd_paid_by_customer: string | number;
+  usd: string | number;
+  product_serial_no: string;
+  remarks: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
 function isLogisticsLocation(value: string): value is LogisticsLocation {
   return value === "FACTORY" || value === "APAC" || value === "EU" || value === "US";
 }
@@ -2144,6 +2179,158 @@ export async function deleteLogisticsShipmentById(id: string) {
     delete from logistics_shipments
     where id = ${Number(id)};
   `;
+}
+
+function mapShippingReport(row: ShippingReportRow): ShippingReportEntry {
+  return {
+    id: String(row.id),
+    sn: row.sn || "",
+    dateReleased: row.date_released ? formatPgDateOnly(row.date_released) : null,
+    consigneeCompanyName: row.consignee_company_name || "",
+    doGrnNumber: row.do_grn_number || "",
+    soCoReferenceNumber: row.so_co_reference_number || "",
+    podLink: row.pod_link || "",
+    sku: row.sku || "",
+    accessoryQuantity: Number(row.accessory_quantity ?? 0),
+    accessoryNumber: row.accessory_number || "",
+    requestBy: row.request_by || "",
+    poNumber: row.po_number || "",
+    btoBts: row.bto_bts || "",
+    purpose: row.purpose || "",
+    shipFrom: row.ship_from || "",
+    shipTo: row.ship_to || "",
+    shipToRegion: row.ship_to_region || "",
+    shippingMode: row.shipping_mode || "",
+    shippingMethod: row.shipping_method || "",
+    trackingNumber: row.tracking_number || "",
+    costCentre: row.cost_centre || "",
+    paidByIgloo: Number(row.paid_by_igloo ?? 0),
+    paidByCustomer: Number(row.paid_by_customer ?? 0),
+    sgdPaidByIgloo: Number(row.sgd_paid_by_igloo ?? 0),
+    sgdPaidByCustomer: Number(row.sgd_paid_by_customer ?? 0),
+    usd: Number(row.usd ?? 0),
+    productSerialNo: row.product_serial_no || "",
+    remarks: row.remarks || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listShippingReports(): Promise<ShippingReportEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ShippingReportRow[]>`
+    select
+      id, sn, date_released::text, consignee_company_name, do_grn_number, so_co_reference_number,
+      pod_link, sku, accessory_quantity, accessory_number, request_by, po_number, bto_bts, purpose,
+      ship_from, ship_to, ship_to_region, shipping_mode, shipping_method, tracking_number, cost_centre,
+      paid_by_igloo::text, paid_by_customer::text, sgd_paid_by_igloo::text, sgd_paid_by_customer::text, usd::text,
+      product_serial_no, remarks, created_by, created_at::text, updated_at::text
+    from shipping_reports
+    order by updated_at desc, id desc
+    limit 1000;
+  `;
+  return rows.map(mapShippingReport);
+}
+
+export async function getShippingReportById(id: string): Promise<ShippingReportEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ShippingReportRow[]>`
+    select
+      id, sn, date_released::text, consignee_company_name, do_grn_number, so_co_reference_number,
+      pod_link, sku, accessory_quantity, accessory_number, request_by, po_number, bto_bts, purpose,
+      ship_from, ship_to, ship_to_region, shipping_mode, shipping_method, tracking_number, cost_centre,
+      paid_by_igloo::text, paid_by_customer::text, sgd_paid_by_igloo::text, sgd_paid_by_customer::text, usd::text,
+      product_serial_no, remarks, created_by, created_at::text, updated_at::text
+    from shipping_reports
+    where id = ${Number(id)}
+    limit 1;
+  `;
+  return rows[0] ? mapShippingReport(rows[0]) : null;
+}
+
+export async function createShippingReport(input: Omit<ShippingReportEntry, "id" | "createdAt" | "updatedAt">): Promise<ShippingReportEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ShippingReportRow[]>`
+    insert into shipping_reports (
+      sn, date_released, consignee_company_name, do_grn_number, so_co_reference_number, pod_link,
+      sku, accessory_quantity, accessory_number, request_by, po_number, bto_bts, purpose,
+      ship_from, ship_to, ship_to_region, shipping_mode, shipping_method, tracking_number, cost_centre,
+      paid_by_igloo, paid_by_customer, sgd_paid_by_igloo, sgd_paid_by_customer, usd,
+      product_serial_no, remarks, created_by
+    ) values (
+      ${input.sn.trim()}, ${input.dateReleased}, ${input.consigneeCompanyName.trim()}, ${input.doGrnNumber.trim()},
+      ${input.soCoReferenceNumber.trim()}, ${input.podLink.trim()}, ${input.sku.trim()},
+      ${Math.max(0, Math.trunc(input.accessoryQuantity))}, ${input.accessoryNumber.trim()}, ${input.requestBy.trim()},
+      ${input.poNumber.trim()}, ${input.btoBts.trim()}, ${input.purpose.trim()}, ${input.shipFrom.trim()},
+      ${input.shipTo.trim()}, ${input.shipToRegion.trim()}, ${input.shippingMode.trim()}, ${input.shippingMethod.trim()},
+      ${input.trackingNumber.trim()}, ${input.costCentre.trim()}, ${Math.max(0, input.paidByIgloo)},
+      ${Math.max(0, input.paidByCustomer)}, ${Math.max(0, input.sgdPaidByIgloo)},
+      ${Math.max(0, input.sgdPaidByCustomer)}, ${Math.max(0, input.usd)}, ${input.productSerialNo.trim()},
+      ${input.remarks.trim()}, ${input.createdBy}
+    )
+    returning
+      id, sn, date_released::text, consignee_company_name, do_grn_number, so_co_reference_number,
+      pod_link, sku, accessory_quantity, accessory_number, request_by, po_number, bto_bts, purpose,
+      ship_from, ship_to, ship_to_region, shipping_mode, shipping_method, tracking_number, cost_centre,
+      paid_by_igloo::text, paid_by_customer::text, sgd_paid_by_igloo::text, sgd_paid_by_customer::text, usd::text,
+      product_serial_no, remarks, created_by, created_at::text, updated_at::text;
+  `;
+  return mapShippingReport(rows[0]);
+}
+
+export async function updateShippingReport(input: Omit<ShippingReportEntry, "createdAt" | "updatedAt">): Promise<ShippingReportEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ShippingReportRow[]>`
+    update shipping_reports
+    set
+      sn = ${input.sn.trim()},
+      date_released = ${input.dateReleased},
+      consignee_company_name = ${input.consigneeCompanyName.trim()},
+      do_grn_number = ${input.doGrnNumber.trim()},
+      so_co_reference_number = ${input.soCoReferenceNumber.trim()},
+      pod_link = ${input.podLink.trim()},
+      sku = ${input.sku.trim()},
+      accessory_quantity = ${Math.max(0, Math.trunc(input.accessoryQuantity))},
+      accessory_number = ${input.accessoryNumber.trim()},
+      request_by = ${input.requestBy.trim()},
+      po_number = ${input.poNumber.trim()},
+      bto_bts = ${input.btoBts.trim()},
+      purpose = ${input.purpose.trim()},
+      ship_from = ${input.shipFrom.trim()},
+      ship_to = ${input.shipTo.trim()},
+      ship_to_region = ${input.shipToRegion.trim()},
+      shipping_mode = ${input.shippingMode.trim()},
+      shipping_method = ${input.shippingMethod.trim()},
+      tracking_number = ${input.trackingNumber.trim()},
+      cost_centre = ${input.costCentre.trim()},
+      paid_by_igloo = ${Math.max(0, input.paidByIgloo)},
+      paid_by_customer = ${Math.max(0, input.paidByCustomer)},
+      sgd_paid_by_igloo = ${Math.max(0, input.sgdPaidByIgloo)},
+      sgd_paid_by_customer = ${Math.max(0, input.sgdPaidByCustomer)},
+      usd = ${Math.max(0, input.usd)},
+      product_serial_no = ${input.productSerialNo.trim()},
+      remarks = ${input.remarks.trim()},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning
+      id, sn, date_released::text, consignee_company_name, do_grn_number, so_co_reference_number,
+      pod_link, sku, accessory_quantity, accessory_number, request_by, po_number, bto_bts, purpose,
+      ship_from, ship_to, ship_to_region, shipping_mode, shipping_method, tracking_number, cost_centre,
+      paid_by_igloo::text, paid_by_customer::text, sgd_paid_by_igloo::text, sgd_paid_by_customer::text, usd::text,
+      product_serial_no, remarks, created_by, created_at::text, updated_at::text;
+  `;
+  return rows[0] ? mapShippingReport(rows[0]) : null;
+}
+
+export async function deleteShippingReportById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from shipping_reports where id = ${Number(id)};`;
 }
 
 function mapProduct(row: ProductRow): ProductItem {

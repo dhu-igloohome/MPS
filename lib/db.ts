@@ -307,6 +307,46 @@ async function setupSchema() {
   await db`alter table logistics_shipments add column if not exists po_number text not null default '';`;
 
   await db`
+    create table if not exists shipping_reports (
+      id bigserial primary key,
+      sn text not null default '',
+      date_released date,
+      consignee_company_name text not null default '',
+      do_grn_number text not null default '',
+      so_co_reference_number text not null default '',
+      pod_link text not null default '',
+      sku text not null default '',
+      accessory_quantity integer not null default 0 check (accessory_quantity >= 0),
+      accessory_number text not null default '',
+      request_by text not null default '',
+      po_number text not null default '',
+      bto_bts text not null default '',
+      purpose text not null default '',
+      ship_from text not null default '',
+      ship_to text not null default '',
+      ship_to_region text not null default '',
+      shipping_mode text not null default '',
+      shipping_method text not null default '',
+      tracking_number text not null default '',
+      cost_centre text not null default '',
+      paid_by_igloo numeric(14, 2) not null default 0,
+      paid_by_customer numeric(14, 2) not null default 0,
+      sgd_paid_by_igloo numeric(14, 2) not null default 0,
+      sgd_paid_by_customer numeric(14, 2) not null default 0,
+      usd numeric(14, 2) not null default 0,
+      product_serial_no text not null default '',
+      remarks text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_shipping_reports_updated
+    on shipping_reports (updated_at desc, id desc);
+  `;
+
+  await db`
     create table if not exists products (
       id bigserial primary key,
       product_name text not null,
