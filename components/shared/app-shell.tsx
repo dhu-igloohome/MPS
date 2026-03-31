@@ -1,5 +1,15 @@
 import Image from "next/image";
 import { cookies } from "next/headers";
+import {
+  BarChart3,
+  Boxes,
+  BriefcaseBusiness,
+  ClipboardList,
+  Factory,
+  PackageSearch,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 
 import { AppShellNav } from "@/components/shared/app-shell-nav";
 import { LanguageToggle } from "@/components/shared/language-toggle";
@@ -32,12 +42,13 @@ export async function AppShell({ session, title, description, children }: AppShe
   };
 
   const navItems = [
-    { href: "/dashboard", label: navText.cockpit },
-    { href: "/forecast", label: navText.forecastInput },
-    { href: "/order-progress", label: navText.orderProgress },
+    { href: "/dashboard", label: navText.cockpit, icon: BarChart3 },
+    { href: "/forecast", label: navText.forecastInput, icon: ClipboardList },
+    { href: "/order-progress", label: navText.orderProgress, icon: BriefcaseBusiness },
     {
       href: "/supply-chain/suppliers",
       label: navText.supplyChain,
+      icon: Factory,
       children: [
         { href: "/supply-chain/suppliers", label: language === "en" ? "Suppliers" : "供应商管理" },
         { href: "/supply-chain/contracts", label: language === "en" ? "Contracts" : "合同管理" },
@@ -47,6 +58,7 @@ export async function AppShell({ session, title, description, children }: AppShe
     {
       href: "/logistics-progress",
       label: navText.logisticsProgress,
+      icon: Boxes,
       children: [
         { href: "/logistics-progress", label: language === "en" ? "Logistics Progress" : "物流进度" },
         {
@@ -62,6 +74,7 @@ export async function AppShell({ session, title, description, children }: AppShe
     {
       href: "/npi",
       label: navText.npi,
+      icon: PackageSearch,
       children: [
         { href: "/npi/bom", label: language === "en" ? "BOM Management" : "BOM 管理" },
         { href: "/npi/tooling", label: language === "en" ? "Tooling & Fixture" : "工装夹具管理" },
@@ -75,6 +88,7 @@ export async function AppShell({ session, title, description, children }: AppShe
     {
       href: "/quality-control/test-cases",
       label: navText.qualityControl,
+      icon: ShieldCheck,
       children: [
         { href: "/quality-control/test-cases", label: language === "en" ? "Test Cases" : "测试用例管理" },
         { href: "/quality-control/certifications", label: language === "en" ? "Certifications" : "认证管理" },
@@ -82,10 +96,10 @@ export async function AppShell({ session, title, description, children }: AppShe
         { href: "/quality-control/eight-d", label: language === "en" ? "8D Reports" : "8D 报告管理" },
       ],
     },
-    { href: "/cost-control", label: navText.costControl },
+    { href: "/cost-control", label: navText.costControl, icon: BarChart3 },
     ...(session.role === "super_admin"
       ? [
-          { href: "/admin/users", label: navText.userManagement },
+          { href: "/admin/users", label: navText.userManagement, icon: Users },
         ]
       : []),
   ];

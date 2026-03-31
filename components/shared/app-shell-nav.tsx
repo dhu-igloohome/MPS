@@ -3,10 +3,12 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 
 export type ShellNavItem = {
   href: string;
   label: string;
+  icon?: LucideIcon;
   children?: Array<{ href: string; label: string }>;
 };
 
@@ -38,13 +40,17 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
           const on =
             pathMatches(pathname, item.href) ||
             Boolean(item.children?.some((child) => pathMatches(pathname, child.href)));
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
               className={`${mobilePill} ${on ? mobileActive : ""}`}
             >
-              {item.label}
+              <span className="inline-flex items-center gap-2">
+                {Icon ? <Icon size={16} strokeWidth={1.5} /> : null}
+                <span>{item.label}</span>
+              </span>
             </Link>
           );
         })}
@@ -60,6 +66,7 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
               const on =
                 pathMatches(pathname, item.href) ||
                 Boolean(item.children?.some((child) => pathMatches(pathname, child.href)));
+              const Icon = item.icon;
               return (
                 <li key={item.href} className="group relative">
                   <Link
@@ -71,7 +78,10 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
                     }`}
                   >
                     {on ? <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-[var(--app-accent)]" /> : null}
-                    {item.label}
+                    <span className="inline-flex items-center gap-2.5">
+                      {Icon ? <Icon size={16} strokeWidth={1.5} /> : null}
+                      <span>{item.label}</span>
+                    </span>
                   </Link>
                   {item.children?.length ? (
                     <div className="pointer-events-none absolute left-full top-0 z-20 ml-3 w-52 rounded-xl border border-gray-100 bg-white p-2 opacity-0 shadow-[0_8px_24px_rgba(17,24,39,0.08)] transition-all duration-150 group-hover:pointer-events-auto group-hover:opacity-100">

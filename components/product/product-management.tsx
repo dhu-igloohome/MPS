@@ -286,25 +286,25 @@ export function ProductManagement({ products, language }: ProductManagementProps
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5">
+      <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.createProduct}</h3>
         <form className="mt-3 grid gap-3 md:grid-cols-2" onSubmit={createItem}>
           <input
-            className="rounded-lg border border-app-border px-3 py-2"
+            className="rounded-lg px-3 py-2"
             placeholder={t.productName}
             value={productName}
             onChange={(event) => setProductName(event.target.value)}
             required
           />
           <input
-            className="rounded-lg border border-app-border px-3 py-2"
+            className="rounded-lg px-3 py-2"
             placeholder={t.sku}
             value={sku}
             onChange={(event) => setSku(event.target.value.toUpperCase())}
             required
           />
           <input
-            className="rounded-lg border border-app-border px-3 py-2"
+            className="rounded-lg px-3 py-2"
             placeholder={t.variant}
             value={variant}
             onChange={(event) => setVariant(event.target.value.toUpperCase())}
@@ -314,24 +314,24 @@ export function ProductManagement({ products, language }: ProductManagementProps
             type="number"
             step="0.01"
             min={0}
-            className="rounded-lg border border-app-border px-3 py-2"
+            className="rounded-lg px-3 py-2"
             placeholder={t.unitCost}
             value={unitCost}
             onChange={(event) => setUnitCost(event.target.value)}
           />
           <input
-            className="rounded-lg border border-app-border px-3 py-2 md:col-span-2"
+            className="rounded-lg px-3 py-2 md:col-span-2"
             placeholder={t.articleNumber}
             value={articleNumber}
             onChange={(event) => setArticleNumber(event.target.value)}
           />
           <div className="md:col-span-2">
-            <button className="rounded-lg bg-app-accent px-4 py-2 text-sm text-white hover:bg-app-accent-hover">
+            <button className="app-button-primary px-4 py-2 text-sm">
               {t.create}
             </button>
           </div>
         </form>
-        <div className="mt-4 rounded-xl border border-dashed border-app-border bg-app-accent-soft/35 p-4">
+        <div className="mt-4 rounded-xl border border-dashed border-app-border bg-gray-50 p-4">
           <p className="text-sm font-medium text-foreground/90">{t.batchTitle}</p>
           <p className="mt-1 text-xs text-app-muted">
             {t.headers}
@@ -339,7 +339,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
           <button
             type="button"
             onClick={downloadCsvTemplate}
-            className="mt-2 rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft"
+            className="app-button-secondary mt-2 px-3 py-1.5 text-sm"
           >
             {t.downloadTemplate}
           </button>
@@ -352,94 +352,94 @@ export function ProductManagement({ products, language }: ProductManagementProps
         </div>
       </section>
 
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5">
+      <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.tableTitle}</h3>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[1080px] border-collapse text-sm">
+        <div className="app-table-shell mt-3 overflow-x-auto">
+          <table className="app-table min-w-[1080px]">
             <thead>
-              <tr className="border-b border-app-border/90 text-left text-app-muted">
-                <th className="px-2 py-2">{t.productName}</th>
-                <th className="px-2 py-2">{t.sku}</th>
-                <th className="px-2 py-2">{t.variant}</th>
-                <th className="px-2 py-2">{language === "en" ? "Unit Cost" : "单价"}</th>
-                <th className="px-2 py-2">{language === "en" ? "Article Number" : "Article Number"}</th>
-                <th className="px-2 py-2">{t.active}</th>
-                <th className="px-2 py-2">{t.prodSteps}</th>
-                <th className="px-2 py-2">{t.actions}</th>
+              <tr>
+                <th>{t.productName}</th>
+                <th>{t.sku}</th>
+                <th>{t.variant}</th>
+                <th>{language === "en" ? "Unit Cost" : "单价"}</th>
+                <th>{language === "en" ? "Article Number" : "Article Number"}</th>
+                <th>{t.active}</th>
+                <th>{t.prodSteps}</th>
+                <th>{t.actions}</th>
               </tr>
             </thead>
             <tbody>
               {editable.map((item) => (
-                <tr key={item.id} className="border-b border-app-border/35">
-                  <td className="px-2 py-2">
+                <tr key={item.id}>
+                  <td>
                     <input
                       value={item.productName}
                       onChange={(event) => updateRow(item.id, { productName: event.target.value })}
-                      className="w-full rounded border border-app-border px-2 py-1"
+                      className="w-full rounded-lg px-2 py-1"
                     />
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     <input
                       value={item.sku}
                       onChange={(event) => updateRow(item.id, { sku: event.target.value.toUpperCase() })}
-                      className="w-full rounded border border-app-border px-2 py-1"
+                      className="w-full rounded-lg px-2 py-1"
                     />
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     <input
                       value={item.variant}
                       onChange={(event) =>
                         updateRow(item.id, { variant: event.target.value.toUpperCase() })
                       }
-                      className="w-full rounded border border-app-border px-2 py-1"
+                      className="w-full rounded-lg px-2 py-1"
                     />
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     <input
                       type="number"
                       step="0.01"
                       min={0}
                       value={item.unitCost}
                       onChange={(event) => updateRow(item.id, { unitCost: Number(event.target.value) })}
-                      className="w-full rounded border border-app-border px-2 py-1"
+                      className="w-full rounded-lg px-2 py-1"
                     />
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     <input
                       value={item.articleNumber}
                       onChange={(event) => updateRow(item.id, { articleNumber: event.target.value })}
-                      className="w-full rounded border border-app-border px-2 py-1"
+                      className="w-full rounded-lg px-2 py-1"
                     />
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     <input
                       type="checkbox"
                       checked={item.isActive}
                       onChange={(event) => updateRow(item.id, { isActive: event.target.checked })}
                     />
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     <button
                       type="button"
                       onClick={() => openProductionTemplate(item)}
-                      className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft"
+                      className="app-button-secondary px-2 py-1 text-xs"
                     >
                       {t.prodSteps}
                     </button>
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => saveItem(item)}
-                        className="rounded border border-app-border px-2 py-1 hover:bg-app-accent-soft"
+                        className="app-button-secondary px-2 py-1 text-sm"
                       >
                         {t.save}
                       </button>
                       <button
                         type="button"
                         onClick={() => deleteItem(item)}
-                        className="rounded border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50"
+                        className="rounded-lg border border-red-200 px-2 py-1 text-sm text-red-600 hover:bg-red-50"
                       >
                         {t.delete}
                       </button>
@@ -453,7 +453,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
       </section>
 
       {message ? (
-        <p className="rounded-lg border border-app-border/90 bg-app-surface px-4 py-2 text-sm text-foreground/85">
+        <p className="app-card px-4 py-2 text-sm text-foreground/85">
           {message}
         </p>
       ) : null}
@@ -465,7 +465,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
           aria-modal="true"
           aria-labelledby="prod-template-title"
         >
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-lg">
+          <div className="app-card max-h-[90vh] w-full max-w-lg overflow-y-auto p-5">
             <h4 id="prod-template-title" className="text-lg font-semibold text-foreground">
               {t.prodSteps}
             </h4>
@@ -478,14 +478,14 @@ export function ProductManagement({ products, language }: ProductManagementProps
               onChange={(e) => setTemplateDraft(e.target.value)}
               disabled={templateBusy}
               rows={14}
-              className="mt-3 w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2 disabled:opacity-60"
+              className="mt-3 w-full px-3 py-2 text-sm disabled:opacity-60"
             />
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
                 disabled={templateBusy}
                 onClick={() => saveProductionTemplate()}
-                className="rounded-lg bg-app-accent px-4 py-2 text-sm text-white hover:bg-app-accent-hover disabled:opacity-50"
+                className="app-button-primary px-4 py-2 text-sm disabled:opacity-50"
               >
                 {t.save}
               </button>
@@ -493,7 +493,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
                 type="button"
                 disabled={templateBusy}
                 onClick={() => setTemplateModal(null)}
-                className="rounded-lg border border-app-border px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft disabled:opacity-50"
+                className="app-button-secondary px-4 py-2 text-sm disabled:opacity-50"
               >
                 {t.close}
               </button>

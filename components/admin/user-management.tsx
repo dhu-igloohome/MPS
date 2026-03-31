@@ -221,14 +221,14 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-app-border/90 bg-white p-5">
+      <section className="app-card p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <h3 className="text-lg font-semibold text-foreground">{t.createTitle}</h3>
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/api/admin/users/csv-template"
               prefetch={false}
-              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft"
+              className="app-button-secondary inline-flex px-3 py-1.5 text-sm"
             >
               {t.downloadTemplate}
             </Link>
@@ -243,7 +243,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
               type="button"
               disabled={loading}
               onClick={() => batchFileRef.current?.click()}
-              className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-foreground/85 hover:bg-app-accent-soft disabled:opacity-60"
+              className="app-button-secondary inline-flex px-3 py-1.5 text-sm disabled:opacity-60"
             >
               {t.batchImport}
             </button>
@@ -267,21 +267,21 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
         ) : null}
         <form className="mt-3 grid gap-3 md:grid-cols-2" onSubmit={createUser}>
           <input
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            className="rounded-lg px-3 py-2"
             placeholder={t.username}
             value={username}
             onChange={(event) => setUsername(event.target.value)}
             required
           />
           <input
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            className="rounded-lg px-3 py-2"
             placeholder={t.displayName}
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             required
           />
           <input
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            className="rounded-lg px-3 py-2"
             placeholder={t.initialPassword}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -289,7 +289,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
             minLength={6}
           />
           <select
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            className="rounded-lg px-3 py-2"
             value={role}
             onChange={(event) => setRole(event.target.value as UserRole)}
           >
@@ -301,7 +301,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
             {ALL_REGIONS.map((region) => (
               <label
                 key={region}
-                className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm"
+                className="inline-flex items-center gap-2 rounded-lg border border-app-border bg-white px-3 py-1.5 text-sm"
               >
                 <input
                   type="checkbox"
@@ -317,7 +317,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
             <button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-app-accent px-4 py-2 text-sm text-white hover:bg-app-accent-hover disabled:opacity-60"
+              className="app-button-primary px-4 py-2 text-sm disabled:opacity-60"
             >
               {loading ? t.creating : t.createUser}
             </button>
@@ -325,38 +325,38 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
         </form>
       </section>
 
-      <section className="rounded-2xl border border-app-border/90 bg-white p-5">
+      <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.existingAccounts}</h3>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[860px] border-collapse text-sm">
+        <div className="app-table-shell mt-3 overflow-x-auto">
+          <table className="app-table min-w-[860px]">
             <thead>
-              <tr className="border-b border-app-border/90 text-left text-zinc-600">
-                <th className="px-2 py-2">{t.username}</th>
-                <th className="px-2 py-2">{t.displayName}</th>
-                <th className="px-2 py-2">{t.role}</th>
-                <th className="px-2 py-2">{t.regions}</th>
-                <th className="px-2 py-2">{t.actions}</th>
+              <tr>
+                <th>{t.username}</th>
+                <th>{t.displayName}</th>
+                <th>{t.role}</th>
+                <th>{t.regions}</th>
+                <th>{t.actions}</th>
               </tr>
             </thead>
             <tbody>
               {editableUsers.map((user) => (
-                <tr key={user.username} className="border-b border-app-border/35">
-                  <td className="px-2 py-2">{user.username}</td>
-                  <td className="px-2 py-2">{user.displayName}</td>
-                  <td className="px-2 py-2">
+                <tr key={user.username}>
+                  <td>{user.username}</td>
+                  <td>{user.displayName}</td>
+                  <td>
                     <select
                       value={user.role}
                       disabled={user.username === "david"}
                       onChange={(event) =>
                         updateDraftRole(user.username, event.target.value as UserRole)
                       }
-                      className="rounded-lg border border-zinc-300 px-2 py-1"
+                      className="rounded-lg px-2 py-1"
                     >
                       <option value="regional_admin">regional_admin</option>
                       <option value="super_admin">super_admin</option>
                     </select>
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     <div className="flex flex-wrap gap-2">
                       {ALL_REGIONS.map((region) => (
                         <label key={`${user.username}-${region}`} className="inline-flex items-center gap-1">
@@ -371,12 +371,12 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
                       ))}
                     </div>
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => updateUser(user)}
-                        className="rounded-lg border border-zinc-300 px-2 py-1 hover:bg-app-accent-soft"
+                        className="app-button-secondary px-2 py-1 text-sm"
                       >
                         {t.saveResetPw}
                       </button>
@@ -384,7 +384,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
                         type="button"
                         disabled={user.username === "david"}
                         onClick={() => deleteUser(user.username)}
-                        className="rounded-lg border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        className="rounded-lg border border-red-200 px-2 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
                       >
                         {t.delete}
                       </button>
@@ -397,39 +397,39 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
         </div>
       </section>
 
-      <section className="rounded-2xl border border-app-border/90 bg-white p-5">
+      <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.operationLogs}</h3>
-        <p className="mt-1 text-sm text-zinc-600">
+        <p className="mt-1 text-sm text-[#4B5563]">
           {t.operationLogsDesc}
         </p>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[860px] border-collapse text-sm">
+        <div className="app-table-shell mt-3 overflow-x-auto">
+          <table className="app-table min-w-[860px]">
             <thead>
-              <tr className="border-b border-app-border/90 text-left text-zinc-600">
-                <th className="px-2 py-2">{t.time}</th>
-                <th className="px-2 py-2">{t.actor}</th>
-                <th className="px-2 py-2">{t.action}</th>
-                <th className="px-2 py-2">{t.targetUser}</th>
-                <th className="px-2 py-2">{t.details}</th>
+              <tr>
+                <th>{t.time}</th>
+                <th>{t.actor}</th>
+                <th>{t.action}</th>
+                <th>{t.targetUser}</th>
+                <th>{t.details}</th>
               </tr>
             </thead>
             <tbody>
               {auditLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-2 py-4 text-center text-app-muted">
+                  <td colSpan={5} className="py-4 text-center text-app-muted">
                     {t.noLogs}
                   </td>
                 </tr>
               ) : (
                 auditLogs.map((log) => (
-                  <tr key={log.id} className="border-b border-app-border/35">
-                    <td className="px-2 py-2">
+                  <tr key={log.id}>
+                    <td>
                       {new Date(log.createdAt).toLocaleString("en-US", { hour12: false })}
                     </td>
-                    <td className="px-2 py-2">{log.actorUsername}</td>
-                    <td className="px-2 py-2">{log.action}</td>
-                    <td className="px-2 py-2">{log.targetUsername}</td>
-                    <td className="px-2 py-2">{log.details || "-"}</td>
+                    <td>{log.actorUsername}</td>
+                    <td>{log.action}</td>
+                    <td>{log.targetUsername}</td>
+                    <td>{log.details || "-"}</td>
                   </tr>
                 ))
               )}

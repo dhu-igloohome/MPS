@@ -170,4 +170,31 @@
     background: white;
     box-shadow: var(--app-shadow);
   }
+
+  .app-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .app-table thead tr {
+    border-bottom: 1px solid var(--app-border);
+    background: rgb(249 250 251 / 1);
+    color: var(--app-subtle);
+    text-align: left;
+  }
+
+  .app-table tbody tr {
+    border-bottom: 1px solid rgb(229 231 235 / 0.6);
+  }
+
+  .app-table tbody tr:hover {
+    background: rgb(249 250 251 / 1);
+  }
+
+  .app-table th,
+  .app-table td {
+    padding: 0.625rem 0.75rem;
+    vertical-align: middle;
+  }
 }

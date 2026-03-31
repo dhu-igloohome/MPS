@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Globe, Lock, User } from "lucide-react";
 
 import { Language, normalizeLanguage } from "@/lib/i18n";
 
@@ -77,8 +78,8 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4 py-10">
-      <section className="w-full max-w-md rounded-2xl border border-app-border/90 bg-app-surface/95 p-6 shadow-lg shadow-slate-900/5 backdrop-blur-sm sm:p-8">
+    <main className="flex min-h-dvh items-center justify-center bg-[#F9FAFB] px-4 py-10">
+      <section className="w-full max-w-md rounded-2xl border border-app-border/90 bg-white p-6 shadow-[0_20px_40px_rgba(17,24,39,0.06)] sm:p-8">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="space-y-2">
             <Image
@@ -88,14 +89,15 @@ export default function LoginPage() {
               height={24}
               priority
             />
-            <h1 className="text-2xl font-semibold text-zinc-900">{t.title}</h1>
-            <p className="mt-2 text-sm text-zinc-600">{t.subtitle}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-[#111827]">{t.title}</h1>
+            <p className="mt-2 text-sm text-[#4B5563]">{t.subtitle}</p>
           </div>
           <button
             type="button"
             onClick={onToggleLanguage}
-            className="rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground hover:border-app-accent/40 hover:bg-app-accent-soft"
+            className="app-button-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm"
           >
+            <Globe size={15} strokeWidth={1.5} />
             {t.toggle}
           </button>
         </div>
@@ -103,23 +105,29 @@ export default function LoginPage() {
         <form className="space-y-4" onSubmit={onSubmit}>
           <label className="block">
             <span className="mb-1 block text-sm text-foreground">{t.username}</span>
-            <input
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              required
-              className="w-full rounded-lg border border-app-border bg-app-surface px-3 py-2 outline-none ring-app-accent focus:ring-2"
-            />
+            <div className="relative">
+              <User size={16} strokeWidth={1.5} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+              <input
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                required
+                className="w-full bg-white py-2 pl-10 pr-3"
+              />
+            </div>
           </label>
 
           <label className="block">
             <span className="mb-1 block text-sm text-foreground">{t.password}</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              className="w-full rounded-lg border border-app-border bg-app-surface px-3 py-2 outline-none ring-app-accent focus:ring-2"
-            />
+            <div className="relative">
+              <Lock size={16} strokeWidth={1.5} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                className="w-full bg-white py-2 pl-10 pr-3"
+              />
+            </div>
           </label>
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -127,7 +135,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-app-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-app-accent-hover disabled:cursor-not-allowed disabled:opacity-70"
+            className="app-button-primary w-full px-4 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? "..." : t.login}
           </button>
