@@ -45,8 +45,25 @@ export async function AppShell({ session, title, description, children }: AppShe
       ],
     },
     { href: "/logistics-progress", label: navText.logisticsProgress },
-    { href: "/npi", label: navText.npi },
-    { href: "/quality-control/test-cases", label: navText.qualityControl },
+    {
+      href: "/npi",
+      label: navText.npi,
+      children: [
+        { href: "/npi/bom", label: language === "en" ? "BOM Management" : "BOM 管理" },
+        { href: "/npi/tooling", label: language === "en" ? "Tooling & Fixture" : "工装夹具管理" },
+        { href: "/npi/ecn", label: language === "en" ? "ECN Management" : "ECN 管理" },
+      ],
+    },
+    {
+      href: "/quality-control/test-cases",
+      label: navText.qualityControl,
+      children: [
+        { href: "/quality-control/test-cases", label: language === "en" ? "Test Cases" : "测试用例管理" },
+        { href: "/quality-control/certifications", label: language === "en" ? "Certifications" : "认证管理" },
+        { href: "/quality-control/ort-reports", label: language === "en" ? "ORT Reports" : "ORT 报告管理" },
+        { href: "/quality-control/eight-d", label: language === "en" ? "8D Reports" : "8D 报告管理" },
+      ],
+    },
     { href: "/cost-control", label: navText.costControl },
     ...(session.role === "super_admin"
       ? [
