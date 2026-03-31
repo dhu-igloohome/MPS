@@ -35,7 +35,15 @@ export async function AppShell({ session, title, description, children }: AppShe
     { href: "/dashboard", label: navText.cockpit },
     { href: "/forecast", label: navText.forecastInput },
     { href: "/order-progress", label: navText.orderProgress },
-    { href: "/supply-chain/suppliers", label: navText.supplyChain },
+    {
+      href: "/supply-chain/suppliers",
+      label: navText.supplyChain,
+      children: [
+        { href: "/supply-chain/suppliers", label: language === "en" ? "Suppliers" : "供应商管理" },
+        { href: "/supply-chain/contracts", label: language === "en" ? "Contracts" : "合同管理" },
+        { href: "/supply-chain/cost-control", label: language === "en" ? "Cost Control" : "成本控制" },
+      ],
+    },
     { href: "/logistics-progress", label: navText.logisticsProgress },
     { href: "/npi", label: navText.npi },
     { href: "/quality-control/test-cases", label: navText.qualityControl },

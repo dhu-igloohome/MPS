@@ -4,7 +4,11 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export type ShellNavItem = { href: string; label: string };
+export type ShellNavItem = {
+  href: string;
+  label: string;
+  children?: Array<{ href: string; label: string }>;
+};
 
 type AppShellNavProps = {
   items: ShellNavItem[];
@@ -33,7 +37,9 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
         aria-label="Main navigation"
       >
         {items.map((item) => {
-          const on = pathMatches(pathname, item.href);
+          const on =
+            pathMatches(pathname, item.href) ||
+            Boolean(item.children?.some((child) => pathMatches(pathname, child.href)));
           return (
             <Link
               key={item.href}
@@ -53,15 +59,37 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
         >
           <ul className="space-y-1 rounded-2xl border border-app-border/90 bg-app-surface/95 p-3 shadow-sm backdrop-blur-sm">
             {items.map((item) => {
-              const on = pathMatches(pathname, item.href);
+              const on =
+                pathMatches(pathname, item.href) ||
+                Boolean(item.children?.some((child) => pathMatches(pathname, child.href)));
               return (
-                <li key={item.href}>
+                <li key={item.href} className="group relative">
                   <Link
                     href={item.href}
                     className={`block ${pill} ${on ? active : idle}`}
                   >
                     {item.label}
                   </Link>
+                  {item.children?.length ? (
+                    <div className="pointer-events-none absolute left-full top-0 z-20 ml-2 w-44 rounded-xl border border-app-border/90 bg-app-surface/95 p-1.5 opacity-0 shadow-lg transition-all duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
+                      {item.children.map((child) => {
+                        const childOn = pathMatches(pathname, child.href);
+                        return (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={`mb-1 block rounded-lg px-2.5 py-2 text-sm transition-colors last:mb-0 ${
+                              childOn
+                                ? "border border-app-accent/25 bg-app-accent-soft font-semibold text-app-accent"
+                                : "border border-transparent text-foreground/85 hover:border-app-border hover:bg-app-accent-soft"
+                            }`}
+                          >
+                            {child.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ) : null}
                 </li>
               );
             })}
