@@ -35,6 +35,17 @@ import {
   ToolingEntry,
   ToolingStatus,
   ToolingType,
+  Qc8dReportEntry,
+  Qc8dSeverity,
+  Qc8dStatus,
+  QcCertificationEntry,
+  QcCertificationStatus,
+  QcOrtReportEntry,
+  QcOrtResult,
+  QcTestCaseCategory,
+  QcTestCaseEntry,
+  QcTestCasePriority,
+  QcTestCaseStatus,
   UserRole,
 } from "@/lib/types";
 
@@ -208,6 +219,94 @@ type EcnRow = {
   affected_skus: string;
   impact_summary: string;
   reason: string;
+  remarks: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type QcTestCaseRow = {
+  id: number;
+  test_case_id: string;
+  title: string;
+  product_sku: string;
+  firmware_version: string;
+  module_name: string;
+  category: QcTestCaseCategory;
+  priority: QcTestCasePriority;
+  status: QcTestCaseStatus;
+  preconditions: string;
+  steps: string;
+  expected_result: string;
+  environment: string;
+  owner: string;
+  remarks: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type QcCertificationRow = {
+  id: number;
+  certificate_no: string;
+  product_sku: string;
+  product_name: string;
+  region: string;
+  standard_name: string;
+  cert_body: string;
+  status: QcCertificationStatus;
+  application_date: string | null;
+  issue_date: string | null;
+  expiry_date: string | null;
+  report_url: string;
+  owner: string;
+  notes: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type QcOrtReportRow = {
+  id: number;
+  ort_no: string;
+  product_sku: string;
+  batch_no: string;
+  factory: string;
+  sample_size: number;
+  test_items: string;
+  environment_profile: string;
+  duration: string;
+  result_summary: QcOrtResult;
+  fail_count: number;
+  fail_modes: string;
+  action_taken: string;
+  owner: string;
+  start_date: string | null;
+  end_date: string | null;
+  report_url: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type Qc8dReportRow = {
+  id: number;
+  report_no: string;
+  issue_title: string;
+  product_sku: string;
+  customer: string;
+  region: string;
+  severity: Qc8dSeverity;
+  status: Qc8dStatus;
+  owner: string;
+  d3_containment: string;
+  d4_root_cause: string;
+  d5_corrective_action: string;
+  d6_implementation_plan: string;
+  date_opened: string | null;
+  date_closed: string | null;
+  affected_quantity: number;
+  cost_impact: string | number;
   remarks: string;
   created_by: string;
   created_at: string;
@@ -2150,6 +2249,102 @@ function mapEcnEntry(row: EcnRow): EcnEntry {
   };
 }
 
+function mapQcTestCaseEntry(row: QcTestCaseRow): QcTestCaseEntry {
+  return {
+    id: String(row.id),
+    testCaseId: row.test_case_id || "",
+    title: row.title || "",
+    productSku: row.product_sku || "",
+    firmwareVersion: row.firmware_version || "",
+    moduleName: row.module_name || "",
+    category: row.category,
+    priority: row.priority,
+    status: row.status,
+    preconditions: row.preconditions || "",
+    steps: row.steps || "",
+    expectedResult: row.expected_result || "",
+    environment: row.environment || "",
+    owner: row.owner || "",
+    remarks: row.remarks || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapQcCertificationEntry(row: QcCertificationRow): QcCertificationEntry {
+  return {
+    id: String(row.id),
+    certificateNo: row.certificate_no || "",
+    productSku: row.product_sku || "",
+    productName: row.product_name || "",
+    region: row.region || "",
+    standardName: row.standard_name || "",
+    certBody: row.cert_body || "",
+    status: row.status,
+    applicationDate: row.application_date ? formatPgDateOnly(row.application_date) : null,
+    issueDate: row.issue_date ? formatPgDateOnly(row.issue_date) : null,
+    expiryDate: row.expiry_date ? formatPgDateOnly(row.expiry_date) : null,
+    reportUrl: row.report_url || "",
+    owner: row.owner || "",
+    notes: row.notes || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapQcOrtReportEntry(row: QcOrtReportRow): QcOrtReportEntry {
+  return {
+    id: String(row.id),
+    ortNo: row.ort_no || "",
+    productSku: row.product_sku || "",
+    batchNo: row.batch_no || "",
+    factory: row.factory || "",
+    sampleSize: Number(row.sample_size ?? 0),
+    testItems: row.test_items || "",
+    environmentProfile: row.environment_profile || "",
+    duration: row.duration || "",
+    resultSummary: row.result_summary,
+    failCount: Number(row.fail_count ?? 0),
+    failModes: row.fail_modes || "",
+    actionTaken: row.action_taken || "",
+    owner: row.owner || "",
+    startDate: row.start_date ? formatPgDateOnly(row.start_date) : null,
+    endDate: row.end_date ? formatPgDateOnly(row.end_date) : null,
+    reportUrl: row.report_url || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapQc8dReportEntry(row: Qc8dReportRow): Qc8dReportEntry {
+  return {
+    id: String(row.id),
+    reportNo: row.report_no || "",
+    issueTitle: row.issue_title || "",
+    productSku: row.product_sku || "",
+    customer: row.customer || "",
+    region: row.region || "",
+    severity: row.severity,
+    status: row.status,
+    owner: row.owner || "",
+    d3Containment: row.d3_containment || "",
+    d4RootCause: row.d4_root_cause || "",
+    d5CorrectiveAction: row.d5_corrective_action || "",
+    d6ImplementationPlan: row.d6_implementation_plan || "",
+    dateOpened: row.date_opened ? formatPgDateOnly(row.date_opened) : null,
+    dateClosed: row.date_closed ? formatPgDateOnly(row.date_closed) : null,
+    affectedQuantity: Number(row.affected_quantity ?? 0),
+    costImpact: Number(row.cost_impact ?? 0),
+    remarks: row.remarks || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 function mapContract(row: ContractRow): ContractEntry {
   return {
     id: String(row.id),
@@ -2525,6 +2720,297 @@ export async function deleteEcnEntryById(id: string): Promise<void> {
   await ensureDatabase();
   const db = getSql();
   await db`delete from npi_ecn_entries where id = ${Number(id)};`;
+}
+
+export async function listQcTestCaseEntries(): Promise<QcTestCaseEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<QcTestCaseRow[]>`
+    select
+      id, test_case_id, title, product_sku, firmware_version, module_name, category, priority, status,
+      preconditions, steps, expected_result, environment, owner, remarks,
+      created_by, created_at::text, updated_at::text
+    from qc_test_cases
+    order by updated_at desc, id desc;
+  `;
+  return rows.map(mapQcTestCaseEntry);
+}
+
+export async function createQcTestCaseEntry(input: Omit<QcTestCaseEntry, "id" | "createdAt" | "updatedAt">): Promise<QcTestCaseEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<QcTestCaseRow[]>`
+    insert into qc_test_cases (
+      test_case_id, title, product_sku, firmware_version, module_name, category, priority, status,
+      preconditions, steps, expected_result, environment, owner, remarks, created_by, updated_at
+    ) values (
+      ${input.testCaseId.trim()}, ${input.title.trim()}, ${input.productSku.trim()}, ${input.firmwareVersion.trim()},
+      ${input.moduleName.trim()}, ${input.category}, ${input.priority}, ${input.status},
+      ${input.preconditions.trim()}, ${input.steps.trim()}, ${input.expectedResult.trim()}, ${input.environment.trim()},
+      ${input.owner.trim()}, ${input.remarks.trim()}, ${input.createdBy}, now()
+    )
+    returning
+      id, test_case_id, title, product_sku, firmware_version, module_name, category, priority, status,
+      preconditions, steps, expected_result, environment, owner, remarks,
+      created_by, created_at::text, updated_at::text;
+  `;
+  return mapQcTestCaseEntry(rows[0]);
+}
+
+export async function updateQcTestCaseEntry(input: Omit<QcTestCaseEntry, "createdAt" | "updatedAt">): Promise<QcTestCaseEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<QcTestCaseRow[]>`
+    update qc_test_cases
+    set
+      test_case_id = ${input.testCaseId.trim()},
+      title = ${input.title.trim()},
+      product_sku = ${input.productSku.trim()},
+      firmware_version = ${input.firmwareVersion.trim()},
+      module_name = ${input.moduleName.trim()},
+      category = ${input.category},
+      priority = ${input.priority},
+      status = ${input.status},
+      preconditions = ${input.preconditions.trim()},
+      steps = ${input.steps.trim()},
+      expected_result = ${input.expectedResult.trim()},
+      environment = ${input.environment.trim()},
+      owner = ${input.owner.trim()},
+      remarks = ${input.remarks.trim()},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning
+      id, test_case_id, title, product_sku, firmware_version, module_name, category, priority, status,
+      preconditions, steps, expected_result, environment, owner, remarks,
+      created_by, created_at::text, updated_at::text;
+  `;
+  return rows[0] ? mapQcTestCaseEntry(rows[0]) : null;
+}
+
+export async function deleteQcTestCaseEntryById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from qc_test_cases where id = ${Number(id)};`;
+}
+
+export async function listQcCertificationEntries(): Promise<QcCertificationEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<QcCertificationRow[]>`
+    select
+      id, certificate_no, product_sku, product_name, region, standard_name, cert_body, status,
+      application_date::text, issue_date::text, expiry_date::text, report_url, owner, notes,
+      created_by, created_at::text, updated_at::text
+    from qc_certifications
+    order by updated_at desc, id desc;
+  `;
+  return rows.map(mapQcCertificationEntry);
+}
+
+export async function createQcCertificationEntry(input: Omit<QcCertificationEntry, "id" | "createdAt" | "updatedAt">): Promise<QcCertificationEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<QcCertificationRow[]>`
+    insert into qc_certifications (
+      certificate_no, product_sku, product_name, region, standard_name, cert_body, status,
+      application_date, issue_date, expiry_date, report_url, owner, notes, created_by, updated_at
+    ) values (
+      ${input.certificateNo.trim()}, ${input.productSku.trim()}, ${input.productName.trim()}, ${input.region.trim()},
+      ${input.standardName.trim()}, ${input.certBody.trim()}, ${input.status},
+      ${input.applicationDate}, ${input.issueDate}, ${input.expiryDate}, ${input.reportUrl.trim()},
+      ${input.owner.trim()}, ${input.notes.trim()}, ${input.createdBy}, now()
+    )
+    returning
+      id, certificate_no, product_sku, product_name, region, standard_name, cert_body, status,
+      application_date::text, issue_date::text, expiry_date::text, report_url, owner, notes,
+      created_by, created_at::text, updated_at::text;
+  `;
+  return mapQcCertificationEntry(rows[0]);
+}
+
+export async function updateQcCertificationEntry(input: Omit<QcCertificationEntry, "createdAt" | "updatedAt">): Promise<QcCertificationEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<QcCertificationRow[]>`
+    update qc_certifications
+    set
+      certificate_no = ${input.certificateNo.trim()},
+      product_sku = ${input.productSku.trim()},
+      product_name = ${input.productName.trim()},
+      region = ${input.region.trim()},
+      standard_name = ${input.standardName.trim()},
+      cert_body = ${input.certBody.trim()},
+      status = ${input.status},
+      application_date = ${input.applicationDate},
+      issue_date = ${input.issueDate},
+      expiry_date = ${input.expiryDate},
+      report_url = ${input.reportUrl.trim()},
+      owner = ${input.owner.trim()},
+      notes = ${input.notes.trim()},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning
+      id, certificate_no, product_sku, product_name, region, standard_name, cert_body, status,
+      application_date::text, issue_date::text, expiry_date::text, report_url, owner, notes,
+      created_by, created_at::text, updated_at::text;
+  `;
+  return rows[0] ? mapQcCertificationEntry(rows[0]) : null;
+}
+
+export async function deleteQcCertificationEntryById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from qc_certifications where id = ${Number(id)};`;
+}
+
+export async function listQcOrtReportEntries(): Promise<QcOrtReportEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<QcOrtReportRow[]>`
+    select
+      id, ort_no, product_sku, batch_no, factory, sample_size, test_items, environment_profile, duration, result_summary,
+      fail_count, fail_modes, action_taken, owner, start_date::text, end_date::text, report_url,
+      created_by, created_at::text, updated_at::text
+    from qc_ort_reports
+    order by updated_at desc, id desc;
+  `;
+  return rows.map(mapQcOrtReportEntry);
+}
+
+export async function createQcOrtReportEntry(input: Omit<QcOrtReportEntry, "id" | "createdAt" | "updatedAt">): Promise<QcOrtReportEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<QcOrtReportRow[]>`
+    insert into qc_ort_reports (
+      ort_no, product_sku, batch_no, factory, sample_size, test_items, environment_profile, duration, result_summary,
+      fail_count, fail_modes, action_taken, owner, start_date, end_date, report_url, created_by, updated_at
+    ) values (
+      ${input.ortNo.trim()}, ${input.productSku.trim()}, ${input.batchNo.trim()}, ${input.factory.trim()},
+      ${Math.max(0, Math.trunc(input.sampleSize))}, ${input.testItems.trim()}, ${input.environmentProfile.trim()},
+      ${input.duration.trim()}, ${input.resultSummary}, ${Math.max(0, Math.trunc(input.failCount))},
+      ${input.failModes.trim()}, ${input.actionTaken.trim()}, ${input.owner.trim()}, ${input.startDate}, ${input.endDate},
+      ${input.reportUrl.trim()}, ${input.createdBy}, now()
+    )
+    returning
+      id, ort_no, product_sku, batch_no, factory, sample_size, test_items, environment_profile, duration, result_summary,
+      fail_count, fail_modes, action_taken, owner, start_date::text, end_date::text, report_url,
+      created_by, created_at::text, updated_at::text;
+  `;
+  return mapQcOrtReportEntry(rows[0]);
+}
+
+export async function updateQcOrtReportEntry(input: Omit<QcOrtReportEntry, "createdAt" | "updatedAt">): Promise<QcOrtReportEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<QcOrtReportRow[]>`
+    update qc_ort_reports
+    set
+      ort_no = ${input.ortNo.trim()},
+      product_sku = ${input.productSku.trim()},
+      batch_no = ${input.batchNo.trim()},
+      factory = ${input.factory.trim()},
+      sample_size = ${Math.max(0, Math.trunc(input.sampleSize))},
+      test_items = ${input.testItems.trim()},
+      environment_profile = ${input.environmentProfile.trim()},
+      duration = ${input.duration.trim()},
+      result_summary = ${input.resultSummary},
+      fail_count = ${Math.max(0, Math.trunc(input.failCount))},
+      fail_modes = ${input.failModes.trim()},
+      action_taken = ${input.actionTaken.trim()},
+      owner = ${input.owner.trim()},
+      start_date = ${input.startDate},
+      end_date = ${input.endDate},
+      report_url = ${input.reportUrl.trim()},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning
+      id, ort_no, product_sku, batch_no, factory, sample_size, test_items, environment_profile, duration, result_summary,
+      fail_count, fail_modes, action_taken, owner, start_date::text, end_date::text, report_url,
+      created_by, created_at::text, updated_at::text;
+  `;
+  return rows[0] ? mapQcOrtReportEntry(rows[0]) : null;
+}
+
+export async function deleteQcOrtReportEntryById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from qc_ort_reports where id = ${Number(id)};`;
+}
+
+export async function listQc8dReportEntries(): Promise<Qc8dReportEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<Qc8dReportRow[]>`
+    select
+      id, report_no, issue_title, product_sku, customer, region, severity, status, owner,
+      d3_containment, d4_root_cause, d5_corrective_action, d6_implementation_plan, date_opened::text, date_closed::text,
+      affected_quantity, cost_impact::text, remarks, created_by, created_at::text, updated_at::text
+    from qc_8d_reports
+    order by updated_at desc, id desc;
+  `;
+  return rows.map(mapQc8dReportEntry);
+}
+
+export async function createQc8dReportEntry(input: Omit<Qc8dReportEntry, "id" | "createdAt" | "updatedAt">): Promise<Qc8dReportEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<Qc8dReportRow[]>`
+    insert into qc_8d_reports (
+      report_no, issue_title, product_sku, customer, region, severity, status, owner,
+      d3_containment, d4_root_cause, d5_corrective_action, d6_implementation_plan,
+      date_opened, date_closed, affected_quantity, cost_impact, remarks, created_by, updated_at
+    ) values (
+      ${input.reportNo.trim()}, ${input.issueTitle.trim()}, ${input.productSku.trim()}, ${input.customer.trim()}, ${input.region.trim()},
+      ${input.severity}, ${input.status}, ${input.owner.trim()}, ${input.d3Containment.trim()}, ${input.d4RootCause.trim()},
+      ${input.d5CorrectiveAction.trim()}, ${input.d6ImplementationPlan.trim()}, ${input.dateOpened}, ${input.dateClosed},
+      ${Math.max(0, Math.trunc(input.affectedQuantity))}, ${Math.max(0, input.costImpact)}, ${input.remarks.trim()},
+      ${input.createdBy}, now()
+    )
+    returning
+      id, report_no, issue_title, product_sku, customer, region, severity, status, owner,
+      d3_containment, d4_root_cause, d5_corrective_action, d6_implementation_plan, date_opened::text, date_closed::text,
+      affected_quantity, cost_impact::text, remarks, created_by, created_at::text, updated_at::text;
+  `;
+  return mapQc8dReportEntry(rows[0]);
+}
+
+export async function updateQc8dReportEntry(input: Omit<Qc8dReportEntry, "createdAt" | "updatedAt">): Promise<Qc8dReportEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<Qc8dReportRow[]>`
+    update qc_8d_reports
+    set
+      report_no = ${input.reportNo.trim()},
+      issue_title = ${input.issueTitle.trim()},
+      product_sku = ${input.productSku.trim()},
+      customer = ${input.customer.trim()},
+      region = ${input.region.trim()},
+      severity = ${input.severity},
+      status = ${input.status},
+      owner = ${input.owner.trim()},
+      d3_containment = ${input.d3Containment.trim()},
+      d4_root_cause = ${input.d4RootCause.trim()},
+      d5_corrective_action = ${input.d5CorrectiveAction.trim()},
+      d6_implementation_plan = ${input.d6ImplementationPlan.trim()},
+      date_opened = ${input.dateOpened},
+      date_closed = ${input.dateClosed},
+      affected_quantity = ${Math.max(0, Math.trunc(input.affectedQuantity))},
+      cost_impact = ${Math.max(0, input.costImpact)},
+      remarks = ${input.remarks.trim()},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning
+      id, report_no, issue_title, product_sku, customer, region, severity, status, owner,
+      d3_containment, d4_root_cause, d5_corrective_action, d6_implementation_plan, date_opened::text, date_closed::text,
+      affected_quantity, cost_impact::text, remarks, created_by, created_at::text, updated_at::text;
+  `;
+  return rows[0] ? mapQc8dReportEntry(rows[0]) : null;
+}
+
+export async function deleteQc8dReportEntryById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from qc_8d_reports where id = ${Number(id)};`;
 }
 
 export async function listSuppliers(): Promise<SupplierEntry[]> {

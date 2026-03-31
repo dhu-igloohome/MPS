@@ -596,6 +596,113 @@ async function setupSchema() {
     add constraint npi_ecn_entries_priority_check
     check (priority in ('low', 'medium', 'high'));
   `;
+
+  await db`
+    create table if not exists qc_test_cases (
+      id bigserial primary key,
+      test_case_id text not null default '',
+      title text not null default '',
+      product_sku text not null default '',
+      firmware_version text not null default '',
+      module_name text not null default '',
+      category text not null default 'functional'
+        check (category in ('functional', 'security', 'reliability', 'compatibility', 'ota', 'performance')),
+      priority text not null default 'P1'
+        check (priority in ('P0', 'P1', 'P2')),
+      status text not null default 'draft'
+        check (status in ('draft', 'reviewed', 'released', 'obsolete')),
+      preconditions text not null default '',
+      steps text not null default '',
+      expected_result text not null default '',
+      environment text not null default '',
+      owner text not null default '',
+      remarks text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`create index if not exists idx_qc_test_cases_case_id on qc_test_cases (test_case_id, id desc);`;
+
+  await db`
+    create table if not exists qc_certifications (
+      id bigserial primary key,
+      certificate_no text not null default '',
+      product_sku text not null default '',
+      product_name text not null default '',
+      region text not null default '',
+      standard_name text not null default '',
+      cert_body text not null default '',
+      status text not null default 'planning'
+        check (status in ('planning', 'in_progress', 'approved', 'expired', 'withdrawn')),
+      application_date date,
+      issue_date date,
+      expiry_date date,
+      report_url text not null default '',
+      owner text not null default '',
+      notes text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`create index if not exists idx_qc_certifications_cert_no on qc_certifications (certificate_no, id desc);`;
+
+  await db`
+    create table if not exists qc_ort_reports (
+      id bigserial primary key,
+      ort_no text not null default '',
+      product_sku text not null default '',
+      batch_no text not null default '',
+      factory text not null default '',
+      sample_size integer not null default 0,
+      test_items text not null default '',
+      environment_profile text not null default '',
+      duration text not null default '',
+      result_summary text not null default 'on_going'
+        check (result_summary in ('on_going', 'pass', 'fail')),
+      fail_count integer not null default 0,
+      fail_modes text not null default '',
+      action_taken text not null default '',
+      owner text not null default '',
+      start_date date,
+      end_date date,
+      report_url text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`create index if not exists idx_qc_ort_reports_ort_no on qc_ort_reports (ort_no, id desc);`;
+
+  await db`
+    create table if not exists qc_8d_reports (
+      id bigserial primary key,
+      report_no text not null default '',
+      issue_title text not null default '',
+      product_sku text not null default '',
+      customer text not null default '',
+      region text not null default '',
+      severity text not null default 'S3'
+        check (severity in ('S1', 'S2', 'S3', 'S4')),
+      status text not null default 'open'
+        check (status in ('open', 'containment', 'root_caused', 'implemented', 'verified', 'closed')),
+      owner text not null default '',
+      d3_containment text not null default '',
+      d4_root_cause text not null default '',
+      d5_corrective_action text not null default '',
+      d6_implementation_plan text not null default '',
+      date_opened date,
+      date_closed date,
+      affected_quantity integer not null default 0,
+      cost_impact numeric(14, 2) not null default 0,
+      remarks text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`create index if not exists idx_qc_8d_reports_report_no on qc_8d_reports (report_no, id desc);`;
 }
 
 async function seedUsers() {

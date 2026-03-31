@@ -152,6 +152,105 @@ export type EcnEntry = {
   updatedAt: string;
 };
 
+export type QcTestCaseStatus = "draft" | "reviewed" | "released" | "obsolete";
+export type QcTestCasePriority = "P0" | "P1" | "P2";
+export type QcTestCaseCategory = "functional" | "security" | "reliability" | "compatibility" | "ota" | "performance";
+
+export type QcTestCaseEntry = {
+  id: string;
+  testCaseId: string;
+  title: string;
+  productSku: string;
+  firmwareVersion: string;
+  moduleName: string;
+  category: QcTestCaseCategory;
+  priority: QcTestCasePriority;
+  status: QcTestCaseStatus;
+  preconditions: string;
+  steps: string;
+  expectedResult: string;
+  environment: string;
+  owner: string;
+  remarks: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type QcCertificationStatus = "planning" | "in_progress" | "approved" | "expired" | "withdrawn";
+
+export type QcCertificationEntry = {
+  id: string;
+  certificateNo: string;
+  productSku: string;
+  productName: string;
+  region: string;
+  standardName: string;
+  certBody: string;
+  status: QcCertificationStatus;
+  applicationDate: string | null;
+  issueDate: string | null;
+  expiryDate: string | null;
+  reportUrl: string;
+  owner: string;
+  notes: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type QcOrtResult = "on_going" | "pass" | "fail";
+
+export type QcOrtReportEntry = {
+  id: string;
+  ortNo: string;
+  productSku: string;
+  batchNo: string;
+  factory: string;
+  sampleSize: number;
+  testItems: string;
+  environmentProfile: string;
+  duration: string;
+  resultSummary: QcOrtResult;
+  failCount: number;
+  failModes: string;
+  actionTaken: string;
+  owner: string;
+  startDate: string | null;
+  endDate: string | null;
+  reportUrl: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Qc8dStatus = "open" | "containment" | "root_caused" | "implemented" | "verified" | "closed";
+export type Qc8dSeverity = "S1" | "S2" | "S3" | "S4";
+
+export type Qc8dReportEntry = {
+  id: string;
+  reportNo: string;
+  issueTitle: string;
+  productSku: string;
+  customer: string;
+  region: string;
+  severity: Qc8dSeverity;
+  status: Qc8dStatus;
+  owner: string;
+  d3Containment: string;
+  d4RootCause: string;
+  d5CorrectiveAction: string;
+  d6ImplementationPlan: string;
+  dateOpened: string | null;
+  dateClosed: string | null;
+  affectedQuantity: number;
+  costImpact: number;
+  remarks: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ContractEntry = {
   id: string;
   orderProgressId: string;

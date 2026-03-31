@@ -25,6 +25,7 @@ export async function AppShell({ session, title, description, children }: AppShe
     supplyChain: language === "en" ? "Supply Chain Management" : "供应链管理",
     logisticsProgress: language === "en" ? "Logistics Progress" : "物流进度",
     npi: language === "en" ? "NPI" : "NPI",
+    qualityControl: language === "en" ? "Quality Control" : "质量管理",
     costControl: language === "en" ? "Cost Control" : "成本控制",
     userManagement: language === "en" ? "User Management" : "用户管理",
     productDatabase: language === "en" ? "Product Database" : "产品数据库",
@@ -37,6 +38,7 @@ export async function AppShell({ session, title, description, children }: AppShe
     { href: "/supply-chain/suppliers", label: navText.supplyChain },
     { href: "/logistics-progress", label: navText.logisticsProgress },
     { href: "/npi", label: navText.npi },
+    { href: "/quality-control/test-cases", label: navText.qualityControl },
     { href: "/cost-control", label: navText.costControl },
     ...(session.role === "super_admin"
       ? [
