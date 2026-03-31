@@ -20,7 +20,7 @@ export default async function NpiBomPage() {
   return (
     <AppShell
       session={session}
-      title={language === "en" ? "NPI · BOM Management" : "NPI · BOM 管理"}
+      title={language === "en" ? "NPI Management · BOM Management" : "NPI 管理 · BOM 管理"}
       description={
         language === "en"
           ? "Maintain BOM lines with version, supplier, cost and lead-time fields."

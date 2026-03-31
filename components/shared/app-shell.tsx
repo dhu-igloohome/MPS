@@ -24,7 +24,7 @@ export async function AppShell({ session, title, description, children }: AppShe
     orderProgress: language === "en" ? "Order Progress" : "订单进度",
     supplyChain: language === "en" ? "Supply Chain Management" : "供应链管理",
     logisticsProgress: language === "en" ? "Logistics Progress" : "物流进度",
-    npi: language === "en" ? "NPI" : "NPI",
+    npi: language === "en" ? "NPI Management" : "NPI 管理",
     qualityControl: language === "en" ? "Quality Control" : "质量管理",
     costControl: language === "en" ? "Cost Control" : "成本控制",
     userManagement: language === "en" ? "User Management" : "用户管理",
@@ -67,6 +67,9 @@ export async function AppShell({ session, title, description, children }: AppShe
         { href: "/npi/tooling", label: language === "en" ? "Tooling & Fixture" : "工装夹具管理" },
         { href: "/npi/ecn", label: language === "en" ? "ECN Management" : "ECN 管理" },
         { href: "/npi/sop", label: language === "en" ? "SOP Management" : "SOP 管理" },
+        ...(session.role === "super_admin"
+          ? [{ href: "/admin/products", label: navText.productDatabase }]
+          : []),
       ],
     },
     {
@@ -83,7 +86,6 @@ export async function AppShell({ session, title, description, children }: AppShe
     ...(session.role === "super_admin"
       ? [
           { href: "/admin/users", label: navText.userManagement },
-          { href: "/admin/products", label: navText.productDatabase },
         ]
       : []),
   ];

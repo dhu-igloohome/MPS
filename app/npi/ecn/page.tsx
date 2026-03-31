@@ -19,7 +19,7 @@ export default async function NpiEcnPage() {
   return (
     <AppShell
       session={session}
-      title={language === "en" ? "NPI · ECN Management" : "NPI · ECN 管理"}
+      title={language === "en" ? "NPI Management · ECN Management" : "NPI 管理 · ECN 管理"}
       description={language === "en" ? "Manage engineering changes, status and impact." : "管理工程变更流程、状态与影响。"}
     >
       <EcnManagement entries={entries} language={language} />

@@ -20,7 +20,7 @@ export default async function NpiSopPage() {
   return (
     <AppShell
       session={session}
-      title={language === "en" ? "NPI · SOP Management" : "NPI · SOP 管理"}
+      title={language === "en" ? "NPI Management · SOP Management" : "NPI 管理 · SOP 管理"}
       description={
         language === "en"
           ? "Manage smart lock SOPs with process, control and release fields."

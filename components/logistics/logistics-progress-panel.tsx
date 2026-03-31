@@ -311,8 +311,8 @@ export function LogisticsProgressPanel({
         {products.length === 0 ? (
           <p className="mt-2 text-sm text-amber-800">
             {language === "en"
-              ? "No active products. Add products in Product Database first."
-              : "没有启用中的产品，请先在产品数据库中维护。"}
+              ? "No active products. Add products in NPI Management > Product Database first."
+              : "没有启用中的产品，请先在 NPI 管理 > 产品数据库 中维护。"}
           </p>
         ) : null}
 

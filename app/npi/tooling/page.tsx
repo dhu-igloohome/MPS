@@ -19,7 +19,7 @@ export default async function NpiToolingPage() {
   return (
     <AppShell
       session={session}
-      title={language === "en" ? "NPI · Tooling & Fixture" : "NPI · 工装夹具管理"}
+      title={language === "en" ? "NPI Management · Tooling & Fixture" : "NPI 管理 · 工装夹具管理"}
       description={language === "en" ? "Track tooling lifecycle, cost and maintenance." : "管理工装夹具的生命周期、成本与保养。"}
     >
       <ToolingManagement entries={entries} language={language} />

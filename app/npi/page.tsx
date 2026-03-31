@@ -47,13 +47,25 @@ export default async function NpiPage() {
       title: language === "en" ? "SOP Management" : "SOP 管理",
       desc: language === "en" ? "Manage SOP release, training and process controls." : "管理 SOP 发布、培训与过程控制。",
     },
+    ...(session.role === "super_admin"
+      ? [
+          {
+            href: "/admin/products",
+            title: language === "en" ? "Product Database" : "产品数据库",
+            desc:
+              language === "en"
+                ? "Manage product name, SKU, variant, unit cost, and article number."
+                : "管理产品名称、SKU、型号、单价和 Article Number。",
+          },
+        ]
+      : []),
   ];
 
   return (
     <AppShell
       session={session}
-      title={language === "en" ? "NPI Module" : "NPI 模块"}
-      description={language === "en" ? "New Product Introduction workbench." : "新产品导入工作台。"}
+      title={language === "en" ? "NPI Management" : "NPI 管理"}
+      description={language === "en" ? "New Product Introduction management workbench." : "新产品导入管理工作台。"}
     >
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">

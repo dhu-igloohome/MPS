@@ -130,8 +130,8 @@ function labels(language: Language) {
     colProduction: en ? "Production" : "生产进度",
     productionTitle: en ? "Production steps (this order line)" : "生产进度（本订单行）",
     productionEmpty: en
-      ? "No template for this product + SKU. Super admin can define steps in Product Database."
-      : "当前产品+SKU 无工序模板，超级管理员可在产品数据库中维护「生产工序」。",
+      ? "No template for this product + SKU. Super admin can define steps in NPI Management > Product Database."
+      : "当前产品+SKU 无工序模板，超级管理员可在 NPI 管理 > 产品数据库 中维护「生产工序」。",
     productionToggleFailed: en ? "Could not update step." : "更新工序状态失败。",
     deletionLogTitle: en ? "Deletion logs" : "删除日志",
     deletionLogEmpty: en ? "No deletion logs yet." : "暂无删除日志。",
@@ -690,8 +690,8 @@ export function OrderProgressPanel({
         {products.length === 0 ? (
           <p className="mt-2 text-sm text-amber-800">
             {language === "en"
-              ? "No active products. Add products in Product Database first."
-              : "没有启用中的产品，请先在产品数据库中维护。"}
+              ? "No active products. Add products in NPI Management > Product Database first."
+              : "没有启用中的产品，请先在 NPI 管理 > 产品数据库 中维护。"}
           </p>
         ) : null}
 

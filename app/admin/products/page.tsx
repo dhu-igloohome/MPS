@@ -25,7 +25,7 @@ export default async function AdminProductsPage() {
   return (
     <AppShell
       session={session}
-      title={language === "en" ? "Product Database" : "产品数据库"}
+      title={language === "en" ? "NPI Management · Product Database" : "NPI 管理 · 产品数据库"}
       description={
         language === "en"
           ? "Manage product name, SKU, variant, unit cost, and article number."

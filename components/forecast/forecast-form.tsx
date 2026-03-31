@@ -51,8 +51,8 @@ export function ForecastForm({
         : "按产品/SKU 填写月度 forecast（BTO 与 BTS）。保存时系统自动分配唯一 forecast number（按区域前缀 + 新加坡日期 + 当日流水）。",
     noProducts:
       language === "en"
-        ? "No active products found. Please ask admin to add products in Product Database."
-        : "未找到启用中的产品，请联系管理员在产品数据库中维护。",
+        ? "No active products found. Please ask admin to add products in NPI Management > Product Database."
+        : "未找到启用中的产品，请联系管理员在 NPI 管理 > 产品数据库 中维护。",
     forecastMonth: language === "en" ? "Forecast Month" : "Forecast 月份",
     region: language === "en" ? "Region" : "区域",
     destination: language === "en" ? "Destination" : "Destination",
