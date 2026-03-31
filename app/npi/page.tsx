@@ -30,32 +30,24 @@ export default async function NpiPage() {
     {
       href: "/npi/bom",
       title: language === "en" ? "BOM Management" : "BOM 管理",
-      desc: language === "en" ? "Manage BOM versions and component lines." : "管理 BOM 版本与元件明细。",
     },
     {
       href: "/npi/tooling",
       title: language === "en" ? "Tooling & Fixture" : "工装夹具管理",
-      desc: language === "en" ? "Track tooling usage and maintenance." : "跟踪工装寿命与保养状态。",
     },
     {
       href: "/npi/ecn",
       title: language === "en" ? "ECN Management" : "ECN 管理",
-      desc: language === "en" ? "Manage engineering change requests and approvals." : "管理工程变更流程与影响。",
     },
     {
       href: "/npi/sop",
       title: language === "en" ? "SOP Management" : "SOP 管理",
-      desc: language === "en" ? "Manage SOP release, training and process controls." : "管理 SOP 发布、培训与过程控制。",
     },
     ...(session.role === "super_admin"
       ? [
           {
             href: "/admin/products",
             title: language === "en" ? "Product Database" : "产品数据库",
-            desc:
-              language === "en"
-                ? "Manage product name, SKU, variant, unit cost, and article number."
-                : "管理产品名称、SKU、型号、单价和 Article Number。",
           },
         ]
       : []),
@@ -81,13 +73,18 @@ export default async function NpiPage() {
           <p className="mt-2 text-2xl font-semibold text-foreground">{criticalBomCount}</p>
         </div>
       </div>
-      <div className="mt-4 grid gap-4 md:grid-cols-4">
-        {cards.map((card) => (
-          <Link key={card.href} href={card.href} className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm transition hover:border-app-accent/35 hover:bg-app-accent-soft">
-            <h3 className="text-base font-semibold text-foreground">{card.title}</h3>
-            <p className="mt-1 text-sm text-app-muted">{card.desc}</p>
-          </Link>
-        ))}
+      <div className="mt-4 rounded-2xl border border-app-border/90 bg-app-surface p-3 shadow-sm">
+        <div className="flex flex-wrap gap-2">
+          {cards.map((card) => (
+            <Link
+              key={card.href}
+              href={card.href}
+              className="rounded-xl border border-app-border px-3 py-2 text-sm font-medium text-foreground/85 transition-colors hover:bg-app-accent-soft"
+            >
+              {card.title}
+            </Link>
+          ))}
+        </div>
       </div>
     </AppShell>
   );
