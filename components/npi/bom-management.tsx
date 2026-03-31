@@ -70,8 +70,31 @@ export function BomManagement({ entries, language }: BomManagementProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [form, setForm] = useState<BomForm>(DEFAULT_FORM);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | BomStatus>("all");
+  const [criticalFilter, setCriticalFilter] = useState<"all" | "critical" | "non_critical">("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const editing = useMemo(() => entries.find((e) => e.id === editingId) ?? null, [editingId, entries]);
+  const filteredEntries = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return entries.filter((e) => {
+      if (statusFilter !== "all" && e.status !== statusFilter) return false;
+      if (criticalFilter === "critical" && !e.isCritical) return false;
+      if (criticalFilter === "non_critical" && e.isCritical) return false;
+      if (!q) return true;
+      return [e.projectName, e.sku, e.componentCode, e.componentName, e.supplierName].some((v) =>
+        (v || "").toLowerCase().includes(q),
+      );
+    });
+  }, [entries, query, statusFilter, criticalFilter]);
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / pageSize));
+  const pageEntries = useMemo(() => {
+    const current = Math.min(page, totalPages);
+    const start = (current - 1) * pageSize;
+    return filteredEntries.slice(start, start + pageSize);
+  }, [filteredEntries, page, totalPages]);
 
   function startEdit(entry: BomEntry) {
     setEditingId(entry.id);
@@ -194,6 +217,45 @@ export function BomManagement({ entries, language }: BomManagementProps) {
       </section>
 
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+        <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+          <input
+            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            placeholder={language === "en" ? "Quick search: SKU / component / supplier" : "快速搜索：SKU/料号/供应商"}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
+          />
+          <select
+            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value as "all" | BomStatus);
+              setPage(1);
+            }}
+          >
+            <option value="all">All status</option>
+            <option value="draft">draft</option>
+            <option value="released">released</option>
+            <option value="obsolete">obsolete</option>
+          </select>
+          <select
+            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            value={criticalFilter}
+            onChange={(e) => {
+              setCriticalFilter(e.target.value as "all" | "critical" | "non_critical");
+              setPage(1);
+            }}
+          >
+            <option value="all">All criticality</option>
+            <option value="critical">critical only</option>
+            <option value="non_critical">non-critical only</option>
+          </select>
+          <div className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-muted">
+            {filteredEntries.length} {language === "en" ? "records" : "条记录"}
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1500px] border-collapse text-sm">
             <thead>
@@ -205,9 +267,9 @@ export function BomManagement({ entries, language }: BomManagementProps) {
               </tr>
             </thead>
             <tbody>
-              {entries.length === 0 ? (
+              {pageEntries.length === 0 ? (
                 <tr><td colSpan={15} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr>
-              ) : entries.map((e) => (
+              ) : pageEntries.map((e) => (
                 <tr key={e.id} className="border-b border-app-border/35">
                   <td className="px-2 py-2">{e.projectName || "-"}</td><td className="px-2 py-2">{e.sku}</td><td className="px-2 py-2">{e.bomVersion || "-"}</td><td className="px-2 py-2">{e.status}</td>
                   <td className="px-2 py-2">{e.effectiveDate || "-"}</td><td className="px-2 py-2">{e.componentCode}</td><td className="px-2 py-2">{e.componentName}</td>
@@ -228,6 +290,27 @@ export function BomManagement({ entries, language }: BomManagementProps) {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="mt-3 flex items-center justify-end gap-2 text-sm">
+          <button
+            type="button"
+            className="rounded border border-app-border px-2 py-1 disabled:opacity-50"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Prev
+          </button>
+          <span className="text-app-muted">
+            {page}/{totalPages}
+          </span>
+          <button
+            type="button"
+            className="rounded border border-app-border px-2 py-1 disabled:opacity-50"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </button>
         </div>
       </section>
     </div>

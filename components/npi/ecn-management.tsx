@@ -32,7 +32,28 @@ export function EcnManagement({ entries, language }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [form, setForm] = useState<Form>(DEFAULT_FORM);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | EcnStatus>("all");
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const editing = useMemo(() => entries.find((e) => e.id === editingId) ?? null, [editingId, entries]);
+  const filteredEntries = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const ownerQ = ownerFilter.trim().toLowerCase();
+    return entries.filter((e) => {
+      if (statusFilter !== "all" && e.status !== statusFilter) return false;
+      if (ownerQ && !(e.owner || "").toLowerCase().includes(ownerQ)) return false;
+      if (!q) return true;
+      return [e.ecnNo, e.title, e.affectedSkus, e.requester].some((v) => (v || "").toLowerCase().includes(q));
+    });
+  }, [entries, query, statusFilter, ownerFilter]);
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / pageSize));
+  const pageEntries = useMemo(() => {
+    const current = Math.min(page, totalPages);
+    const start = (current - 1) * pageSize;
+    return filteredEntries.slice(start, start + pageSize);
+  }, [filteredEntries, page, totalPages]);
 
   function startEdit(e: EcnEntry) {
     setEditingId(e.id);
@@ -97,11 +118,49 @@ export function EcnManagement({ entries, language }: Props) {
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+        <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+          <input
+            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            placeholder={language === "en" ? "Quick search: ECN / title / SKU" : "快速搜索：ECN/标题/SKU"}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
+          />
+          <select
+            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value as "all" | EcnStatus);
+              setPage(1);
+            }}
+          >
+            <option value="all">All status</option>
+            <option value="draft">draft</option>
+            <option value="under_review">under_review</option>
+            <option value="approved">approved</option>
+            <option value="implemented">implemented</option>
+            <option value="rejected">rejected</option>
+          </select>
+          <input
+            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            placeholder={language === "en" ? "Owner filter" : "负责人筛选"}
+            value={ownerFilter}
+            onChange={(e) => {
+              setOwnerFilter(e.target.value);
+              setPage(1);
+            }}
+          />
+          <div className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-muted">
+            {filteredEntries.length} {language === "en" ? "records" : "条记录"}
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1200px] border-collapse text-sm">
             <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="px-2 py-2">ECN No</th><th className="px-2 py-2">Title</th><th className="px-2 py-2">Status</th><th className="px-2 py-2">Priority</th><th className="px-2 py-2">Owner</th><th className="px-2 py-2">Target date</th><th className="px-2 py-2">Affected SKUs</th><th className="px-2 py-2">Actions</th></tr></thead>
             <tbody>
-              {entries.length === 0 ? <tr><td colSpan={8} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr> : entries.map((e) => (
+              {pageEntries.length === 0 ? <tr><td colSpan={8} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr> : pageEntries.map((e) => (
                 <tr key={e.id} className="border-b border-app-border/35">
                   <td className="px-2 py-2">{e.ecnNo}</td><td className="px-2 py-2">{e.title}</td><td className="px-2 py-2">{e.status}</td><td className="px-2 py-2">{e.priority}</td><td className="px-2 py-2">{e.owner || "-"}</td><td className="px-2 py-2">{e.targetEffectiveDate || "-"}</td><td className="px-2 py-2">{e.affectedSkus || "-"}</td>
                   <td className="px-2 py-2"><div className="flex gap-2"><button type="button" className="rounded border border-app-border px-2 py-1 text-xs" onClick={() => startEdit(e)}>{t.edit}</button><button type="button" className="rounded border border-red-200 px-2 py-1 text-xs text-red-600" onClick={() => onDelete(e.id)}>{t.remove}</button></div></td>
@@ -109,6 +168,11 @@ export function EcnManagement({ entries, language }: Props) {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="mt-3 flex items-center justify-end gap-2 text-sm">
+          <button type="button" className="rounded border border-app-border px-2 py-1 disabled:opacity-50" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</button>
+          <span className="text-app-muted">{page}/{totalPages}</span>
+          <button type="button" className="rounded border border-app-border px-2 py-1 disabled:opacity-50" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</button>
         </div>
       </section>
     </div>

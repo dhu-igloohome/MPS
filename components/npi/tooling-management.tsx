@@ -34,7 +34,30 @@ export function ToolingManagement({ entries, language }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [form, setForm] = useState<Form>(DEFAULT_FORM);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | ToolingStatus>("all");
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const editing = useMemo(() => entries.find((e) => e.id === editingId) ?? null, [editingId, entries]);
+  const filteredEntries = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const ownerQ = ownerFilter.trim().toLowerCase();
+    return entries.filter((e) => {
+      if (statusFilter !== "all" && e.status !== statusFilter) return false;
+      if (ownerQ && !(e.owner || "").toLowerCase().includes(ownerQ)) return false;
+      if (!q) return true;
+      return [e.toolingCode, e.toolingName, e.relatedSku, e.cmName, e.location].some((v) =>
+        (v || "").toLowerCase().includes(q),
+      );
+    });
+  }, [entries, query, statusFilter, ownerFilter]);
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / pageSize));
+  const pageEntries = useMemo(() => {
+    const current = Math.min(page, totalPages);
+    const start = (current - 1) * pageSize;
+    return filteredEntries.slice(start, start + pageSize);
+  }, [filteredEntries, page, totalPages]);
 
   function startEdit(e: ToolingEntry) {
     setEditingId(e.id);
@@ -111,11 +134,48 @@ export function ToolingManagement({ entries, language }: Props) {
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+        <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+          <input
+            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            placeholder={language === "en" ? "Quick search: code / name / SKU / CM" : "快速搜索：编码/名称/SKU/CM"}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
+          />
+          <select
+            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value as "all" | ToolingStatus);
+              setPage(1);
+            }}
+          >
+            <option value="all">All status</option>
+            <option value="design">design</option>
+            <option value="in_use">in_use</option>
+            <option value="maintenance">maintenance</option>
+            <option value="scrapped">scrapped</option>
+          </select>
+          <input
+            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            placeholder={language === "en" ? "Owner filter" : "负责人筛选"}
+            value={ownerFilter}
+            onChange={(e) => {
+              setOwnerFilter(e.target.value);
+              setPage(1);
+            }}
+          />
+          <div className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-muted">
+            {filteredEntries.length} {language === "en" ? "records" : "条记录"}
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1300px] border-collapse text-sm">
             <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="px-2 py-2">Code</th><th className="px-2 py-2">Name</th><th className="px-2 py-2">Type</th><th className="px-2 py-2">Status</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">CM</th><th className="px-2 py-2">Cycles</th><th className="px-2 py-2">Cost</th><th className="px-2 py-2">Next Maint.</th><th className="px-2 py-2">Actions</th></tr></thead>
             <tbody>
-              {entries.length === 0 ? <tr><td colSpan={10} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr> : entries.map((e) => (
+              {pageEntries.length === 0 ? <tr><td colSpan={10} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr> : pageEntries.map((e) => (
                 <tr key={e.id} className="border-b border-app-border/35">
                   <td className="px-2 py-2">{e.toolingCode}</td><td className="px-2 py-2">{e.toolingName}</td><td className="px-2 py-2">{e.toolingType}</td><td className="px-2 py-2">{e.status}</td>
                   <td className="px-2 py-2">{e.relatedSku || "-"}</td>
@@ -128,6 +188,11 @@ export function ToolingManagement({ entries, language }: Props) {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="mt-3 flex items-center justify-end gap-2 text-sm">
+          <button type="button" className="rounded border border-app-border px-2 py-1 disabled:opacity-50" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</button>
+          <span className="text-app-muted">{page}/{totalPages}</span>
+          <button type="button" className="rounded border border-app-border px-2 py-1 disabled:opacity-50" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</button>
         </div>
       </section>
     </div>

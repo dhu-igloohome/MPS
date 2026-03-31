@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
+import { listBomEntries, listEcnEntries, listToolingEntries } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,16 @@ export default async function NpiPage() {
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
+  const [bomEntries, ecnEntries, toolingEntries] = await Promise.all([
+    listBomEntries(),
+    listEcnEntries(),
+    listToolingEntries(),
+  ]);
+  const openEcnCount = ecnEntries.filter((e) => e.status !== "implemented" && e.status !== "rejected").length;
+  const toolingDueCount = toolingEntries.filter(
+    (e) => e.nextMaintenanceDue && new Date(e.nextMaintenanceDue).getTime() <= Date.now(),
+  ).length;
+  const criticalBomCount = bomEntries.filter((e) => e.isCritical).length;
 
   const cards = [
     {
@@ -40,6 +51,20 @@ export default async function NpiPage() {
       description={language === "en" ? "New Product Introduction workbench." : "新产品导入工作台。"}
     >
       <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+          <p className="text-sm text-app-muted">{language === "en" ? "Open ECN" : "未关闭 ECN"}</p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{openEcnCount}</p>
+        </div>
+        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+          <p className="text-sm text-app-muted">{language === "en" ? "Tooling Due Maintenance" : "到期保养工装"}</p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{toolingDueCount}</p>
+        </div>
+        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+          <p className="text-sm text-app-muted">{language === "en" ? "Critical BOM Items" : "关键 BOM 项"}</p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{criticalBomCount}</p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
         {cards.map((card) => (
           <Link key={card.href} href={card.href} className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm transition hover:border-app-accent/35 hover:bg-app-accent-soft">
             <h3 className="text-base font-semibold text-foreground">{card.title}</h3>
