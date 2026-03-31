@@ -66,6 +66,16 @@ export function SopManagement({ entries, language }: Props) {
     () => entries.filter((e) => e.trainingRequired && e.status !== "obsolete").length,
     [entries],
   );
+  const expiringSoonCount = useMemo(() => {
+    const now = new Date();
+    const plus30 = new Date(now);
+    plus30.setDate(plus30.getDate() + 30);
+    return entries.filter((e) => {
+      if (e.status !== "released" || !e.effectiveDate) return false;
+      const d = new Date(e.effectiveDate);
+      return !Number.isNaN(d.getTime()) && d >= now && d <= plus30;
+    }).length;
+  }, [entries]);
 
   function startEdit(e: SopEntry) {
     setEditingId(e.id);
@@ -126,7 +136,7 @@ export function SopManagement({ entries, language }: Props) {
 
   return (
     <div className="space-y-4">
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-4">
         <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
           <p className="text-sm text-app-muted">{language === "en" ? "Released SOP" : "已发布 SOP"}</p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{releasedCount}</p>
@@ -140,6 +150,12 @@ export function SopManagement({ entries, language }: Props) {
             {language === "en" ? "Training Required SOP" : "需培训 SOP"}
           </p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{trainingRequiredCount}</p>
+        </div>
+        <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+          <p className="text-sm text-app-muted">
+            {language === "en" ? "30-Day Effective Warning" : "30 天生效预警"}
+          </p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{expiringSoonCount}</p>
         </div>
       </section>
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
