@@ -62,6 +62,7 @@ export async function AppShell({ session, title, description, children }: AppShe
         { href: "/npi/bom", label: language === "en" ? "BOM Management" : "BOM 管理" },
         { href: "/npi/tooling", label: language === "en" ? "Tooling & Fixture" : "工装夹具管理" },
         { href: "/npi/ecn", label: language === "en" ? "ECN Management" : "ECN 管理" },
+        { href: "/npi/sop", label: language === "en" ? "SOP Management" : "SOP 管理" },
       ],
     },
     {

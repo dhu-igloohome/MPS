@@ -701,6 +701,38 @@ async function setupSchema() {
   `;
 
   await db`
+    create table if not exists npi_sop_entries (
+      id bigserial primary key,
+      sop_no text not null default '',
+      title text not null default '',
+      product_line text not null default '',
+      sku text not null default '',
+      process_step text not null default '',
+      workstation text not null default '',
+      owner text not null default '',
+      reviewer text not null default '',
+      approver text not null default '',
+      status text not null default 'draft'
+        check (status in ('draft', 'in_review', 'released', 'obsolete')),
+      version text not null default 'V1.0',
+      effective_date date,
+      training_required boolean not null default false,
+      safety_notes text not null default '',
+      key_ctq text not null default '',
+      control_method text not null default '',
+      attachment_url text not null default '',
+      remarks text not null default '',
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_npi_sop_entries_sop_no
+    on npi_sop_entries (sop_no, id desc);
+  `;
+
+  await db`
     create table if not exists qc_test_cases (
       id bigserial primary key,
       test_case_id text not null default '',

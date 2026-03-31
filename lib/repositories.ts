@@ -31,6 +31,8 @@ import {
   ProductItem,
   Region,
   SessionPayload,
+  SopEntry,
+  SopStatus,
   ShippingReportEntry,
   InventoryGlobalEntry,
   SupplierEntry,
@@ -221,6 +223,31 @@ type EcnRow = {
   affected_skus: string;
   impact_summary: string;
   reason: string;
+  remarks: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type SopRow = {
+  id: number;
+  sop_no: string;
+  title: string;
+  product_line: string;
+  sku: string;
+  process_step: string;
+  workstation: string;
+  owner: string;
+  reviewer: string;
+  approver: string;
+  status: SopStatus;
+  version: string;
+  effective_date: string | null;
+  training_required: boolean;
+  safety_notes: string;
+  key_ctq: string;
+  control_method: string;
+  attachment_url: string;
   remarks: string;
   created_by: string;
   created_at: string;
@@ -2709,6 +2736,33 @@ function mapEcnEntry(row: EcnRow): EcnEntry {
   };
 }
 
+function mapSopEntry(row: SopRow): SopEntry {
+  return {
+    id: String(row.id),
+    sopNo: row.sop_no || "",
+    title: row.title || "",
+    productLine: row.product_line || "",
+    sku: row.sku || "",
+    processStep: row.process_step || "",
+    workstation: row.workstation || "",
+    owner: row.owner || "",
+    reviewer: row.reviewer || "",
+    approver: row.approver || "",
+    status: row.status,
+    version: row.version || "V1.0",
+    effectiveDate: row.effective_date ? formatPgDateOnly(row.effective_date) : null,
+    trainingRequired: Boolean(row.training_required),
+    safetyNotes: row.safety_notes || "",
+    keyCtq: row.key_ctq || "",
+    controlMethod: row.control_method || "",
+    attachmentUrl: row.attachment_url || "",
+    remarks: row.remarks || "",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 function mapQcTestCaseEntry(row: QcTestCaseRow): QcTestCaseEntry {
   return {
     id: String(row.id),
@@ -3180,6 +3234,124 @@ export async function deleteEcnEntryById(id: string): Promise<void> {
   await ensureDatabase();
   const db = getSql();
   await db`delete from npi_ecn_entries where id = ${Number(id)};`;
+}
+
+export async function listSopEntries(): Promise<SopEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<SopRow[]>`
+    select
+      id, sop_no, title, product_line, sku, process_step, workstation, owner, reviewer, approver,
+      status, version, effective_date::text, training_required, safety_notes, key_ctq, control_method,
+      attachment_url, remarks, created_by, created_at::text, updated_at::text
+    from npi_sop_entries
+    order by updated_at desc, id desc;
+  `;
+  return rows.map(mapSopEntry);
+}
+
+export async function createSopEntry(input: {
+  sopNo: string;
+  title: string;
+  productLine: string;
+  sku: string;
+  processStep: string;
+  workstation: string;
+  owner: string;
+  reviewer: string;
+  approver: string;
+  status: SopStatus;
+  version: string;
+  effectiveDate: string | null;
+  trainingRequired: boolean;
+  safetyNotes: string;
+  keyCtq: string;
+  controlMethod: string;
+  attachmentUrl: string;
+  remarks: string;
+  createdBy: string;
+}): Promise<SopEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<SopRow[]>`
+    insert into npi_sop_entries (
+      sop_no, title, product_line, sku, process_step, workstation, owner, reviewer, approver, status,
+      version, effective_date, training_required, safety_notes, key_ctq, control_method, attachment_url,
+      remarks, created_by, updated_at
+    ) values (
+      ${input.sopNo.trim()}, ${input.title.trim()}, ${input.productLine.trim()}, ${input.sku.trim()},
+      ${input.processStep.trim()}, ${input.workstation.trim()}, ${input.owner.trim()}, ${input.reviewer.trim()},
+      ${input.approver.trim()}, ${input.status}, ${input.version.trim() || "V1.0"}, ${input.effectiveDate},
+      ${input.trainingRequired}, ${input.safetyNotes.trim()}, ${input.keyCtq.trim()},
+      ${input.controlMethod.trim()}, ${input.attachmentUrl.trim()}, ${input.remarks.trim()},
+      ${input.createdBy}, now()
+    )
+    returning
+      id, sop_no, title, product_line, sku, process_step, workstation, owner, reviewer, approver,
+      status, version, effective_date::text, training_required, safety_notes, key_ctq, control_method,
+      attachment_url, remarks, created_by, created_at::text, updated_at::text;
+  `;
+  return mapSopEntry(rows[0]);
+}
+
+export async function updateSopEntry(input: {
+  id: string;
+  sopNo: string;
+  title: string;
+  productLine: string;
+  sku: string;
+  processStep: string;
+  workstation: string;
+  owner: string;
+  reviewer: string;
+  approver: string;
+  status: SopStatus;
+  version: string;
+  effectiveDate: string | null;
+  trainingRequired: boolean;
+  safetyNotes: string;
+  keyCtq: string;
+  controlMethod: string;
+  attachmentUrl: string;
+  remarks: string;
+}): Promise<SopEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<SopRow[]>`
+    update npi_sop_entries
+    set
+      sop_no = ${input.sopNo.trim()},
+      title = ${input.title.trim()},
+      product_line = ${input.productLine.trim()},
+      sku = ${input.sku.trim()},
+      process_step = ${input.processStep.trim()},
+      workstation = ${input.workstation.trim()},
+      owner = ${input.owner.trim()},
+      reviewer = ${input.reviewer.trim()},
+      approver = ${input.approver.trim()},
+      status = ${input.status},
+      version = ${input.version.trim() || "V1.0"},
+      effective_date = ${input.effectiveDate},
+      training_required = ${input.trainingRequired},
+      safety_notes = ${input.safetyNotes.trim()},
+      key_ctq = ${input.keyCtq.trim()},
+      control_method = ${input.controlMethod.trim()},
+      attachment_url = ${input.attachmentUrl.trim()},
+      remarks = ${input.remarks.trim()},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning
+      id, sop_no, title, product_line, sku, process_step, workstation, owner, reviewer, approver,
+      status, version, effective_date::text, training_required, safety_notes, key_ctq, control_method,
+      attachment_url, remarks, created_by, created_at::text, updated_at::text;
+  `;
+  return rows[0] ? mapSopEntry(rows[0]) : null;
+}
+
+export async function deleteSopEntryById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from npi_sop_entries where id = ${Number(id)};`;
 }
 
 export async function listQcTestCaseEntries(): Promise<QcTestCaseEntry[]> {

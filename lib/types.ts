@@ -152,6 +152,33 @@ export type EcnEntry = {
   updatedAt: string;
 };
 
+export type SopStatus = "draft" | "in_review" | "released" | "obsolete";
+
+export type SopEntry = {
+  id: string;
+  sopNo: string;
+  title: string;
+  productLine: string;
+  sku: string;
+  processStep: string;
+  workstation: string;
+  owner: string;
+  reviewer: string;
+  approver: string;
+  status: SopStatus;
+  version: string;
+  effectiveDate: string | null;
+  trainingRequired: boolean;
+  safetyNotes: string;
+  keyCtq: string;
+  controlMethod: string;
+  attachmentUrl: string;
+  remarks: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type QcTestCaseStatus = "draft" | "reviewed" | "released" | "obsolete";
 export type QcTestCasePriority = "P0" | "P1" | "P2";
 export type QcTestCaseCategory = "functional" | "security" | "reliability" | "compatibility" | "ota" | "performance";
