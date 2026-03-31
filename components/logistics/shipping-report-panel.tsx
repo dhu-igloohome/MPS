@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { Language } from "@/lib/i18n";
@@ -61,9 +61,11 @@ const DEFAULT_FORM: Form = {
 
 export function ShippingReportPanel({ entries, language }: Props) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Form>(DEFAULT_FORM);
   const [loading, setLoading] = useState(false);
+  const [batchLoading, setBatchLoading] = useState(false);
   const [message, setMessage] = useState("");
   const en = language === "en";
 
@@ -191,6 +193,32 @@ export function ShippingReportPanel({ entries, language }: Props) {
     router.refresh();
   }
 
+  async function onBatchUpload(file: File) {
+    setBatchLoading(true);
+    setMessage("");
+    const fd = new FormData();
+    fd.append("file", file);
+    const response = await fetch("/api/logistics-shipping-reports/batch", {
+      method: "POST",
+      body: fd,
+    });
+    const data = (await response.json().catch(() => ({}))) as {
+      message?: string;
+      created?: number;
+      failed?: number;
+      errors?: Array<{ row: number; message: string }>;
+    };
+    setBatchLoading(false);
+    if (!response.ok) return setMessage(data.message || "Batch upload failed");
+    const firstError = data.errors?.[0];
+    setMessage(
+      `Batch upload done: created ${data.created ?? 0}, failed ${data.failed ?? 0}${
+        firstError ? ` (first error row ${firstError.row}: ${firstError.message})` : ""
+      }`,
+    );
+    router.refresh();
+  }
+
   function showNum(value: number) {
     return value === 0 ? "-" : value;
   }
@@ -198,9 +226,44 @@ export function ShippingReportPanel({ entries, language }: Props) {
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-foreground">
-          {en ? "Shipping Report" : "Shipping Report"}
-        </h3>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-lg font-semibold text-foreground">
+            {en ? "Shipping Report" : "Shipping Report"}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="/api/logistics-shipping-reports/csv-template"
+              className="rounded-lg border border-app-border px-3 py-2 text-sm hover:bg-app-accent-soft"
+            >
+              {en ? "Download Template" : "下载模板"}
+            </a>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={batchLoading}
+              className="rounded-lg border border-app-border px-3 py-2 text-sm hover:bg-app-accent-soft disabled:opacity-60"
+            >
+              {batchLoading ? (en ? "Uploading..." : "上传中...") : en ? "Batch Upload CSV" : "批量上传 CSV"}
+            </button>
+            <a
+              href="/api/logistics-shipping-reports/export-csv"
+              className="rounded-lg border border-app-border px-3 py-2 text-sm hover:bg-app-accent-soft"
+            >
+              {en ? "Export CSV" : "导出 CSV"}
+            </a>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void onBatchUpload(file);
+                e.currentTarget.value = "";
+              }}
+            />
+          </div>
+        </div>
         <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4" onSubmit={onSubmit}>
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder="SN *" value={form.sn} onChange={(e) => setForm((f) => ({ ...f, sn: e.target.value }))} required />
           <input type="date" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.dateReleased ?? ""} onChange={(e) => setForm((f) => ({ ...f, dateReleased: e.target.value || null }))} />
