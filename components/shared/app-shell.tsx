@@ -53,6 +53,10 @@ export async function AppShell({ session, title, description, children }: AppShe
           href: "/logistics-progress/shipping-report",
           label: language === "en" ? "Shipping Report" : "Shipping Report",
         },
+        {
+          href: "/logistics-progress/inventory-global",
+          label: language === "en" ? "Inventory Global" : "Inventory Global",
+        },
       ],
     },
     {
