@@ -15,8 +15,8 @@ type Form = {
 
 const DEFAULT_FORM: Form = {
   toolingCode: "", toolingName: "", toolingType: "fixture", relatedSku: "", cmName: "", location: "",
-  status: "design", owner: "", manufacturer: "", startUseDate: "", cycleCount: "0", cycleLimit: "0",
-  lastMaintenanceDate: "", nextMaintenanceDue: "", cost: "0", currency: "USD", remarks: "",
+  status: "design", owner: "", manufacturer: "", startUseDate: "", cycleCount: "", cycleLimit: "",
+  lastMaintenanceDate: "", nextMaintenanceDue: "", cost: "", currency: "USD", remarks: "",
 };
 
 export function ToolingManagement({ entries, language }: Props) {
@@ -51,9 +51,9 @@ export function ToolingManagement({ entries, language }: Props) {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const cycleCount = Number(form.cycleCount);
-    const cycleLimit = Number(form.cycleLimit);
-    const cost = Number(form.cost);
+    const cycleCount = form.cycleCount === "" ? 0 : Number(form.cycleCount);
+    const cycleLimit = form.cycleLimit === "" ? 0 : Number(form.cycleLimit);
+    const cost = form.cost === "" ? 0 : Number(form.cost);
     if ([cycleCount, cycleLimit, cost].some((n) => Number.isNaN(n) || n < 0)) return setMessage("Invalid numeric fields");
 
     setLoading(true); setMessage("");
@@ -96,11 +96,11 @@ export function ToolingManagement({ entries, language }: Props) {
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.owner} onChange={(e) => setForm((f) => ({ ...f, owner: e.target.value }))} placeholder="Owner" />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.manufacturer} onChange={(e) => setForm((f) => ({ ...f, manufacturer: e.target.value }))} placeholder="Manufacturer" />
           <input type="date" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.startUseDate} onChange={(e) => setForm((f) => ({ ...f, startUseDate: e.target.value }))} />
-          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cycleCount} onChange={(e) => setForm((f) => ({ ...f, cycleCount: e.target.value }))} placeholder="Cycle count" />
-          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cycleLimit} onChange={(e) => setForm((f) => ({ ...f, cycleLimit: e.target.value }))} placeholder="Cycle limit" />
+          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cycleCount} onChange={(e) => setForm((f) => ({ ...f, cycleCount: e.target.value }))} placeholder="Cycle count (0 = not tracked)" />
+          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cycleLimit} onChange={(e) => setForm((f) => ({ ...f, cycleLimit: e.target.value }))} placeholder="Cycle limit (0 = no limit)" />
           <input type="date" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.lastMaintenanceDate} onChange={(e) => setForm((f) => ({ ...f, lastMaintenanceDate: e.target.value }))} />
           <input type="date" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.nextMaintenanceDue} onChange={(e) => setForm((f) => ({ ...f, nextMaintenanceDue: e.target.value }))} />
-          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cost} onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))} placeholder="Cost" />
+          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cost} onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))} placeholder="Cost (optional)" />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))} placeholder="Currency" />
           <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-4" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} placeholder="Remarks" />
           <div className="lg:col-span-4 flex gap-2">
@@ -118,7 +118,11 @@ export function ToolingManagement({ entries, language }: Props) {
               {entries.length === 0 ? <tr><td colSpan={10} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr> : entries.map((e) => (
                 <tr key={e.id} className="border-b border-app-border/35">
                   <td className="px-2 py-2">{e.toolingCode}</td><td className="px-2 py-2">{e.toolingName}</td><td className="px-2 py-2">{e.toolingType}</td><td className="px-2 py-2">{e.status}</td>
-                  <td className="px-2 py-2">{e.relatedSku || "-"}</td><td className="px-2 py-2">{e.cmName || "-"}</td><td className="px-2 py-2">{e.cycleCount}/{e.cycleLimit}</td><td className="px-2 py-2">{e.currency} {e.cost.toFixed(2)}</td><td className="px-2 py-2">{e.nextMaintenanceDue || "-"}</td>
+                  <td className="px-2 py-2">{e.relatedSku || "-"}</td>
+                  <td className="px-2 py-2">{e.cmName || "-"}</td>
+                  <td className="px-2 py-2">{e.cycleCount === 0 && e.cycleLimit === 0 ? "-" : `${e.cycleCount}/${e.cycleLimit || "∞"}`}</td>
+                  <td className="px-2 py-2">{e.cost === 0 ? "-" : `${e.currency} ${e.cost.toFixed(2)}`}</td>
+                  <td className="px-2 py-2">{e.nextMaintenanceDue || "-"}</td>
                   <td className="px-2 py-2"><div className="flex gap-2"><button type="button" className="rounded border border-app-border px-2 py-1 text-xs" onClick={() => startEdit(e)}>{t.edit}</button><button type="button" className="rounded border border-red-200 px-2 py-1 text-xs text-red-600" onClick={() => onDelete(e.id)}>{t.remove}</button></div></td>
                 </tr>
               ))}
