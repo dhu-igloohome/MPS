@@ -26,7 +26,22 @@ run("git add -A");
 
 // Commit only when there are staged changes.
 if (runSafe("git diff --cached --quiet")) {
-  console.log("No changes to commit. Nothing to sync.");
+  let ahead = 0;
+  try {
+    ahead = Number.parseInt(
+      execSync("git rev-list --count origin/main..HEAD", { encoding: "utf8" }).trim(),
+      10,
+    );
+  } catch {
+    ahead = 0;
+  }
+  if (ahead > 0) {
+    console.log(`No new files to commit; pushing ${ahead} local commit(s) to origin/main...`);
+    run("git push origin main");
+    console.log("Synced to GitHub. Vercel will auto-deploy this push.");
+  } else {
+    console.log("No changes to commit. Nothing to sync.");
+  }
   process.exit(0);
 }
 
