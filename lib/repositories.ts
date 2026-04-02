@@ -28,6 +28,7 @@ import {
   OrderProgressRegion,
   OrderProgressStatus,
   OrderProgressDeletionLog,
+  MassProductionKanbanEntry,
   ProductItem,
   Region,
   SessionPayload,
@@ -1792,6 +1793,223 @@ export async function deleteOrderProgressById(id: string) {
     delete from order_progress
     where id = ${Number(id)};
   `;
+}
+
+type MassProductionKanbanRow = {
+  id: number;
+  product_id: number;
+  product_name: string;
+  sku: string;
+  variant: string;
+  quantity: number;
+  mp: string;
+  ee_date: string | null;
+  me_date: string | null;
+  smt_date: string | null;
+  assembly_date: string | null;
+  production_report_date: string | null;
+  coo_approval_date: string | null;
+  deliver_date: string | null;
+  region: OrderProgressRegion;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+function mapMassProductionKanbanRow(row: MassProductionKanbanRow): MassProductionKanbanEntry {
+  const d = (v: string | null) => (v && String(v).trim() ? String(v).slice(0, 10) : null);
+  return {
+    id: String(row.id),
+    productId: String(row.product_id),
+    productName: row.product_name,
+    sku: row.sku,
+    variant: row.variant,
+    quantity: Number(row.quantity),
+    mp: row.mp ?? "",
+    ee: d(row.ee_date),
+    me: d(row.me_date),
+    smt: d(row.smt_date),
+    assembly: d(row.assembly_date),
+    productionReport: d(row.production_report_date),
+    cooApproval: d(row.coo_approval_date),
+    deliver: d(row.deliver_date),
+    region: row.region,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listMassProductionKanbanBySessionRegions(
+  regions: Region[],
+): Promise<MassProductionKanbanEntry[]> {
+  await ensureDatabase();
+  const allowed = orderProgressRegionsForSession(regions);
+  if (allowed.length === 0) return [];
+  const db = getSql();
+  const rows = await db<MassProductionKanbanRow[]>`
+    select
+      k.id,
+      k.product_id,
+      p.product_name,
+      p.sku,
+      p.variant,
+      k.quantity,
+      k.mp,
+      k.ee_date::text,
+      k.me_date::text,
+      k.smt_date::text,
+      k.assembly_date::text,
+      k.production_report_date::text,
+      k.coo_approval_date::text,
+      k.deliver_date::text,
+      k.region,
+      k.created_by,
+      k.created_at::text,
+      k.updated_at::text
+    from mass_production_kanban k
+    join products p on p.id = k.product_id
+    where k.region = any(${allowed})
+    order by k.updated_at desc, k.id desc;
+  `;
+  return rows.map(mapMassProductionKanbanRow);
+}
+
+export async function getMassProductionKanbanById(id: string): Promise<MassProductionKanbanEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<MassProductionKanbanRow[]>`
+    select
+      k.id,
+      k.product_id,
+      p.product_name,
+      p.sku,
+      p.variant,
+      k.quantity,
+      k.mp,
+      k.ee_date::text,
+      k.me_date::text,
+      k.smt_date::text,
+      k.assembly_date::text,
+      k.production_report_date::text,
+      k.coo_approval_date::text,
+      k.deliver_date::text,
+      k.region,
+      k.created_by,
+      k.created_at::text,
+      k.updated_at::text
+    from mass_production_kanban k
+    join products p on p.id = k.product_id
+    where k.id = ${Number(id)}
+    limit 1;
+  `;
+  return rows[0] ? mapMassProductionKanbanRow(rows[0]) : null;
+}
+
+export async function createMassProductionKanban(input: {
+  productId: string;
+  quantity: number;
+  mp: string;
+  ee: string | null;
+  me: string | null;
+  smt: string | null;
+  assembly: string | null;
+  productionReport: string | null;
+  cooApproval: string | null;
+  deliver: string | null;
+  region: OrderProgressRegion;
+  createdBy: string;
+}): Promise<MassProductionKanbanEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const product = await findProductById(input.productId);
+  if (!product || !product.isActive) {
+    throw new Error("Product not found or inactive");
+  }
+  const inserted = await db<{ id: number }[]>`
+    insert into mass_production_kanban (
+      product_id,
+      quantity,
+      mp,
+      ee_date,
+      me_date,
+      smt_date,
+      assembly_date,
+      production_report_date,
+      coo_approval_date,
+      deliver_date,
+      region,
+      created_by
+    )
+    values (
+      ${Number(input.productId)},
+      ${input.quantity},
+      ${input.mp.slice(0, 2000)},
+      ${input.ee},
+      ${input.me},
+      ${input.smt},
+      ${input.assembly},
+      ${input.productionReport},
+      ${input.cooApproval},
+      ${input.deliver},
+      ${input.region},
+      ${input.createdBy}
+    )
+    returning id;
+  `;
+  const newId = inserted[0]?.id;
+  if (newId == null) throw new Error("Insert failed");
+  const created = await getMassProductionKanbanById(String(newId));
+  if (!created) throw new Error("Load failed");
+  return created;
+}
+
+export async function updateMassProductionKanban(input: {
+  id: string;
+  productId: string;
+  quantity: number;
+  mp: string;
+  ee: string | null;
+  me: string | null;
+  smt: string | null;
+  assembly: string | null;
+  productionReport: string | null;
+  cooApproval: string | null;
+  deliver: string | null;
+  region: OrderProgressRegion;
+}): Promise<MassProductionKanbanEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const product = await findProductById(input.productId);
+  if (!product || !product.isActive) {
+    throw new Error("Product not found or inactive");
+  }
+  const updated = await db<{ id: number }[]>`
+    update mass_production_kanban
+    set
+      product_id = ${Number(input.productId)},
+      quantity = ${input.quantity},
+      mp = ${input.mp.slice(0, 2000)},
+      ee_date = ${input.ee},
+      me_date = ${input.me},
+      smt_date = ${input.smt},
+      assembly_date = ${input.assembly},
+      production_report_date = ${input.productionReport},
+      coo_approval_date = ${input.cooApproval},
+      deliver_date = ${input.deliver},
+      region = ${input.region},
+      updated_at = now()
+    where id = ${Number(input.id)}
+    returning id;
+  `;
+  if (!updated[0]) return null;
+  return getMassProductionKanbanById(input.id);
+}
+
+export async function deleteMassProductionKanbanById(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`delete from mass_production_kanban where id = ${Number(id)};`;
 }
 
 export async function listProductionStepTemplates(

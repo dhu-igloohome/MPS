@@ -376,6 +376,28 @@ export type OrderProgressDeletionLog = {
   deletedAt: string;
 };
 
+/** Mass production Kanban row (Order Progress module). */
+export type MassProductionKanbanEntry = {
+  id: string;
+  productId: string;
+  productName: string;
+  sku: string;
+  variant: string;
+  quantity: number;
+  mp: string;
+  ee: string | null;
+  me: string | null;
+  smt: string | null;
+  assembly: string | null;
+  productionReport: string | null;
+  cooApproval: string | null;
+  deliver: string | null;
+  region: OrderProgressRegion;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 /** 物流节点：工厂/供应商侧或各区域办公室（仅记录，不做库存扣账）。 */
 export type LogisticsLocation = "FACTORY" | OrderProgressRegion;
 

@@ -7,6 +7,7 @@ import { normalizeLanguage } from "@/lib/i18n";
 import {
   getForecastsByRegions,
   listActiveProducts,
+  listMassProductionKanbanBySessionRegions,
   listOrderProgressDeletionLogsBySessionRegions,
   listOrderProgressBySessionRegions,
   orderProgressRegionsForSession,
@@ -24,6 +25,7 @@ export default async function OrderProgressPage() {
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
   const products = await listActiveProducts();
+  const massProductionKanban = await listMassProductionKanbanBySessionRegions(session.regions);
   const entries = await listOrderProgressBySessionRegions(session.regions);
   const deletionLogs = await listOrderProgressDeletionLogsBySessionRegions(session.regions, 100);
   const forecasts = await getForecastsByRegions(session.regions);
@@ -43,6 +45,7 @@ export default async function OrderProgressPage() {
         entries={entries}
         forecasts={forecasts}
         deletionLogs={deletionLogs}
+        massProductionKanbanEntries={massProductionKanban}
         products={products}
         allowedRegions={allowedRegions}
         language={language}

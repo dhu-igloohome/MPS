@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Language } from "@/lib/i18n";
 import type {
   ForecastEntry,
+  MassProductionKanbanEntry,
   OrderProgressDeletionLog,
   OrderProgressEntry,
   OrderProgressOrderType,
@@ -16,10 +17,13 @@ import type {
   ProductItem,
 } from "@/lib/types";
 
+import { MassProductionKanbanSection } from "@/components/order-progress/mass-production-kanban-section";
+
 type OrderProgressPanelProps = {
   entries: OrderProgressEntry[];
   deletionLogs: OrderProgressDeletionLog[];
   forecasts: ForecastEntry[];
+  massProductionKanbanEntries: MassProductionKanbanEntry[];
   products: ProductItem[];
   allowedRegions: OrderProgressRegion[];
   language: Language;
@@ -173,6 +177,7 @@ export function OrderProgressPanel({
   entries,
   deletionLogs,
   forecasts,
+  massProductionKanbanEntries,
   products,
   allowedRegions,
   language,
@@ -1001,6 +1006,13 @@ export function OrderProgressPanel({
 
         {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
       </section>
+
+      <MassProductionKanbanSection
+        entries={massProductionKanbanEntries}
+        products={products}
+        allowedRegions={allowedRegions}
+        language={language}
+      />
 
       <section className="app-card p-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

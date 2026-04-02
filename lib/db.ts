@@ -838,6 +838,30 @@ async function setupSchema() {
     );
   `;
   await db`create index if not exists idx_qc_8d_reports_report_no on qc_8d_reports (report_no, id desc);`;
+
+  await db`
+    create table if not exists mass_production_kanban (
+      id bigserial primary key,
+      product_id bigint not null references products(id) on delete restrict,
+      quantity integer not null check (quantity >= 0),
+      mp text not null default '',
+      ee_date date,
+      me_date date,
+      smt_date date,
+      assembly_date date,
+      production_report_date date,
+      coo_approval_date date,
+      deliver_date date,
+      region text not null check (region in ('APAC', 'EU', 'US')),
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_mass_production_kanban_region_updated
+    on mass_production_kanban (region, updated_at desc);
+  `;
 }
 
 async function seedUsers() {
