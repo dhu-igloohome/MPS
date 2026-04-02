@@ -16,7 +16,9 @@ type Props = {
 function labels(language: Language) {
   const en = language === "en";
   return {
-    sectionTitle: en ? "Mass production Kanban" : "量产 Kanban（Mass production）",
+    sectionTitle: en
+      ? "Mass production Kanban"
+      : "量产看板 · Mass production Kanban",
     sku: "SKU",
     skuHint: en
       ? "Choose a product line from Product Database (active products only)."
@@ -188,8 +190,16 @@ export function MassProductionKanbanSection({
   }
 
   return (
-    <section className="app-card p-5">
+    <section
+      id="mass-production-kanban"
+      className="app-card scroll-mt-4 border-l-4 border-l-[var(--app-accent)] p-5"
+    >
       <h3 className="text-lg font-semibold text-foreground">{t.sectionTitle}</h3>
+      <p className="mt-1 text-xs text-app-muted">
+        {language === "en"
+          ? "First block on this page — scroll down for the standard order line form and table."
+          : "本页第一个板块；向下滚动为「创建/编辑订单行」与订单列表。"}
+      </p>
 
       <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3" onSubmit={onSubmit}>
         <label className="block md:col-span-2 lg:col-span-3">

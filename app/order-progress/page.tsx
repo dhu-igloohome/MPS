@@ -37,8 +37,8 @@ export default async function OrderProgressPage() {
       title={language === "en" ? "Order Progress" : "订单进度"}
       description={
         language === "en"
-          ? "Track order lines by region (independent from Forecast). Delivery dates are stored as calendar days (Singapore business context)."
-          : "按区域维护订单行（与 Forecast 独立）。交货日期按日历日存储（业务语境为新加坡）。"
+          ? "Track order lines by region (independent from Forecast). Includes Mass production Kanban (SKU, quantity, MP, milestone dates). Delivery dates use calendar days (Singapore business context)."
+          : "按区域维护订单行（与 Forecast 独立）。页面顶部为量产看板（Mass production Kanban），可维护 SKU、数量、MP 与各节点日期。交货日期按日历日存储（业务语境为新加坡）。"
       }
     >
       <OrderProgressPanel

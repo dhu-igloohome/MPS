@@ -646,6 +646,13 @@ export function OrderProgressPanel({
 
   return (
     <div className="space-y-6">
+      <MassProductionKanbanSection
+        entries={massProductionKanbanEntries}
+        products={products}
+        allowedRegions={allowedRegions}
+        language={language}
+      />
+
       <section className="app-card p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <h3 className="text-lg font-semibold text-foreground">{t.formTitle}</h3>
@@ -1005,13 +1012,6 @@ export function OrderProgressPanel({
 
         {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
       </section>
-
-      <MassProductionKanbanSection
-        entries={massProductionKanbanEntries}
-        products={products}
-        allowedRegions={allowedRegions}
-        language={language}
-      />
 
       <section className="app-card p-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
