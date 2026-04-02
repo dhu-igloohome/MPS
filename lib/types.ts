@@ -390,6 +390,7 @@ export type MassProductionKanbanEntry = {
   smt: string | null;
   assembly: string | null;
   productionReport: string | null;
+  ort: string | null;
   cooApproval: string | null;
   deliver: string | null;
   region: OrderProgressRegion;

@@ -48,6 +48,7 @@ function labels(language: Language) {
     smt: "SMT",
     assembly: en ? "Assembly" : "Assembly",
     productionReport: en ? "Production report" : "Production report",
+    ort: "ORT",
     cooApproval: en ? "COO approval" : "COO approval",
     deliver: en ? "Deliver" : "Deliver",
     region: en ? "Region" : "地区",
@@ -82,6 +83,7 @@ function emptyDateForm() {
     smt: "",
     assembly: "",
     productionReport: "",
+    ort: "",
     cooApproval: "",
     deliver: "",
   };
@@ -140,6 +142,7 @@ export function MassProductionKanbanSection({
       smt: row.smt ?? "",
       assembly: row.assembly ?? "",
       productionReport: row.productionReport ?? "",
+      ort: row.ort ?? "",
       cooApproval: row.cooApproval ?? "",
       deliver: row.deliver ?? "",
     });
@@ -160,6 +163,7 @@ export function MassProductionKanbanSection({
       smt: dates.smt.trim(),
       assembly: dates.assembly.trim(),
       productionReport: dates.productionReport.trim(),
+      ort: dates.ort.trim(),
       cooApproval: dates.cooApproval.trim(),
       deliver: dates.deliver.trim(),
       region: resolvedRegion,
@@ -268,6 +272,7 @@ export function MassProductionKanbanSection({
             ["smt", t.smt],
             ["assembly", t.assembly],
             ["productionReport", t.productionReport],
+            ["ort", t.ort],
             ["cooApproval", t.cooApproval],
             ["deliver", t.deliver],
           ] as const
@@ -345,6 +350,7 @@ export function MassProductionKanbanSection({
               <th className="px-2 py-2">{t.smt}</th>
               <th className="px-2 py-2">{t.assembly}</th>
               <th className="px-2 py-2">{t.productionReport}</th>
+              <th className="px-2 py-2">{t.ort}</th>
               <th className="px-2 py-2">{t.cooApproval}</th>
               <th className="px-2 py-2">{t.deliver}</th>
               <th className="px-2 py-2">{t.region}</th>
@@ -355,7 +361,7 @@ export function MassProductionKanbanSection({
           <tbody>
             {entries.length === 0 ? (
               <tr>
-                <td colSpan={15} className="px-2 py-6 text-center text-app-muted">
+                <td colSpan={16} className="px-2 py-6 text-center text-app-muted">
                   {t.empty}
                 </td>
               </tr>
@@ -372,6 +378,7 @@ export function MassProductionKanbanSection({
                   <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.smt, language)}</td>
                   <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.assembly, language)}</td>
                   <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.productionReport, language)}</td>
+                  <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.ort, language)}</td>
                   <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.cooApproval, language)}</td>
                   <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.deliver, language)}</td>
                   <td className="px-2 py-2">{row.region}</td>

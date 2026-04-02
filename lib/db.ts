@@ -850,6 +850,7 @@ async function setupSchema() {
       smt_date date,
       assembly_date date,
       production_report_date date,
+      ort_date date,
       coo_approval_date date,
       deliver_date date,
       region text not null check (region in ('APAC', 'EU', 'US')),
@@ -862,6 +863,7 @@ async function setupSchema() {
     create index if not exists idx_mass_production_kanban_region_updated
     on mass_production_kanban (region, updated_at desc);
   `;
+  await db`alter table mass_production_kanban add column if not exists ort_date date;`;
 }
 
 async function seedUsers() {

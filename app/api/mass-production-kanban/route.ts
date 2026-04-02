@@ -54,6 +54,8 @@ export async function POST(request: Request) {
   if (assembly instanceof NextResponse) return assembly;
   const productionReport = parseOptionalDate(body.productionReport, "Production report");
   if (productionReport instanceof NextResponse) return productionReport;
+  const ort = parseOptionalDate(body.ort, "ORT");
+  if (ort instanceof NextResponse) return ort;
   const cooApproval = parseOptionalDate(body.cooApproval, "COO approval");
   if (cooApproval instanceof NextResponse) return cooApproval;
   const deliver = parseOptionalDate(body.deliver, "Deliver");
@@ -82,6 +84,7 @@ export async function POST(request: Request) {
       smt,
       assembly,
       productionReport,
+      ort,
       cooApproval,
       deliver,
       region,

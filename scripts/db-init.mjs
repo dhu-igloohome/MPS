@@ -475,6 +475,7 @@ async function main() {
       smt_date date,
       assembly_date date,
       production_report_date date,
+      ort_date date,
       coo_approval_date date,
       deliver_date date,
       region text not null check (region in ('APAC', 'EU', 'US')),

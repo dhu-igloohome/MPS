@@ -1808,6 +1808,7 @@ type MassProductionKanbanRow = {
   smt_date: string | null;
   assembly_date: string | null;
   production_report_date: string | null;
+  ort_date: string | null;
   coo_approval_date: string | null;
   deliver_date: string | null;
   region: OrderProgressRegion;
@@ -1831,6 +1832,7 @@ function mapMassProductionKanbanRow(row: MassProductionKanbanRow): MassProductio
     smt: d(row.smt_date),
     assembly: d(row.assembly_date),
     productionReport: d(row.production_report_date),
+    ort: d(row.ort_date),
     cooApproval: d(row.coo_approval_date),
     deliver: d(row.deliver_date),
     region: row.region,
@@ -1861,6 +1863,7 @@ export async function listMassProductionKanbanBySessionRegions(
       k.smt_date::text,
       k.assembly_date::text,
       k.production_report_date::text,
+      k.ort_date::text,
       k.coo_approval_date::text,
       k.deliver_date::text,
       k.region,
@@ -1892,6 +1895,7 @@ export async function getMassProductionKanbanById(id: string): Promise<MassProdu
       k.smt_date::text,
       k.assembly_date::text,
       k.production_report_date::text,
+      k.ort_date::text,
       k.coo_approval_date::text,
       k.deliver_date::text,
       k.region,
@@ -1915,6 +1919,7 @@ export async function createMassProductionKanban(input: {
   smt: string | null;
   assembly: string | null;
   productionReport: string | null;
+  ort: string | null;
   cooApproval: string | null;
   deliver: string | null;
   region: OrderProgressRegion;
@@ -1936,6 +1941,7 @@ export async function createMassProductionKanban(input: {
       smt_date,
       assembly_date,
       production_report_date,
+      ort_date,
       coo_approval_date,
       deliver_date,
       region,
@@ -1950,6 +1956,7 @@ export async function createMassProductionKanban(input: {
       ${input.smt},
       ${input.assembly},
       ${input.productionReport},
+      ${input.ort},
       ${input.cooApproval},
       ${input.deliver},
       ${input.region},
@@ -1974,6 +1981,7 @@ export async function updateMassProductionKanban(input: {
   smt: string | null;
   assembly: string | null;
   productionReport: string | null;
+  ort: string | null;
   cooApproval: string | null;
   deliver: string | null;
   region: OrderProgressRegion;
@@ -1995,6 +2003,7 @@ export async function updateMassProductionKanban(input: {
       smt_date = ${input.smt},
       assembly_date = ${input.assembly},
       production_report_date = ${input.productionReport},
+      ort_date = ${input.ort},
       coo_approval_date = ${input.cooApproval},
       deliver_date = ${input.deliver},
       region = ${input.region},
