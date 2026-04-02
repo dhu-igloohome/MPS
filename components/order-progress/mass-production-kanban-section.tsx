@@ -6,6 +6,24 @@ import { useRouter } from "next/navigation";
 import { Language } from "@/lib/i18n";
 import type { MassProductionKanbanEntry, OrderProgressRegion, ProductItem } from "@/lib/types";
 
+const KANBAN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** In the Kanban table: same calendar year as today → month + day only; otherwise full YYYY-MM-DD. */
+function formatKanbanDateCell(value: string | null, language: Language): string {
+  if (!value || !KANBAN_DATE_RE.test(value)) return "—";
+  const y = Number(value.slice(0, 4));
+  const mo = Number(value.slice(5, 7));
+  const da = Number(value.slice(8, 10));
+  const currentYear = new Date().getFullYear();
+  const dt = new Date(y, mo - 1, da);
+  if (y === currentYear) {
+    return language === "en"
+      ? dt.toLocaleDateString("en", { month: "short", day: "numeric" })
+      : `${mo}月${da}日`;
+  }
+  return value;
+}
+
 type Props = {
   entries: MassProductionKanbanEntry[];
   products: ProductItem[];
@@ -349,13 +367,13 @@ export function MassProductionKanbanSection({
                   <td className="px-2 py-2">{row.variant || "—"}</td>
                   <td className="px-2 py-2 tabular-nums">{row.quantity}</td>
                   <td className="max-w-[10rem] px-2 py-2 break-words">{row.mp || "—"}</td>
-                  <td className="px-2 py-2 tabular-nums">{row.ee ?? "—"}</td>
-                  <td className="px-2 py-2 tabular-nums">{row.me ?? "—"}</td>
-                  <td className="px-2 py-2 tabular-nums">{row.smt ?? "—"}</td>
-                  <td className="px-2 py-2 tabular-nums">{row.assembly ?? "—"}</td>
-                  <td className="px-2 py-2 tabular-nums">{row.productionReport ?? "—"}</td>
-                  <td className="px-2 py-2 tabular-nums">{row.cooApproval ?? "—"}</td>
-                  <td className="px-2 py-2 tabular-nums">{row.deliver ?? "—"}</td>
+                  <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.ee, language)}</td>
+                  <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.me, language)}</td>
+                  <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.smt, language)}</td>
+                  <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.assembly, language)}</td>
+                  <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.productionReport, language)}</td>
+                  <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.cooApproval, language)}</td>
+                  <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.deliver, language)}</td>
                   <td className="px-2 py-2">{row.region}</td>
                   <td className="px-2 py-2">{row.createdBy}</td>
                   <td className="px-2 py-2">
