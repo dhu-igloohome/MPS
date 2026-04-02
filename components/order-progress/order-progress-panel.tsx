@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { MassProductionKanbanSection } from "@/components/order-progress/mass-production-kanban-section";
 import { Language } from "@/lib/i18n";
 import type {
   ForecastEntry,
@@ -16,8 +17,6 @@ import type {
   OrderProductionStep,
   ProductItem,
 } from "@/lib/types";
-
-import { MassProductionKanbanSection } from "@/components/order-progress/mass-production-kanban-section";
 
 type OrderProgressPanelProps = {
   entries: OrderProgressEntry[];
