@@ -35,6 +35,47 @@ function newDraftForecastLine(products: ProductItem[]): DraftForecastLine {
   };
 }
 
+/** YYYY-MM options; labels are explicit EN/ZH so English UI is not tied to OS locale (unlike <input type="month">). */
+function buildForecastMonthOptions(): { value: string; labelEn: string; labelZh: string }[] {
+  const out: { value: string; labelEn: string; labelZh: string }[] = [];
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() - 24, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 36, 1);
+  const cur = new Date(start);
+  while (cur <= end) {
+    const y = cur.getFullYear();
+    const mo = cur.getMonth() + 1;
+    const value = `${y}-${String(mo).padStart(2, "0")}`;
+    const labelEn = new Date(y, mo - 1, 1).toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    });
+    const labelZh = `${y}年${mo}月`;
+    out.push({ value, labelEn, labelZh });
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  return out;
+}
+
+function defaultForecastMonthValue(options: { value: string }[]): string {
+  if (options.length === 0) return "";
+  const d = new Date();
+  const v = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return options.some((o) => o.value === v) ? v : options[0].value;
+}
+
+function formatForecastMonthDisplay(ym: string, language: Language): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(ym.trim());
+  if (!m) return ym;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  if (mo < 1 || mo > 12) return ym;
+  if (language === "en") {
+    return new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
+  return `${y}年${mo}月`;
+}
+
 export function ForecastForm({
   allowedRegions,
   products,
@@ -98,7 +139,12 @@ export function ForecastForm({
   };
   const defaultRegion = allowedRegions[0];
 
-  const [month, setMonth] = useState("");
+  const forecastMonthPicker = useMemo(() => {
+    const options = buildForecastMonthOptions();
+    return { options, defaultValue: defaultForecastMonthValue(options) };
+  }, []);
+
+  const [month, setMonth] = useState(forecastMonthPicker.defaultValue);
   const [region, setRegion] = useState<Region>(defaultRegion);
   const [destination, setDestination] = useState("");
   const [lines, setLines] = useState<DraftForecastLine[]>([newDraftForecastLine(products)]);
@@ -298,13 +344,18 @@ export function ForecastForm({
       <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
         <label className="block">
           <span className="mb-1 block text-sm text-foreground/85">{t.forecastMonth}</span>
-          <input
-            type="month"
+          <select
             value={month}
             onChange={(event) => setMonth(event.target.value)}
             required
             className="w-full px-3 py-2"
-          />
+          >
+            {forecastMonthPicker.options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {language === "en" ? opt.labelEn : opt.labelZh}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="block">
@@ -507,7 +558,7 @@ export function ForecastForm({
               ) : (
                 entries.map((item) => (
                   <tr key={item.id} className="border-b border-app-border/40">
-                    <td className="px-2 py-2">{item.month}</td>
+                    <td className="px-2 py-2">{formatForecastMonthDisplay(item.month, language)}</td>
                     <td className="px-2 py-2">{item.poNumber || "—"}</td>
                     <td className="px-2 py-2">{item.region}</td>
                     <td className="px-2 py-2">{item.destination}</td>
