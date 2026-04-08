@@ -859,6 +859,55 @@ export async function createForecastDeletionLog(input: {
   `;
 }
 
+const MAX_FORECAST_BATCH_DELETE = 100;
+
+/** Deletes multiple forecasts in one DB transaction (same reason for all). */
+export async function deleteForecastsBatch(input: {
+  ids: string[];
+  reason: string;
+  deletedBy: string;
+  sessionRegions: Region[];
+}): Promise<{ deleted: number }> {
+  const unique = [...new Set(input.ids.map((x) => String(x).trim()).filter(Boolean))];
+  if (unique.length === 0) {
+    throw new Error("No forecast ids");
+  }
+  if (unique.length > MAX_FORECAST_BATCH_DELETE) {
+    throw new Error(`At most ${MAX_FORECAST_BATCH_DELETE} forecasts per batch`);
+  }
+  const reason = input.reason.trim();
+  if (!reason) {
+    throw new Error("Deletion reason is required");
+  }
+
+  await ensureDatabase();
+
+  for (const id of unique) {
+    const pid = Number(id);
+    if (!Number.isFinite(pid) || pid <= 0) {
+      throw new Error(`Invalid forecast id: ${id}`);
+    }
+    const row = await getForecastById(id);
+    if (!row) {
+      throw new Error(`Forecast not found: ${id}`);
+    }
+    if (!input.sessionRegions.includes(row.region)) {
+      throw new Error(`No access to forecast ${id}`);
+    }
+    await createForecastDeletionLog({
+      forecastId: row.id,
+      poNumber: row.poNumber,
+      sku: row.sku,
+      region: row.region,
+      reason,
+      deletedBy: input.deletedBy,
+    });
+    await deleteForecastById(id);
+  }
+
+  return { deleted: unique.length };
+}
+
 export async function forecastPoSkuExistsInRegions(
   regions: Region[],
   poNumber: string,

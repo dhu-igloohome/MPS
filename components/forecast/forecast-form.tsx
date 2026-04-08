@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Language } from "@/lib/i18n";
@@ -127,7 +127,12 @@ export function ForecastForm({
     allForecasts: language === "en" ? "All Forecast Records" : "全部 Forecast 记录",
     noRecords: language === "en" ? "No forecast records yet." : "暂无 forecast 记录。",
     actions: language === "en" ? "Actions" : "操作",
+    actionsRules:
+      language === "en"
+        ? "Use Delete for a single row, or tick several rows and click Delete selected. A cancellation reason is required (same rule for batch)."
+        : "操作：可单行点「删除」；也可勾选多行后点「删除所选」批量删除。均需填写取消原因（与单条规则一致）。",
     delete: language === "en" ? "Delete" : "删除",
+    deleteSelected: language === "en" ? "Delete selected" : "删除所选",
     deleteConfirm:
       language === "en"
         ? "Delete this forecast because customer cancelled it?"
@@ -136,6 +141,12 @@ export function ForecastForm({
       language === "en"
         ? "Please enter cancellation reason (required):"
         : "请输入取消原因（必填）：",
+    batchDeleteConfirm: (n: number) =>
+      language === "en"
+        ? `Delete ${n} forecast record(s)?`
+        : `确认删除已选的 ${n} 条 forecast？`,
+    batchDeleted: (n: number) =>
+      language === "en" ? `Deleted ${n} record(s).` : `已删除 ${n} 条。`,
   };
   const defaultRegion = allowedRegions[0];
 
@@ -150,6 +161,8 @@ export function ForecastForm({
   const [lines, setLines] = useState<DraftForecastLine[]>([newDraftForecastLine(products)]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedForecastIds, setSelectedForecastIds] = useState<string[]>([]);
+  const [batchDeleting, setBatchDeleting] = useState(false);
   const [useExistingPo, setUseExistingPo] = useState(false);
   const [selectedPoNumber, setSelectedPoNumber] = useState("");
   const [message, setMessage] = useState("");
@@ -165,6 +178,15 @@ export function ForecastForm({
       [...new Set(entries.filter((e) => e.region === region).map((e) => e.poNumber).filter(Boolean))].sort(),
     [entries, region],
   );
+
+  const entryIdSet = useMemo(() => new Set(entries.map((e) => e.id)), [entries]);
+
+  useEffect(() => {
+    setSelectedForecastIds((prev) => prev.filter((id) => entryIdSet.has(id)));
+  }, [entryIdSet]);
+
+  const allForecastRowsSelected =
+    entries.length > 0 && entries.every((e) => selectedForecastIds.includes(e.id));
   async function onBatchFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -289,6 +311,49 @@ export function ForecastForm({
       return;
     }
     setMessage(language === "en" ? "Deleted." : "已删除。");
+    setSelectedForecastIds((prev) => prev.filter((x) => x !== id));
+    router.refresh();
+  }
+
+  function toggleForecastSelect(id: string) {
+    setSelectedForecastIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  function toggleSelectAllForecasts() {
+    if (entries.length === 0) return;
+    if (allForecastRowsSelected) {
+      setSelectedForecastIds([]);
+    } else {
+      setSelectedForecastIds(entries.map((e) => e.id));
+    }
+  }
+
+  async function onBatchDeleteForecasts() {
+    if (selectedForecastIds.length === 0) return;
+    if (!window.confirm(t.batchDeleteConfirm(selectedForecastIds.length))) return;
+    const reason = window.prompt(t.reasonPrompt)?.trim() || "";
+    if (!reason) {
+      setMessage(language === "en" ? "Deletion reason is required." : "删除原因必填。");
+      return;
+    }
+    setBatchDeleting(true);
+    setMessage("");
+    const response = await fetch("/api/forecasts/batch-delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: selectedForecastIds, reason }),
+    });
+    const data = (await response.json().catch(() => ({}))) as { message?: string; deleted?: number };
+    setBatchDeleting(false);
+    if (!response.ok) {
+      setMessage(data.message || (language === "en" ? "Batch delete failed." : "批量删除失败。"));
+      return;
+    }
+    const n = data.deleted ?? selectedForecastIds.length;
+    setSelectedForecastIds([]);
+    setMessage(t.batchDeleted(n));
     router.refresh();
   }
 
@@ -531,11 +596,45 @@ export function ForecastForm({
       </form>
 
       <div className="mt-6">
-        <h3 className="text-base font-semibold text-foreground">{t.allForecasts}</h3>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">{t.allForecasts}</h3>
+            {canDelete ? (
+              <p className="mt-1 max-w-3xl text-xs text-app-muted">{t.actionsRules}</p>
+            ) : null}
+          </div>
+          {canDelete && entries.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2 sm:pt-0.5">
+              <span className="text-xs tabular-nums text-app-muted">
+                {language === "en" ? `${selectedForecastIds.length} selected` : `已选 ${selectedForecastIds.length} 条`}
+              </span>
+              <button
+                type="button"
+                disabled={batchDeleting || selectedForecastIds.length === 0}
+                onClick={onBatchDeleteForecasts}
+                className="rounded-lg border border-red-300 bg-app-surface px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+              >
+                {batchDeleting ? (language === "en" ? "Deleting…" : "删除中…") : t.deleteSelected}
+              </button>
+            </div>
+          ) : null}
+        </div>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[980px] border-collapse text-sm">
+          <table className="w-full min-w-[1040px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-app-border text-left text-app-muted">
+                {canDelete ? (
+                  <th className="w-10 px-2 py-2">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-app-border"
+                      checked={allForecastRowsSelected}
+                      onChange={toggleSelectAllForecasts}
+                      title={language === "en" ? "Select all rows" : "全选当前列表"}
+                      aria-label={language === "en" ? "Select all rows" : "全选当前列表"}
+                    />
+                  </th>
+                ) : null}
                 <th className="px-2 py-2">{t.forecastMonth}</th>
                 <th className="px-2 py-2">{language === "en" ? "Forecast #" : "Forecast #"}</th>
                 <th className="px-2 py-2">{t.region}</th>
@@ -551,13 +650,27 @@ export function ForecastForm({
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={canDelete ? 10 : 9} className="px-2 py-6 text-center text-app-muted">
+                  <td
+                    colSpan={canDelete ? 11 : 9}
+                    className="px-2 py-6 text-center text-app-muted"
+                  >
                     {t.noRecords}
                   </td>
                 </tr>
               ) : (
                 entries.map((item) => (
                   <tr key={item.id} className="border-b border-app-border/40">
+                    {canDelete ? (
+                      <td className="px-2 py-2 align-middle">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-app-border"
+                          checked={selectedForecastIds.includes(item.id)}
+                          onChange={() => toggleForecastSelect(item.id)}
+                          aria-label={language === "en" ? "Select row" : "选择该行"}
+                        />
+                      </td>
+                    ) : null}
                     <td className="px-2 py-2">{formatForecastMonthDisplay(item.month, language)}</td>
                     <td className="px-2 py-2">{item.poNumber || "—"}</td>
                     <td className="px-2 py-2">{item.region}</td>
