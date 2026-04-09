@@ -36,8 +36,8 @@ export default async function MassProductionKanbanPage() {
       title={language === "en" ? "Mass production Kanban" : "量产看板"}
       description={
         language === "en"
-          ? "SKU-level mass production tracking: quantity, MP, milestone dates (EE, ME, SMT, Assembly, ORT, etc.) by region. Calendar days (Singapore business context)."
-          : "按区域维护量产看板：SKU、数量、MP 与各节点日期（EE、ME、SMT、Assembly、ORT 等）。日期按日历日（业务语境为新加坡）。"
+          ? "Part of Order Progress (sidebar: hover Order Progress → Mass production Kanban). SKU-level tracking: quantity, MP, milestone dates by region. Calendar days (Singapore business context)."
+          : "归属订单进度模块（侧栏：悬停「订单进度」→「量产看板」）。按区域维护 SKU、数量、MP 与各节点日期。日期按日历日（业务语境为新加坡）。"
       }
     >
       {allowedRegions.length === 0 ? (

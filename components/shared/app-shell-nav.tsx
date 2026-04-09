@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
+import type { Language } from "@/lib/i18n";
 import {
   BarChart3,
   Boxes,
@@ -11,30 +13,20 @@ import {
   Factory,
   PackageSearch,
   ShieldCheck,
-  SquareKanban,
   Users,
 } from "lucide-react";
 
 export type ShellNavItem = {
   href: string;
   label: string;
-  icon?:
-    | "cockpit"
-    | "forecast"
-    | "order"
-    | "kanban"
-    | "supply"
-    | "logistics"
-    | "npi"
-    | "quality"
-    | "cost"
-    | "users";
+  icon?: "cockpit" | "forecast" | "order" | "supply" | "logistics" | "npi" | "quality" | "cost" | "users";
   children?: Array<{ href: string; label: string }>;
 };
 
 type AppShellNavProps = {
   items: ShellNavItem[];
   children: ReactNode;
+  language?: Language;
 };
 
 function pathMatches(pathname: string, href: string) {
@@ -46,7 +38,6 @@ const ICONS = {
   cockpit: BarChart3,
   forecast: ClipboardList,
   order: BriefcaseBusiness,
-  kanban: SquareKanban,
   supply: Factory,
   logistics: Boxes,
   npi: PackageSearch,
@@ -55,8 +46,11 @@ const ICONS = {
   users: Users,
 } as const;
 
-export function AppShellNav({ items, children }: AppShellNavProps) {
+export function AppShellNav({ items, children, language }: AppShellNavProps) {
   const pathname = usePathname() || "";
+  const en = language === "en";
+  const onOrderProgressModule =
+    pathname === "/order-progress" || pathname === "/mass-production-kanban";
 
   const mobilePill =
     "shrink-0 rounded-lg border border-transparent px-3.5 py-2 text-sm font-medium tracking-tight text-[#4B5563] transition-colors duration-150 hover:bg-gray-100";
@@ -88,6 +82,26 @@ export function AppShellNav({ items, children }: AppShellNavProps) {
           );
         })}
       </nav>
+
+      {language && onOrderProgressModule ? (
+        <div
+          className="-mx-1 mb-2 flex flex-wrap gap-2 px-1 md:hidden"
+          aria-label={en ? "Order Progress sections" : "订单进度子页面"}
+        >
+          <Link
+            href="/order-progress"
+            className={`${mobilePill} ${pathname === "/order-progress" ? mobileActive : ""}`}
+          >
+            {en ? "Order lines" : "订单行"}
+          </Link>
+          <Link
+            href="/mass-production-kanban"
+            className={`${mobilePill} ${pathname === "/mass-production-kanban" ? mobileActive : ""}`}
+          >
+            {en ? "Mass production Kanban" : "量产看板"}
+          </Link>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8 lg:gap-10">
         <nav

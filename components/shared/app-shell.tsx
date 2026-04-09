@@ -24,7 +24,8 @@ export async function AppShell({ session, title, description, children }: AppShe
     cockpit: language === "en" ? "Cockpit" : "驾驶舱",
     forecastInput: language === "en" ? "Forecast Input" : "Forecast 填报",
     orderProgress: language === "en" ? "Order Progress" : "订单进度",
-    massProductionKanban: language === "en" ? "Mass prod. Kanban" : "量产看板",
+    orderProgressSubLines: language === "en" ? "Order lines" : "订单行",
+    massProductionKanban: language === "en" ? "Mass production Kanban" : "量产看板",
     supplyChain: language === "en" ? "Supply Chain Management" : "供应链管理",
     logisticsProgress: language === "en" ? "Logistics Progress" : "物流进度",
     npi: language === "en" ? "NPI Management" : "NPI 管理",
@@ -37,11 +38,14 @@ export async function AppShell({ session, title, description, children }: AppShe
   const navItems: ShellNavItem[] = [
     { href: "/dashboard", label: navText.cockpit, icon: "cockpit" as const },
     { href: "/forecast", label: navText.forecastInput, icon: "forecast" as const },
-    { href: "/order-progress", label: navText.orderProgress, icon: "order" as const },
     {
-      href: "/mass-production-kanban",
-      label: navText.massProductionKanban,
-      icon: "kanban" as const,
+      href: "/order-progress",
+      label: navText.orderProgress,
+      icon: "order" as const,
+      children: [
+        { href: "/order-progress", label: navText.orderProgressSubLines },
+        { href: "/mass-production-kanban", label: navText.massProductionKanban },
+      ],
     },
     {
       href: "/supply-chain/suppliers",
@@ -125,7 +129,7 @@ export async function AppShell({ session, title, description, children }: AppShe
       </AutoHideHeader>
 
       <div className="mx-auto w-full max-w-[1520px] px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
-        <AppShellNav items={navItems}>
+        <AppShellNav items={navItems} language={language}>
           <div className="app-panel p-5 sm:p-6">
             <h2 className="text-xl font-semibold tracking-tight text-[#111827] sm:text-2xl">{title}</h2>
             <p className="mt-1.5 text-sm text-[#4B5563]">{description}</p>
