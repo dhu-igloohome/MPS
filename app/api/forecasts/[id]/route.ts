@@ -3,11 +3,90 @@ import { NextResponse } from "next/server";
 import {
   createForecastDeletionLog,
   deleteForecastById,
+  findActiveProductByNameAndSku,
   getForecastById,
+  updateForecast,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
+import type { Region } from "@/lib/types";
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+function isRegion(value: string): value is Region {
+  return value === "APAC" || value === "EU" || value === "USA";
+}
+
+const DESTINATION_RE = /^[A-Za-z0-9\u4E00-\u9FFF ]+$/;
+
+const MONTH_RE = /^\d{4}-\d{2}$/;
+
+export async function PATCH(request: Request, context: RouteContext) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+  const { id } = await context.params;
+  if (!id) {
+    return NextResponse.json({ message: "Missing id" }, { status: 400 });
+  }
+  const existing = await getForecastById(id);
+  if (!existing) {
+    return NextResponse.json({ message: "Not found" }, { status: 404 });
+  }
+  if (!session.regions.includes(existing.region)) {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const region = String(body.region || "");
+  const month = String(body.month || "");
+  const productName = String(body.productName || "");
+  const sku = String(body.sku || "");
+  const destination = String(body.destination || "").trim();
+  const remark = String(body.remark || "");
+  const buildToOrder = Number(body.buildToOrder ?? 0);
+  const buildToStock = Number(body.buildToStock ?? 0);
+
+  if (!isRegion(region)) {
+    return NextResponse.json({ message: "Invalid region" }, { status: 400 });
+  }
+  if (!session.regions.includes(region)) {
+    return NextResponse.json({ message: "Forbidden region" }, { status: 403 });
+  }
+  if (!month || !MONTH_RE.test(month) || !productName.trim() || !sku.trim() || !destination) {
+    return NextResponse.json({ message: "Missing or invalid fields" }, { status: 400 });
+  }
+  if (!DESTINATION_RE.test(destination)) {
+    return NextResponse.json(
+      { message: "Invalid destination (letters, numbers, spaces, Chinese only)" },
+      { status: 400 },
+    );
+  }
+  if (buildToOrder < 0 || buildToStock < 0) {
+    return NextResponse.json({ message: "Quantity cannot be negative" }, { status: 400 });
+  }
+
+  const product = await findActiveProductByNameAndSku(productName.trim(), sku.trim());
+  if (!product) {
+    return NextResponse.json({ message: "Invalid product and SKU" }, { status: 400 });
+  }
+
+  const entry = await updateForecast({
+    id,
+    month,
+    region,
+    destination,
+    productName: productName.trim(),
+    sku: sku.trim(),
+    remark: remark.trim(),
+    buildToOrder,
+    buildToStock,
+  });
+  if (!entry) {
+    return NextResponse.json({ message: "Update failed" }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true, entry });
+}
 
 export async function DELETE(request: Request, context: RouteContext) {
   const session = await getSession();

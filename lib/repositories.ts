@@ -820,6 +820,64 @@ export async function getForecastById(id: string): Promise<ForecastEntry | null>
   return rows[0] ? mapForecast(rows[0]) : null;
 }
 
+export async function updateForecast(input: {
+  id: string;
+  month: string;
+  region: Region;
+  destination: string;
+  productName: string;
+  sku: string;
+  remark: string;
+  buildToOrder: number;
+  buildToStock: number;
+}): Promise<ForecastEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const pid = Number(input.id);
+  const rows = await db<
+    {
+      id: number;
+      forecast_month: string;
+      region: Region;
+      destination: string;
+      po_number: string;
+      product_name: string;
+      sku: string;
+      remark: string;
+      build_to_order: number;
+      build_to_stock: number;
+      created_by: string;
+      created_at: string;
+    }[]
+  >`
+    update forecasts
+    set
+      forecast_month = ${input.month},
+      region = ${input.region},
+      destination = ${input.destination.trim()},
+      product_name = ${input.productName.trim()},
+      sku = ${input.sku.trim()},
+      remark = ${input.remark.trim()},
+      build_to_order = ${input.buildToOrder},
+      build_to_stock = ${input.buildToStock}
+    where id = ${pid}
+    returning
+      id,
+      forecast_month,
+      region,
+      destination,
+      po_number,
+      product_name,
+      sku,
+      remark,
+      build_to_order,
+      build_to_stock,
+      created_by,
+      created_at::text;
+  `;
+  return rows[0] ? mapForecast(rows[0]) : null;
+}
+
 export async function deleteForecastById(id: string): Promise<void> {
   await ensureDatabase();
   const db = getSql();

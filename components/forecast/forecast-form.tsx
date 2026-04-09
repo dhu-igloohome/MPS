@@ -18,9 +18,23 @@ type DraftForecastLine = {
   key: string;
   sku: string;
   productName: string;
+  destination: string;
   buildToOrder: string;
   buildToStock: string;
   remark: string;
+};
+
+type ForecastEditDraft = {
+  id: string;
+  month: string;
+  region: Region;
+  destination: string;
+  sku: string;
+  productName: string;
+  remark: string;
+  buildToOrder: string;
+  buildToStock: string;
+  poNumber: string;
 };
 
 function newDraftForecastLine(products: ProductItem[]): DraftForecastLine {
@@ -29,6 +43,7 @@ function newDraftForecastLine(products: ProductItem[]): DraftForecastLine {
     key: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `f-${Date.now()}-${Math.random()}`,
     sku: first?.sku || "",
     productName: first?.productName || "",
+    destination: "",
     buildToOrder: "0",
     buildToStock: "0",
     remark: "",
@@ -147,6 +162,17 @@ export function ForecastForm({
         : `确认删除已选的 ${n} 条 forecast？`,
     batchDeleted: (n: number) =>
       language === "en" ? `Deleted ${n} record(s).` : `已删除 ${n} 条。`,
+    edit: language === "en" ? "Edit" : "编辑",
+    cancelEdit: language === "en" ? "Cancel" : "取消",
+    saveEdit: language === "en" ? "Save changes" : "保存修改",
+    editPanelTitle: language === "en" ? "Edit forecast record" : "编辑 Forecast 记录",
+    editHint:
+      language === "en"
+        ? "Forecast number is fixed. Other fields follow the same rules as when creating."
+        : "Forecast 编号不可改；其余字段规则与新建时一致。",
+    forecastNumberLabel: language === "en" ? "Forecast #" : "Forecast 编号",
+    editSaveFailed: language === "en" ? "Save failed." : "保存失败。",
+    editSaved: language === "en" ? "Saved." : "已保存。",
   };
   const defaultRegion = allowedRegions[0];
 
@@ -157,7 +183,6 @@ export function ForecastForm({
 
   const [month, setMonth] = useState(forecastMonthPicker.defaultValue);
   const [region, setRegion] = useState<Region>(defaultRegion);
-  const [destination, setDestination] = useState("");
   const [lines, setLines] = useState<DraftForecastLine[]>([newDraftForecastLine(products)]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -169,6 +194,9 @@ export function ForecastForm({
   const [batchSummary, setBatchSummary] = useState<string | null>(null);
   const [batchErrors, setBatchErrors] = useState<{ row: number; message: string }[]>([]);
   const batchFileRef = useRef<HTMLInputElement>(null);
+  const forecastEditPanelRef = useRef<HTMLDivElement>(null);
+  const [editDraft, setEditDraft] = useState<ForecastEditDraft | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const skuOptions = useMemo(
     () => [...new Set(products.map((item) => item.sku).filter(Boolean))].sort(),
     [products],
@@ -264,7 +292,7 @@ export function ForecastForm({
         body: JSON.stringify({
           month,
           region,
-          destination,
+          destination: line.destination.trim(),
           poNumber: issuedPo,
           productName: line.productName,
           sku: line.sku,
@@ -328,6 +356,66 @@ export function ForecastForm({
     } else {
       setSelectedForecastIds(entries.map((e) => e.id));
     }
+  }
+
+  function startEditForecast(item: ForecastEntry) {
+    setMessage("");
+    setEditDraft({
+      id: item.id,
+      month: item.month,
+      region: item.region,
+      destination: item.destination,
+      sku: item.sku,
+      productName: item.productName,
+      remark: item.remark,
+      buildToOrder: String(item.buildToOrder),
+      buildToStock: String(item.buildToStock),
+      poNumber: item.poNumber || "",
+    });
+    queueMicrotask(() => {
+      forecastEditPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function updateEditSku(nextSku: string) {
+    setEditDraft((prev) => {
+      if (!prev) return prev;
+      const matched = products.find((p) => p.sku === nextSku);
+      return {
+        ...prev,
+        sku: nextSku,
+        productName: matched?.productName ?? "",
+      };
+    });
+  }
+
+  async function saveEditForecast() {
+    if (!editDraft) return;
+    setSavingEdit(true);
+    setMessage("");
+    const response = await fetch(`/api/forecasts/${encodeURIComponent(editDraft.id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        month: editDraft.month,
+        region: editDraft.region,
+        destination: editDraft.destination.trim(),
+        productName: editDraft.productName,
+        sku: editDraft.sku,
+        remark: editDraft.remark,
+        buildToOrder: Number(editDraft.buildToOrder || 0),
+        buildToStock: Number(editDraft.buildToStock || 0),
+      }),
+    });
+    const data = (await response.json().catch(() => ({}))) as { message?: string };
+    setSavingEdit(false);
+    if (!response.ok) {
+      setMessage(data.message || t.editSaveFailed);
+      return;
+    }
+    setEditDraft(null);
+    setMessage(t.editSaved);
+    router.refresh();
   }
 
   async function onBatchDeleteForecasts() {
@@ -437,19 +525,6 @@ export function ForecastForm({
             ))}
           </select>
         </label>
-        <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
-          <input
-            value={destination}
-            onChange={(event) => setDestination(event.target.value)}
-            required
-            maxLength={80}
-            pattern="[A-Za-z0-9\u4E00-\u9FFF ]+"
-            title={t.destinationHint}
-            className="w-full px-3 py-2"
-          />
-          <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
-        </label>
         <label className="block md:col-span-2">
           <span className="mb-1 block text-sm text-foreground/85">{t.useExistingPo}</span>
           <div className="flex items-center gap-2">
@@ -533,6 +608,25 @@ export function ForecastForm({
                     className="w-full rounded-lg border border-app-border bg-gray-50 px-3 py-2 outline-none"
                   />
                 </label>
+                <label className="block md:col-span-2">
+                  <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
+                  <input
+                    value={line.destination}
+                    onChange={(event) =>
+                      setLines((prev) =>
+                        prev.map((x) =>
+                          x.key === line.key ? { ...x, destination: event.target.value } : x,
+                        ),
+                      )
+                    }
+                    required
+                    maxLength={80}
+                    pattern="[A-Za-z0-9\u4E00-\u9FFF ]+"
+                    title={t.destinationHint}
+                    className="w-full px-3 py-2"
+                  />
+                  <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
+                </label>
                 <label className="block">
                   <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
                   <input
@@ -595,13 +689,155 @@ export function ForecastForm({
         </div>
       </form>
 
+      {editDraft ? (
+        <div
+          ref={forecastEditPanelRef}
+          className="mt-6 rounded-xl border-2 border-[var(--app-accent)] bg-app-accent-soft/40 p-4"
+        >
+          <h3 className="text-base font-semibold text-foreground">{t.editPanelTitle}</h3>
+          <p className="mt-1 text-xs text-app-muted">{t.editHint}</p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <label className="block md:col-span-2">
+              <span className="mb-1 block text-sm text-foreground/85">{t.forecastNumberLabel}</span>
+              <input
+                value={editDraft.poNumber || "—"}
+                readOnly
+                className="w-full rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm text-foreground/85">{t.forecastMonth}</span>
+              <select
+                value={editDraft.month}
+                onChange={(e) => setEditDraft((d) => (d ? { ...d, month: e.target.value } : d))}
+                className="w-full px-3 py-2 text-sm"
+              >
+                {forecastMonthPicker.options.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {language === "en" ? opt.labelEn : opt.labelZh}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
+              <select
+                value={editDraft.region}
+                onChange={(e) =>
+                  setEditDraft((d) => (d ? { ...d, region: e.target.value as Region } : d))
+                }
+                className="w-full px-3 py-2 text-sm"
+              >
+                {allowedRegions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block md:col-span-2">
+              <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
+              <input
+                value={editDraft.destination}
+                onChange={(e) => setEditDraft((d) => (d ? { ...d, destination: e.target.value } : d))}
+                required
+                maxLength={80}
+                pattern="[A-Za-z0-9\u4E00-\u9FFF ]+"
+                title={t.destinationHint}
+                className="w-full px-3 py-2 text-sm"
+              />
+              <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
+              <select
+                value={editDraft.sku}
+                onChange={(e) => updateEditSku(e.target.value)}
+                className="w-full px-3 py-2 text-sm"
+              >
+                {skuOptions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
+              <input
+                value={editDraft.productName}
+                readOnly
+                className="w-full rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
+              <input
+                type="number"
+                min={0}
+                value={editDraft.buildToOrder}
+                onChange={(e) =>
+                  setEditDraft((d) => (d ? { ...d, buildToOrder: e.target.value } : d))
+                }
+                className="w-full px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm text-foreground/85">{t.bts}</span>
+              <input
+                type="number"
+                min={0}
+                value={editDraft.buildToStock}
+                onChange={(e) =>
+                  setEditDraft((d) => (d ? { ...d, buildToStock: e.target.value } : d))
+                }
+                className="w-full px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block md:col-span-2">
+              <span className="mb-1 block text-sm text-foreground/85">{t.remark}</span>
+              <textarea
+                value={editDraft.remark}
+                onChange={(e) => setEditDraft((d) => (d ? { ...d, remark: e.target.value } : d))}
+                rows={2}
+                className="w-full px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={savingEdit}
+              onClick={saveEditForecast}
+              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+            >
+              {savingEdit ? t.saving : t.saveEdit}
+            </button>
+            <button
+              type="button"
+              disabled={savingEdit}
+              onClick={() => setEditDraft(null)}
+              className="app-button-secondary px-4 py-2 text-sm"
+            >
+              {t.cancelEdit}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h3 className="text-base font-semibold text-foreground">{t.allForecasts}</h3>
             {canDelete ? (
               <p className="mt-1 max-w-3xl text-xs text-app-muted">{t.actionsRules}</p>
-            ) : null}
+            ) : (
+              <p className="mt-1 max-w-3xl text-xs text-app-muted">
+                {language === "en"
+                  ? "Actions: Edit to update a saved row (same validation as create)."
+                  : "操作：点「编辑」可修改已保存的记录（校验规则与新建一致）。"}
+              </p>
+            )}
           </div>
           {canDelete && entries.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2 sm:pt-0.5">
@@ -644,14 +880,14 @@ export function ForecastForm({
                 <th className="px-2 py-2">{t.bto}</th>
                 <th className="px-2 py-2">{t.bts}</th>
                 <th className="px-2 py-2">{t.createdAt}</th>
-                {canDelete ? <th className="px-2 py-2">{t.actions}</th> : null}
+                <th className="px-2 py-2">{t.actions}</th>
               </tr>
             </thead>
             <tbody>
               {entries.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={canDelete ? 11 : 9}
+                    colSpan={canDelete ? 11 : 10}
                     className="px-2 py-6 text-center text-app-muted"
                   >
                     {t.noRecords}
@@ -659,7 +895,14 @@ export function ForecastForm({
                 </tr>
               ) : (
                 entries.map((item) => (
-                  <tr key={item.id} className="border-b border-app-border/40">
+                  <tr
+                    key={item.id}
+                    className={
+                      editDraft?.id === item.id
+                        ? "border-b border-app-border/40 bg-app-accent-soft/55"
+                        : "border-b border-app-border/40"
+                    }
+                  >
                     {canDelete ? (
                       <td className="px-2 py-2 align-middle">
                         <input
@@ -680,18 +923,28 @@ export function ForecastForm({
                     <td className="px-2 py-2 tabular-nums">{item.buildToOrder}</td>
                     <td className="px-2 py-2 tabular-nums">{item.buildToStock}</td>
                     <td className="px-2 py-2">{item.createdAt.slice(0, 10)}</td>
-                    {canDelete ? (
-                      <td className="px-2 py-2">
+                    <td className="px-2 py-2">
+                      <div className="flex flex-wrap gap-1.5">
                         <button
                           type="button"
-                          onClick={() => onDelete(item.id)}
-                          disabled={deletingId === item.id}
-                          className="rounded border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          onClick={() => startEditForecast(item)}
+                          disabled={savingEdit || deletingId === item.id}
+                          className="rounded border border-app-border px-2 py-1 text-foreground/90 hover:bg-app-accent-soft disabled:opacity-50"
                         >
-                          {t.delete}
+                          {t.edit}
                         </button>
-                      </td>
-                    ) : null}
+                        {canDelete ? (
+                          <button
+                            type="button"
+                            onClick={() => onDelete(item.id)}
+                            disabled={deletingId === item.id || savingEdit}
+                            className="rounded border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            {t.delete}
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
