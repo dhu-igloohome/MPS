@@ -4,13 +4,10 @@ import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { MassProductionKanbanSection } from "@/components/order-progress/mass-production-kanban-section";
 import { Language } from "@/lib/i18n";
 import type {
   ForecastEntry,
-  MassProductionKanbanEntry,
   OrderProgressDeletionLog,
-  MassProductionKanbanRegion,
   OrderProgressEntry,
   OrderProgressOrderType,
   OrderProgressRegion,
@@ -23,10 +20,8 @@ type OrderProgressPanelProps = {
   entries: OrderProgressEntry[];
   deletionLogs: OrderProgressDeletionLog[];
   forecasts: ForecastEntry[];
-  massProductionKanbanEntries: MassProductionKanbanEntry[];
   products: ProductItem[];
   allowedRegions: OrderProgressRegion[];
-  massProductionKanbanAllowedRegions: MassProductionKanbanRegion[];
   language: Language;
 };
 
@@ -178,10 +173,8 @@ export function OrderProgressPanel({
   entries,
   deletionLogs,
   forecasts,
-  massProductionKanbanEntries,
   products,
   allowedRegions,
-  massProductionKanbanAllowedRegions,
   language,
 }: OrderProgressPanelProps) {
   const router = useRouter();
@@ -649,13 +642,6 @@ export function OrderProgressPanel({
 
   return (
     <div className="space-y-6">
-      <MassProductionKanbanSection
-        entries={massProductionKanbanEntries}
-        products={products}
-        allowedRegions={massProductionKanbanAllowedRegions}
-        language={language}
-      />
-
       <section className="app-card p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <h3 className="text-lg font-semibold text-foreground">{t.formTitle}</h3>

@@ -24,6 +24,7 @@ export async function AppShell({ session, title, description, children }: AppShe
     cockpit: language === "en" ? "Cockpit" : "驾驶舱",
     forecastInput: language === "en" ? "Forecast Input" : "Forecast 填报",
     orderProgress: language === "en" ? "Order Progress" : "订单进度",
+    massProductionKanban: language === "en" ? "Mass prod. Kanban" : "量产看板",
     supplyChain: language === "en" ? "Supply Chain Management" : "供应链管理",
     logisticsProgress: language === "en" ? "Logistics Progress" : "物流进度",
     npi: language === "en" ? "NPI Management" : "NPI 管理",
@@ -37,6 +38,11 @@ export async function AppShell({ session, title, description, children }: AppShe
     { href: "/dashboard", label: navText.cockpit, icon: "cockpit" as const },
     { href: "/forecast", label: navText.forecastInput, icon: "forecast" as const },
     { href: "/order-progress", label: navText.orderProgress, icon: "order" as const },
+    {
+      href: "/mass-production-kanban",
+      label: navText.massProductionKanban,
+      icon: "kanban" as const,
+    },
     {
       href: "/supply-chain/suppliers",
       label: navText.supplyChain,

@@ -11,13 +11,24 @@ import {
   Factory,
   PackageSearch,
   ShieldCheck,
+  SquareKanban,
   Users,
 } from "lucide-react";
 
 export type ShellNavItem = {
   href: string;
   label: string;
-  icon?: "cockpit" | "forecast" | "order" | "supply" | "logistics" | "npi" | "quality" | "cost" | "users";
+  icon?:
+    | "cockpit"
+    | "forecast"
+    | "order"
+    | "kanban"
+    | "supply"
+    | "logistics"
+    | "npi"
+    | "quality"
+    | "cost"
+    | "users";
   children?: Array<{ href: string; label: string }>;
 };
 
@@ -35,6 +46,7 @@ const ICONS = {
   cockpit: BarChart3,
   forecast: ClipboardList,
   order: BriefcaseBusiness,
+  kanban: SquareKanban,
   supply: Factory,
   logistics: Boxes,
   npi: PackageSearch,

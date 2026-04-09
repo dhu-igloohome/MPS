@@ -232,8 +232,8 @@ export function MassProductionKanbanSection({
       <h3 className="text-lg font-semibold text-foreground">{t.sectionTitle}</h3>
       <p className="mt-1 text-xs text-app-muted">
         {language === "en"
-          ? "First block on this page — scroll down for the standard order line form and table."
-          : "本页第一个板块；向下滚动为「创建/编辑订单行」与订单列表。"}
+          ? "Track mass production milestones per product/SKU and region (MP, dates, ORT, etc.)."
+          : "按产品/SKU 与区域维护量产节点（MP、各工序日期、ORT 等）。"}
       </p>
 
       <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3" onSubmit={onSubmit}>

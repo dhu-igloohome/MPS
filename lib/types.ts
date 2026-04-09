@@ -388,7 +388,7 @@ export type OrderProgressDeletionLog = {
   deletedAt: string;
 };
 
-/** Mass production Kanban row (Order Progress module). */
+/** Mass production Kanban row (dedicated page `/mass-production-kanban`). */
 export type MassProductionKanbanEntry = {
   id: string;
   productId: string;
