@@ -143,6 +143,14 @@ function labels(language: Language) {
     productionToggleFailed: en ? "Could not update step." : "更新工序状态失败。",
     deletionLogTitle: en ? "Deletion logs" : "删除日志",
     deletionLogEmpty: en ? "No deletion logs yet." : "暂无删除日志。",
+    deletionLogPreviewHint: en
+      ? "Showing the 10 most recent entries. Use the button below to see older records."
+      : "默认展示最近 10 条；点击下方按钮可查看更早的记录。",
+    deletionLogExpand: (n: number) =>
+      en
+        ? `Show ${n} more record${n === 1 ? "" : "s"}`
+        : `显示其余 ${n} 条`,
+    deletionLogCollapse: en ? "Show less" : "收起",
     colDeletedOrderNo: en ? "PO number" : "PO 编号",
     colDeletedForecastNo: en ? "Forecast #" : "Forecast 编号",
     colDeletedSku: "SKU",
@@ -226,6 +234,8 @@ export function OrderProgressPanel({
     Record<string, Record<string, OrderProductionStep>>
   >({});
   const [togglingProductionKey, setTogglingProductionKey] = useState<string | null>(null);
+  const DELETION_LOGS_PREVIEW = 10;
+  const [deletionLogsExpanded, setDeletionLogsExpanded] = useState(false);
 
   const productionStepsByOrderId = useMemo(() => {
     const next: Record<string, OrderProductionStep[]> = {};
@@ -293,6 +303,12 @@ export function OrderProgressPanel({
   const factoryNameNotInActiveList = Boolean(
     factoryNameTrimmed && !activeSupplierNames.includes(factoryNameTrimmed),
   );
+
+  const visibleDeletionLogs =
+    deletionLogsExpanded || deletionLogs.length <= DELETION_LOGS_PREVIEW
+      ? deletionLogs
+      : deletionLogs.slice(0, DELETION_LOGS_PREVIEW);
+  const hiddenDeletionLogCount = Math.max(0, deletionLogs.length - DELETION_LOGS_PREVIEW);
 
   function onProductNameChange(nextName: string) {
     setProductName(nextName);
@@ -1159,6 +1175,9 @@ export function OrderProgressPanel({
       </section>
       <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.deletionLogTitle}</h3>
+        {deletionLogs.length > DELETION_LOGS_PREVIEW && !deletionLogsExpanded ? (
+          <p className="mt-1 text-xs text-app-muted">{t.deletionLogPreviewHint}</p>
+        ) : null}
         <div className="app-table-shell mt-3 overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead>
@@ -1180,7 +1199,7 @@ export function OrderProgressPanel({
                   </td>
                 </tr>
               ) : (
-                deletionLogs.map((row) => (
+                visibleDeletionLogs.map((row) => (
                   <tr key={row.id}>
                     <td className="px-2 py-2">{row.orderNumber || "—"}</td>
                     <td className="px-2 py-2">{row.forecastNumber || "—"}</td>
@@ -1195,6 +1214,17 @@ export function OrderProgressPanel({
             </tbody>
           </table>
         </div>
+        {hiddenDeletionLogCount > 0 ? (
+          <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDeletionLogsExpanded((v) => !v)}
+              className="rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/90 hover:bg-app-accent-soft"
+            >
+              {deletionLogsExpanded ? t.deletionLogCollapse : t.deletionLogExpand(hiddenDeletionLogCount)}
+            </button>
+          </div>
+        ) : null}
       </section>
     </div>
   );
