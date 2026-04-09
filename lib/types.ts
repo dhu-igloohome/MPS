@@ -307,6 +307,18 @@ export type ContractEntry = {
 /** Order progress module uses US; session / forecasts use USA. */
 export type OrderProgressRegion = "APAC" | "EU" | "US";
 
+/** Mass production Kanban only: office bucket (users with APAC may select). */
+export type MassProductionKanbanRegion = OrderProgressRegion | "Shenzhen office";
+
+export function isMassProductionKanbanRegion(value: string): value is MassProductionKanbanRegion {
+  return (
+    value === "APAC" ||
+    value === "EU" ||
+    value === "US" ||
+    value === "Shenzhen office"
+  );
+}
+
 export type OrderProgressOrderType = "BTO" | "BTS";
 
 export type OrderProgressStatus = "not_started" | "in_production" | "ready_to_ship";
@@ -393,7 +405,7 @@ export type MassProductionKanbanEntry = {
   ort: string | null;
   cooApproval: string | null;
   deliver: string | null;
-  region: OrderProgressRegion;
+  region: MassProductionKanbanRegion;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

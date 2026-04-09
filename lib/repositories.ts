@@ -29,6 +29,7 @@ import {
   OrderProgressStatus,
   OrderProgressDeletionLog,
   MassProductionKanbanEntry,
+  MassProductionKanbanRegion,
   ProductItem,
   Region,
   SessionPayload,
@@ -382,6 +383,16 @@ export function orderProgressRegionsForSession(regions: Region[]): OrderProgress
     }
   }
   return Array.from(set);
+}
+
+export function massProductionKanbanRegionsForSession(regions: Region[]): MassProductionKanbanRegion[] {
+  const base = orderProgressRegionsForSession(regions);
+  const out: MassProductionKanbanRegion[] = [...base];
+  const hasApac = regions.includes("APAC") || base.includes("APAC");
+  if (hasApac && !out.includes("Shenzhen office")) {
+    out.push("Shenzhen office");
+  }
+  return out;
 }
 
 export function sessionCanAccessOrderProgressRegion(
@@ -1918,7 +1929,7 @@ type MassProductionKanbanRow = {
   ort_date: string | null;
   coo_approval_date: string | null;
   deliver_date: string | null;
-  region: OrderProgressRegion;
+  region: MassProductionKanbanRegion;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -1953,7 +1964,7 @@ export async function listMassProductionKanbanBySessionRegions(
   regions: Region[],
 ): Promise<MassProductionKanbanEntry[]> {
   await ensureDatabase();
-  const allowed = orderProgressRegionsForSession(regions);
+  const allowed = massProductionKanbanRegionsForSession(regions);
   if (allowed.length === 0) return [];
   const db = getSql();
   const rows = await db<MassProductionKanbanRow[]>`
@@ -2029,7 +2040,7 @@ export async function createMassProductionKanban(input: {
   ort: string | null;
   cooApproval: string | null;
   deliver: string | null;
-  region: OrderProgressRegion;
+  region: MassProductionKanbanRegion;
   createdBy: string;
 }): Promise<MassProductionKanbanEntry> {
   await ensureDatabase();
@@ -2091,7 +2102,7 @@ export async function updateMassProductionKanban(input: {
   ort: string | null;
   cooApproval: string | null;
   deliver: string | null;
-  region: OrderProgressRegion;
+  region: MassProductionKanbanRegion;
 }): Promise<MassProductionKanbanEntry | null> {
   await ensureDatabase();
   const db = getSql();

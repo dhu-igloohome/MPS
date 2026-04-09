@@ -4,7 +4,11 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Language } from "@/lib/i18n";
-import type { MassProductionKanbanEntry, OrderProgressRegion, ProductItem } from "@/lib/types";
+import type {
+  MassProductionKanbanEntry,
+  MassProductionKanbanRegion,
+  ProductItem,
+} from "@/lib/types";
 
 const KANBAN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -27,9 +31,16 @@ function formatKanbanDateCell(value: string | null, language: Language): string 
 type Props = {
   entries: MassProductionKanbanEntry[];
   products: ProductItem[];
-  allowedRegions: OrderProgressRegion[];
+  allowedRegions: MassProductionKanbanRegion[];
   language: Language;
 };
+
+function regionOptionLabel(r: MassProductionKanbanRegion, language: Language): string {
+  if (r === "Shenzhen office") {
+    return language === "en" ? "Shenzhen office" : "深圳办公室";
+  }
+  return r;
+}
 
 function labels(language: Language) {
   const en = language === "en";
@@ -102,7 +113,9 @@ export function MassProductionKanbanSection({
   const [quantity, setQuantity] = useState("0");
   const [mp, setMp] = useState("");
   const [dates, setDates] = useState(emptyDateForm);
-  const [region, setRegion] = useState<OrderProgressRegion>(() => allowedRegions[0] ?? "APAC");
+  const [region, setRegion] = useState<MassProductionKanbanRegion>(
+    () => allowedRegions[0] ?? "APAC",
+  );
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -292,12 +305,12 @@ export function MassProductionKanbanSection({
           <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
           <select
             value={resolvedRegion}
-            onChange={(e) => setRegion(e.target.value as OrderProgressRegion)}
+            onChange={(e) => setRegion(e.target.value as MassProductionKanbanRegion)}
             className="w-full px-3 py-2 text-sm"
           >
             {allowedRegions.map((r) => (
               <option key={r} value={r}>
-                {r}
+                {regionOptionLabel(r, language)}
               </option>
             ))}
           </select>
@@ -381,7 +394,7 @@ export function MassProductionKanbanSection({
                   <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.ort, language)}</td>
                   <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.cooApproval, language)}</td>
                   <td className="px-2 py-2 tabular-nums">{formatKanbanDateCell(row.deliver, language)}</td>
-                  <td className="px-2 py-2">{row.region}</td>
+                  <td className="px-2 py-2">{regionOptionLabel(row.region, language)}</td>
                   <td className="px-2 py-2">{row.createdBy}</td>
                   <td className="px-2 py-2">
                     <div className="flex gap-2">

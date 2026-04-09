@@ -10,6 +10,7 @@ import {
   listMassProductionKanbanBySessionRegions,
   listOrderProgressDeletionLogsBySessionRegions,
   listOrderProgressBySessionRegions,
+  massProductionKanbanRegionsForSession,
   orderProgressRegionsForSession,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
@@ -30,6 +31,7 @@ export default async function OrderProgressPage() {
   const deletionLogs = await listOrderProgressDeletionLogsBySessionRegions(session.regions, 100);
   const forecasts = await getForecastsByRegions(session.regions);
   const allowedRegions = orderProgressRegionsForSession(session.regions);
+  const massProductionKanbanAllowedRegions = massProductionKanbanRegionsForSession(session.regions);
 
   return (
     <AppShell
@@ -48,6 +50,7 @@ export default async function OrderProgressPage() {
         massProductionKanbanEntries={massProductionKanban}
         products={products}
         allowedRegions={allowedRegions}
+        massProductionKanbanAllowedRegions={massProductionKanbanAllowedRegions}
         language={language}
       />
     </AppShell>

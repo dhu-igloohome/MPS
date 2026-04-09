@@ -10,6 +10,7 @@ import type {
   ForecastEntry,
   MassProductionKanbanEntry,
   OrderProgressDeletionLog,
+  MassProductionKanbanRegion,
   OrderProgressEntry,
   OrderProgressOrderType,
   OrderProgressRegion,
@@ -25,6 +26,7 @@ type OrderProgressPanelProps = {
   massProductionKanbanEntries: MassProductionKanbanEntry[];
   products: ProductItem[];
   allowedRegions: OrderProgressRegion[];
+  massProductionKanbanAllowedRegions: MassProductionKanbanRegion[];
   language: Language;
 };
 
@@ -179,6 +181,7 @@ export function OrderProgressPanel({
   massProductionKanbanEntries,
   products,
   allowedRegions,
+  massProductionKanbanAllowedRegions,
   language,
 }: OrderProgressPanelProps) {
   const router = useRouter();
@@ -649,7 +652,7 @@ export function OrderProgressPanel({
       <MassProductionKanbanSection
         entries={massProductionKanbanEntries}
         products={products}
-        allowedRegions={allowedRegions}
+        allowedRegions={massProductionKanbanAllowedRegions}
         language={language}
       />
 

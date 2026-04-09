@@ -3,19 +3,15 @@ import { NextResponse } from "next/server";
 import {
   deleteMassProductionKanbanById,
   getMassProductionKanbanById,
-  orderProgressRegionsForSession,
+  massProductionKanbanRegionsForSession,
   updateMassProductionKanban,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
-import type { OrderProgressRegion } from "@/lib/types";
+import { isMassProductionKanbanRegion } from "@/lib/types";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 type RouteContext = { params: Promise<{ id: string }> };
-
-function isOrderProgressRegion(value: string): value is OrderProgressRegion {
-  return value === "APAC" || value === "EU" || value === "US";
-}
 
 function parseOptionalDate(value: unknown, field: string): string | null | NextResponse {
   const s = String(value ?? "").trim();
@@ -37,7 +33,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!existing) {
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
-  const allowed = orderProgressRegionsForSession(session.regions);
+  const allowed = massProductionKanbanRegionsForSession(session.regions);
   if (!allowed.includes(existing.region)) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
@@ -71,7 +67,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!Number.isInteger(quantity) || quantity < 0) {
     return NextResponse.json({ message: "Invalid quantity" }, { status: 400 });
   }
-  if (!isOrderProgressRegion(region)) {
+  if (!isMassProductionKanbanRegion(region)) {
     return NextResponse.json({ message: "Invalid region" }, { status: 400 });
   }
   if (!allowed.includes(region)) {
@@ -115,7 +111,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   if (!existing) {
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
-  const allowed = orderProgressRegionsForSession(session.regions);
+  const allowed = massProductionKanbanRegionsForSession(session.regions);
   if (!allowed.includes(existing.region)) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }

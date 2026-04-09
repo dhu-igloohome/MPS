@@ -478,7 +478,7 @@ async function main() {
       ort_date date,
       coo_approval_date date,
       deliver_date date,
-      region text not null check (region in ('APAC', 'EU', 'US')),
+      region text not null check (region in ('APAC', 'EU', 'US', 'Shenzhen office')),
       created_by text not null references users(username),
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
@@ -487,6 +487,15 @@ async function main() {
   await sql`
     create index if not exists idx_mass_production_kanban_region_updated
     on mass_production_kanban (region, updated_at desc);
+  `;
+  await sql`
+    alter table mass_production_kanban
+    drop constraint if exists mass_production_kanban_region_check;
+  `;
+  await sql`
+    alter table mass_production_kanban
+    add constraint mass_production_kanban_region_check
+    check (region in ('APAC', 'EU', 'US', 'Shenzhen office'));
   `;
 
   for (const user of users) {

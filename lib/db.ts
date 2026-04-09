@@ -853,7 +853,7 @@ async function setupSchema() {
       ort_date date,
       coo_approval_date date,
       deliver_date date,
-      region text not null check (region in ('APAC', 'EU', 'US')),
+      region text not null check (region in ('APAC', 'EU', 'US', 'Shenzhen office')),
       created_by text not null references users(username),
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
@@ -864,6 +864,15 @@ async function setupSchema() {
     on mass_production_kanban (region, updated_at desc);
   `;
   await db`alter table mass_production_kanban add column if not exists ort_date date;`;
+  await db`
+    alter table mass_production_kanban
+    drop constraint if exists mass_production_kanban_region_check;
+  `;
+  await db`
+    alter table mass_production_kanban
+    add constraint mass_production_kanban_region_check
+    check (region in ('APAC', 'EU', 'US', 'Shenzhen office'));
+  `;
 }
 
 async function seedUsers() {

@@ -3,16 +3,12 @@ import { NextResponse } from "next/server";
 import {
   createMassProductionKanban,
   listMassProductionKanbanBySessionRegions,
-  orderProgressRegionsForSession,
+  massProductionKanbanRegionsForSession,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
-import type { OrderProgressRegion } from "@/lib/types";
+import { isMassProductionKanbanRegion } from "@/lib/types";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-function isOrderProgressRegion(value: string): value is OrderProgressRegion {
-  return value === "APAC" || value === "EU" || value === "US";
-}
 
 function parseOptionalDate(value: unknown, field: string): string | null | NextResponse {
   const s = String(value ?? "").trim();
@@ -67,10 +63,10 @@ export async function POST(request: Request) {
   if (!Number.isInteger(quantity) || quantity < 0) {
     return NextResponse.json({ message: "Invalid quantity" }, { status: 400 });
   }
-  if (!isOrderProgressRegion(region)) {
+  if (!isMassProductionKanbanRegion(region)) {
     return NextResponse.json({ message: "Invalid region" }, { status: 400 });
   }
-  if (!orderProgressRegionsForSession(session.regions).includes(region)) {
+  if (!massProductionKanbanRegionsForSession(session.regions).includes(region)) {
     return NextResponse.json({ message: "Region not allowed" }, { status: 403 });
   }
 
