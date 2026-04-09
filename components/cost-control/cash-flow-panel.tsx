@@ -20,7 +20,7 @@ const LABELS = {
   en: {
     tableHint:
       "Link to Cost analysis: pick an order line; Qty = Cost analysis Order qty; unit price = that row's unit cost (incl. tariff). Total = qty × unit price. Advance % + final % = 100%. Actual advance date = order date + 7 calendar days; actual final date = that date + term days; actual final amount = total − actual advance.",
-    add: "Add row",
+    add: "PO cash flow",
     save: "Save",
     cancel: "Cancel edit",
     edit: "Edit",
@@ -52,7 +52,7 @@ const LABELS = {
   zh: {
     tableHint:
       "与成本分析强关联：先选择成本分析订单行；数量 = 成本分析「订单数量」；单价 = 该行 unit cost（含 tariff）；订单总金额 = 数量 × 单价；预付% + 尾款% = 100%。实际预付日 = 下单日期 + 7 个自然日；实际尾款日 = 实际预付日 + 账期天数；实际尾款金额 = 订单总金额 − 实际预付金额。",
-    add: "新增一行",
+    add: "PO 现金流",
     save: "保存",
     cancel: "取消编辑",
     edit: "编辑",
