@@ -18,6 +18,7 @@ import {
   CostAnalysisEntry,
   CostFreightMode,
   CashFlowEntry,
+  UnitCostQuoteEntry,
   ContractEntry,
   ContractStatus,
   OrderProductionStep,
@@ -4902,4 +4903,90 @@ export async function deleteCostAnalysisEntryById(id: string): Promise<boolean> 
     returning id;
   `;
   return rows.length > 0;
+}
+
+type UnitCostQuoteRow = {
+  id: number;
+  sku: string;
+  unit_price: string | number;
+  tax_included: boolean;
+  supplier_name: string;
+  quote_date: string;
+  created_by: string;
+  created_at: string;
+};
+
+function mapUnitCostQuote(row: UnitCostQuoteRow): UnitCostQuoteEntry {
+  return {
+    id: String(row.id),
+    sku: row.sku || "",
+    unitPrice: Number(row.unit_price),
+    taxIncluded: Boolean(row.tax_included),
+    supplierName: row.supplier_name || "",
+    quoteDate: String(row.quote_date).slice(0, 10),
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+  };
+}
+
+export async function listUnitCostQuotes(): Promise<UnitCostQuoteEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<UnitCostQuoteRow[]>`
+    select
+      id,
+      sku,
+      unit_price::text,
+      tax_included,
+      supplier_name,
+      quote_date::text,
+      created_by,
+      created_at::text
+    from unit_cost_quotes
+    order by quote_date desc, id desc
+    limit 2000;
+  `;
+  return rows.map(mapUnitCostQuote);
+}
+
+export async function createUnitCostQuote(input: {
+  sku: string;
+  unitPrice: number;
+  taxIncluded: boolean;
+  supplierName: string;
+  quoteDate: string;
+  createdBy: string;
+}): Promise<UnitCostQuoteEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<UnitCostQuoteRow[]>`
+    insert into unit_cost_quotes (
+      sku,
+      unit_price,
+      tax_included,
+      supplier_name,
+      quote_date,
+      created_by
+    )
+    values (
+      ${input.sku.trim()},
+      ${input.unitPrice},
+      ${input.taxIncluded},
+      ${input.supplierName.trim()},
+      ${input.quoteDate},
+      ${input.createdBy}
+    )
+    returning
+      id,
+      sku,
+      unit_price::text,
+      tax_included,
+      supplier_name,
+      quote_date::text,
+      created_by,
+      created_at::text;
+  `;
+  const row = rows[0];
+  if (!row) throw new Error("Insert failed");
+  return mapUnitCostQuote(row);
 }

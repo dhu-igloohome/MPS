@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { CostControlPanel } from "@/components/cost-control/cost-control-panel";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
@@ -28,11 +29,17 @@ export default async function SupplyChainCostControlPage() {
       description={language === "en" ? "Suppliers, contracts and cost control in one module." : "将供应商、合同、成本控制整合到同一模块。"}
     >
       <SupplyChainSubnav language={language} />
-      <CostControlPanel
-        language={language}
-        cashFlowEntries={cashFlowEntries}
-        costAnalysisEntries={costAnalysisEntries}
-      />
+      <Suspense
+        fallback={
+          <div className="mt-4 h-40 animate-pulse rounded-2xl border border-app-border/80 bg-app-surface/80" />
+        }
+      >
+        <CostControlPanel
+          language={language}
+          cashFlowEntries={cashFlowEntries}
+          costAnalysisEntries={costAnalysisEntries}
+        />
+      </Suspense>
     </AppShell>
   );
 }

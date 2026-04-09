@@ -465,6 +465,23 @@ async function main() {
   `;
 
   await sql`
+    create table if not exists unit_cost_quotes (
+      id bigserial primary key,
+      sku text not null,
+      unit_price numeric(14, 4) not null check (unit_price >= 0),
+      tax_included boolean not null default false,
+      supplier_name text not null default '',
+      quote_date date not null,
+      created_by text not null references users(username),
+      created_at timestamptz not null default now()
+    );
+  `;
+  await sql`
+    create index if not exists idx_unit_cost_quotes_sku_date
+    on unit_cost_quotes (sku, quote_date desc, id desc);
+  `;
+
+  await sql`
     create table if not exists mass_production_kanban (
       id bigserial primary key,
       product_id bigint not null references products(id) on delete restrict,

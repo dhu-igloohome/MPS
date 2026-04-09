@@ -562,6 +562,19 @@ export type CostAnalysisEntry = {
   updatedAt: string;
 };
 
+/** 成本控制 — 单位成本报价（历史记录多条按时间保留） */
+export type UnitCostQuoteEntry = {
+  id: string;
+  sku: string;
+  unitPrice: number;
+  /** 报价是否含税 */
+  taxIncluded: boolean;
+  supplierName: string;
+  quoteDate: string;
+  createdBy: string;
+  createdAt: string;
+};
+
 /** 成本控制 — 现金流分析（与 Excel 列一致） */
 export type CashFlowEntry = {
   id: string;

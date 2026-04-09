@@ -529,6 +529,23 @@ async function setupSchema() {
   `;
 
   await db`
+    create table if not exists unit_cost_quotes (
+      id bigserial primary key,
+      sku text not null,
+      unit_price numeric(14, 4) not null check (unit_price >= 0),
+      tax_included boolean not null default false,
+      supplier_name text not null default '',
+      quote_date date not null,
+      created_by text not null references users(username),
+      created_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_unit_cost_quotes_sku_date
+    on unit_cost_quotes (sku, quote_date desc, id desc);
+  `;
+
+  await db`
     create table if not exists npi_bom_entries (
       id bigserial primary key,
       project_name text not null default '',
