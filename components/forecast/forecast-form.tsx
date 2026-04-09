@@ -173,6 +173,9 @@ export function ForecastForm({
     forecastNumberLabel: language === "en" ? "Forecast #" : "Forecast 编号",
     editSaveFailed: language === "en" ? "Save failed." : "保存失败。",
     editSaved: language === "en" ? "Saved." : "已保存。",
+    comment: language === "en" ? "Comment" : "评论",
+    commentSaved: language === "en" ? "Comment saved." : "评论已保存。",
+    commentSaveFailed: language === "en" ? "Could not save comment." : "评论保存失败。",
   };
   const defaultRegion = allowedRegions[0];
 
@@ -197,6 +200,9 @@ export function ForecastForm({
   const forecastEditPanelRef = useRef<HTMLDivElement>(null);
   const [editDraft, setEditDraft] = useState<ForecastEditDraft | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  /** Inline comment drafts in the records table (keyed by forecast id); cleared after successful save. */
+  const [inlineRemarkById, setInlineRemarkById] = useState<Record<string, string>>({});
+  const [savingRemarkId, setSavingRemarkId] = useState<string | null>(null);
   const skuOptions = useMemo(
     () => [...new Set(products.map((item) => item.sku).filter(Boolean))].sort(),
     [products],
@@ -367,7 +373,7 @@ export function ForecastForm({
       destination: item.destination,
       sku: item.sku,
       productName: item.productName,
-      remark: item.remark,
+      remark: inlineRemarkById[item.id] ?? item.remark,
       buildToOrder: String(item.buildToOrder),
       buildToStock: String(item.buildToStock),
       poNumber: item.poNumber || "",
@@ -414,6 +420,11 @@ export function ForecastForm({
       return;
     }
     setEditDraft(null);
+    setInlineRemarkById((prev) => {
+      const next = { ...prev };
+      delete next[editDraft.id];
+      return next;
+    });
     setMessage(t.editSaved);
     router.refresh();
   }
@@ -442,6 +453,40 @@ export function ForecastForm({
     const n = data.deleted ?? selectedForecastIds.length;
     setSelectedForecastIds([]);
     setMessage(t.batchDeleted(n));
+    router.refresh();
+  }
+
+  async function saveInlineRemark(item: ForecastEntry) {
+    const draft = (inlineRemarkById[item.id] ?? item.remark).trim();
+    if (draft === item.remark.trim()) return;
+    setSavingRemarkId(item.id);
+    setMessage("");
+    const response = await fetch(`/api/forecasts/${encodeURIComponent(item.id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        month: item.month,
+        region: item.region,
+        destination: item.destination.trim(),
+        productName: item.productName,
+        sku: item.sku,
+        remark: draft,
+        buildToOrder: item.buildToOrder,
+        buildToStock: item.buildToStock,
+      }),
+    });
+    const data = (await response.json().catch(() => ({}))) as { message?: string };
+    setSavingRemarkId(null);
+    if (!response.ok) {
+      setMessage(data.message || t.commentSaveFailed);
+      return;
+    }
+    setInlineRemarkById((prev) => {
+      const next = { ...prev };
+      delete next[item.id];
+      return next;
+    });
+    setMessage(t.commentSaved);
     router.refresh();
   }
 
@@ -856,7 +901,7 @@ export function ForecastForm({
           ) : null}
         </div>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[1040px] border-collapse text-sm">
+          <table className="w-full min-w-[1180px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-app-border text-left text-app-muted">
                 {canDelete ? (
@@ -881,13 +926,14 @@ export function ForecastForm({
                 <th className="px-2 py-2">{t.bts}</th>
                 <th className="px-2 py-2">{t.createdAt}</th>
                 <th className="px-2 py-2">{t.actions}</th>
+                <th className="min-w-[12rem] px-2 py-2">{t.comment}</th>
               </tr>
             </thead>
             <tbody>
               {entries.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={canDelete ? 11 : 10}
+                    colSpan={canDelete ? 12 : 11}
                     className="px-2 py-6 text-center text-app-muted"
                   >
                     {t.noRecords}
@@ -923,7 +969,7 @@ export function ForecastForm({
                     <td className="px-2 py-2 tabular-nums">{item.buildToOrder}</td>
                     <td className="px-2 py-2 tabular-nums">{item.buildToStock}</td>
                     <td className="px-2 py-2">{item.createdAt.slice(0, 10)}</td>
-                    <td className="px-2 py-2">
+                    <td className="px-2 py-2 align-top">
                       <div className="flex flex-wrap gap-1.5">
                         <button
                           type="button"
@@ -944,6 +990,21 @@ export function ForecastForm({
                           </button>
                         ) : null}
                       </div>
+                    </td>
+                    <td className="max-w-[20rem] px-2 py-2 align-top">
+                      <textarea
+                        rows={3}
+                        maxLength={4000}
+                        value={inlineRemarkById[item.id] ?? item.remark}
+                        onChange={(e) =>
+                          setInlineRemarkById((prev) => ({ ...prev, [item.id]: e.target.value }))
+                        }
+                        onBlur={() => void saveInlineRemark(item)}
+                        disabled={savingRemarkId === item.id || savingEdit || deletingId === item.id}
+                        placeholder={language === "en" ? "Add a comment…" : "输入评论…"}
+                        className="w-full min-w-[10rem] rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm text-foreground outline-none ring-app-accent placeholder:text-app-muted focus:ring-2 disabled:opacity-60"
+                        aria-label={language === "en" ? "Comment" : "评论"}
+                      />
                     </td>
                   </tr>
                 ))
