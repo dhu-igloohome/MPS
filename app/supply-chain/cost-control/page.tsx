@@ -6,7 +6,7 @@ import { CostControlPanel } from "@/components/cost-control/cost-control-panel";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
-import { listCashFlowEntries, listCostAnalysisEntries } from "@/lib/repositories";
+import { getForecastsByRegions, listCashFlowEntries, listCostAnalysisEntries } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -17,9 +17,10 @@ export default async function SupplyChainCostControlPage() {
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const [cashFlowEntries, costAnalysisEntries] = await Promise.all([
+  const [cashFlowEntries, costAnalysisEntries, forecastRecords] = await Promise.all([
     listCashFlowEntries(),
     listCostAnalysisEntries(),
+    getForecastsByRegions(session.regions),
   ]);
 
   return (
@@ -38,6 +39,7 @@ export default async function SupplyChainCostControlPage() {
           language={language}
           cashFlowEntries={cashFlowEntries}
           costAnalysisEntries={costAnalysisEntries}
+          forecastRecords={forecastRecords}
         />
       </Suspense>
     </AppShell>

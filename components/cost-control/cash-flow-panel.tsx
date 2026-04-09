@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -8,13 +9,27 @@ import { findCostAnalysisForCashFlow } from "@/lib/cash-flow-cost-analysis-link"
 import { formatUsd } from "@/lib/format-usd";
 import { computeCashFlowDerivedActuals, computeTotalAmount } from "@/lib/cash-flow-validation";
 import type { Language } from "@/lib/i18n";
-import type { CashFlowEntry, CostAnalysisEntry } from "@/lib/types";
+import type { CashFlowEntry, CostAnalysisEntry, ForecastEntry } from "@/lib/types";
 
 type CashFlowPanelProps = {
   language: Language;
   initialEntries: CashFlowEntry[];
   costAnalysisEntries: CostAnalysisEntry[];
+  /** Same source as Forecast → All Forecast Records (session regions). */
+  forecastRecords: ForecastEntry[];
 };
+
+function formatForecastMonthCell(ym: string, language: Language): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(ym.trim());
+  if (!m) return ym;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  if (mo < 1 || mo > 12) return ym;
+  if (language === "en") {
+    return new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
+  return `${y}年${mo}月`;
+}
 
 const LABELS = {
   en: {
@@ -48,6 +63,21 @@ const LABELS = {
     remark: "Remark",
     expectedAdv: "Expected advance",
     expectedFin: "Expected final",
+    fcTitle: "Forecast cash flow",
+    fcHint:
+      "Linked from Forecast Input → All Forecast Records (read-only). Comments and edits apply on the Forecast page.",
+    fcMonth: "Forecast Month",
+    fcForecastNo: "Forecast #",
+    fcRegion: "Region",
+    fcDestination: "Destination",
+    fcProductName: "Product Name",
+    fcBto: "Build to Order",
+    fcBts: "Build to Stock",
+    fcCreatedAt: "Created At",
+    fcActions: "Actions",
+    fcComment: "Comment",
+    fcOpenForecast: "Open Forecast",
+    fcEmpty: "No forecast records in your regions.",
   },
   zh: {
     tableHint:
@@ -80,6 +110,21 @@ const LABELS = {
     remark: "备注",
     expectedAdv: "按比例应付预付",
     expectedFin: "按比例应付尾款",
+    fcTitle: "Forecast 现金流",
+    fcHint:
+      "与 Forecast 填报 →「全部 Forecast 记录」字段一致（只读同步）。评论与修改请在 Forecast 页面操作。",
+    fcMonth: "Forecast 月份",
+    fcForecastNo: "Forecast #",
+    fcRegion: "区域",
+    fcDestination: "Destination",
+    fcProductName: "产品名称",
+    fcBto: "按单生产",
+    fcBts: "备货生产",
+    fcCreatedAt: "创建日期",
+    fcActions: "操作",
+    fcComment: "评论",
+    fcOpenForecast: "打开 Forecast",
+    fcEmpty: "当前区域暂无 forecast 记录。",
   },
 };
 
@@ -102,7 +147,12 @@ function emptyForm(): Omit<CashFlowEntry, "id" | "createdBy" | "createdAt" | "up
   };
 }
 
-export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }: CashFlowPanelProps) {
+export function CashFlowPanel({
+  language,
+  initialEntries,
+  costAnalysisEntries,
+  forecastRecords,
+}: CashFlowPanelProps) {
   const router = useRouter();
   const t = LABELS[language];
   const [entries, setEntries] = useState(initialEntries);
@@ -277,6 +327,68 @@ export function CashFlowPanel({ language, initialEntries, costAnalysisEntries }:
   return (
     <div className="space-y-4">
       <CashFlowDashboard language={language} entries={entries} costAnalysisEntries={costAnalysisEntries} />
+
+      <section className="rounded-2xl border border-app-border/80 bg-app-surface/70 p-4 shadow-sm">
+        <h4 className="text-base font-semibold text-foreground">{t.fcTitle}</h4>
+        <p className="mt-1 text-xs text-app-muted">{t.fcHint}</p>
+        <div className="app-table-shell mt-3 overflow-x-auto">
+          <table className="w-full min-w-[1100px] border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr className="border-b border-app-border/80 bg-app-surface/80 text-left text-app-muted">
+                <th className="px-2 py-2">{t.fcMonth}</th>
+                <th className="px-2 py-2">{t.fcForecastNo}</th>
+                <th className="px-2 py-2">{t.fcRegion}</th>
+                <th className="px-2 py-2">{t.fcDestination}</th>
+                <th className="px-2 py-2">{t.fcProductName}</th>
+                <th className="px-2 py-2">{t.sku}</th>
+                <th className="px-2 py-2">{t.fcBto}</th>
+                <th className="px-2 py-2">{t.fcBts}</th>
+                <th className="px-2 py-2">{t.fcCreatedAt}</th>
+                <th className="px-2 py-2">{t.fcActions}</th>
+                <th className="px-2 py-2">{t.fcComment}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {forecastRecords.length === 0 ? (
+                <tr>
+                  <td colSpan={11} className="px-2 py-6 text-center text-app-muted">
+                    {t.fcEmpty}
+                  </td>
+                </tr>
+              ) : (
+                forecastRecords.map((row) => (
+                  <tr key={row.id} className="border-b border-app-border/40">
+                    <td className="px-2 py-2 whitespace-nowrap">{formatForecastMonthCell(row.month, language)}</td>
+                    <td className="px-2 py-2">{row.poNumber || "—"}</td>
+                    <td className="px-2 py-2">{row.region}</td>
+                    <td className="max-w-[8rem] break-words px-2 py-2">{row.destination || "—"}</td>
+                    <td className="max-w-[10rem] break-words px-2 py-2">{row.productName}</td>
+                    <td className="px-2 py-2 font-medium">{row.sku}</td>
+                    <td className="px-2 py-2 tabular-nums">{row.buildToOrder}</td>
+                    <td className="px-2 py-2 tabular-nums">{row.buildToStock}</td>
+                    <td className="px-2 py-2 whitespace-nowrap tabular-nums">
+                      {row.createdAt.slice(0, 10)}
+                    </td>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      <Link
+                        href="/forecast"
+                        className="text-app-accent hover:underline"
+                        prefetch={false}
+                      >
+                        {t.fcOpenForecast}
+                      </Link>
+                    </td>
+                    <td className="max-w-[14rem] break-words px-2 py-2 text-app-muted">
+                      {row.remark?.trim() ? row.remark : "—"}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <p className="text-sm text-app-muted">{t.tableHint}</p>
 
       <div className="app-table-shell overflow-x-auto">

@@ -6,12 +6,13 @@ import { CashFlowPanel } from "@/components/cost-control/cash-flow-panel";
 import { CostAnalysisPanel } from "@/components/cost-control/cost-analysis-panel";
 import { CostControlSubnav } from "@/components/cost-control/cost-control-subnav";
 import type { Language } from "@/lib/i18n";
-import type { CashFlowEntry, CostAnalysisEntry } from "@/lib/types";
+import type { CashFlowEntry, CostAnalysisEntry, ForecastEntry } from "@/lib/types";
 
 type CostControlPanelProps = {
   language: Language;
   cashFlowEntries: CashFlowEntry[];
   costAnalysisEntries: CostAnalysisEntry[];
+  forecastRecords: ForecastEntry[];
 };
 
 const COPY = {
@@ -25,7 +26,12 @@ const COPY = {
   },
 };
 
-export function CostControlPanel({ language, cashFlowEntries, costAnalysisEntries }: CostControlPanelProps) {
+export function CostControlPanel({
+  language,
+  cashFlowEntries,
+  costAnalysisEntries,
+  forecastRecords,
+}: CostControlPanelProps) {
   const t = COPY[language];
   const searchParams = useSearchParams();
   const section = searchParams.get("tab") === "cashflow" ? "cashflow" : "cost";
@@ -51,6 +57,7 @@ export function CostControlPanel({ language, cashFlowEntries, costAnalysisEntrie
               language={language}
               initialEntries={cashFlowEntries}
               costAnalysisEntries={costAnalysisEntries}
+              forecastRecords={forecastRecords}
             />
           </>
         )}
