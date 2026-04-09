@@ -14,6 +14,7 @@ import type {
   OrderProgressStatus,
   OrderProductionStep,
   ProductItem,
+  SupplierEntry,
 } from "@/lib/types";
 
 type OrderProgressPanelProps = {
@@ -21,6 +22,8 @@ type OrderProgressPanelProps = {
   deletionLogs: OrderProgressDeletionLog[];
   forecasts: ForecastEntry[];
   products: ProductItem[];
+  /** Supplier names (Supply Chain > Suppliers) for factory name dropdown. */
+  suppliers: SupplierEntry[];
   allowedRegions: OrderProgressRegion[];
   language: Language;
 };
@@ -72,6 +75,11 @@ function labels(language: Language) {
     orderType: en ? "Order type" : "订单类型",
     progress: en ? "Progress" : "进度",
     factoryName: en ? "Factory name" : "工厂名称",
+    factoryNameHint: en
+      ? "Options come from Supply Chain Management → Suppliers (active supplier names)."
+      : "选项来自「供应链管理 → 供应商」中启用状态的供应商名称（Supplier name）。",
+    selectFactory: en ? "Select supplier factory…" : "选择供应商工厂…",
+    factoryLegacySuffix: en ? "not in active list" : "不在当前启用列表",
     region: en ? "Region" : "地区",
     save: en ? "Save" : "保存",
     create: en ? "Create" : "创建",
@@ -174,6 +182,7 @@ export function OrderProgressPanel({
   deletionLogs,
   forecasts,
   products,
+  suppliers,
   allowedRegions,
   language,
 }: OrderProgressPanelProps) {
@@ -184,6 +193,14 @@ export function OrderProgressPanel({
     () => [...new Set(products.map((p) => p.productName))],
     [products],
   );
+
+  const activeSupplierNames = useMemo(() => {
+    const names = suppliers
+      .filter((s) => s.isActive)
+      .map((s) => s.name.trim())
+      .filter(Boolean);
+    return [...new Set(names)].sort((a, b) => a.localeCompare(b));
+  }, [suppliers]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState("");
@@ -272,6 +289,11 @@ export function OrderProgressPanel({
     ? region
     : (allowedRegions[0] ?? "APAC");
 
+  const factoryNameTrimmed = factoryName.trim();
+  const factoryNameNotInActiveList = Boolean(
+    factoryNameTrimmed && !activeSupplierNames.includes(factoryNameTrimmed),
+  );
+
   function onProductNameChange(nextName: string) {
     setProductName(nextName);
     const opts = products.filter((p) => p.productName === nextName);
@@ -326,7 +348,7 @@ export function OrderProgressPanel({
     setExpectedDeliveryDate(entry.expectedDeliveryDate);
     setOrderType(entry.orderType);
     setProgress(entry.progress);
-    setFactoryName(entry.factoryName);
+    setFactoryName(entry.factoryName.trim());
     setRegion(entry.region);
     setPlanRows(
       entry.deliveryPlans.length > 0
@@ -435,7 +457,7 @@ export function OrderProgressPanel({
       expectedDeliveryDate: effectiveExpectedDate,
       orderType,
       progress,
-      factoryName,
+      factoryName: factoryNameTrimmed,
       region: resolvedRegion,
       deliveryPlans,
     };
@@ -946,11 +968,24 @@ export function OrderProgressPanel({
 
           <label className="block md:col-span-2">
             <span className="mb-1 block text-sm text-foreground/85">{t.factoryName}</span>
-            <input
-              value={factoryName}
+            <select
+              value={factoryNameTrimmed}
               onChange={(e) => setFactoryName(e.target.value)}
               className="w-full px-3 py-2 text-sm"
-            />
+            >
+              <option value="">{t.selectFactory}</option>
+              {factoryNameNotInActiveList ? (
+                <option value={factoryNameTrimmed}>
+                  {factoryNameTrimmed} ({t.factoryLegacySuffix})
+                </option>
+              ) : null}
+              {activeSupplierNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-app-muted">{t.factoryNameHint}</span>
           </label>
 
           <label className="block">

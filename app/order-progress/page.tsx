@@ -9,6 +9,7 @@ import {
   listActiveProducts,
   listOrderProgressDeletionLogsBySessionRegions,
   listOrderProgressBySessionRegions,
+  listSuppliers,
   orderProgressRegionsForSession,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
@@ -24,6 +25,7 @@ export default async function OrderProgressPage() {
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
   const products = await listActiveProducts();
+  const suppliers = await listSuppliers();
   const entries = await listOrderProgressBySessionRegions(session.regions);
   const deletionLogs = await listOrderProgressDeletionLogsBySessionRegions(session.regions, 100);
   const forecasts = await getForecastsByRegions(session.regions);
@@ -44,6 +46,7 @@ export default async function OrderProgressPage() {
         forecasts={forecasts}
         deletionLogs={deletionLogs}
         products={products}
+        suppliers={suppliers}
         allowedRegions={allowedRegions}
         language={language}
       />
