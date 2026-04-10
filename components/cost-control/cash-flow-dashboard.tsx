@@ -405,178 +405,6 @@ export function CashFlowDashboard({
 
   return (
     <div className="mb-10 space-y-6">
-      <div>
-        <h4 className="text-base font-semibold tracking-tight text-[#111827]">{t.title}</h4>
-        <p className="mt-1 text-sm text-[#4B5563]">{t.subtitle}</p>
-      </div>
-
-      <div className="app-card p-4">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.range}
-            <select
-              className="mt-1 w-full bg-white px-3 py-2 text-sm"
-              value={rangePreset}
-              onChange={(e) => setRangePreset(e.target.value as RangePreset)}
-            >
-              <option value="12m">{t.preset12}</option>
-              <option value="ytd">{t.presetYtd}</option>
-              <option value="custom">{t.presetCustom}</option>
-            </select>
-          </label>
-          {rangePreset === "custom" ? (
-            <>
-              <label className="text-xs font-medium text-[#4B5563]">
-                {t.from}
-                <input
-                  type="date"
-                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
-                  value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
-                />
-              </label>
-              <label className="text-xs font-medium text-[#4B5563]">
-                {t.to}
-                <input
-                  type="date"
-                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
-                  value={customTo}
-                  onChange={(e) => setCustomTo(e.target.value)}
-                />
-              </label>
-            </>
-          ) : (
-            <div className="md:col-span-2 text-xs text-[#9CA3AF]">
-              {dateRange.from} → {dateRange.to}
-            </div>
-          )}
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.grain}
-            <select
-              className="mt-1 w-full bg-white px-3 py-2 text-sm"
-              value={grain}
-              onChange={(e) => setGrain(e.target.value as PeriodGrain)}
-            >
-              <option value="month">{t.month}</option>
-              <option value="quarter">{t.quarter}</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="mt-4 grid gap-3 border-t border-slate-200/80 pt-4 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.supplier}
-            <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={supplier}
-              onChange={(e) => setSupplier(e.target.value)}
-            >
-              <option value="">{t.all}</option>
-              {supplierOptions.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.qtyMin}
-            <input
-              type="number"
-              min={0}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={qtyMin}
-              onChange={(e) => setQtyMin(e.target.value)}
-            />
-          </label>
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.qtyMax}
-            <input
-              type="number"
-              min={0}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={qtyMax}
-              onChange={(e) => setQtyMax(e.target.value)}
-            />
-          </label>
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.totalMin}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={totalMin}
-              onChange={(e) => setTotalMin(e.target.value)}
-            />
-          </label>
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.totalMax}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={totalMax}
-              onChange={(e) => setTotalMax(e.target.value)}
-            />
-          </label>
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              {t.resetFilters}
-            </button>
-          </div>
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.advMin}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={advMin}
-              onChange={(e) => setAdvMin(e.target.value)}
-            />
-          </label>
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.advMax}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={advMax}
-              onChange={(e) => setAdvMax(e.target.value)}
-            />
-          </label>
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.finMin}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={finMin}
-              onChange={(e) => setFinMin(e.target.value)}
-            />
-          </label>
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.finMax}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={finMax}
-              onChange={(e) => setFinMax(e.target.value)}
-            />
-          </label>
-        </div>
-      </div>
-
       {showForecastCashFlowSummary ? (
         <div className="app-card p-4">
           <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcSummaryTitle}</h5>
@@ -754,6 +582,178 @@ export function CashFlowDashboard({
           </div>
         </div>
       ) : null}
+
+      <div>
+        <h4 className="text-base font-semibold tracking-tight text-[#111827]">{t.title}</h4>
+        <p className="mt-1 text-sm text-[#4B5563]">{t.subtitle}</p>
+      </div>
+
+      <div className="app-card p-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
+          <label className="text-xs font-medium text-[#4B5563]">
+            {t.range}
+            <select
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
+              value={rangePreset}
+              onChange={(e) => setRangePreset(e.target.value as RangePreset)}
+            >
+              <option value="12m">{t.preset12}</option>
+              <option value="ytd">{t.presetYtd}</option>
+              <option value="custom">{t.presetCustom}</option>
+            </select>
+          </label>
+          {rangePreset === "custom" ? (
+            <>
+              <label className="text-xs font-medium text-[#4B5563]">
+                {t.from}
+                <input
+                  type="date"
+                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
+                  value={customFrom}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                />
+              </label>
+              <label className="text-xs font-medium text-[#4B5563]">
+                {t.to}
+                <input
+                  type="date"
+                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
+                  value={customTo}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                />
+              </label>
+            </>
+          ) : (
+            <div className="md:col-span-2 text-xs text-[#9CA3AF]">
+              {dateRange.from} → {dateRange.to}
+            </div>
+          )}
+          <label className="text-xs font-medium text-[#4B5563]">
+            {t.grain}
+            <select
+              className="mt-1 w-full bg-white px-3 py-2 text-sm"
+              value={grain}
+              onChange={(e) => setGrain(e.target.value as PeriodGrain)}
+            >
+              <option value="month">{t.month}</option>
+              <option value="quarter">{t.quarter}</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="mt-4 grid gap-3 border-t border-slate-200/80 pt-4 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <label className="text-xs font-medium text-[#4B5563]">
+            {t.supplier}
+            <select
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              value={supplier}
+              onChange={(e) => setSupplier(e.target.value)}
+            >
+              <option value="">{t.all}</option>
+              {supplierOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs font-medium text-[#4B5563]">
+            {t.qtyMin}
+            <input
+              type="number"
+              min={0}
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              value={qtyMin}
+              onChange={(e) => setQtyMin(e.target.value)}
+            />
+          </label>
+          <label className="text-xs font-medium text-[#4B5563]">
+            {t.qtyMax}
+            <input
+              type="number"
+              min={0}
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              value={qtyMax}
+              onChange={(e) => setQtyMax(e.target.value)}
+            />
+          </label>
+          <label className="text-xs font-medium text-[#4B5563]">
+            {t.totalMin}
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              value={totalMin}
+              onChange={(e) => setTotalMin(e.target.value)}
+            />
+          </label>
+          <label className="text-xs font-medium text-[#4B5563]">
+            {t.totalMax}
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              value={totalMax}
+              onChange={(e) => setTotalMax(e.target.value)}
+            />
+          </label>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {t.resetFilters}
+            </button>
+          </div>
+          <label className="text-xs font-medium text-[#4B5563]">
+            {t.advMin}
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              value={advMin}
+              onChange={(e) => setAdvMin(e.target.value)}
+            />
+          </label>
+          <label className="text-xs font-medium text-[#4B5563]">
+            {t.advMax}
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              value={advMax}
+              onChange={(e) => setAdvMax(e.target.value)}
+            />
+          </label>
+          <label className="text-xs font-medium text-[#4B5563]">
+            {t.finMin}
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              value={finMin}
+              onChange={(e) => setFinMin(e.target.value)}
+            />
+          </label>
+          <label className="text-xs font-medium text-[#4B5563]">
+            {t.finMax}
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              value={finMax}
+              onChange={(e) => setFinMax(e.target.value)}
+            />
+          </label>
+        </div>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
