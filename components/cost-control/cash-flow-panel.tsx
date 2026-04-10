@@ -347,6 +347,7 @@ export function CashFlowPanel({
       message?: string;
       unitPriceUsd?: number | null;
       supplierName?: string;
+      poIssueDate?: string | null;
     };
     setFcRowSavingId(null);
     if (!res.ok) {
@@ -364,6 +365,7 @@ export function CashFlowPanel({
               ...r,
               cashFlowSupplierName: savedSupplier,
               unitPriceUsd: data.unitPriceUsd ?? null,
+              poIssueDate: data.poIssueDate !== undefined ? data.poIssueDate : r.poIssueDate,
             }
           : r,
       ),
@@ -477,6 +479,21 @@ export function CashFlowPanel({
         costAnalysisEntries={costAnalysisEntries}
         forecastCashFlowRows={fcRows}
         showForecastCashFlowSummary
+        onForecastCashFlowSettingsSaved={(forecastId, payload) => {
+          setFcRows((prev) =>
+            prev.map((r) =>
+              r.id === forecastId
+                ? {
+                    ...r,
+                    cashFlowSupplierName: payload.supplierName,
+                    unitPriceUsd: payload.unitPriceUsd,
+                    poIssueDate: payload.poIssueDate,
+                  }
+                : r,
+            ),
+          );
+        }}
+        onForecastCashFlowSettingsError={(msg) => setMessage(msg)}
       />
 
       <p className="text-sm text-app-muted">{t.tableHint}</p>

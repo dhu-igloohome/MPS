@@ -553,6 +553,7 @@ async function setupSchema() {
       updated_at timestamptz not null default now()
     );
   `;
+  await db`alter table forecast_cash_flow_settings add column if not exists po_issue_date date;`;
 
   await db`
     create table if not exists npi_bom_entries (

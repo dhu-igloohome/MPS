@@ -54,6 +54,8 @@ export type ForecastCashFlowRow = ForecastEntry & {
   cashFlowSupplierName: string;
   /** Latest Unit cost (USD) for this SKU + supplier, or null if none. */
   unitPriceUsd: number | null;
+  /** PO / order issue date (YYYY-MM-DD), editable in cash flow dashboard; null if unset. */
+  poIssueDate: string | null;
 };
 
 export type ProductItem = {

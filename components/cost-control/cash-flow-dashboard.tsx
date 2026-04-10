@@ -45,6 +45,11 @@ type Props = {
   forecastCashFlowRows?: ForecastCashFlowRow[];
   /** When true, show the Forecast summary table above KPIs (Supply Chain cost control). */
   showForecastCashFlowSummary?: boolean;
+  onForecastCashFlowSettingsSaved?: (
+    forecastId: string,
+    payload: { supplierName: string; unitPriceUsd: number | null; poIssueDate: string | null },
+  ) => void;
+  onForecastCashFlowSettingsError?: (message: string) => void;
 };
 
 function forecastLineTotalUsd(row: ForecastCashFlowRow): number | null {
@@ -52,6 +57,14 @@ function forecastLineTotalUsd(row: ForecastCashFlowRow): number | null {
   const qty = Number(row.buildToOrder) + Number(row.buildToStock);
   if (!Number.isFinite(qty) || qty <= 0) return null;
   return row.unitPriceUsd * qty;
+}
+
+/** English display for stored YYYY-MM-DD (avoids TZ shift around midnight). */
+function formatPoIssueDateEnglish(ymd: string | null | undefined): string {
+  if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return "";
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 const COLORS = {
@@ -129,12 +142,13 @@ function labels(language: Language) {
     na: en ? "—" : "—",
     fcSummaryTitle: en ? "Forecast cash flow (for dashboard)" : "Forecast 现金流（看板汇总）",
     fcSummaryHint: en
-      ? "Supplier, SKU, BTO, BTS, and line total (USD) = unit price × (BTO + BTS) when Unit cost has a quote for that SKU + supplier."
-      : "与上方 Forecast 现金流一致：供应商、SKU、按单/备货数量、行总金额 (USD) = 单价 ×（按单生产 + 备货），需单位成本中有对应报价。",
+      ? "Supplier, SKU, BTO, BTS, PO issue date (saved per row; label in English), and line total = unit price × (BTO + BTS) when Unit cost quotes exist."
+      : "与 Forecast 现金流一致；PO 下达日期按行保存，日期以英文格式展示，可用日历选择。行总金额 = 单价 ×（按单 + 备货），需单位成本报价。",
     fcColSupplier: en ? "Supplier name" : "供应商名称",
     fcColSku: "SKU",
     fcColBto: en ? "Build to Order" : "按单生产",
     fcColBts: en ? "Build to Stock" : "备货生产",
+    fcColPoIssue: en ? "PO issue date" : "订单下达日期",
     fcColTotal: en ? "Total amount (USD)" : "总金额 (USD)",
     fcEmpty: en ? "No rows with a computable total (pick supplier + Unit cost quote)." : "暂无可计算总金额的行（请选择供应商并确保单位成本有报价）。",
     fcSumLabel: en ? "Sum (computable lines)" : "可计算行合计",
@@ -175,6 +189,8 @@ export function CashFlowDashboard({
   costAnalysisEntries,
   forecastCashFlowRows = [],
   showForecastCashFlowSummary = false,
+  onForecastCashFlowSettingsSaved,
+  onForecastCashFlowSettingsError,
 }: Props) {
   const t = labels(language);
   const [rangePreset, setRangePreset] = useState<RangePreset>("12m");
@@ -191,6 +207,7 @@ export function CashFlowDashboard({
   const [finMin, setFinMin] = useState("");
   const [finMax, setFinMax] = useState("");
   const [drill, setDrill] = useState<{ periodLabel: string; rows: EnrichedCashFlow[] } | null>(null);
+  const [fcPoSavingId, setFcPoSavingId] = useState<string | null>(null);
 
   const enriched = useMemo(() => enrichCashFlowRows(entries, costAnalysisEntries), [entries, costAnalysisEntries]);
 
@@ -285,6 +302,37 @@ export function CashFlowDashboard({
     ...p,
     name: p.label,
   }));
+
+  const persistFcPoIssueDate = useCallback(
+    async (forecastId: string, isoDay: string) => {
+      setFcPoSavingId(forecastId);
+      const res = await fetch("/api/cost-control/forecast-cash-flow", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ forecastId, poIssueDate: isoDay || null }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        message?: string;
+        supplierName?: string;
+        unitPriceUsd?: number | null;
+        poIssueDate?: string | null;
+      };
+      setFcPoSavingId(null);
+      if (!res.ok) {
+        onForecastCashFlowSettingsError?.(
+          data.message ||
+            (language === "en" ? "Could not save PO issue date." : "保存订单下达日期失败。"),
+        );
+        return;
+      }
+      onForecastCashFlowSettingsSaved?.(forecastId, {
+        supplierName: String(data.supplierName ?? ""),
+        unitPriceUsd: data.unitPriceUsd ?? null,
+        poIssueDate: data.poIssueDate ?? null,
+      });
+    },
+    [language, onForecastCashFlowSettingsError, onForecastCashFlowSettingsSaved],
+  );
 
   return (
     <div className="mb-10 space-y-6">
@@ -465,20 +513,30 @@ export function CashFlowDashboard({
           <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcSummaryTitle}</h5>
           <p className="mt-1 text-xs text-[#9CA3AF]">{t.fcSummaryHint}</p>
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[640px] border-collapse text-xs sm:text-sm">
+            <table className="w-full min-w-[800px] border-collapse text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700 dark:text-slate-400">
                   <th className="py-2 pr-3">{t.fcColSupplier}</th>
                   <th className="py-2 pr-3">{t.fcColSku}</th>
                   <th className="py-2 pr-3 text-right tabular-nums">{t.fcColBto}</th>
                   <th className="py-2 pr-3 text-right tabular-nums">{t.fcColBts}</th>
+                  <th
+                    className="min-w-[10rem] py-2 pr-3"
+                    title={
+                      language === "en"
+                        ? "Order date in English; use the picker to change."
+                        : "订单日期以英文展示，可用日期选择器修改。"
+                    }
+                  >
+                    {t.fcColPoIssue}
+                  </th>
                   <th className="py-2 pr-3 text-right">{t.fcColTotal}</th>
                 </tr>
               </thead>
               <tbody>
                 {fcDashboardRows.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-400">
+                    <td colSpan={6} className="py-8 text-center text-slate-400">
                       {t.fcNoRows}
                     </td>
                   </tr>
@@ -489,6 +547,21 @@ export function CashFlowDashboard({
                       <td className="py-2 pr-3 font-medium">{row.sku}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{row.buildToOrder}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{row.buildToStock}</td>
+                      <td className="py-2 pr-3 align-top" lang="en">
+                        <div className="flex min-w-[9rem] flex-col gap-1">
+                          <span className="whitespace-nowrap tabular-nums text-xs font-medium text-slate-800 dark:text-slate-100">
+                            {row.poIssueDate ? formatPoIssueDateEnglish(row.poIssueDate) : "—"}
+                          </span>
+                          <input
+                            type="date"
+                            value={row.poIssueDate ?? ""}
+                            onChange={(e) => void persistFcPoIssueDate(row.id, e.target.value)}
+                            disabled={fcPoSavingId === row.id}
+                            className="w-full max-w-[11rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                            aria-label={t.fcColPoIssue}
+                          />
+                        </div>
+                      </td>
                       <td className="py-2 pr-3 text-right tabular-nums">
                         {lineTotal != null ? formatUsd(lineTotal, 2) : t.na}
                       </td>
@@ -501,7 +574,7 @@ export function CashFlowDashboard({
                   <tr className="border-t border-slate-200 dark:border-slate-600">
                     {fcSumComputable > 0 ? (
                       <>
-                        <td className="py-2 pr-3 font-medium text-slate-600 dark:text-slate-300" colSpan={4}>
+                        <td className="py-2 pr-3 font-medium text-slate-600 dark:text-slate-300" colSpan={5}>
                           {t.fcSumLabel}
                         </td>
                         <td className="py-2 pr-3 text-right text-base font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
@@ -509,7 +582,7 @@ export function CashFlowDashboard({
                         </td>
                       </>
                     ) : (
-                      <td colSpan={5} className="py-3 text-center text-xs text-slate-400">
+                      <td colSpan={6} className="py-3 text-center text-xs text-slate-400">
                         {t.fcEmpty}
                       </td>
                     )}

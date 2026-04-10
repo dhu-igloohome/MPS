@@ -5010,36 +5010,48 @@ export async function enrichForecastRecordsForCashFlow(
   await ensureDatabase();
   const db = getSql();
   const ids = okOnly.map((f) => Number(f.id));
-  const settingsRows = await db<{ forecast_id: number; supplier_name: string }[]>`
-    select forecast_id, supplier_name
+  const settingsRows = await db<{ forecast_id: number; supplier_name: string; po_issue_date: string | null }[]>`
+    select forecast_id, supplier_name, po_issue_date::text as po_issue_date
     from forecast_cash_flow_settings
     where forecast_id = any(${ids});
   `;
-  const settings = new Map<string, string>();
+  const settings = new Map<string, { supplier: string; poIssueDate: string | null }>();
   for (const r of settingsRows) {
-    settings.set(String(r.forecast_id), (r.supplier_name || "").trim());
+    const po =
+      r.po_issue_date && /^\d{4}-\d{2}-\d{2}/.test(r.po_issue_date)
+        ? r.po_issue_date.slice(0, 10)
+        : null;
+    settings.set(String(r.forecast_id), {
+      supplier: (r.supplier_name || "").trim(),
+      poIssueDate: po,
+    });
   }
   const quotes = await listUnitCostQuotes();
   const priceMap = buildSkuSupplierToUnitPrice(quotes);
 
   return okOnly.map((f) => {
-    const supplier = settings.get(f.id) ?? "";
+    const s = settings.get(f.id) ?? { supplier: "", poIssueDate: null };
+    const supplier = s.supplier;
     const key = `${f.sku.trim()}::${supplier}`;
     const unitPriceUsd = supplier ? (priceMap.get(key) ?? null) : null;
     return {
       ...f,
       cashFlowSupplierName: supplier,
       unitPriceUsd,
+      poIssueDate: s.poIssueDate,
     };
   });
 }
 
-export async function upsertForecastCashFlowSupplier(input: {
+export async function patchForecastCashFlowSettings(input: {
   forecastId: string;
-  supplierName: string;
   sessionRegions: Region[];
   updatedBy: string;
-}): Promise<{ unitPriceUsd: number | null }> {
+  /** When set, replaces stored supplier name (may be empty). */
+  supplierName?: string;
+  /** When set, replaces PO issue date; use null or "" to clear. */
+  poIssueDate?: string | null;
+}): Promise<{ supplierName: string; unitPriceUsd: number | null; poIssueDate: string | null }> {
   await ensureDatabase();
   const db = getSql();
   const fid = Number(input.forecastId);
@@ -5056,27 +5068,62 @@ export async function upsertForecastCashFlowSupplier(input: {
   if (!input.sessionRegions.includes(row.region)) {
     throw new Error("Forbidden");
   }
-  const supplier = input.supplierName.trim();
+
+  const hasSupplier = input.supplierName !== undefined;
+  const hasPo = input.poIssueDate !== undefined;
+  if (!hasSupplier && !hasPo) {
+    throw new Error("supplierName or poIssueDate is required");
+  }
+
+  const cur = await db<{ supplier_name: string; po_issue_date: string | null }[]>`
+    select supplier_name, po_issue_date::text as po_issue_date
+    from forecast_cash_flow_settings
+    where forecast_id = ${fid}
+    limit 1;
+  `;
+  const curRow = cur[0];
+  const supplier = hasSupplier ? String(input.supplierName ?? "").trim() : (curRow?.supplier_name ?? "").trim();
+
+  let poIssueDate: string | null;
+  if (hasPo) {
+    const v = input.poIssueDate;
+    if (v === null || v === "") {
+      poIssueDate = null;
+    } else {
+      const s = String(v).trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        throw new Error("Invalid poIssueDate");
+      }
+      poIssueDate = s;
+    }
+  } else {
+    const p = curRow?.po_issue_date;
+    poIssueDate =
+      p && /^\d{4}-\d{2}-\d{2}/.test(p) ? p.slice(0, 10) : null;
+  }
+
   await db`
-    insert into forecast_cash_flow_settings (forecast_id, supplier_name, updated_by)
-    values (${fid}, ${supplier}, ${input.updatedBy})
+    insert into forecast_cash_flow_settings (forecast_id, supplier_name, po_issue_date, updated_by)
+    values (${fid}, ${supplier}, ${poIssueDate}, ${input.updatedBy})
     on conflict (forecast_id) do update
     set
       supplier_name = excluded.supplier_name,
+      po_issue_date = excluded.po_issue_date,
       updated_by = excluded.updated_by,
       updated_at = now();
   `;
+
   const sku = (row.sku || "").trim();
-  if (!supplier || !sku) {
-    return { unitPriceUsd: null };
+  let unitPriceUsd: number | null = null;
+  if (supplier && sku) {
+    const pr = await db<{ unit_price: string }[]>`
+      select unit_price::text
+      from unit_cost_quotes
+      where sku = ${sku} and supplier_name = ${supplier}
+      order by quote_date desc, id desc
+      limit 1;
+    `;
+    unitPriceUsd = pr[0] != null ? Number(pr[0].unit_price) : null;
   }
-  const pr = await db<{ unit_price: string }[]>`
-    select unit_price::text
-    from unit_cost_quotes
-    where sku = ${sku} and supplier_name = ${supplier}
-    order by quote_date desc, id desc
-    limit 1;
-  `;
-  const unitPriceUsd = pr[0] != null ? Number(pr[0].unit_price) : null;
-  return { unitPriceUsd };
+  return { supplierName: supplier, unitPriceUsd, poIssueDate };
 }

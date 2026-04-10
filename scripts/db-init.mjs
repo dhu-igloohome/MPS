@@ -489,6 +489,7 @@ async function main() {
       updated_at timestamptz not null default now()
     );
   `;
+  await sql`alter table forecast_cash_flow_settings add column if not exists po_issue_date date;`;
 
   await sql`
     create table if not exists mass_production_kanban (
