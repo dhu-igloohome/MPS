@@ -129,10 +129,12 @@ function labels(language: Language) {
     na: en ? "—" : "—",
     fcSummaryTitle: en ? "Forecast cash flow (for dashboard)" : "Forecast 现金流（看板汇总）",
     fcSummaryHint: en
-      ? "Supplier, SKU, and line total (USD) = unit price × (BTO + BTS) when Unit cost has a quote for that SKU + supplier."
-      : "与上方 Forecast 现金流一致：供应商、SKU、行总金额 (USD) = 单价 ×（按单生产 + 备货），需单位成本中有对应报价。",
+      ? "Supplier, SKU, BTO, BTS, and line total (USD) = unit price × (BTO + BTS) when Unit cost has a quote for that SKU + supplier."
+      : "与上方 Forecast 现金流一致：供应商、SKU、按单/备货数量、行总金额 (USD) = 单价 ×（按单生产 + 备货），需单位成本中有对应报价。",
     fcColSupplier: en ? "Supplier name" : "供应商名称",
     fcColSku: "SKU",
+    fcColBto: en ? "Build to Order" : "按单生产",
+    fcColBts: en ? "Build to Stock" : "备货生产",
     fcColTotal: en ? "Total amount (USD)" : "总金额 (USD)",
     fcEmpty: en ? "No rows with a computable total (pick supplier + Unit cost quote)." : "暂无可计算总金额的行（请选择供应商并确保单位成本有报价）。",
     fcSumLabel: en ? "Sum (computable lines)" : "可计算行合计",
@@ -463,18 +465,20 @@ export function CashFlowDashboard({
           <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcSummaryTitle}</h5>
           <p className="mt-1 text-xs text-[#9CA3AF]">{t.fcSummaryHint}</p>
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[480px] border-collapse text-xs sm:text-sm">
+            <table className="w-full min-w-[640px] border-collapse text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700 dark:text-slate-400">
                   <th className="py-2 pr-3">{t.fcColSupplier}</th>
                   <th className="py-2 pr-3">{t.fcColSku}</th>
+                  <th className="py-2 pr-3 text-right tabular-nums">{t.fcColBto}</th>
+                  <th className="py-2 pr-3 text-right tabular-nums">{t.fcColBts}</th>
                   <th className="py-2 pr-3 text-right">{t.fcColTotal}</th>
                 </tr>
               </thead>
               <tbody>
                 {fcDashboardRows.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="py-8 text-center text-slate-400">
+                    <td colSpan={5} className="py-8 text-center text-slate-400">
                       {t.fcNoRows}
                     </td>
                   </tr>
@@ -483,6 +487,8 @@ export function CashFlowDashboard({
                     <tr key={row.id} className="border-b border-app-border/60">
                       <td className="max-w-[12rem] truncate py-2 pr-3">{supplierLabel}</td>
                       <td className="py-2 pr-3 font-medium">{row.sku}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">{row.buildToOrder}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">{row.buildToStock}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">
                         {lineTotal != null ? formatUsd(lineTotal, 2) : t.na}
                       </td>
@@ -495,7 +501,7 @@ export function CashFlowDashboard({
                   <tr className="border-t border-slate-200 dark:border-slate-600">
                     {fcSumComputable > 0 ? (
                       <>
-                        <td className="py-2 pr-3 font-medium text-slate-600 dark:text-slate-300" colSpan={2}>
+                        <td className="py-2 pr-3 font-medium text-slate-600 dark:text-slate-300" colSpan={4}>
                           {t.fcSumLabel}
                         </td>
                         <td className="py-2 pr-3 text-right text-base font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
@@ -503,7 +509,7 @@ export function CashFlowDashboard({
                         </td>
                       </>
                     ) : (
-                      <td colSpan={3} className="py-3 text-center text-xs text-slate-400">
+                      <td colSpan={5} className="py-3 text-center text-xs text-slate-400">
                         {t.fcEmpty}
                       </td>
                     )}
