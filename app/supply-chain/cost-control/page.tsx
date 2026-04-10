@@ -6,7 +6,13 @@ import { CostControlPanel } from "@/components/cost-control/cost-control-panel";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
-import { getForecastsByRegions, listCashFlowEntries, listCostAnalysisEntries } from "@/lib/repositories";
+import {
+  enrichForecastRecordsForCashFlow,
+  getForecastsByRegions,
+  listCashFlowEntries,
+  listCostAnalysisEntries,
+  listSuppliers,
+} from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -17,11 +23,18 @@ export default async function SupplyChainCostControlPage() {
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const [cashFlowEntries, costAnalysisEntries, forecastRecords] = await Promise.all([
+  const [cashFlowEntries, costAnalysisEntries, forecastRecords, suppliers] = await Promise.all([
     listCashFlowEntries(),
     listCostAnalysisEntries(),
     getForecastsByRegions(session.regions),
+    listSuppliers(),
   ]);
+  const forecastCashFlowRows = await enrichForecastRecordsForCashFlow(forecastRecords);
+  const fcSupplierNames = [
+    ...new Set(
+      suppliers.filter((s) => s.isActive).map((s) => s.name.trim()).filter(Boolean),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
 
   return (
     <AppShell
@@ -39,7 +52,8 @@ export default async function SupplyChainCostControlPage() {
           language={language}
           cashFlowEntries={cashFlowEntries}
           costAnalysisEntries={costAnalysisEntries}
-          forecastRecords={forecastRecords}
+          forecastCashFlowRows={forecastCashFlowRows}
+          fcSupplierNames={fcSupplierNames}
         />
       </Suspense>
     </AppShell>

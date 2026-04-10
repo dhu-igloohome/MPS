@@ -10,6 +10,7 @@ import {
   EcnEntry,
   EcnPriority,
   EcnStatus,
+  ForecastCashFlowRow,
   ForecastEntry,
   LogisticsLocation,
   LogisticsMovementType,
@@ -4989,4 +4990,91 @@ export async function createUnitCostQuote(input: {
   const row = rows[0];
   if (!row) throw new Error("Insert failed");
   return mapUnitCostQuote(row);
+}
+
+function buildSkuSupplierToUnitPrice(quotes: UnitCostQuoteEntry[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const q of quotes) {
+    const k = `${q.sku.trim()}::${q.supplierName.trim()}`;
+    if (!m.has(k)) m.set(k, q.unitPrice);
+  }
+  return m;
+}
+
+export async function enrichForecastRecordsForCashFlow(
+  forecasts: ForecastEntry[],
+): Promise<ForecastCashFlowRow[]> {
+  if (forecasts.length === 0) return [];
+  await ensureDatabase();
+  const db = getSql();
+  const ids = forecasts.map((f) => Number(f.id));
+  const settingsRows = await db<{ forecast_id: number; supplier_name: string }[]>`
+    select forecast_id, supplier_name
+    from forecast_cash_flow_settings
+    where forecast_id = any(${ids});
+  `;
+  const settings = new Map<string, string>();
+  for (const r of settingsRows) {
+    settings.set(String(r.forecast_id), (r.supplier_name || "").trim());
+  }
+  const quotes = await listUnitCostQuotes();
+  const priceMap = buildSkuSupplierToUnitPrice(quotes);
+
+  return forecasts.map((f) => {
+    const supplier = settings.get(f.id) ?? "";
+    const key = `${f.sku.trim()}::${supplier}`;
+    const unitPriceUsd = supplier ? (priceMap.get(key) ?? null) : null;
+    return {
+      ...f,
+      cashFlowSupplierName: supplier,
+      unitPriceUsd,
+    };
+  });
+}
+
+export async function upsertForecastCashFlowSupplier(input: {
+  forecastId: string;
+  supplierName: string;
+  sessionRegions: Region[];
+  updatedBy: string;
+}): Promise<{ unitPriceUsd: number | null }> {
+  await ensureDatabase();
+  const db = getSql();
+  const fid = Number(input.forecastId);
+  if (!Number.isFinite(fid) || fid < 1) {
+    throw new Error("Invalid forecast id");
+  }
+  const fr = await db<{ region: Region; sku: string }[]>`
+    select region, sku from forecasts where id = ${fid} limit 1;
+  `;
+  const row = fr[0];
+  if (!row) {
+    throw new Error("Forecast not found");
+  }
+  if (!input.sessionRegions.includes(row.region)) {
+    throw new Error("Forbidden");
+  }
+  const supplier = input.supplierName.trim();
+  await db`
+    insert into forecast_cash_flow_settings (forecast_id, supplier_name, updated_by)
+    values (${fid}, ${supplier}, ${input.updatedBy})
+    on conflict (forecast_id) do update
+    set
+      supplier_name = excluded.supplier_name,
+      updated_by = excluded.updated_by,
+      updated_at = now();
+  `;
+  const sku = (row.sku || "").trim();
+  if (!supplier || !sku) {
+    return { unitPriceUsd: null };
+  }
+  const pr = await db<{ unit_price: string }[]>`
+    select unit_price::text
+    from unit_cost_quotes
+    where sku = ${sku} and supplier_name = ${supplier}
+    order by quote_date desc, id desc
+    limit 1;
+  `;
+  const unitPriceUsd = pr[0] != null ? Number(pr[0].unit_price) : null;
+  return { unitPriceUsd };
 }

@@ -9,14 +9,15 @@ import { findCostAnalysisForCashFlow } from "@/lib/cash-flow-cost-analysis-link"
 import { formatUsd } from "@/lib/format-usd";
 import { computeCashFlowDerivedActuals, computeTotalAmount } from "@/lib/cash-flow-validation";
 import type { Language } from "@/lib/i18n";
-import type { CashFlowEntry, CostAnalysisEntry, ForecastEntry } from "@/lib/types";
+import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow } from "@/lib/types";
 
 type CashFlowPanelProps = {
   language: Language;
   initialEntries: CashFlowEntry[];
   costAnalysisEntries: CostAnalysisEntry[];
-  /** Same source as Forecast → All Forecast Records (session regions). */
-  forecastRecords: ForecastEntry[];
+  forecastCashFlowRows: ForecastCashFlowRow[];
+  /** Active supplier names (Supply Chain → Suppliers) for Forecast cash flow dropdown. */
+  fcSupplierNames: string[];
 };
 
 function formatForecastMonthCell(ym: string, language: Language): string {
@@ -65,7 +66,12 @@ const LABELS = {
     expectedFin: "Expected final",
     fcTitle: "Forecast cash flow",
     fcHint:
-      "Linked from Forecast Input → All Forecast Records (read-only). Comments and edits apply on the Forecast page.",
+      "Forecast columns mirror All Forecast Records. Pick a supplier per row; Unit price (USD) is the latest matching quote from Unit cost (same SKU + supplier). Comments still on the Forecast page.",
+    fcSupplierName: "Supplier name",
+    fcUnitPriceUsd: "Unit price (USD)",
+    fcSelectSupplier: "Select supplier…",
+    fcNoUnitCostQuote: "—",
+    fcNoUnitCostHint: "No Unit cost quote",
     fcMonth: "Forecast Month",
     fcForecastNo: "Forecast #",
     fcRegion: "Region",
@@ -112,7 +118,12 @@ const LABELS = {
     expectedFin: "按比例应付尾款",
     fcTitle: "Forecast 现金流",
     fcHint:
-      "与 Forecast 填报 →「全部 Forecast 记录」字段一致（只读同步）。评论与修改请在 Forecast 页面操作。",
+      "Forecast 列与「全部 Forecast 记录」一致。每行可选供应商；单价 (USD) 取自「单位成本」中该 SKU + 供应商的最新报价。评论仍在 Forecast 页面维护。",
+    fcSupplierName: "供应商名称",
+    fcUnitPriceUsd: "单价 (USD)",
+    fcSelectSupplier: "选择供应商…",
+    fcNoUnitCostQuote: "—",
+    fcNoUnitCostHint: "无单位成本报价",
     fcMonth: "Forecast 月份",
     fcForecastNo: "Forecast #",
     fcRegion: "区域",
@@ -151,14 +162,20 @@ export function CashFlowPanel({
   language,
   initialEntries,
   costAnalysisEntries,
-  forecastRecords,
+  forecastCashFlowRows,
+  fcSupplierNames,
 }: CashFlowPanelProps) {
   const router = useRouter();
   const t = LABELS[language];
   const [entries, setEntries] = useState(initialEntries);
+  const [fcRows, setFcRows] = useState(forecastCashFlowRows);
+  const [fcRowSavingId, setFcRowSavingId] = useState<string | null>(null);
   useEffect(() => {
     setEntries(initialEntries);
   }, [initialEntries]);
+  useEffect(() => {
+    setFcRows(forecastCashFlowRows);
+  }, [forecastCashFlowRows]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -318,6 +335,41 @@ export function CashFlowPanel({
     await refresh();
   }
 
+  async function onFcSupplierChange(forecastId: string, supplierName: string) {
+    setFcRowSavingId(forecastId);
+    setMessage("");
+    const res = await fetch("/api/cost-control/forecast-cash-flow", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ forecastId, supplierName }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      message?: string;
+      unitPriceUsd?: number | null;
+      supplierName?: string;
+    };
+    setFcRowSavingId(null);
+    if (!res.ok) {
+      setMessage(
+        data.message ||
+          (language === "en" ? "Could not save supplier for this forecast row." : "保存该行的供应商失败。"),
+      );
+      return;
+    }
+    const savedSupplier = data.supplierName ?? supplierName;
+    setFcRows((prev) =>
+      prev.map((r) =>
+        r.id === forecastId
+          ? {
+              ...r,
+              cashFlowSupplierName: savedSupplier,
+              unitPriceUsd: data.unitPriceUsd ?? null,
+            }
+          : r,
+      ),
+    );
+  }
+
   const inputBase =
     "mt-1 w-full rounded-lg border border-app-border px-2 py-1.5 text-sm text-foreground";
   const readOnlyMuted = `${inputBase} cursor-not-allowed bg-app-muted/25`;
@@ -330,7 +382,7 @@ export function CashFlowPanel({
         <h4 className="text-base font-semibold text-foreground">{t.fcTitle}</h4>
         <p className="mt-1 text-xs text-app-muted">{t.fcHint}</p>
         <div className="app-table-shell mt-3 overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-collapse text-xs sm:text-sm">
+          <table className="w-full min-w-[1280px] border-collapse text-xs sm:text-sm">
             <thead>
               <tr className="border-b border-app-border/80 bg-app-surface/80 text-left text-app-muted">
                 <th className="px-2 py-2">{t.fcMonth}</th>
@@ -339,6 +391,8 @@ export function CashFlowPanel({
                 <th className="px-2 py-2">{t.fcDestination}</th>
                 <th className="px-2 py-2">{t.fcProductName}</th>
                 <th className="px-2 py-2">{t.sku}</th>
+                <th className="min-w-[10rem] px-2 py-2">{t.fcSupplierName}</th>
+                <th className="px-2 py-2">{t.fcUnitPriceUsd}</th>
                 <th className="px-2 py-2">{t.fcBto}</th>
                 <th className="px-2 py-2">{t.fcBts}</th>
                 <th className="px-2 py-2">{t.fcCreatedAt}</th>
@@ -347,14 +401,14 @@ export function CashFlowPanel({
               </tr>
             </thead>
             <tbody>
-              {forecastRecords.length === 0 ? (
+              {fcRows.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-2 py-6 text-center text-app-muted">
+                  <td colSpan={13} className="px-2 py-6 text-center text-app-muted">
                     {t.fcEmpty}
                   </td>
                 </tr>
               ) : (
-                forecastRecords.map((row) => (
+                fcRows.map((row) => (
                   <tr key={row.id} className="border-b border-app-border/40">
                     <td className="px-2 py-2 whitespace-nowrap">{formatForecastMonthCell(row.month, language)}</td>
                     <td className="px-2 py-2">{row.poNumber || "—"}</td>
@@ -362,6 +416,36 @@ export function CashFlowPanel({
                     <td className="max-w-[8rem] break-words px-2 py-2">{row.destination || "—"}</td>
                     <td className="max-w-[10rem] break-words px-2 py-2">{row.productName}</td>
                     <td className="px-2 py-2 font-medium">{row.sku}</td>
+                    <td className="px-2 py-2 align-top">
+                      <select
+                        value={row.cashFlowSupplierName}
+                        onChange={(e) => void onFcSupplierChange(row.id, e.target.value)}
+                        disabled={fcRowSavingId === row.id}
+                        className="w-full max-w-[12rem] rounded-lg border border-app-border bg-app-surface px-2 py-1 text-sm"
+                        aria-label={t.fcSupplierName}
+                      >
+                        <option value="">{t.fcSelectSupplier}</option>
+                        {fcSupplierNames.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td
+                      className="px-2 py-2 tabular-nums"
+                      title={
+                        row.cashFlowSupplierName && row.unitPriceUsd == null
+                          ? t.fcNoUnitCostHint
+                          : undefined
+                      }
+                    >
+                      {!row.cashFlowSupplierName
+                        ? "—"
+                        : row.unitPriceUsd != null
+                          ? formatUsd(row.unitPriceUsd, 4)
+                          : t.fcNoUnitCostQuote}
+                    </td>
                     <td className="px-2 py-2 tabular-nums">{row.buildToOrder}</td>
                     <td className="px-2 py-2 tabular-nums">{row.buildToStock}</td>
                     <td className="px-2 py-2 whitespace-nowrap tabular-nums">

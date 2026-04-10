@@ -482,6 +482,15 @@ async function main() {
   `;
 
   await sql`
+    create table if not exists forecast_cash_flow_settings (
+      forecast_id bigint primary key references forecasts(id) on delete cascade,
+      supplier_name text not null default '',
+      updated_by text not null references users(username),
+      updated_at timestamptz not null default now()
+    );
+  `;
+
+  await sql`
     create table if not exists mass_production_kanban (
       id bigserial primary key,
       product_id bigint not null references products(id) on delete restrict,

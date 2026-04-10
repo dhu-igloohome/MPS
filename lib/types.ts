@@ -49,6 +49,13 @@ export type ForecastEntry = {
   createdAt: string;
 };
 
+/** Forecast cash flow table: forecast row + supplier pick + Unit cost quote price (USD). */
+export type ForecastCashFlowRow = ForecastEntry & {
+  cashFlowSupplierName: string;
+  /** Latest Unit cost (USD) for this SKU + supplier, or null if none. */
+  unitPriceUsd: number | null;
+};
+
 export type ProductItem = {
   id: string;
   productName: string;
