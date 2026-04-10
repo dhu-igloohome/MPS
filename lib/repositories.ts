@@ -5004,10 +5004,12 @@ function buildSkuSupplierToUnitPrice(quotes: UnitCostQuoteEntry[]): Map<string, 
 export async function enrichForecastRecordsForCashFlow(
   forecasts: ForecastEntry[],
 ): Promise<ForecastCashFlowRow[]> {
-  if (forecasts.length === 0) return [];
+  /** Forecast page "Comment" column is stored as `remark`; cash flow table only lists approved rows. */
+  const okOnly = forecasts.filter((f) => f.remark.trim().toLowerCase() === "ok");
+  if (okOnly.length === 0) return [];
   await ensureDatabase();
   const db = getSql();
-  const ids = forecasts.map((f) => Number(f.id));
+  const ids = okOnly.map((f) => Number(f.id));
   const settingsRows = await db<{ forecast_id: number; supplier_name: string }[]>`
     select forecast_id, supplier_name
     from forecast_cash_flow_settings
@@ -5020,7 +5022,7 @@ export async function enrichForecastRecordsForCashFlow(
   const quotes = await listUnitCostQuotes();
   const priceMap = buildSkuSupplierToUnitPrice(quotes);
 
-  return forecasts.map((f) => {
+  return okOnly.map((f) => {
     const supplier = settings.get(f.id) ?? "";
     const key = `${f.sku.trim()}::${supplier}`;
     const unitPriceUsd = supplier ? (priceMap.get(key) ?? null) : null;

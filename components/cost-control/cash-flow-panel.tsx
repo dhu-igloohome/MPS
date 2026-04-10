@@ -66,7 +66,7 @@ const LABELS = {
     expectedFin: "Expected final",
     fcTitle: "Forecast cash flow",
     fcHint:
-      "Forecast columns mirror All Forecast Records. Pick a supplier per row; Unit price (USD) is the latest matching quote from Unit cost (same SKU + supplier). Comments still on the Forecast page.",
+      "Only forecast rows whose Comment is \"Ok\" appear here (set on the Forecast page). Pick a supplier per row; Unit price (USD) is the latest matching quote from Unit cost (same SKU + supplier).",
     fcSupplierName: "Supplier name",
     fcUnitPriceUsd: "Unit price (USD)",
     fcSelectSupplier: "Select supplier…",
@@ -118,7 +118,7 @@ const LABELS = {
     expectedFin: "按比例应付尾款",
     fcTitle: "Forecast 现金流",
     fcHint:
-      "Forecast 列与「全部 Forecast 记录」一致。每行可选供应商；单价 (USD) 取自「单位成本」中该 SKU + 供应商的最新报价。评论仍在 Forecast 页面维护。",
+      "仅显示 Forecast 页面评论（Comment）为 Ok 的行。每行可选供应商；单价 (USD) 取自「单位成本」中该 SKU + 供应商的最新报价。",
     fcSupplierName: "供应商名称",
     fcUnitPriceUsd: "单价 (USD)",
     fcSelectSupplier: "选择供应商…",
