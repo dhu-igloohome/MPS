@@ -58,6 +58,8 @@ type Props = {
     payload: { supplierName: string; unitPriceUsd: number | null; poIssueDate: string | null },
   ) => void;
   onForecastCashFlowSettingsError?: (message: string) => void;
+  /** When true, only render Forecast cash flow (for dashboard) + payment bar chart (Cash flow analysis tab). */
+  forecastSummaryOnly?: boolean;
 };
 
 function forecastLineTotalUsd(row: ForecastCashFlowRow): number | null {
@@ -274,6 +276,7 @@ export function CashFlowDashboard({
   showForecastCashFlowSummary = false,
   onForecastCashFlowSettingsSaved,
   onForecastCashFlowSettingsError,
+  forecastSummaryOnly = false,
 }: Props) {
   const t = labels(language);
   const [rangePreset, setRangePreset] = useState<RangePreset>("12m");
@@ -489,10 +492,10 @@ export function CashFlowDashboard({
     [language, onForecastCashFlowSettingsError, onForecastCashFlowSettingsSaved],
   );
 
-  return (
-    <div className="mb-10 space-y-6">
-      {showForecastCashFlowSummary ? (
-        <div className="app-card p-4">
+  const renderForecastCashFlowSummary = () => {
+    if (!showForecastCashFlowSummary) return null;
+    return (
+      <div className="app-card p-4">
           <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcSummaryTitle}</h5>
           <p className="mt-1 text-xs text-[#9CA3AF]">{t.fcSummaryHint}</p>
           <div className="mt-3 overflow-x-auto">
@@ -722,7 +725,16 @@ export function CashFlowDashboard({
             </div>
           </div>
         </div>
-      ) : null}
+    );
+  };
+
+  if (forecastSummaryOnly) {
+    return <div className="mb-10 space-y-6">{renderForecastCashFlowSummary()}</div>;
+  }
+
+  return (
+    <div className="mb-10 space-y-6">
+      {renderForecastCashFlowSummary()}
 
       <div>
         <h4 className="text-base font-semibold tracking-tight text-[#111827]">{t.title}</h4>

@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 
 import { CashFlowPanel } from "@/components/cost-control/cash-flow-panel";
 import { CostAnalysisPanel } from "@/components/cost-control/cost-analysis-panel";
+import { PoCashFlowPanel } from "@/components/cost-control/po-cash-flow-panel";
 import { CostControlSubnav } from "@/components/cost-control/cost-control-subnav";
 import type { Language } from "@/lib/i18n";
 import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow, SupplierEntry } from "@/lib/types";
@@ -54,14 +55,17 @@ export function CostControlPanel({
           <>
             <h3 className="mb-2 text-base font-semibold text-foreground">{t.costAnalysis}</h3>
             <CostAnalysisPanel language={language} initialEntries={costAnalysisEntries} />
+            <PoCashFlowPanel
+              language={language}
+              initialEntries={cashFlowEntries}
+              costAnalysisEntries={costAnalysisEntries}
+            />
           </>
         ) : (
           <>
             <h3 className="mb-2 text-base font-semibold text-foreground">{t.cashFlow}</h3>
             <CashFlowPanel
               language={language}
-              initialEntries={cashFlowEntries}
-              costAnalysisEntries={costAnalysisEntries}
               forecastCashFlowRows={forecastCashFlowRows}
               fcSupplierNames={fcSupplierNames}
               fcSuppliers={suppliers}
