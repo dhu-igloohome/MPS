@@ -33,9 +33,14 @@ import {
   type PeriodGrain,
   type RangePreset,
 } from "@/lib/cash-flow-dashboard-agg";
+import {
+  computeForecastPaymentSchedule,
+  formatScheduleDateEnglish,
+  type ForecastPaySchedule,
+} from "@/lib/forecast-supplier-payment-schedule";
 import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
-import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow } from "@/lib/types";
+import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow, SupplierEntry } from "@/lib/types";
 
 type Props = {
   language: Language;
@@ -43,6 +48,8 @@ type Props = {
   costAnalysisEntries: CostAnalysisEntry[];
   /** Ok-comment forecast rows with supplier / unit cost (same source as Forecast cash flow table). */
   forecastCashFlowRows?: ForecastCashFlowRow[];
+  /** Supplier master (payment terms, lead time) from Supply Chain → Suppliers. */
+  fcSuppliers?: SupplierEntry[];
   /** When true, show the Forecast summary table above KPIs (Supply Chain cost control). */
   showForecastCashFlowSummary?: boolean;
   onForecastCashFlowSettingsSaved?: (
@@ -142,14 +149,21 @@ function labels(language: Language) {
     na: en ? "—" : "—",
     fcSummaryTitle: en ? "Forecast cash flow (for dashboard)" : "Forecast 现金流（看板汇总）",
     fcSummaryHint: en
-      ? "Supplier, SKU, BTO, BTS, PO issue date (saved per row; label in English), and line total = unit price × (BTO + BTS) when Unit cost quotes exist."
-      : "与 Forecast 现金流一致；PO 下达日期按行保存，日期以英文格式展示，可用日历选择。行总金额 = 单价 ×（按单 + 备货），需单位成本报价。",
+      ? "Line total from Unit cost; PO issue date in English. Deposit / balance due dates use each supplier’s Payment terms + Lead time (calendar days): deposit on PO date; balance on PO + lead time + Net days from terms."
+      : "行总金额来自单位成本；PO 日期英文显示。订金 / 尾款日期按「供应商」中的付款条款与 Lead time（自然日）推算：订金在 PO 日；尾款在 PO + 交期 + 条款中的 Net 天数。",
     fcColSupplier: en ? "Supplier name" : "供应商名称",
     fcColSku: "SKU",
     fcColBto: en ? "Build to Order" : "按单生产",
     fcColBts: en ? "Build to Stock" : "备货生产",
     fcColPoIssue: en ? "PO issue date" : "订单下达日期",
     fcColTotal: en ? "Total amount (USD)" : "总金额 (USD)",
+    fcColDeposit: en ? "Deposit due" : "订金应付",
+    fcColBalance: en ? "Balance due" : "尾款应付",
+    fcPayUnknownSupplier: en ? "No matching supplier record." : "未找到供应商主数据。",
+    fcPayNeedPoAndTotal: en ? "Set PO date, supplier, and line total." : "请设置订单日、供应商与可算行总金额。",
+    fcPayParseTerms: en ? "Could not parse Payment terms; edit text in Suppliers." : "无法解析付款条款，请在供应商中调整描述。",
+    fcSumDeposits: en ? "Σ deposits" : "订金合计",
+    fcSumBalances: en ? "Σ balances" : "尾款合计",
     fcEmpty: en ? "No rows with a computable total (pick supplier + Unit cost quote)." : "暂无可计算总金额的行（请选择供应商并确保单位成本有报价）。",
     fcSumLabel: en ? "Sum (computable lines)" : "可计算行合计",
     fcNoRows: en
@@ -188,6 +202,7 @@ export function CashFlowDashboard({
   entries,
   costAnalysisEntries,
   forecastCashFlowRows = [],
+  fcSuppliers = [],
   showForecastCashFlowSummary = false,
   onForecastCashFlowSettingsSaved,
   onForecastCashFlowSettingsError,
@@ -241,18 +256,72 @@ export function CashFlowDashboard({
     [enriched, filters, dateRange.from, dateRange.to],
   );
 
-  const fcDashboardRows = useMemo(
-    () =>
-      forecastCashFlowRows.map((row) => ({
+  const supplierTermsByName = useMemo(() => {
+    const m = new Map<string, { paymentTerms: string; leadTimeDays: number }>();
+    for (const s of fcSuppliers) {
+      const k = s.name.trim().toLowerCase();
+      if (!k) continue;
+      m.set(k, { paymentTerms: s.paymentTerms || "", leadTimeDays: s.leadTimeDays ?? 0 });
+    }
+    return m;
+  }, [fcSuppliers]);
+
+  const fcDashboardRows = useMemo(() => {
+    return forecastCashFlowRows.map((row) => {
+      const lineTotal = forecastLineTotalUsd(row);
+      const supplierLabel = row.cashFlowSupplierName.trim() || "—";
+      const nameKey = row.cashFlowSupplierName.trim().toLowerCase();
+      const supMeta = nameKey ? supplierTermsByName.get(nameKey) : undefined;
+
+      let schedule: ForecastPaySchedule | null = null;
+      if (
+        lineTotal != null &&
+        row.poIssueDate &&
+        /^\d{4}-\d{2}-\d{2}$/.test(row.poIssueDate) &&
+        nameKey &&
+        supMeta
+      ) {
+        schedule = computeForecastPaymentSchedule({
+          lineTotalUsd: lineTotal,
+          poIssueDate: row.poIssueDate,
+          leadTimeDays: supMeta.leadTimeDays,
+          paymentTerms: supMeta.paymentTerms,
+        });
+      }
+
+      return {
         row,
-        lineTotal: forecastLineTotalUsd(row),
-        supplierLabel: row.cashFlowSupplierName.trim() || "—",
-      })),
-    [forecastCashFlowRows],
-  );
+        lineTotal,
+        supplierLabel,
+        schedule,
+        supMeta,
+        unknownSupplier: Boolean(nameKey && !supMeta),
+      };
+    });
+  }, [forecastCashFlowRows, supplierTermsByName]);
 
   const fcSumComputable = useMemo(
     () => fcDashboardRows.reduce((s, x) => s + (x.lineTotal ?? 0), 0),
+    [fcDashboardRows],
+  );
+
+  const fcSumDeposits = useMemo(
+    () =>
+      fcDashboardRows.reduce((s, x) => {
+        const sch = x.schedule;
+        if (!sch || sch.parseFailed) return s;
+        return s + (sch.deposit?.amountUsd ?? 0);
+      }, 0),
+    [fcDashboardRows],
+  );
+
+  const fcSumBalances = useMemo(
+    () =>
+      fcDashboardRows.reduce((s, x) => {
+        const sch = x.schedule;
+        if (!sch || sch.parseFailed) return s;
+        return s + (sch.balance?.amountUsd ?? 0);
+      }, 0),
     [fcDashboardRows],
   );
 
@@ -513,7 +582,7 @@ export function CashFlowDashboard({
           <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcSummaryTitle}</h5>
           <p className="mt-1 text-xs text-[#9CA3AF]">{t.fcSummaryHint}</p>
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[800px] border-collapse text-xs sm:text-sm">
+            <table className="w-full min-w-[1080px] border-collapse text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700 dark:text-slate-400">
                   <th className="py-2 pr-3">{t.fcColSupplier}</th>
@@ -531,17 +600,37 @@ export function CashFlowDashboard({
                     {t.fcColPoIssue}
                   </th>
                   <th className="py-2 pr-3 text-right">{t.fcColTotal}</th>
+                  <th
+                    className="min-w-[7.5rem] py-2 pr-3"
+                    title={
+                      language === "en"
+                        ? "From supplier Payment terms: deposit % on PO date."
+                        : "来自供应商付款条款：订金比例在 PO 日支付。"
+                    }
+                  >
+                    {t.fcColDeposit}
+                  </th>
+                  <th
+                    className="min-w-[7.5rem] py-2 pr-3"
+                    title={
+                      language === "en"
+                        ? "Balance % on PO date + Lead time + Net days (from supplier master)."
+                        : "尾款在 PO + Lead time + 条款中 Net 天（自然日）。"
+                    }
+                  >
+                    {t.fcColBalance}
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {fcDashboardRows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-slate-400">
+                    <td colSpan={8} className="py-8 text-center text-slate-400">
                       {t.fcNoRows}
                     </td>
                   </tr>
                 ) : (
-                  fcDashboardRows.map(({ row, lineTotal, supplierLabel }) => (
+                  fcDashboardRows.map(({ row, lineTotal, supplierLabel, schedule, unknownSupplier, supMeta }) => (
                     <tr key={row.id} className="border-b border-app-border/60">
                       <td className="max-w-[12rem] truncate py-2 pr-3">{supplierLabel}</td>
                       <td className="py-2 pr-3 font-medium">{row.sku}</td>
@@ -565,6 +654,64 @@ export function CashFlowDashboard({
                       <td className="py-2 pr-3 text-right tabular-nums">
                         {lineTotal != null ? formatUsd(lineTotal, 2) : t.na}
                       </td>
+                      <td className="min-w-[7.5rem] py-2 pr-3 align-top">
+                        {lineTotal == null || !row.poIssueDate || !row.cashFlowSupplierName.trim() ? (
+                          <span className="text-slate-400" title={t.fcPayNeedPoAndTotal}>
+                            {t.na}
+                          </span>
+                        ) : unknownSupplier ? (
+                          <span className="text-slate-400" title={t.fcPayUnknownSupplier}>
+                            {t.na}
+                          </span>
+                        ) : schedule?.parseFailed ? (
+                          <span
+                            className="cursor-help text-slate-400"
+                            title={`${t.fcPayParseTerms}\n${supMeta?.paymentTerms ?? ""}`}
+                          >
+                            {t.na}
+                          </span>
+                        ) : schedule?.deposit ? (
+                          <div className="flex flex-col gap-0.5 text-xs" lang="en">
+                            <span className="whitespace-nowrap font-medium text-slate-800 dark:text-slate-100">
+                              {formatScheduleDateEnglish(schedule.deposit.dateYmd)}
+                            </span>
+                            <span className="tabular-nums text-slate-700 dark:text-slate-200">
+                              {formatUsd(schedule.deposit.amountUsd, 2)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">{t.na}</span>
+                        )}
+                      </td>
+                      <td className="min-w-[7.5rem] py-2 pr-3 align-top">
+                        {lineTotal == null || !row.poIssueDate || !row.cashFlowSupplierName.trim() ? (
+                          <span className="text-slate-400" title={t.fcPayNeedPoAndTotal}>
+                            {t.na}
+                          </span>
+                        ) : unknownSupplier ? (
+                          <span className="text-slate-400" title={t.fcPayUnknownSupplier}>
+                            {t.na}
+                          </span>
+                        ) : schedule?.parseFailed ? (
+                          <span
+                            className="cursor-help text-slate-400"
+                            title={`${t.fcPayParseTerms}\n${supMeta?.paymentTerms ?? ""}`}
+                          >
+                            {t.na}
+                          </span>
+                        ) : schedule?.balance ? (
+                          <div className="flex flex-col gap-0.5 text-xs" lang="en">
+                            <span className="whitespace-nowrap font-medium text-slate-800 dark:text-slate-100">
+                              {formatScheduleDateEnglish(schedule.balance.dateYmd)}
+                            </span>
+                            <span className="tabular-nums text-slate-700 dark:text-slate-200">
+                              {formatUsd(schedule.balance.amountUsd, 2)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">{t.na}</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -580,9 +727,23 @@ export function CashFlowDashboard({
                         <td className="py-2 pr-3 text-right text-base font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
                           {formatUsd(fcSumComputable, 2)}
                         </td>
+                        <td className="py-2 pr-3 text-right text-sm font-medium tabular-nums text-slate-700 dark:text-slate-200">
+                          {fcSumDeposits > 0 ? (
+                            <span title={t.fcSumDeposits}>{formatUsd(fcSumDeposits, 2)}</span>
+                          ) : (
+                            <span className="text-slate-400">{t.na}</span>
+                          )}
+                        </td>
+                        <td className="py-2 pr-3 text-right text-sm font-medium tabular-nums text-slate-700 dark:text-slate-200">
+                          {fcSumBalances > 0 ? (
+                            <span title={t.fcSumBalances}>{formatUsd(fcSumBalances, 2)}</span>
+                          ) : (
+                            <span className="text-slate-400">{t.na}</span>
+                          )}
+                        </td>
                       </>
                     ) : (
-                      <td colSpan={6} className="py-3 text-center text-xs text-slate-400">
+                      <td colSpan={8} className="py-3 text-center text-xs text-slate-400">
                         {t.fcEmpty}
                       </td>
                     )}

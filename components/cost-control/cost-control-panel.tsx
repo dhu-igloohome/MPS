@@ -6,7 +6,7 @@ import { CashFlowPanel } from "@/components/cost-control/cash-flow-panel";
 import { CostAnalysisPanel } from "@/components/cost-control/cost-analysis-panel";
 import { CostControlSubnav } from "@/components/cost-control/cost-control-subnav";
 import type { Language } from "@/lib/i18n";
-import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow } from "@/lib/types";
+import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow, SupplierEntry } from "@/lib/types";
 
 type CostControlPanelProps = {
   language: Language;
@@ -14,6 +14,8 @@ type CostControlPanelProps = {
   costAnalysisEntries: CostAnalysisEntry[];
   forecastCashFlowRows: ForecastCashFlowRow[];
   fcSupplierNames: string[];
+  /** Full supplier records (payment terms, lead time) for forecast dashboard schedule. */
+  suppliers: SupplierEntry[];
 };
 
 const COPY = {
@@ -33,6 +35,7 @@ export function CostControlPanel({
   costAnalysisEntries,
   forecastCashFlowRows,
   fcSupplierNames,
+  suppliers,
 }: CostControlPanelProps) {
   const t = COPY[language];
   const searchParams = useSearchParams();
@@ -61,6 +64,7 @@ export function CostControlPanel({
               costAnalysisEntries={costAnalysisEntries}
               forecastCashFlowRows={forecastCashFlowRows}
               fcSupplierNames={fcSupplierNames}
+              fcSuppliers={suppliers}
             />
           </>
         )}

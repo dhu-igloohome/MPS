@@ -9,7 +9,7 @@ import { findCostAnalysisForCashFlow } from "@/lib/cash-flow-cost-analysis-link"
 import { formatUsd } from "@/lib/format-usd";
 import { computeCashFlowDerivedActuals, computeTotalAmount } from "@/lib/cash-flow-validation";
 import type { Language } from "@/lib/i18n";
-import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow } from "@/lib/types";
+import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow, SupplierEntry } from "@/lib/types";
 
 type CashFlowPanelProps = {
   language: Language;
@@ -18,6 +18,8 @@ type CashFlowPanelProps = {
   forecastCashFlowRows: ForecastCashFlowRow[];
   /** Active supplier names (Supply Chain → Suppliers) for Forecast cash flow dropdown. */
   fcSupplierNames: string[];
+  /** Supplier master data for payment schedule (terms + lead time). */
+  fcSuppliers: SupplierEntry[];
 };
 
 function formatForecastMonthCell(ym: string, language: Language): string {
@@ -164,6 +166,7 @@ export function CashFlowPanel({
   costAnalysisEntries,
   forecastCashFlowRows,
   fcSupplierNames,
+  fcSuppliers,
 }: CashFlowPanelProps) {
   const router = useRouter();
   const t = LABELS[language];
@@ -478,6 +481,7 @@ export function CashFlowPanel({
         entries={entries}
         costAnalysisEntries={costAnalysisEntries}
         forecastCashFlowRows={fcRows}
+        fcSuppliers={fcSuppliers}
         showForecastCashFlowSummary
         onForecastCashFlowSettingsSaved={(forecastId, payload) => {
           setFcRows((prev) =>

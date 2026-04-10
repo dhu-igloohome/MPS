@@ -54,6 +54,7 @@ export default async function SupplyChainCostControlPage() {
           costAnalysisEntries={costAnalysisEntries}
           forecastCashFlowRows={forecastCashFlowRows}
           fcSupplierNames={fcSupplierNames}
+          suppliers={suppliers}
         />
       </Suspense>
     </AppShell>
