@@ -35,13 +35,24 @@ import {
 } from "@/lib/cash-flow-dashboard-agg";
 import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
-import type { CashFlowEntry, CostAnalysisEntry } from "@/lib/types";
+import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow } from "@/lib/types";
 
 type Props = {
   language: Language;
   entries: CashFlowEntry[];
   costAnalysisEntries: CostAnalysisEntry[];
+  /** Ok-comment forecast rows with supplier / unit cost (same source as Forecast cash flow table). */
+  forecastCashFlowRows?: ForecastCashFlowRow[];
+  /** When true, show the Forecast summary table above KPIs (Supply Chain cost control). */
+  showForecastCashFlowSummary?: boolean;
 };
+
+function forecastLineTotalUsd(row: ForecastCashFlowRow): number | null {
+  if (row.unitPriceUsd == null) return null;
+  const qty = Number(row.buildToOrder) + Number(row.buildToStock);
+  if (!Number.isFinite(qty) || qty <= 0) return null;
+  return row.unitPriceUsd * qty;
+}
 
 const COLORS = {
   slate: "#334155",
@@ -116,6 +127,18 @@ function labels(language: Language) {
     openProgress: en ? "Order progress" : "订单进度",
     clickDrill: en ? "Click a bar or point to drill down" : "点击柱形或折线点查看该期订单",
     na: en ? "—" : "—",
+    fcSummaryTitle: en ? "Forecast cash flow (for dashboard)" : "Forecast 现金流（看板汇总）",
+    fcSummaryHint: en
+      ? "Supplier, SKU, and line total (USD) = unit price × (BTO + BTS) when Unit cost has a quote for that SKU + supplier."
+      : "与上方 Forecast 现金流一致：供应商、SKU、行总金额 (USD) = 单价 ×（按单生产 + 备货），需单位成本中有对应报价。",
+    fcColSupplier: en ? "Supplier name" : "供应商名称",
+    fcColSku: "SKU",
+    fcColTotal: en ? "Total amount (USD)" : "总金额 (USD)",
+    fcEmpty: en ? "No rows with a computable total (pick supplier + Unit cost quote)." : "暂无可计算总金额的行（请选择供应商并确保单位成本有报价）。",
+    fcSumLabel: en ? "Sum (computable lines)" : "可计算行合计",
+    fcNoRows: en
+      ? "No forecast cash flow rows (Comment must be Ok on the Forecast page)."
+      : "暂无 Forecast 现金流数据（请在 Forecast 页将评论设为 Ok）。",
   };
 }
 
@@ -144,7 +167,13 @@ function ChartTooltip({
   );
 }
 
-export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Props) {
+export function CashFlowDashboard({
+  language,
+  entries,
+  costAnalysisEntries,
+  forecastCashFlowRows = [],
+  showForecastCashFlowSummary = false,
+}: Props) {
   const t = labels(language);
   const [rangePreset, setRangePreset] = useState<RangePreset>("12m");
   const [customFrom, setCustomFrom] = useState("");
@@ -191,6 +220,21 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
   const filtered = useMemo(
     () => filterEnriched(enriched, filters, dateRange.from, dateRange.to),
     [enriched, filters, dateRange.from, dateRange.to],
+  );
+
+  const fcDashboardRows = useMemo(
+    () =>
+      forecastCashFlowRows.map((row) => ({
+        row,
+        lineTotal: forecastLineTotalUsd(row),
+        supplierLabel: row.cashFlowSupplierName.trim() || "—",
+      })),
+    [forecastCashFlowRows],
+  );
+
+  const fcSumComputable = useMemo(
+    () => fcDashboardRows.reduce((s, x) => s + (x.lineTotal ?? 0), 0),
+    [fcDashboardRows],
   );
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
@@ -413,6 +457,63 @@ export function CashFlowDashboard({ language, entries, costAnalysisEntries }: Pr
           </label>
         </div>
       </div>
+
+      {showForecastCashFlowSummary ? (
+        <div className="app-card p-4">
+          <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcSummaryTitle}</h5>
+          <p className="mt-1 text-xs text-[#9CA3AF]">{t.fcSummaryHint}</p>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[480px] border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  <th className="py-2 pr-3">{t.fcColSupplier}</th>
+                  <th className="py-2 pr-3">{t.fcColSku}</th>
+                  <th className="py-2 pr-3 text-right">{t.fcColTotal}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fcDashboardRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="py-8 text-center text-slate-400">
+                      {t.fcNoRows}
+                    </td>
+                  </tr>
+                ) : (
+                  fcDashboardRows.map(({ row, lineTotal, supplierLabel }) => (
+                    <tr key={row.id} className="border-b border-app-border/60">
+                      <td className="max-w-[12rem] truncate py-2 pr-3">{supplierLabel}</td>
+                      <td className="py-2 pr-3 font-medium">{row.sku}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">
+                        {lineTotal != null ? formatUsd(lineTotal, 2) : t.na}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+              {fcDashboardRows.length > 0 ? (
+                <tfoot>
+                  <tr className="border-t border-slate-200 dark:border-slate-600">
+                    {fcSumComputable > 0 ? (
+                      <>
+                        <td className="py-2 pr-3 font-medium text-slate-600 dark:text-slate-300" colSpan={2}>
+                          {t.fcSumLabel}
+                        </td>
+                        <td className="py-2 pr-3 text-right text-base font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
+                          {formatUsd(fcSumComputable, 2)}
+                        </td>
+                      </>
+                    ) : (
+                      <td colSpan={3} className="py-3 text-center text-xs text-slate-400">
+                        {t.fcEmpty}
+                      </td>
+                    )}
+                  </tr>
+                </tfoot>
+              ) : null}
+            </table>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">

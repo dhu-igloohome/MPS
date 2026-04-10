@@ -471,7 +471,13 @@ export function CashFlowPanel({
         </div>
       </section>
 
-      <CashFlowDashboard language={language} entries={entries} costAnalysisEntries={costAnalysisEntries} />
+      <CashFlowDashboard
+        language={language}
+        entries={entries}
+        costAnalysisEntries={costAnalysisEntries}
+        forecastCashFlowRows={fcRows}
+        showForecastCashFlowSummary
+      />
 
       <p className="text-sm text-app-muted">{t.tableHint}</p>
 
