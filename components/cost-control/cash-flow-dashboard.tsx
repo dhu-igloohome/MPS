@@ -33,6 +33,7 @@ import {
   type PeriodGrain,
   type RangePreset,
 } from "@/lib/cash-flow-dashboard-agg";
+import { buildForecastCashPaymentBarData } from "@/lib/forecast-cash-flow-payment-bars";
 import {
   computeForecastPaymentSchedule,
   formatScheduleDateEnglish,
@@ -81,6 +82,10 @@ const COLORS = {
   blue: "#2563eb",
   indigo: "#4f46e5",
 };
+
+/** Stacked deposit / balance segments by supplier index (Forecast payment bar chart). */
+const FC_DEP_STACK = ["#4f46e5", "#6366f1", "#7c3aed", "#8b5cf6", "#a855f7", "#c084fc"];
+const FC_BAL_STACK = ["#047857", "#059669", "#0d9488", "#10b981", "#34d399", "#6ee7b7"];
 
 function optNum(s: string): number | null {
   if (s.trim() === "") return null;
@@ -169,7 +174,70 @@ function labels(language: Language) {
     fcNoRows: en
       ? "No forecast cash flow rows (Comment must be Ok on the Forecast page)."
       : "暂无 Forecast 现金流数据（请在 Forecast 页将评论设为 Ok）。",
+    fcBarTitle: en ? "Scheduled payments by due month" : "按应付月份的订金与尾款",
+    fcBarHint: en
+      ? "Uses deposit/balance due dates from the table above, grouped by calendar month. Bars stack by supplier (left stack = deposits, right = balances). Window: 6 months before through 6 months after this month."
+      : "按上方表格的订金/尾款应付日汇总到自然月；柱形按供应商堆叠（左堆订金、右堆尾款）。范围：当前月前 6 个月至后 6 个月。",
+    fcBarDeposit: en ? "Deposit due" : "订金应付",
+    fcBarBalance: en ? "Balance due" : "尾款应付",
+    fcBarNoData: en ? "No payments fall in this 13-month window." : "该 13 个月内无应付金额。",
   };
+}
+
+function FcPaymentBarTooltip({
+  active,
+  payload,
+  label,
+  language,
+}: {
+  active?: boolean;
+  payload?: { dataKey?: string | number; name?: string; value?: number; color?: string }[];
+  label?: string;
+  language: Language;
+}) {
+  const en = language === "en";
+  if (!active || !payload?.length) return null;
+  const withVal = payload.filter((p) => Number(p.value) > 0);
+  const deposits = withVal.filter((p) => String(p.dataKey ?? "").startsWith("d"));
+  const balances = withVal.filter((p) => String(p.dataKey ?? "").startsWith("b"));
+  const totals = withVal.filter((p) => p.dataKey === "depositTotal" || p.dataKey === "balanceTotal");
+  const rows = deposits.length + balances.length > 0 ? [...deposits, ...balances] : totals;
+  if (rows.length === 0) return null;
+  return (
+    <div className="max-w-xs rounded-lg border border-app-border bg-white/95 px-3 py-2 text-xs shadow-md backdrop-blur">
+      <p className="mb-1.5 font-medium text-[#111827]">{label}</p>
+      {deposits.length > 0 ? (
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-indigo-600">
+          {en ? "Deposits" : "订金"}
+        </p>
+      ) : null}
+      {deposits.map((p) => (
+        <p key={String(p.dataKey)} className="tabular-nums text-[#4B5563]">
+          <span style={{ color: p.color }}>{p.name}: </span>
+          {formatUsd(Number(p.value), 2)}
+        </p>
+      ))}
+      {balances.length > 0 ? (
+        <p className="mb-1 mt-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+          {en ? "Balances" : "尾款"}
+        </p>
+      ) : null}
+      {balances.map((p) => (
+        <p key={String(p.dataKey)} className="tabular-nums text-[#4B5563]">
+          <span style={{ color: p.color }}>{p.name}: </span>
+          {formatUsd(Number(p.value), 2)}
+        </p>
+      ))}
+      {deposits.length === 0 && balances.length === 0 && totals.length > 0
+        ? totals.map((p) => (
+            <p key={String(p.dataKey)} className="tabular-nums text-[#4B5563]">
+              <span style={{ color: p.color }}>{p.name}: </span>
+              {formatUsd(Number(p.value), 2)}
+            </p>
+          ))
+        : null}
+    </div>
+  );
 }
 
 function ChartTooltip({
@@ -323,6 +391,24 @@ export function CashFlowDashboard({
         return s + (sch.balance?.amountUsd ?? 0);
       }, 0),
     [fcDashboardRows],
+  );
+
+  const fcPaymentBar = useMemo(() => {
+    const monthKeys = paymentMonthWindowAroundToday(6, 6);
+    const monthLabelFn = (mk: string) => {
+      const [y, m] = mk.split("-").map(Number);
+      if (language === "en") {
+        return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+      }
+      return `${y}年${m}月`;
+    };
+    const inputs = fcDashboardRows.map(({ row, lineTotal, schedule }) => ({ row, lineTotal, schedule }));
+    return buildForecastCashPaymentBarData(inputs, monthKeys, monthLabelFn);
+  }, [fcDashboardRows, language]);
+
+  const fcBarHasAnyAmount = useMemo(
+    () => fcPaymentBar.chartData.some((r) => Number(r.depositTotal) > 0 || Number(r.balanceTotal) > 0),
+    [fcPaymentBar.chartData],
   );
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
@@ -579,6 +665,61 @@ export function CashFlowDashboard({
                 </tfoot>
               ) : null}
             </table>
+          </div>
+
+          <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
+            <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcBarTitle}</h6>
+            <p className="mt-1 text-xs text-[#9CA3AF]">{t.fcBarHint}</p>
+            <div className="mt-3 h-80 w-full min-w-0">
+              {!fcBarHasAnyAmount ? (
+                <p className="py-16 text-center text-sm text-slate-400">{t.fcBarNoData}</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={fcPaymentBar.chartData}
+                    margin={{ top: 8, right: 12, left: 4, bottom: 28 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-32} textAnchor="end" height={70} stroke="#64748b" />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      stroke="#64748b"
+                      tickFormatter={(v) => formatUsd(Number(v), 0)}
+                      width={56}
+                    />
+                    <Tooltip content={<FcPaymentBarTooltip language={language} />} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    {fcPaymentBar.suppliers.length === 0 ? (
+                      <>
+                        <Bar dataKey="depositTotal" name={t.fcBarDeposit} fill={FC_DEP_STACK[0]} />
+                        <Bar dataKey="balanceTotal" name={t.fcBarBalance} fill={FC_BAL_STACK[0]} />
+                      </>
+                    ) : (
+                      <>
+                        {fcPaymentBar.suppliers.map((s, i) => (
+                          <Bar
+                            key={`fc-dep-${s}-${i}`}
+                            stackId="fcDep"
+                            dataKey={`d${i}`}
+                            name={language === "en" ? `${s} · deposit` : `${s} · 订金`}
+                            fill={FC_DEP_STACK[i % FC_DEP_STACK.length]}
+                          />
+                        ))}
+                        {fcPaymentBar.suppliers.map((s, i) => (
+                          <Bar
+                            key={`fc-bal-${s}-${i}`}
+                            stackId="fcBal"
+                            dataKey={`b${i}`}
+                            name={language === "en" ? `${s} · balance` : `${s} · 尾款`}
+                            fill={FC_BAL_STACK[i % FC_BAL_STACK.length]}
+                          />
+                        ))}
+                      </>
+                    )}
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
         </div>
       ) : null}
