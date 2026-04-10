@@ -326,8 +326,6 @@ export function CashFlowPanel({
 
   return (
     <div className="space-y-4">
-      <CashFlowDashboard language={language} entries={entries} costAnalysisEntries={costAnalysisEntries} />
-
       <section className="rounded-2xl border border-app-border/80 bg-app-surface/70 p-4 shadow-sm">
         <h4 className="text-base font-semibold text-foreground">{t.fcTitle}</h4>
         <p className="mt-1 text-xs text-app-muted">{t.fcHint}</p>
@@ -388,6 +386,8 @@ export function CashFlowPanel({
           </table>
         </div>
       </section>
+
+      <CashFlowDashboard language={language} entries={entries} costAnalysisEntries={costAnalysisEntries} />
 
       <p className="text-sm text-app-muted">{t.tableHint}</p>
 
