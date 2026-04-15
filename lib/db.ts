@@ -73,6 +73,7 @@ async function setupSchema() {
   await db`alter table forecasts add column if not exists remark text not null default '';`;
   await db`alter table forecasts add column if not exists destination text not null default '';`;
   await db`alter table forecasts add column if not exists po_number text not null default '';`;
+  await db`alter table forecasts add column if not exists incoterm text not null default 'EXW';`;
   await db`alter table forecasts drop column if exists office;`;
 
   await db`

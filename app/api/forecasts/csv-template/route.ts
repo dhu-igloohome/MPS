@@ -7,6 +7,7 @@ const HEADER = [
   "month",
   "region",
   "destination",
+  "incoterm",
   "product_name",
   "sku",
   "build_to_order",
@@ -14,7 +15,7 @@ const HEADER = [
   "remark",
 ];
 
-const EXAMPLE = ["2026-03", "APAC", "Singapore", "Example Product", "SKU001", "120", "30", "sample"];
+const EXAMPLE = ["2026-03", "APAC", "Singapore", "EXW", "Example Product", "SKU001", "120", "30", "sample"];
 
 export async function GET() {
   const session = await getSession();

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
+import { parseForecastIncoterm } from "@/lib/forecast-incoterm";
 import {
   createForecast,
   findActiveProductByNameAndSku,
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
   const remark = String(body.remark || "");
   const buildToOrder = Number(body.buildToOrder || 0);
   const buildToStock = Number(body.buildToStock || 0);
+  const incoterm = parseForecastIncoterm(body.incoterm);
 
   if (!month || !productName.trim() || !sku.trim() || !destination) {
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
@@ -47,6 +49,9 @@ export async function POST(request: Request) {
       { message: "Invalid destination country (use the official country name, up to 160 characters)" },
       { status: 400 },
     );
+  }
+  if (!incoterm) {
+    return NextResponse.json({ message: "Incoterm must be EXW, FOB, DAP, or DDP" }, { status: 400 });
   }
 
   const product = await findActiveProductByNameAndSku(productName.trim(), sku.trim());
@@ -69,6 +74,7 @@ export async function POST(request: Request) {
     month,
     region,
     destination,
+    incoterm,
     poNumber: poNumber || undefined,
     productName,
     sku,

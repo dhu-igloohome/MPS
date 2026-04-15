@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
+import { parseForecastIncoterm } from "@/lib/forecast-incoterm";
 import {
   createForecastDeletionLog,
   deleteForecastById,
@@ -45,6 +46,16 @@ export async function PATCH(request: Request, context: RouteContext) {
   const remark = String(body.remark || "");
   const buildToOrder = Number(body.buildToOrder ?? 0);
   const buildToStock = Number(body.buildToStock ?? 0);
+  let incoterm = parseForecastIncoterm(body.incoterm);
+  if (
+    incoterm === null &&
+    (!("incoterm" in body) ||
+      body.incoterm === undefined ||
+      body.incoterm === null ||
+      String(body.incoterm).trim() === "")
+  ) {
+    incoterm = existing.incoterm;
+  }
 
   if (!isRegion(region)) {
     return NextResponse.json({ message: "Invalid region" }, { status: 400 });
@@ -61,6 +72,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       { status: 400 },
     );
   }
+  if (!incoterm) {
+    return NextResponse.json({ message: "Incoterm must be EXW, FOB, DAP, or DDP" }, { status: 400 });
+  }
   if (buildToOrder < 0 || buildToStock < 0) {
     return NextResponse.json({ message: "Quantity cannot be negative" }, { status: 400 });
   }
@@ -75,6 +89,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     month,
     region,
     destination,
+    incoterm,
     productName: productName.trim(),
     sku: sku.trim(),
     remark: remark.trim(),

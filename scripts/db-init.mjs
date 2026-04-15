@@ -132,6 +132,7 @@ async function main() {
   await sql`alter table forecasts add column if not exists remark text not null default '';`;
   await sql`alter table forecasts add column if not exists destination text not null default '';`;
   await sql`alter table forecasts add column if not exists po_number text not null default '';`;
+  await sql`alter table forecasts add column if not exists incoterm text not null default 'EXW';`;
   await sql`alter table forecasts drop column if exists office;`;
 
   await sql`

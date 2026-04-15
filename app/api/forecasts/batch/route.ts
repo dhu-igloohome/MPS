@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 
 import { normalizeCsvHeader, parseCsvLine, splitCsvLines } from "@/lib/csv";
 import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
+import { parseForecastIncoterm } from "@/lib/forecast-incoterm";
 import { createForecast, findActiveProductByNameAndSku } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
+import type { ForecastIncoterm } from "@/lib/forecast-incoterm";
 import type { Region } from "@/lib/types";
 const MONTH_RE = /^\d{4}-\d{2}$/;
 const MAX_ROWS = 500;
@@ -12,6 +14,7 @@ type BatchKey =
   | "month"
   | "region"
   | "destination"
+  | "incoterm"
   | "product_name"
   | "sku"
   | "build_to_order"
@@ -27,6 +30,7 @@ function resolveHeaderKey(normalized: string): BatchKey | null {
     month: "month",
     region: "region",
     destination: "destination",
+    incoterm: "incoterm",
     product_name: "product_name",
     productname: "product_name",
     sku: "sku",
@@ -115,6 +119,16 @@ export async function POST(request: Request) {
     const buildToOrder = Number(cell(row, col, "build_to_order"));
     const buildToStock = Number(cell(row, col, "build_to_stock"));
     const remark = cell(row, col, "remark").trim();
+    const incotermRaw = cell(row, col, "incoterm").trim();
+    let incoterm: ForecastIncoterm = "EXW";
+    if (incotermRaw) {
+      const p = parseForecastIncoterm(incotermRaw);
+      if (!p) {
+        errors.push({ row: rowNum, message: "Invalid incoterm (use EXW, FOB, DAP, or DDP)" });
+        continue;
+      }
+      incoterm = p;
+    }
 
     if (!MONTH_RE.test(month)) {
       errors.push({ row: rowNum, message: "Invalid month (YYYY-MM)" });
@@ -157,6 +171,7 @@ export async function POST(request: Request) {
         month,
         region,
         destination,
+        incoterm,
         productName,
         sku,
         remark,

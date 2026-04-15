@@ -1,3 +1,7 @@
+import type { ForecastIncoterm } from "@/lib/forecast-incoterm";
+
+export type { ForecastIncoterm };
+
 export type Region = "APAC" | "EU" | "USA";
 
 export type UserRole = "super_admin" | "regional_admin";
@@ -39,6 +43,8 @@ export type ForecastEntry = {
   month: string;
   region: Region;
   destination: string;
+  /** EXW / FOB / DAP / DDP — trade term for the forecast line */
+  incoterm: ForecastIncoterm;
   poNumber: string;
   productName: string;
   sku: string;

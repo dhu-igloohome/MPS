@@ -8,6 +8,11 @@ import {
   forecastDestinationDisplay,
   withLegacyForecastDestination,
 } from "@/lib/forecast-destination-countries";
+import {
+  FORECAST_INCOTERMS,
+  forecastIncotermHint,
+  type ForecastIncoterm,
+} from "@/lib/forecast-incoterm";
 import { Language } from "@/lib/i18n";
 import { ForecastEntry, ProductItem, Region } from "@/lib/types";
 
@@ -24,6 +29,7 @@ type DraftForecastLine = {
   sku: string;
   productName: string;
   destination: string;
+  incoterm: ForecastIncoterm;
   buildToOrder: string;
   buildToStock: string;
   remark: string;
@@ -34,6 +40,7 @@ type ForecastEditDraft = {
   month: string;
   region: Region;
   destination: string;
+  incoterm: ForecastIncoterm;
   sku: string;
   productName: string;
   remark: string;
@@ -49,6 +56,7 @@ function newDraftForecastLine(products: ProductItem[]): DraftForecastLine {
     sku: first?.sku || "",
     productName: first?.productName || "",
     destination: "",
+    incoterm: "EXW",
     buildToOrder: "0",
     buildToStock: "0",
     remark: "",
@@ -141,10 +149,11 @@ export function ForecastForm({
     existingPo: language === "en" ? "Existing forecast number" : "已有 forecast number",
     batchImport: language === "en" ? "Batch import (CSV)" : "CSV 批量导入",
     downloadTemplate: language === "en" ? "Download CSV template" : "下载 CSV 模板",
+    incoterm: language === "en" ? "Incoterm" : "贸易术语 (Incoterm)",
     batchHint:
       language === "en"
-        ? "Header row required. Forecast number is still auto-generated server-side."
-        : "需包含表头。forecast number 仍由服务端自动生成。",
+        ? "Header row required. Forecast number is still auto-generated server-side. Optional column incoterm defaults to EXW when omitted (must be EXW, FOB, DAP, or DDP when provided)."
+        : "需包含表头。forecast number 仍由服务端自动生成。可选列 incoterm：省略时默认为 EXW；填写时须为 EXW、FOB、DAP、DDP。",
     createdAt: language === "en" ? "Created At" : "创建日期",
     allForecasts: language === "en" ? "All Forecast Records" : "全部 Forecast 记录",
     noRecords: language === "en" ? "No forecast records yet." : "暂无 forecast 记录。",
@@ -312,6 +321,7 @@ export function ForecastForm({
           month,
           region,
           destination: line.destination.trim(),
+          incoterm: line.incoterm,
           poNumber: issuedPo,
           productName: line.productName,
           sku: line.sku,
@@ -384,6 +394,7 @@ export function ForecastForm({
       month: item.month,
       region: item.region,
       destination: item.destination,
+      incoterm: item.incoterm,
       sku: item.sku,
       productName: item.productName,
       remark: inlineRemarkById[item.id] ?? item.remark,
@@ -419,6 +430,7 @@ export function ForecastForm({
         month: editDraft.month,
         region: editDraft.region,
         destination: editDraft.destination.trim(),
+        incoterm: editDraft.incoterm,
         productName: editDraft.productName,
         sku: editDraft.sku,
         remark: editDraft.remark,
@@ -481,6 +493,7 @@ export function ForecastForm({
         month: item.month,
         region: item.region,
         destination: item.destination.trim(),
+        incoterm: item.incoterm,
         productName: item.productName,
         sku: item.sku,
         remark: draft,
@@ -691,6 +704,32 @@ export function ForecastForm({
                   </select>
                   <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
                 </label>
+                <label className="block md:col-span-2">
+                  <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
+                  <select
+                    value={line.incoterm}
+                    onChange={(event) =>
+                      setLines((prev) =>
+                        prev.map((x) =>
+                          x.key === line.key
+                            ? { ...x, incoterm: event.target.value as ForecastIncoterm }
+                            : x,
+                        ),
+                      )
+                    }
+                    required
+                    className="w-full px-3 py-2"
+                  >
+                    {FORECAST_INCOTERMS.map((code) => (
+                      <option key={code} value={code}>
+                        {code}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-xs leading-relaxed text-app-muted">
+                    {forecastIncotermHint(line.incoterm, language)}
+                  </p>
+                </label>
                 <label className="block">
                   <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
                   <input
@@ -815,6 +854,28 @@ export function ForecastForm({
               </select>
               <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
             </label>
+            <label className="block md:col-span-2">
+              <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
+              <select
+                value={editDraft.incoterm}
+                onChange={(e) =>
+                  setEditDraft((d) =>
+                    d ? { ...d, incoterm: e.target.value as ForecastIncoterm } : d,
+                  )
+                }
+                required
+                className="w-full px-3 py-2 text-sm"
+              >
+                {FORECAST_INCOTERMS.map((code) => (
+                  <option key={code} value={code}>
+                    {code}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-xs leading-relaxed text-app-muted">
+                {forecastIncotermHint(editDraft.incoterm, language)}
+              </p>
+            </label>
             <label className="block">
               <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
               <select
@@ -923,7 +984,7 @@ export function ForecastForm({
           ) : null}
         </div>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[1180px] border-collapse text-sm">
+          <table className="w-full min-w-[1280px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-app-border text-left text-app-muted">
                 {canDelete ? (
@@ -942,6 +1003,7 @@ export function ForecastForm({
                 <th className="px-2 py-2">{language === "en" ? "Forecast #" : "Forecast #"}</th>
                 <th className="px-2 py-2">{t.region}</th>
                 <th className="px-2 py-2">{t.destination}</th>
+                <th className="px-2 py-2">{t.incoterm}</th>
                 <th className="px-2 py-2">{t.productName}</th>
                 <th className="px-2 py-2">{t.sku}</th>
                 <th className="px-2 py-2">{t.bto}</th>
@@ -955,7 +1017,7 @@ export function ForecastForm({
               {entries.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={canDelete ? 12 : 11}
+                    colSpan={canDelete ? 13 : 12}
                     className="px-2 py-6 text-center text-app-muted"
                   >
                     {t.noRecords}
@@ -988,6 +1050,7 @@ export function ForecastForm({
                     <td className="px-2 py-2">
                       {forecastDestinationDisplay(item.destination, language, destinationOptions)}
                     </td>
+                    <td className="whitespace-nowrap px-2 py-2 font-medium">{item.incoterm}</td>
                     <td className="px-2 py-2">{item.productName}</td>
                     <td className="px-2 py-2">{item.sku}</td>
                     <td className="px-2 py-2 tabular-nums">{item.buildToOrder}</td>

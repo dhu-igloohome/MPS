@@ -1,4 +1,5 @@
 import { ensureDatabase, getSql } from "@/lib/db";
+import { normalizeForecastIncotermStored } from "@/lib/forecast-incoterm";
 import { forecastPoPrefixForRegion, singaporeYmdCompact } from "@/lib/forecast-po";
 import type { ParsedOrderProgressDeliveryPlan } from "@/lib/order-progress-delivery-plans";
 import { hashPassword, verifyPassword } from "@/lib/security";
@@ -12,6 +13,7 @@ import {
   EcnStatus,
   ForecastCashFlowRow,
   ForecastEntry,
+  ForecastIncoterm,
   LogisticsLocation,
   LogisticsMovementType,
   LogisticsShipmentEntry,
@@ -447,6 +449,7 @@ export async function createForecast(input: {
   month: string;
   region: Region;
   destination: string;
+  incoterm: ForecastIncoterm;
   poNumber?: string;
   productName: string;
   sku: string;
@@ -465,6 +468,7 @@ export async function createForecast(input: {
         forecast_month: string;
         region: Region;
         destination: string;
+        incoterm: string;
         po_number: string;
         product_name: string;
         sku: string;
@@ -479,6 +483,7 @@ export async function createForecast(input: {
         forecast_month,
         region,
         destination,
+        incoterm,
         po_number,
         product_name,
         sku,
@@ -491,6 +496,7 @@ export async function createForecast(input: {
         ${input.month},
         ${input.region},
         ${input.destination.trim()},
+        ${input.incoterm},
         ${manualPo},
         ${input.productName.trim()},
         ${input.sku.trim()},
@@ -504,6 +510,7 @@ export async function createForecast(input: {
         forecast_month,
         region,
         destination,
+        incoterm,
         po_number,
         product_name,
         sku,
@@ -524,6 +531,7 @@ export async function createForecast(input: {
       forecast_month: string;
       region: Region;
       destination: string;
+      incoterm: string;
       po_number: string;
       product_name: string;
       sku: string;
@@ -545,6 +553,7 @@ export async function createForecast(input: {
       forecast_month,
       region,
       destination,
+      incoterm,
       po_number,
       product_name,
       sku,
@@ -557,6 +566,7 @@ export async function createForecast(input: {
       ${input.month},
       ${input.region},
       ${input.destination.trim()},
+      ${input.incoterm},
       ${prefix + ymd} || lpad(alloc.seq_num::text, 4, '0'),
       ${input.productName.trim()},
       ${input.sku.trim()},
@@ -570,6 +580,7 @@ export async function createForecast(input: {
       forecast_month,
       region,
       destination,
+      incoterm,
       po_number,
       product_name,
       sku,
@@ -702,6 +713,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       forecast_month: string;
       region: Region;
       destination: string;
+      incoterm: string;
       po_number: string;
       product_name: string;
       sku: string;
@@ -717,6 +729,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       forecast_month,
       region,
       destination,
+      incoterm,
       po_number,
       product_name,
       sku,
@@ -750,6 +763,7 @@ export async function findLatestForecastByPoAndSku(
       forecast_month: string;
       region: Region;
       destination: string;
+      incoterm: string;
       po_number: string;
       product_name: string;
       sku: string;
@@ -765,6 +779,7 @@ export async function findLatestForecastByPoAndSku(
       forecast_month,
       region,
       destination,
+      incoterm,
       po_number,
       product_name,
       sku,
@@ -804,6 +819,7 @@ export async function getForecastById(id: string): Promise<ForecastEntry | null>
       forecast_month: string;
       region: Region;
       destination: string;
+      incoterm: string;
       po_number: string;
       product_name: string;
       sku: string;
@@ -819,6 +835,7 @@ export async function getForecastById(id: string): Promise<ForecastEntry | null>
       forecast_month,
       region,
       destination,
+      incoterm,
       po_number,
       product_name,
       sku,
@@ -839,6 +856,7 @@ export async function updateForecast(input: {
   month: string;
   region: Region;
   destination: string;
+  incoterm: ForecastIncoterm;
   productName: string;
   sku: string;
   remark: string;
@@ -854,6 +872,7 @@ export async function updateForecast(input: {
       forecast_month: string;
       region: Region;
       destination: string;
+      incoterm: string;
       po_number: string;
       product_name: string;
       sku: string;
@@ -869,6 +888,7 @@ export async function updateForecast(input: {
       forecast_month = ${input.month},
       region = ${input.region},
       destination = ${input.destination.trim()},
+      incoterm = ${input.incoterm},
       product_name = ${input.productName.trim()},
       sku = ${input.sku.trim()},
       remark = ${input.remark.trim()},
@@ -880,6 +900,7 @@ export async function updateForecast(input: {
       forecast_month,
       region,
       destination,
+      incoterm,
       po_number,
       product_name,
       sku,
@@ -1077,6 +1098,7 @@ function mapForecast(row: {
   forecast_month: string;
   region: Region;
   destination: string;
+  incoterm: string;
   po_number: string;
   product_name: string;
   sku: string;
@@ -1091,6 +1113,7 @@ function mapForecast(row: {
     month: row.forecast_month,
     region: row.region,
     destination: row.destination || "",
+    incoterm: normalizeForecastIncotermStored(row.incoterm),
     poNumber: row.po_number || "",
     productName: row.product_name,
     sku: row.sku,
