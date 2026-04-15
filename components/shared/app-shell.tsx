@@ -39,15 +39,6 @@ export async function AppShell({ session, title, description, children }: AppShe
     { href: "/dashboard", label: navText.cockpit, icon: "cockpit" as const },
     { href: "/forecast", label: navText.forecastInput, icon: "forecast" as const },
     {
-      href: "/order-progress",
-      label: navText.orderProgress,
-      icon: "order" as const,
-      children: [
-        { href: "/order-progress", label: navText.orderProgressSubLines },
-        { href: "/mass-production-kanban", label: navText.massProductionKanban },
-      ],
-    },
-    {
       href: "/supply-chain/suppliers",
       label: navText.supplyChain,
       icon: "supply" as const,
@@ -55,6 +46,15 @@ export async function AppShell({ session, title, description, children }: AppShe
         { href: "/supply-chain/suppliers", label: language === "en" ? "Suppliers" : "供应商管理" },
         { href: "/supply-chain/contracts", label: language === "en" ? "Contracts" : "合同管理" },
         { href: "/supply-chain/cost-control", label: language === "en" ? "Cost Control" : "成本控制" },
+      ],
+    },
+    {
+      href: "/order-progress",
+      label: navText.orderProgress,
+      icon: "order" as const,
+      children: [
+        { href: "/order-progress", label: navText.orderProgressSubLines },
+        { href: "/mass-production-kanban", label: navText.massProductionKanban },
       ],
     },
     {
