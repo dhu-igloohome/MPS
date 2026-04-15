@@ -544,6 +544,13 @@ async function setupSchema() {
     create index if not exists idx_unit_cost_quotes_sku_date
     on unit_cost_quotes (sku, quote_date desc, id desc);
   `;
+  await db`alter table unit_cost_quotes add column if not exists manufacturer_country text not null default '';`;
+  await db`alter table unit_cost_quotes add column if not exists destination_country text not null default '';`;
+  await db`alter table unit_cost_quotes add column if not exists destination_tariff_pct numeric(7, 3);`;
+  await db`alter table unit_cost_quotes add column if not exists cm_unit_price_tax_rate_pct numeric(7, 3);`;
+  await db`alter table unit_cost_quotes add column if not exists sea_freight_unit_price numeric(14, 4);`;
+  await db`alter table unit_cost_quotes add column if not exists air_freight_unit_price numeric(14, 4);`;
+  await db`alter table unit_cost_quotes add column if not exists incoterm text not null default 'EXW';`;
 
   await db`
     create table if not exists forecast_cash_flow_settings (

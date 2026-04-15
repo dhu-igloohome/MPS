@@ -571,6 +571,9 @@ export type CostAnalysisEntry = {
   updatedAt: string;
 };
 
+/** 单位成本报价 Incoterm（与报价行一致） */
+export type UnitCostQuoteIncoterm = "EXW" | "FOB" | "DDP";
+
 /** 成本控制 — 单位成本报价（历史记录多条按时间保留） */
 export type UnitCostQuoteEntry = {
   id: string;
@@ -580,6 +583,19 @@ export type UnitCostQuoteEntry = {
   taxIncluded: boolean;
   supplierName: string;
   quoteDate: string;
+  /** 生产商国家 */
+  manufacturerCountry: string;
+  /** 目的国 */
+  destinationCountry: string;
+  /** 目的国关税比例 %，未填为 null */
+  destinationTariffPct: number | null;
+  /** CM 单价含税税率 %，未填为 null */
+  cmUnitPriceTaxRatePct: number | null;
+  /** 海运运费单价 (USD)，未填为 null */
+  seaFreightUnitPrice: number | null;
+  /** 空运运费单价 (USD)，未填为 null */
+  airFreightUnitPrice: number | null;
+  incoterm: UnitCostQuoteIncoterm;
   createdBy: string;
   createdAt: string;
 };

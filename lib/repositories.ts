@@ -20,6 +20,7 @@ import {
   CostFreightMode,
   CashFlowEntry,
   UnitCostQuoteEntry,
+  UnitCostQuoteIncoterm,
   ContractEntry,
   ContractStatus,
   OrderProductionStep,
@@ -4913,9 +4914,28 @@ type UnitCostQuoteRow = {
   tax_included: boolean;
   supplier_name: string;
   quote_date: string;
+  manufacturer_country: string | null;
+  destination_country: string | null;
+  destination_tariff_pct: string | number | null;
+  cm_unit_price_tax_rate_pct: string | number | null;
+  sea_freight_unit_price: string | number | null;
+  air_freight_unit_price: string | number | null;
+  incoterm: string | null;
   created_by: string;
   created_at: string;
 };
+
+function quoteNullableNum(v: string | number | null | undefined): number | null {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizeUnitCostIncoterm(v: string | null | undefined): UnitCostQuoteIncoterm {
+  const s = (v || "").trim().toUpperCase();
+  if (s === "FOB" || s === "DDP" || s === "EXW") return s;
+  return "EXW";
+}
 
 function mapUnitCostQuote(row: UnitCostQuoteRow): UnitCostQuoteEntry {
   return {
@@ -4925,6 +4945,13 @@ function mapUnitCostQuote(row: UnitCostQuoteRow): UnitCostQuoteEntry {
     taxIncluded: Boolean(row.tax_included),
     supplierName: row.supplier_name || "",
     quoteDate: String(row.quote_date).slice(0, 10),
+    manufacturerCountry: row.manufacturer_country ?? "",
+    destinationCountry: row.destination_country ?? "",
+    destinationTariffPct: quoteNullableNum(row.destination_tariff_pct),
+    cmUnitPriceTaxRatePct: quoteNullableNum(row.cm_unit_price_tax_rate_pct),
+    seaFreightUnitPrice: quoteNullableNum(row.sea_freight_unit_price),
+    airFreightUnitPrice: quoteNullableNum(row.air_freight_unit_price),
+    incoterm: normalizeUnitCostIncoterm(row.incoterm),
     createdBy: row.created_by,
     createdAt: row.created_at,
   };
@@ -4941,6 +4968,13 @@ export async function listUnitCostQuotes(): Promise<UnitCostQuoteEntry[]> {
       tax_included,
       supplier_name,
       quote_date::text,
+      manufacturer_country,
+      destination_country,
+      destination_tariff_pct::text,
+      cm_unit_price_tax_rate_pct::text,
+      sea_freight_unit_price::text,
+      air_freight_unit_price::text,
+      incoterm,
       created_by,
       created_at::text
     from unit_cost_quotes
@@ -4956,6 +4990,13 @@ export async function createUnitCostQuote(input: {
   taxIncluded: boolean;
   supplierName: string;
   quoteDate: string;
+  manufacturerCountry: string;
+  destinationCountry: string;
+  destinationTariffPct: number | null;
+  cmUnitPriceTaxRatePct: number | null;
+  seaFreightUnitPrice: number | null;
+  airFreightUnitPrice: number | null;
+  incoterm: UnitCostQuoteIncoterm;
   createdBy: string;
 }): Promise<UnitCostQuoteEntry> {
   await ensureDatabase();
@@ -4967,6 +5008,13 @@ export async function createUnitCostQuote(input: {
       tax_included,
       supplier_name,
       quote_date,
+      manufacturer_country,
+      destination_country,
+      destination_tariff_pct,
+      cm_unit_price_tax_rate_pct,
+      sea_freight_unit_price,
+      air_freight_unit_price,
+      incoterm,
       created_by
     )
     values (
@@ -4975,6 +5023,13 @@ export async function createUnitCostQuote(input: {
       ${input.taxIncluded},
       ${input.supplierName.trim()},
       ${input.quoteDate},
+      ${input.manufacturerCountry.trim()},
+      ${input.destinationCountry.trim()},
+      ${input.destinationTariffPct},
+      ${input.cmUnitPriceTaxRatePct},
+      ${input.seaFreightUnitPrice},
+      ${input.airFreightUnitPrice},
+      ${input.incoterm},
       ${input.createdBy}
     )
     returning
@@ -4984,6 +5039,13 @@ export async function createUnitCostQuote(input: {
       tax_included,
       supplier_name,
       quote_date::text,
+      manufacturer_country,
+      destination_country,
+      destination_tariff_pct::text,
+      cm_unit_price_tax_rate_pct::text,
+      sea_freight_unit_price::text,
+      air_freight_unit_price::text,
+      incoterm,
       created_by,
       created_at::text;
   `;
