@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { normalizeCsvHeader, parseCsvLine, splitCsvLines } from "@/lib/csv";
+import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
 import { createForecast, findActiveProductByNameAndSku } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import type { Region } from "@/lib/types";
-
-const DESTINATION_RE = /^[A-Za-z0-9\u4E00-\u9FFF ]+$/;
 const MONTH_RE = /^\d{4}-\d{2}$/;
 const MAX_ROWS = 500;
 
@@ -129,8 +128,8 @@ export async function POST(request: Request) {
       errors.push({ row: rowNum, message: "Forbidden region for your account" });
       continue;
     }
-    if (!DESTINATION_RE.test(destination)) {
-      errors.push({ row: rowNum, message: "Invalid destination" });
+    if (!isForecastDestinationInputValid(destination)) {
+      errors.push({ row: rowNum, message: "Invalid destination country" });
       continue;
     }
     if (!productName || !sku) {

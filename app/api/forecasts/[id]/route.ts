@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
 import {
   createForecastDeletionLog,
   deleteForecastById,
@@ -15,8 +16,6 @@ type RouteContext = { params: Promise<{ id: string }> };
 function isRegion(value: string): value is Region {
   return value === "APAC" || value === "EU" || value === "USA";
 }
-
-const DESTINATION_RE = /^[A-Za-z0-9\u4E00-\u9FFF ]+$/;
 
 const MONTH_RE = /^\d{4}-\d{2}$/;
 
@@ -56,9 +55,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!month || !MONTH_RE.test(month) || !productName.trim() || !sku.trim() || !destination) {
     return NextResponse.json({ message: "Missing or invalid fields" }, { status: 400 });
   }
-  if (!DESTINATION_RE.test(destination)) {
+  if (!isForecastDestinationInputValid(destination)) {
     return NextResponse.json(
-      { message: "Invalid destination (letters, numbers, spaces, Chinese only)" },
+      { message: "Invalid destination country (use the official country name, up to 160 characters)" },
       { status: 400 },
     );
   }

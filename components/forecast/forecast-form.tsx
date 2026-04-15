@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  buildForecastDestinationOptions,
+  forecastDestinationDisplay,
+  withLegacyForecastDestination,
+} from "@/lib/forecast-destination-countries";
 import { Language } from "@/lib/i18n";
 import { ForecastEntry, ProductItem, Region } from "@/lib/types";
 
@@ -111,11 +116,13 @@ export function ForecastForm({
         : "未找到启用中的产品，请联系管理员在 NPI 管理 > 产品数据库 中维护。",
     forecastMonth: language === "en" ? "Forecast Month" : "Forecast 月份",
     region: language === "en" ? "Region" : "区域",
-    destination: language === "en" ? "Destination" : "Destination",
+    destination: language === "en" ? "Destination country" : "目的国",
     destinationHint:
       language === "en"
-        ? "Required. Letters/numbers/spaces/Chinese only."
-        : "必填，仅支持大小写字母、数字、空格、汉字。",
+        ? "Required. Choose the country or territory from the list (English name is stored)."
+        : "必填，请从列表中选择国家/地区（系统保存英文标准名称）。",
+    destinationPlaceholder:
+      language === "en" ? "Select destination country…" : "请选择目的国…",
     productName: language === "en" ? "Product Name" : "产品名称",
     sku: "SKU",
     remark: language === "en" ? "Remark" : "备注",
@@ -203,6 +210,12 @@ export function ForecastForm({
   /** Inline comment drafts in the records table (keyed by forecast id); cleared after successful save. */
   const [inlineRemarkById, setInlineRemarkById] = useState<Record<string, string>>({});
   const [savingRemarkId, setSavingRemarkId] = useState<string | null>(null);
+  const destinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
+  const editDestinationOptions = useMemo(() => {
+    if (!editDraft) return destinationOptions;
+    return withLegacyForecastDestination(editDraft.destination, destinationOptions);
+  }, [editDraft, destinationOptions]);
+
   const skuOptions = useMemo(
     () => [...new Set(products.map((item) => item.sku).filter(Boolean))].sort(),
     [products],
@@ -655,7 +668,7 @@ export function ForecastForm({
                 </label>
                 <label className="block md:col-span-2">
                   <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
-                  <input
+                  <select
                     value={line.destination}
                     onChange={(event) =>
                       setLines((prev) =>
@@ -665,11 +678,17 @@ export function ForecastForm({
                       )
                     }
                     required
-                    maxLength={80}
-                    pattern="[A-Za-z0-9\u4E00-\u9FFF ]+"
-                    title={t.destinationHint}
                     className="w-full px-3 py-2"
-                  />
+                  >
+                    <option value="" disabled>
+                      {t.destinationPlaceholder}
+                    </option>
+                    {destinationOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {language === "en" ? opt.labelEn : opt.labelZh}
+                      </option>
+                    ))}
+                  </select>
                   <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
                 </label>
                 <label className="block">
@@ -782,15 +801,18 @@ export function ForecastForm({
             </label>
             <label className="block md:col-span-2">
               <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
-              <input
+              <select
                 value={editDraft.destination}
                 onChange={(e) => setEditDraft((d) => (d ? { ...d, destination: e.target.value } : d))}
                 required
-                maxLength={80}
-                pattern="[A-Za-z0-9\u4E00-\u9FFF ]+"
-                title={t.destinationHint}
                 className="w-full px-3 py-2 text-sm"
-              />
+              >
+                {editDestinationOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {language === "en" ? opt.labelEn : opt.labelZh}
+                  </option>
+                ))}
+              </select>
               <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
             </label>
             <label className="block">
@@ -963,7 +985,9 @@ export function ForecastForm({
                     <td className="px-2 py-2">{formatForecastMonthDisplay(item.month, language)}</td>
                     <td className="px-2 py-2">{item.poNumber || "—"}</td>
                     <td className="px-2 py-2">{item.region}</td>
-                    <td className="px-2 py-2">{item.destination}</td>
+                    <td className="px-2 py-2">
+                      {forecastDestinationDisplay(item.destination, language, destinationOptions)}
+                    </td>
                     <td className="px-2 py-2">{item.productName}</td>
                     <td className="px-2 py-2">{item.sku}</td>
                     <td className="px-2 py-2 tabular-nums">{item.buildToOrder}</td>

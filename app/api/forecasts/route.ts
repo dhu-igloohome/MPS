@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
 import {
   createForecast,
   findActiveProductByNameAndSku,
@@ -11,8 +12,6 @@ import { Region } from "@/lib/types";
 function isRegion(value: string): value is Region {
   return value === "APAC" || value === "EU" || value === "USA";
 }
-
-const DESTINATION_RE = /^[A-Za-z0-9\u4E00-\u9FFF ]+$/;
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -43,9 +42,9 @@ export async function POST(request: Request) {
   if (!month || !productName.trim() || !sku.trim() || !destination) {
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
   }
-  if (!DESTINATION_RE.test(destination)) {
+  if (!isForecastDestinationInputValid(destination)) {
     return NextResponse.json(
-      { message: "Invalid destination (letters, numbers, spaces, Chinese only)" },
+      { message: "Invalid destination country (use the official country name, up to 160 characters)" },
       { status: 400 },
     );
   }
