@@ -3,6 +3,11 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  buildForecastDestinationOptions,
+  forecastDestinationDisplay,
+  withLegacyForecastDestination,
+} from "@/lib/forecast-destination-countries";
 import type { Language } from "@/lib/i18n";
 import type { ProductItem, SupplierEntry, UnitCostQuoteEntry, UnitCostQuoteIncoterm } from "@/lib/types";
 
@@ -68,6 +73,10 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     manufacturerCountry: en ? "Manufacturer country" : "生产商国家",
     selectMfrCountry: en ? "Select country…" : "选择国家…",
     destinationCountry: en ? "Destination country" : "目的国",
+    selectDestinationCountry: en ? "Select destination country (optional)…" : "选择目的国（选填）…",
+    destinationCountryHint: en
+      ? "English name is stored; TW/HK/MO use Taiwan, China / Hong Kong, China / Macau, China."
+      : "保存英文标准名称；台湾/香港/澳门在中文界面显示为中国台湾、中国香港、中国澳门。",
     destinationTariff: en ? "Destination tariff (%)" : "目的国关税 (%)",
     cmUnitTaxRate: en ? "CM unit price tax rate (%)" : "CM 单价含税税率 (%)",
     seaMode: en ? "Shipping: ocean" : "运输方式 · 海运",
@@ -87,6 +96,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     saveChanges: en ? "Save changes" : "保存修改",
     savingEdit: en ? "Saving…" : "保存中…",
   };
+
+  const destinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
 
   const skuOptions = useMemo(() => {
     const set = new Set<string>();
@@ -135,6 +146,11 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [eIncoterm, setEIncoterm] = useState<UnitCostQuoteIncoterm>("EXW");
   const [editLoading, setEditLoading] = useState(false);
   const [editMessage, setEditMessage] = useState("");
+
+  const editDestinationOptions = useMemo(
+    () => withLegacyForecastDestination(eDestinationCountry, destinationOptions),
+    [eDestinationCountry, destinationOptions],
+  );
 
   const supplierOptionsForEdit = useMemo(() => {
     const set = new Set(activeSupplierNames);
@@ -362,12 +378,19 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
           </label>
           <label className="block">
             <span className="mb-1 block text-sm text-foreground/85">{t.destinationCountry}</span>
-            <input
+            <select
               value={destinationCountry}
               onChange={(e) => setDestinationCountry(e.target.value)}
               className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-              placeholder={en ? "e.g. USA" : "例如 美国"}
-            />
+            >
+              <option value="">{t.selectDestinationCountry}</option>
+              {destinationOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {en ? opt.labelEn : opt.labelZh}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-app-muted">{t.destinationCountryHint}</span>
           </label>
           <label className="block">
             <span className="mb-1 block text-sm text-foreground/85">{t.destinationTariff}</span>
@@ -547,13 +570,21 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   ))}
                 </select>
               </label>
-              <label className="block">
+              <label className="block sm:col-span-2">
                 <span className="mb-1 block text-sm text-foreground/85">{t.destinationCountry}</span>
-                <input
+                <select
                   value={eDestinationCountry}
                   onChange={(ev) => setEDestinationCountry(ev.target.value)}
                   className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                />
+                >
+                  <option value="">{t.selectDestinationCountry}</option>
+                  {editDestinationOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {en ? opt.labelEn : opt.labelZh}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-xs text-app-muted">{t.destinationCountryHint}</span>
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm text-foreground/85">{t.destinationTariff}</span>
@@ -693,7 +724,11 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                     <td className="whitespace-nowrap px-2 py-2">{row.taxIncluded ? t.yes : t.no}</td>
                     <td className="max-w-[10rem] truncate px-2 py-2">{row.supplierName}</td>
                     <td className="max-w-[8rem] truncate px-2 py-2">{row.manufacturerCountry || t.na}</td>
-                    <td className="max-w-[8rem] truncate px-2 py-2">{row.destinationCountry || t.na}</td>
+                    <td className="max-w-[10rem] truncate px-2 py-2">
+                      {row.destinationCountry.trim()
+                        ? forecastDestinationDisplay(row.destinationCountry, language, destinationOptions)
+                        : t.na}
+                    </td>
                     <td className="whitespace-nowrap px-2 py-2 tabular-nums">
                       {fmtPct(row.destinationTariffPct, t.na)}
                     </td>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
 import { updateUnitCostQuote } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import type { UnitCostQuoteIncoterm } from "@/lib/types";
@@ -74,6 +75,12 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
   }
   if (body.airFreightUnitPrice !== undefined && body.airFreightUnitPrice !== "" && airFreightUnitPrice === null) {
     return NextResponse.json({ message: "Air freight unit price must be a non-negative number" }, { status: 400 });
+  }
+  if (destinationCountry && !isForecastDestinationInputValid(destinationCountry)) {
+    return NextResponse.json(
+      { message: "Invalid destination country (use the official country name, up to 160 characters)" },
+      { status: 400 },
+    );
   }
 
   try {
