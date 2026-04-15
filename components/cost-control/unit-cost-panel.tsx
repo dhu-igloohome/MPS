@@ -59,6 +59,11 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     hint: en
       ? "Supplier names match Supply Chain → Suppliers (active). Add a row for each new quote; history lists all records."
       : "供应商名称与「供应链 → 供应商」中启用供应商一致。每次新报价保存一条；下方为全部历史记录，可按 SKU 筛选。",
+    edit: en ? "Edit" : "编辑",
+    editTitle: en ? "Edit quotation" : "编辑报价",
+    cancel: en ? "Cancel" : "取消",
+    saveChanges: en ? "Save changes" : "保存修改",
+    savingEdit: en ? "Saving…" : "保存中…",
   };
 
   const skuOptions = useMemo(() => {
@@ -92,6 +97,100 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [filterSku, setFilterSku] = useState("");
+
+  const [editRow, setEditRow] = useState<UnitCostQuoteEntry | null>(null);
+  const [eSku, setEsku] = useState("");
+  const [eUnitPrice, setEUnitPrice] = useState("");
+  const [eTaxIncluded, setETaxIncluded] = useState(false);
+  const [eSupplierName, setESupplierName] = useState("");
+  const [eQuoteDate, setEQuoteDate] = useState("");
+  const [eManufacturerCountry, setEManufacturerCountry] = useState("");
+  const [eDestinationCountry, setEDestinationCountry] = useState("");
+  const [eDestinationTariffPct, setEDestinationTariffPct] = useState("");
+  const [eCmUnitPriceTaxRatePct, setECmUnitPriceTaxRatePct] = useState("");
+  const [eSeaFreightUnitPrice, setESeaFreightUnitPrice] = useState("");
+  const [eAirFreightUnitPrice, setEAirFreightUnitPrice] = useState("");
+  const [eIncoterm, setEIncoterm] = useState<UnitCostQuoteIncoterm>("EXW");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editMessage, setEditMessage] = useState("");
+
+  const supplierOptionsForEdit = useMemo(() => {
+    const set = new Set(activeSupplierNames);
+    if (editRow?.supplierName.trim()) set.add(editRow.supplierName.trim());
+    if (eSupplierName.trim()) set.add(eSupplierName.trim());
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [activeSupplierNames, editRow, eSupplierName]);
+
+  function openEdit(row: UnitCostQuoteEntry) {
+    setEditRow(row);
+    setEsku(row.sku);
+    setEUnitPrice(String(row.unitPrice));
+    setETaxIncluded(row.taxIncluded);
+    setESupplierName(row.supplierName);
+    setEQuoteDate(row.quoteDate);
+    setEManufacturerCountry(row.manufacturerCountry);
+    setEDestinationCountry(row.destinationCountry);
+    setEDestinationTariffPct(row.destinationTariffPct != null ? String(row.destinationTariffPct) : "");
+    setECmUnitPriceTaxRatePct(row.cmUnitPriceTaxRatePct != null ? String(row.cmUnitPriceTaxRatePct) : "");
+    setESeaFreightUnitPrice(row.seaFreightUnitPrice != null ? String(row.seaFreightUnitPrice) : "");
+    setEAirFreightUnitPrice(row.airFreightUnitPrice != null ? String(row.airFreightUnitPrice) : "");
+    setEIncoterm(row.incoterm);
+    setEditMessage("");
+  }
+
+  function closeEdit() {
+    setEditRow(null);
+    setEditMessage("");
+  }
+
+  async function onSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editRow) return;
+    setEditLoading(true);
+    setEditMessage("");
+    const up = Number(eUnitPrice);
+    if (!eSku.trim()) {
+      setEditMessage(en ? "SKU is required." : "请填写 SKU。");
+      setEditLoading(false);
+      return;
+    }
+    if (!Number.isFinite(up) || up < 0) {
+      setEditMessage(en ? "Invalid unit price." : "单价无效。");
+      setEditLoading(false);
+      return;
+    }
+    if (!eSupplierName.trim()) {
+      setEditMessage(en ? "Supplier is required." : "请选择供应商。");
+      setEditLoading(false);
+      return;
+    }
+    const res = await fetch(`/api/cost-control/unit-cost/${editRow.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sku: eSku.trim(),
+        unitPrice: up,
+        taxIncluded: eTaxIncluded,
+        supplierName: eSupplierName.trim(),
+        quoteDate: eQuoteDate.trim(),
+        manufacturerCountry: eManufacturerCountry.trim(),
+        destinationCountry: eDestinationCountry.trim(),
+        destinationTariffPct: eDestinationTariffPct.trim() === "" ? null : Number(eDestinationTariffPct),
+        cmUnitPriceTaxRatePct: eCmUnitPriceTaxRatePct.trim() === "" ? null : Number(eCmUnitPriceTaxRatePct),
+        seaFreightUnitPrice: eSeaFreightUnitPrice.trim() === "" ? null : Number(eSeaFreightUnitPrice),
+        airFreightUnitPrice: eAirFreightUnitPrice.trim() === "" ? null : Number(eAirFreightUnitPrice),
+        incoterm: eIncoterm,
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { message?: string };
+    setEditLoading(false);
+    if (!res.ok) {
+      setEditMessage(data.message || (en ? "Save failed." : "保存失败。"));
+      return;
+    }
+    closeEdit();
+    router.refresh();
+  }
 
   const filteredHistory = useMemo(() => {
     if (!filterSku.trim()) return initialEntries;
@@ -319,6 +418,190 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
         {message ? <p className="mt-2 text-sm text-app-muted">{message}</p> : null}
       </section>
 
+      {editRow ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal
+          aria-labelledby="unit-cost-edit-title"
+          onClick={(ev) => {
+            if (ev.target === ev.currentTarget) closeEdit();
+          }}
+        >
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-app-border bg-app-surface p-5 shadow-lg">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <h3 id="unit-cost-edit-title" className="text-base font-semibold text-foreground">
+                {t.editTitle}
+              </h3>
+              <button
+                type="button"
+                onClick={closeEdit}
+                className="rounded-lg border border-app-border px-2.5 py-1 text-sm text-foreground/80 hover:bg-app-accent-soft"
+              >
+                {t.cancel}
+              </button>
+            </div>
+            <form onSubmit={onSaveEdit} className="grid gap-3 sm:grid-cols-2">
+              <label className="block sm:col-span-1">
+                <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
+                <input
+                  list="unit-cost-sku-options-edit"
+                  value={eSku}
+                  onChange={(ev) => setEsku(ev.target.value)}
+                  required
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                />
+                <datalist id="unit-cost-sku-options-edit">
+                  {skuOptions.map((s) => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-foreground/85">{t.unitPrice}</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.0001"
+                  value={eUnitPrice}
+                  onChange={(ev) => setEUnitPrice(ev.target.value)}
+                  required
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="flex items-center gap-2 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={eTaxIncluded}
+                  onChange={(ev) => setETaxIncluded(ev.target.checked)}
+                  className="h-4 w-4 rounded border-app-border"
+                />
+                <span className="text-sm text-foreground/85">{t.taxIncluded}</span>
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm text-foreground/85">{t.supplier}</span>
+                <select
+                  value={eSupplierName}
+                  onChange={(ev) => setESupplierName(ev.target.value)}
+                  required
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                >
+                  <option value="">{en ? "Select supplier…" : "选择供应商…"}</option>
+                  {supplierOptionsForEdit.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-foreground/85">{t.quoteDate}</span>
+                <input
+                  type="date"
+                  value={eQuoteDate}
+                  onChange={(ev) => setEQuoteDate(ev.target.value)}
+                  required
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-foreground/85">{t.manufacturerCountry}</span>
+                <input
+                  value={eManufacturerCountry}
+                  onChange={(ev) => setEManufacturerCountry(ev.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-foreground/85">{t.destinationCountry}</span>
+                <input
+                  value={eDestinationCountry}
+                  onChange={(ev) => setEDestinationCountry(ev.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-foreground/85">{t.destinationTariff}</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  value={eDestinationTariffPct}
+                  onChange={(ev) => setEDestinationTariffPct(ev.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-foreground/85">{t.cmUnitTaxRate}</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  value={eCmUnitPriceTaxRatePct}
+                  onChange={(ev) => setECmUnitPriceTaxRatePct(ev.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm text-foreground/85">{t.seaMode}</span>
+                <span className="mb-1 block text-xs text-app-muted">{t.seaFreightUnit}</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.0001"
+                  value={eSeaFreightUnitPrice}
+                  onChange={(ev) => setESeaFreightUnitPrice(ev.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm text-foreground/85">{t.airMode}</span>
+                <span className="mb-1 block text-xs text-app-muted">{t.airFreightUnit}</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.0001"
+                  value={eAirFreightUnitPrice}
+                  onChange={(ev) => setEAirFreightUnitPrice(ev.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
+                <select
+                  value={eIncoterm}
+                  onChange={(ev) => setEIncoterm(ev.target.value as UnitCostQuoteIncoterm)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                >
+                  <option value="EXW">{t.incotermExw}</option>
+                  <option value="FOB">{t.incotermFob}</option>
+                  <option value="DDP">{t.incotermDdp}</option>
+                </select>
+              </label>
+              {editMessage ? <p className="text-sm text-red-600 sm:col-span-2">{editMessage}</p> : null}
+              <div className="flex flex-wrap gap-2 sm:col-span-2">
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+                >
+                  {editLoading ? t.savingEdit : t.saveChanges}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeEdit}
+                  className="rounded-lg border border-app-border px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
+                >
+                  {t.cancel}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
       <section>
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-base font-semibold text-foreground">{t.history}</h3>
@@ -356,12 +639,13 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                 <th className="whitespace-nowrap px-2 py-2">{t.incoterm}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.by}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.at}</th>
+                <th className="whitespace-nowrap px-2 py-2">{t.edit}</th>
               </tr>
             </thead>
             <tbody>
               {filteredHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="px-2 py-6 text-center text-app-muted">
+                  <td colSpan={15} className="px-2 py-6 text-center text-app-muted">
                     {t.empty}
                   </td>
                 </tr>
@@ -391,6 +675,15 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                     <td className="whitespace-nowrap px-2 py-2">{row.createdBy}</td>
                     <td className="whitespace-nowrap px-2 py-2 tabular-nums text-app-muted">
                       {row.createdAt.slice(0, 19).replace("T", " ")}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-2">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(row)}
+                        className="rounded-md border border-app-border px-2 py-1 text-xs font-medium text-app-accent hover:bg-app-accent-soft"
+                      >
+                        {t.edit}
+                      </button>
                     </td>
                   </tr>
                 ))

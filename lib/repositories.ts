@@ -5054,6 +5054,61 @@ export async function createUnitCostQuote(input: {
   return mapUnitCostQuote(row);
 }
 
+export async function updateUnitCostQuote(input: {
+  id: string;
+  sku: string;
+  unitPrice: number;
+  taxIncluded: boolean;
+  supplierName: string;
+  quoteDate: string;
+  manufacturerCountry: string;
+  destinationCountry: string;
+  destinationTariffPct: number | null;
+  cmUnitPriceTaxRatePct: number | null;
+  seaFreightUnitPrice: number | null;
+  airFreightUnitPrice: number | null;
+  incoterm: UnitCostQuoteIncoterm;
+}): Promise<UnitCostQuoteEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const idNum = Number(input.id);
+  if (!Number.isFinite(idNum) || idNum <= 0) return null;
+  const rows = await db<UnitCostQuoteRow[]>`
+    update unit_cost_quotes set
+      sku = ${input.sku.trim()},
+      unit_price = ${input.unitPrice},
+      tax_included = ${input.taxIncluded},
+      supplier_name = ${input.supplierName.trim()},
+      quote_date = ${input.quoteDate},
+      manufacturer_country = ${input.manufacturerCountry.trim()},
+      destination_country = ${input.destinationCountry.trim()},
+      destination_tariff_pct = ${input.destinationTariffPct},
+      cm_unit_price_tax_rate_pct = ${input.cmUnitPriceTaxRatePct},
+      sea_freight_unit_price = ${input.seaFreightUnitPrice},
+      air_freight_unit_price = ${input.airFreightUnitPrice},
+      incoterm = ${input.incoterm}
+    where id = ${idNum}
+    returning
+      id,
+      sku,
+      unit_price::text,
+      tax_included,
+      supplier_name,
+      quote_date::text,
+      manufacturer_country,
+      destination_country,
+      destination_tariff_pct::text,
+      cm_unit_price_tax_rate_pct::text,
+      sea_freight_unit_price::text,
+      air_freight_unit_price::text,
+      incoterm,
+      created_by,
+      created_at::text;
+  `;
+  const row = rows[0];
+  return row ? mapUnitCostQuote(row) : null;
+}
+
 function buildSkuSupplierToUnitPrice(quotes: UnitCostQuoteEntry[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const q of quotes) {
