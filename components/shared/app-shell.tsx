@@ -21,7 +21,7 @@ export async function AppShell({ session, title, description, children }: AppShe
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
   const navText = {
-    cockpit: language === "en" ? "Cockpit" : "驾驶舱",
+    cockpit: language === "en" ? "Dashboard" : "仪表盘",
     forecastInput: language === "en" ? "Forecast Input" : "Forecast 填报",
     orderProgress: language === "en" ? "Order Progress" : "订单进度",
     orderProgressSubLines: language === "en" ? "Order lines" : "订单行",

@@ -52,7 +52,7 @@ export default async function DashboardPage() {
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
   const t = {
-    title: language === "en" ? "Cockpit" : "驾驶舱",
+    title: language === "en" ? "Dashboard" : "仪表盘",
     description:
       language === "en"
         ? "Forecast, order & logistics analytics — same interactive style as Cost control. Cash flow analysis above, cash flow overview below."
