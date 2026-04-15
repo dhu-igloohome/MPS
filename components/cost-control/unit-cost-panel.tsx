@@ -23,6 +23,27 @@ function fmtUsd(v: number | null, na: string): string {
   return v.toFixed(4);
 }
 
+/** 生产商国家下拉（与报价存储英文一致）；编辑时若历史值不在列表则追加一项 */
+const MANUFACTURER_COUNTRY_OPTIONS = [
+  "China",
+  "Malaysia",
+  "Korea",
+  "Vietnam",
+  "Taiwan China",
+  "Singapore",
+  "Indonesia",
+  "Thailand",
+] as const;
+
+const MANUFACTURER_COUNTRY_SET = new Set<string>(MANUFACTURER_COUNTRY_OPTIONS);
+
+function manufacturerCountrySelectOptions(currentValue: string): string[] {
+  const v = currentValue.trim();
+  const list: string[] = [...MANUFACTURER_COUNTRY_OPTIONS];
+  if (v && !MANUFACTURER_COUNTRY_SET.has(v)) list.push(v);
+  return list;
+}
+
 export function UnitCostPanel({ language, initialEntries, products, suppliers }: Props) {
   const router = useRouter();
   const en = language === "en";
@@ -45,6 +66,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     at: en ? "Recorded at" : "录入时间",
     na: en ? "—" : "—",
     manufacturerCountry: en ? "Manufacturer country" : "生产商国家",
+    selectMfrCountry: en ? "Select country…" : "选择国家…",
     destinationCountry: en ? "Destination country" : "目的国",
     destinationTariff: en ? "Destination tariff (%)" : "目的国关税 (%)",
     cmUnitTaxRate: en ? "CM unit price tax rate (%)" : "CM 单价含税税率 (%)",
@@ -325,12 +347,18 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
           </label>
           <label className="block">
             <span className="mb-1 block text-sm text-foreground/85">{t.manufacturerCountry}</span>
-            <input
+            <select
               value={manufacturerCountry}
               onChange={(e) => setManufacturerCountry(e.target.value)}
               className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-              placeholder={en ? "e.g. China" : "例如 中国"}
-            />
+            >
+              <option value="">{t.selectMfrCountry}</option>
+              {manufacturerCountrySelectOptions(manufacturerCountry).map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="block">
             <span className="mb-1 block text-sm text-foreground/85">{t.destinationCountry}</span>
@@ -506,11 +534,18 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm text-foreground/85">{t.manufacturerCountry}</span>
-                <input
+                <select
                   value={eManufacturerCountry}
                   onChange={(ev) => setEManufacturerCountry(ev.target.value)}
                   className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                />
+                >
+                  <option value="">{t.selectMfrCountry}</option>
+                  {manufacturerCountrySelectOptions(eManufacturerCountry).map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm text-foreground/85">{t.destinationCountry}</span>
