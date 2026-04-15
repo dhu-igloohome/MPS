@@ -43,6 +43,7 @@ import {
 import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
 import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow, SupplierEntry } from "@/lib/types";
+import type { LabelContentType } from "recharts/types/component/Label";
 
 type Props = {
   language: Language;
@@ -193,37 +194,53 @@ function fcLabelCoord(v: number | string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Recharts 3 LabelList → Label does not forward `payload` to custom `content` (non-SVG keys are stripped).
+ * Use `index` + chart row, and read geometry from top-level props or `viewBox`.
+ */
+function fcBarLabelLayout(props: Record<string, unknown>): { cx: number; yTop: number } | null {
+  const vbRaw = props.viewBox;
+  const vb =
+    vbRaw && typeof vbRaw === "object"
+      ? (vbRaw as { x?: number | string; y?: number | string; width?: number | string })
+      : undefined;
+  const x = fcLabelCoord(props.x as number | string | undefined) ?? fcLabelCoord(vb?.x);
+  const y = fcLabelCoord(props.y as number | string | undefined) ?? fcLabelCoord(vb?.y);
+  const w = fcLabelCoord(props.width as number | string | undefined) ?? fcLabelCoord(vb?.width);
+  if (x == null || y == null || w == null) return null;
+  return { cx: x + w / 2, yTop: y };
+}
+
 /** Label at the top of a deposit or balance stack (one label per month per stack). */
-function fcStackSumLabelContent(kind: "deposit" | "balance", stackIndex: number, stackSize: number) {
-  return function FcStackSumLabel(props: {
-    x?: number | string;
-    y?: number | string;
-    width?: number | string;
-    payload?: Record<string, string | number>;
-  }) {
-    const x = fcLabelCoord(props.x);
-    const y = fcLabelCoord(props.y);
-    const w = fcLabelCoord(props.width);
-    const { payload } = props;
-    if (x == null || y == null || w == null || !payload) return null;
+function fcStackSumLabelContent(
+  kind: "deposit" | "balance",
+  stackIndex: number,
+  stackSize: number,
+  chartData: Record<string, string | number>[],
+) {
+  const labelFn = (props: Record<string, unknown>) => {
+    const layout = fcBarLabelLayout(props);
+    const monthIdx = typeof props.index === "number" ? props.index : Number(props.index);
+    if (layout == null || !Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return null;
+    const row = chartData[monthIdx];
+    if (!row) return null;
     const keyPrefix = kind === "deposit" ? "d" : "b";
-    const self = Number(payload[`${keyPrefix}${stackIndex}`] ?? 0);
+    const self = Number(row[`${keyPrefix}${stackIndex}`] ?? 0);
     if (!Number.isFinite(self) || self <= 0) return null;
     let topIdx = -1;
     for (let j = stackSize - 1; j >= 0; j--) {
-      if (Number(payload[`${keyPrefix}${j}`] ?? 0) > 0) {
+      if (Number(row[`${keyPrefix}${j}`] ?? 0) > 0) {
         topIdx = j;
         break;
       }
     }
     if (stackIndex !== topIdx) return null;
-    const total = Number(kind === "deposit" ? payload.depositTotal : payload.balanceTotal);
+    const total = Number(kind === "deposit" ? row.depositTotal : row.balanceTotal);
     if (!Number.isFinite(total) || total <= 0) return null;
-    const cx = x + w / 2;
     return (
       <text
-        x={cx}
-        y={y - 6}
+        x={layout.cx}
+        y={layout.yTop - 6}
         textAnchor="middle"
         dominantBaseline="auto"
         fill="currentColor"
@@ -235,25 +252,20 @@ function fcStackSumLabelContent(kind: "deposit" | "balance", stackIndex: number,
       </text>
     );
   };
+  return labelFn as LabelContentType;
 }
 
-function fcSingleBarTopLabel(totalKey: "depositTotal" | "balanceTotal") {
-  return function FcSingleBarTopLabelInner(props: {
-    x?: number | string;
-    y?: number | string;
-    width?: number | string;
-    payload?: Record<string, string | number>;
-  }) {
-    const x = fcLabelCoord(props.x);
-    const y = fcLabelCoord(props.y);
-    const w = fcLabelCoord(props.width);
-    const total = Number(props.payload?.[totalKey]);
-    if (x == null || y == null || w == null || !Number.isFinite(total) || total <= 0) return null;
-    const cx = x + w / 2;
+function fcSingleBarTopLabel(chartData: Record<string, string | number>[], totalKey: "depositTotal" | "balanceTotal") {
+  const labelFn = (props: Record<string, unknown>) => {
+    const layout = fcBarLabelLayout(props);
+    const monthIdx = typeof props.index === "number" ? props.index : Number(props.index);
+    if (layout == null || !Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return null;
+    const total = Number(chartData[monthIdx]?.[totalKey]);
+    if (!Number.isFinite(total) || total <= 0) return null;
     return (
       <text
-        x={cx}
-        y={y - 6}
+        x={layout.cx}
+        y={layout.yTop - 6}
         textAnchor="middle"
         dominantBaseline="auto"
         fill="currentColor"
@@ -265,6 +277,7 @@ function fcSingleBarTopLabel(totalKey: "depositTotal" | "balanceTotal") {
       </text>
     );
   };
+  return labelFn as LabelContentType;
 }
 
 function FcPaymentBarTooltip({
@@ -761,7 +774,7 @@ export function CashFlowDashboard({
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={fcPaymentBar.chartData}
-                    margin={{ top: 28, right: 12, left: 4, bottom: 28 }}
+                    margin={{ top: 40, right: 12, left: 4, bottom: 28 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-32} textAnchor="end" height={70} stroke="#64748b" />
@@ -775,11 +788,21 @@ export function CashFlowDashboard({
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     {fcPaymentBar.suppliers.length === 0 ? (
                       <>
-                        <Bar dataKey="depositTotal" name={t.fcBarDeposit} fill={FC_DEP_STACK[0]}>
-                          <LabelList content={fcSingleBarTopLabel("depositTotal")} />
+                        <Bar
+                          dataKey="depositTotal"
+                          name={t.fcBarDeposit}
+                          fill={FC_DEP_STACK[0]}
+                          isAnimationActive={false}
+                        >
+                          <LabelList content={fcSingleBarTopLabel(fcPaymentBar.chartData, "depositTotal")} />
                         </Bar>
-                        <Bar dataKey="balanceTotal" name={t.fcBarBalance} fill={FC_BAL_STACK[0]}>
-                          <LabelList content={fcSingleBarTopLabel("balanceTotal")} />
+                        <Bar
+                          dataKey="balanceTotal"
+                          name={t.fcBarBalance}
+                          fill={FC_BAL_STACK[0]}
+                          isAnimationActive={false}
+                        >
+                          <LabelList content={fcSingleBarTopLabel(fcPaymentBar.chartData, "balanceTotal")} />
                         </Bar>
                       </>
                     ) : (
@@ -791,8 +814,11 @@ export function CashFlowDashboard({
                             dataKey={`d${i}`}
                             name={language === "en" ? `${s} · deposit` : `${s} · 订金`}
                             fill={FC_DEP_STACK[i % FC_DEP_STACK.length]}
+                            isAnimationActive={false}
                           >
-                            <LabelList content={fcStackSumLabelContent("deposit", i, fcPaymentBar.suppliers.length)} />
+                            <LabelList
+                              content={fcStackSumLabelContent("deposit", i, fcPaymentBar.suppliers.length, fcPaymentBar.chartData)}
+                            />
                           </Bar>
                         ))}
                         {fcPaymentBar.suppliers.map((s, i) => (
@@ -802,8 +828,11 @@ export function CashFlowDashboard({
                             dataKey={`b${i}`}
                             name={language === "en" ? `${s} · balance` : `${s} · 尾款`}
                             fill={FC_BAL_STACK[i % FC_BAL_STACK.length]}
+                            isAnimationActive={false}
                           >
-                            <LabelList content={fcStackSumLabelContent("balance", i, fcPaymentBar.suppliers.length)} />
+                            <LabelList
+                              content={fcStackSumLabelContent("balance", i, fcPaymentBar.suppliers.length, fcPaymentBar.chartData)}
+                            />
                           </Bar>
                         ))}
                       </>
