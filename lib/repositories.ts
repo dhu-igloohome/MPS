@@ -12,6 +12,7 @@ import {
   EcnPriority,
   EcnStatus,
   ForecastCashFlowRow,
+  ForecastCashFlowShippingMode,
   ForecastEntry,
   ForecastIncoterm,
   LogisticsLocation,
@@ -5132,13 +5133,52 @@ export async function updateUnitCostQuote(input: {
   return row ? mapUnitCostQuote(row) : null;
 }
 
-function buildSkuSupplierToUnitPrice(quotes: UnitCostQuoteEntry[]): Map<string, number> {
-  const m = new Map<string, number>();
+function buildSkuSupplierToLatestQuote(quotes: UnitCostQuoteEntry[]): Map<string, UnitCostQuoteEntry> {
+  const m = new Map<string, UnitCostQuoteEntry>();
   for (const q of quotes) {
     const k = `${q.sku.trim()}::${q.supplierName.trim()}`;
-    if (!m.has(k)) m.set(k, q.unitPrice);
+    if (!m.has(k)) m.set(k, q);
   }
   return m;
+}
+
+function normalizeForecastShippingMode(raw: string | null | undefined): ForecastCashFlowShippingMode {
+  const s = (raw || "").trim().toLowerCase();
+  return s === "air" ? "air" : "ocean";
+}
+
+export async function getLatestUnitCostQuoteBySkuSupplier(
+  sku: string,
+  supplierName: string,
+): Promise<UnitCostQuoteEntry | null> {
+  const sk = sku.trim();
+  const sup = supplierName.trim();
+  if (!sk || !sup) return null;
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<UnitCostQuoteRow[]>`
+    select
+      id,
+      sku,
+      unit_price::text,
+      tax_included,
+      supplier_name,
+      quote_date::text,
+      manufacturer_country,
+      destination_country,
+      destination_tariff_pct::text,
+      cm_unit_price_tax_rate_pct::text,
+      sea_freight_unit_price::text,
+      air_freight_unit_price::text,
+      incoterm,
+      created_by,
+      created_at::text
+    from unit_cost_quotes
+    where sku = ${sk} and supplier_name = ${sup}
+    order by quote_date desc, id desc
+    limit 1;
+  `;
+  return rows[0] ? mapUnitCostQuote(rows[0]) : null;
 }
 
 export async function enrichForecastRecordsForCashFlow(
@@ -5150,12 +5190,17 @@ export async function enrichForecastRecordsForCashFlow(
   await ensureDatabase();
   const db = getSql();
   const ids = okOnly.map((f) => Number(f.id));
-  const settingsRows = await db<{ forecast_id: number; supplier_name: string; po_issue_date: string | null }[]>`
-    select forecast_id, supplier_name, po_issue_date::text as po_issue_date
+  const settingsRows = await db<
+    { forecast_id: number; supplier_name: string; po_issue_date: string | null; shipping_mode: string | null }[]
+  >`
+    select forecast_id, supplier_name, po_issue_date::text as po_issue_date, shipping_mode
     from forecast_cash_flow_settings
     where forecast_id = any(${ids});
   `;
-  const settings = new Map<string, { supplier: string; poIssueDate: string | null }>();
+  const settings = new Map<
+    string,
+    { supplier: string; poIssueDate: string | null; shippingMode: ForecastCashFlowShippingMode }
+  >();
   for (const r of settingsRows) {
     const po =
       r.po_issue_date && /^\d{4}-\d{2}-\d{2}/.test(r.po_issue_date)
@@ -5164,21 +5209,29 @@ export async function enrichForecastRecordsForCashFlow(
     settings.set(String(r.forecast_id), {
       supplier: (r.supplier_name || "").trim(),
       poIssueDate: po,
+      shippingMode: normalizeForecastShippingMode(r.shipping_mode),
     });
   }
   const quotes = await listUnitCostQuotes();
-  const priceMap = buildSkuSupplierToUnitPrice(quotes);
+  const latestQuoteMap = buildSkuSupplierToLatestQuote(quotes);
 
   return okOnly.map((f) => {
-    const s = settings.get(f.id) ?? { supplier: "", poIssueDate: null };
+    const s = settings.get(f.id) ?? {
+      supplier: "",
+      poIssueDate: null,
+      shippingMode: "ocean" as ForecastCashFlowShippingMode,
+    };
     const supplier = s.supplier;
     const key = `${f.sku.trim()}::${supplier}`;
-    const unitPriceUsd = supplier ? (priceMap.get(key) ?? null) : null;
+    const latestUnitCostQuote = supplier ? (latestQuoteMap.get(key) ?? null) : null;
+    const unitPriceUsd = latestUnitCostQuote != null ? latestUnitCostQuote.unitPrice : null;
     return {
       ...f,
       cashFlowSupplierName: supplier,
       unitPriceUsd,
       poIssueDate: s.poIssueDate,
+      cashFlowShippingMode: s.shippingMode,
+      latestUnitCostQuote,
     };
   });
 }
@@ -5191,7 +5244,15 @@ export async function patchForecastCashFlowSettings(input: {
   supplierName?: string;
   /** When set, replaces PO issue date; use null or "" to clear. */
   poIssueDate?: string | null;
-}): Promise<{ supplierName: string; unitPriceUsd: number | null; poIssueDate: string | null }> {
+  /** When set, replaces shipping mode for landed cost (ocean | air). */
+  shippingMode?: ForecastCashFlowShippingMode;
+}): Promise<{
+  supplierName: string;
+  unitPriceUsd: number | null;
+  poIssueDate: string | null;
+  shippingMode: ForecastCashFlowShippingMode;
+  latestUnitCostQuote: UnitCostQuoteEntry | null;
+}> {
   await ensureDatabase();
   const db = getSql();
   const fid = Number(input.forecastId);
@@ -5211,12 +5272,13 @@ export async function patchForecastCashFlowSettings(input: {
 
   const hasSupplier = input.supplierName !== undefined;
   const hasPo = input.poIssueDate !== undefined;
-  if (!hasSupplier && !hasPo) {
-    throw new Error("supplierName or poIssueDate is required");
+  const hasShippingMode = input.shippingMode !== undefined;
+  if (!hasSupplier && !hasPo && !hasShippingMode) {
+    throw new Error("supplierName, poIssueDate, or shippingMode is required");
   }
 
-  const cur = await db<{ supplier_name: string; po_issue_date: string | null }[]>`
-    select supplier_name, po_issue_date::text as po_issue_date
+  const cur = await db<{ supplier_name: string; po_issue_date: string | null; shipping_mode: string | null }[]>`
+    select supplier_name, po_issue_date::text as po_issue_date, shipping_mode
     from forecast_cash_flow_settings
     where forecast_id = ${fid}
     limit 1;
@@ -5242,28 +5304,31 @@ export async function patchForecastCashFlowSettings(input: {
       p && /^\d{4}-\d{2}-\d{2}/.test(p) ? p.slice(0, 10) : null;
   }
 
+  let shippingMode: ForecastCashFlowShippingMode;
+  if (hasShippingMode) {
+    const sm = String(input.shippingMode ?? "").trim().toLowerCase();
+    if (sm !== "ocean" && sm !== "air") {
+      throw new Error("Invalid shippingMode");
+    }
+    shippingMode = sm === "air" ? "air" : "ocean";
+  } else {
+    shippingMode = normalizeForecastShippingMode(curRow?.shipping_mode);
+  }
+
   await db`
-    insert into forecast_cash_flow_settings (forecast_id, supplier_name, po_issue_date, updated_by)
-    values (${fid}, ${supplier}, ${poIssueDate}, ${input.updatedBy})
+    insert into forecast_cash_flow_settings (forecast_id, supplier_name, po_issue_date, shipping_mode, updated_by)
+    values (${fid}, ${supplier}, ${poIssueDate}, ${shippingMode}, ${input.updatedBy})
     on conflict (forecast_id) do update
     set
       supplier_name = excluded.supplier_name,
       po_issue_date = excluded.po_issue_date,
+      shipping_mode = excluded.shipping_mode,
       updated_by = excluded.updated_by,
       updated_at = now();
   `;
 
   const sku = (row.sku || "").trim();
-  let unitPriceUsd: number | null = null;
-  if (supplier && sku) {
-    const pr = await db<{ unit_price: string }[]>`
-      select unit_price::text
-      from unit_cost_quotes
-      where sku = ${sku} and supplier_name = ${supplier}
-      order by quote_date desc, id desc
-      limit 1;
-    `;
-    unitPriceUsd = pr[0] != null ? Number(pr[0].unit_price) : null;
-  }
-  return { supplierName: supplier, unitPriceUsd, poIssueDate };
+  const latestUnitCostQuote = await getLatestUnitCostQuoteBySkuSupplier(sku, supplier);
+  const unitPriceUsd = latestUnitCostQuote != null ? latestUnitCostQuote.unitPrice : null;
+  return { supplierName: supplier, unitPriceUsd, poIssueDate, shippingMode, latestUnitCostQuote };
 }

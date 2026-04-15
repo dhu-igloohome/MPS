@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
 import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
-import type { ForecastCashFlowRow, SupplierEntry } from "@/lib/types";
+import type { ForecastCashFlowRow, SupplierEntry, UnitCostQuoteEntry } from "@/lib/types";
 
 type CashFlowPanelProps = {
   language: Language;
@@ -106,6 +106,8 @@ export function CashFlowPanel({
       unitPriceUsd?: number | null;
       supplierName?: string;
       poIssueDate?: string | null;
+      shippingMode?: ForecastCashFlowRow["cashFlowShippingMode"];
+      latestUnitCostQuote?: UnitCostQuoteEntry | null;
     };
     setFcRowSavingId(null);
     if (!res.ok) {
@@ -124,6 +126,8 @@ export function CashFlowPanel({
               cashFlowSupplierName: savedSupplier,
               unitPriceUsd: data.unitPriceUsd ?? null,
               poIssueDate: data.poIssueDate !== undefined ? data.poIssueDate : r.poIssueDate,
+              cashFlowShippingMode: data.shippingMode === "air" ? "air" : "ocean",
+              latestUnitCostQuote: data.latestUnitCostQuote ?? r.latestUnitCostQuote,
             }
           : r,
       ),
@@ -244,6 +248,8 @@ export function CashFlowPanel({
                     cashFlowSupplierName: payload.supplierName,
                     unitPriceUsd: payload.unitPriceUsd,
                     poIssueDate: payload.poIssueDate,
+                    cashFlowShippingMode: payload.shippingMode,
+                    latestUnitCostQuote: payload.latestUnitCostQuote,
                   }
                 : r,
             ),

@@ -13,12 +13,16 @@ export async function PATCH(request: Request) {
   const forecastId = String(body.forecastId ?? "").trim();
   const hasSupplier = Object.prototype.hasOwnProperty.call(body, "supplierName");
   const hasPo = Object.prototype.hasOwnProperty.call(body, "poIssueDate");
+  const hasShippingMode = Object.prototype.hasOwnProperty.call(body, "shippingMode");
 
   if (!forecastId) {
     return NextResponse.json({ message: "forecastId is required" }, { status: 400 });
   }
-  if (!hasSupplier && !hasPo) {
-    return NextResponse.json({ message: "supplierName and/or poIssueDate is required" }, { status: 400 });
+  if (!hasSupplier && !hasPo && !hasShippingMode) {
+    return NextResponse.json(
+      { message: "supplierName, poIssueDate, and/or shippingMode is required" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -28,19 +32,36 @@ export async function PATCH(request: Request) {
         ? null
         : String(body.poIssueDate).trim()
       : undefined;
+    let shippingMode: "ocean" | "air" | undefined;
+    if (hasShippingMode) {
+      const shippingModeRaw = String(body.shippingMode ?? "").trim().toLowerCase();
+      if (shippingModeRaw !== "ocean" && shippingModeRaw !== "air") {
+        return NextResponse.json({ message: "shippingMode must be ocean or air" }, { status: 400 });
+      }
+      shippingMode = shippingModeRaw === "air" ? "air" : "ocean";
+    }
 
-    const { supplierName: savedSupplier, unitPriceUsd, poIssueDate: savedPo } = await patchForecastCashFlowSettings({
+    const {
+      supplierName: savedSupplier,
+      unitPriceUsd,
+      poIssueDate: savedPo,
+      shippingMode: savedShipping,
+      latestUnitCostQuote,
+    } = await patchForecastCashFlowSettings({
       forecastId,
       sessionRegions: session.regions,
       updatedBy: session.username,
       supplierName,
       poIssueDate,
+      shippingMode,
     });
     return NextResponse.json({
       ok: true,
       supplierName: savedSupplier,
       unitPriceUsd,
       poIssueDate: savedPo,
+      shippingMode: savedShipping,
+      latestUnitCostQuote,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Update failed";
@@ -51,7 +72,7 @@ export async function PATCH(request: Request) {
           ? 403
           : msg === "Invalid forecast id" || msg === "Invalid poIssueDate"
             ? 400
-            : msg === "supplierName or poIssueDate is required"
+            : msg === "supplierName, poIssueDate, or shippingMode is required"
               ? 400
               : 400;
     return NextResponse.json({ message: msg }, { status });

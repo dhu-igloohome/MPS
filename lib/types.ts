@@ -4,6 +4,9 @@ export type { ForecastIncoterm };
 
 export type Region = "APAC" | "EU" | "USA";
 
+/** Persisted on forecast_cash_flow_settings for landed cost / departure logic. */
+export type ForecastCashFlowShippingMode = "ocean" | "air";
+
 export type UserRole = "super_admin" | "regional_admin";
 
 export type UserAccount = {
@@ -53,15 +56,6 @@ export type ForecastEntry = {
   buildToStock: number;
   createdBy: string;
   createdAt: string;
-};
-
-/** Forecast cash flow table: forecast row + supplier pick + Unit cost quote price (USD). */
-export type ForecastCashFlowRow = ForecastEntry & {
-  cashFlowSupplierName: string;
-  /** Latest Unit cost (USD) for this SKU + supplier, or null if none. */
-  unitPriceUsd: number | null;
-  /** PO / order issue date (YYYY-MM-DD), editable in cash flow dashboard; null if unset. */
-  poIssueDate: string | null;
 };
 
 export type ProductItem = {
@@ -604,6 +598,19 @@ export type UnitCostQuoteEntry = {
   incoterm: UnitCostQuoteIncoterm;
   createdBy: string;
   createdAt: string;
+};
+
+/** Forecast cash flow table: forecast row + supplier pick + Unit cost quote price (USD). */
+export type ForecastCashFlowRow = ForecastEntry & {
+  cashFlowSupplierName: string;
+  /** Latest Unit cost (USD) for this SKU + supplier, or null if none. */
+  unitPriceUsd: number | null;
+  /** PO / order issue date (YYYY-MM-DD), editable in cash flow dashboard; null if unset. */
+  poIssueDate: string | null;
+  /** Landed cost section: ocean vs air (persisted per forecast). */
+  cashFlowShippingMode: ForecastCashFlowShippingMode;
+  /** Latest unit cost quote for this SKU + supplier (quote_date desc), or null. */
+  latestUnitCostQuote: UnitCostQuoteEntry | null;
 };
 
 /** 成本控制 — 现金流分析（与 Excel 列一致） */

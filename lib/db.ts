@@ -562,6 +562,7 @@ async function setupSchema() {
     );
   `;
   await db`alter table forecast_cash_flow_settings add column if not exists po_issue_date date;`;
+  await db`alter table forecast_cash_flow_settings add column if not exists shipping_mode text not null default 'ocean';`;
 
   await db`
     create table if not exists npi_bom_entries (

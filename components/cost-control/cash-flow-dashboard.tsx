@@ -40,9 +40,24 @@ import {
   formatScheduleDateEnglish,
   type ForecastPaySchedule,
 } from "@/lib/forecast-supplier-payment-schedule";
+import {
+  buildForecastDestinationOptions,
+  forecastDestinationDisplay,
+} from "@/lib/forecast-destination-countries";
 import { formatUsd } from "@/lib/format-usd";
+import {
+  computeLandedCostPerUnitUsd,
+  computeDepartureDateYmd,
+  computePaymentDueYmd,
+} from "@/lib/landed-cost-cash-flow";
 import type { Language } from "@/lib/i18n";
-import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow, SupplierEntry } from "@/lib/types";
+import type {
+  CashFlowEntry,
+  CostAnalysisEntry,
+  ForecastCashFlowRow,
+  SupplierEntry,
+  UnitCostQuoteEntry,
+} from "@/lib/types";
 import type { LabelContentType } from "recharts/types/component/Label";
 
 type Props = {
@@ -57,7 +72,13 @@ type Props = {
   showForecastCashFlowSummary?: boolean;
   onForecastCashFlowSettingsSaved?: (
     forecastId: string,
-    payload: { supplierName: string; unitPriceUsd: number | null; poIssueDate: string | null },
+    payload: {
+      supplierName: string;
+      unitPriceUsd: number | null;
+      poIssueDate: string | null;
+      shippingMode: ForecastCashFlowRow["cashFlowShippingMode"];
+      latestUnitCostQuote: UnitCostQuoteEntry | null;
+    },
   ) => void;
   onForecastCashFlowSettingsError?: (message: string) => void;
   /** When true, only render Forecast cash flow (for dashboard) + payment bar chart (Cash flow analysis tab). */
@@ -77,6 +98,18 @@ function formatPoIssueDateEnglish(ymd: string | null | undefined): string {
   const [y, m, d] = ymd.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
   return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatForecastMonthCell(ym: string, language: Language): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(ym.trim());
+  if (!m) return ym;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  if (mo < 1 || mo > 12) return ym;
+  if (language === "en") {
+    return new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
+  return `${y}年${mo}月`;
 }
 
 const COLORS = {
@@ -185,6 +218,31 @@ function labels(language: Language) {
     fcBarDeposit: en ? "Deposit due" : "订金应付",
     fcBarBalance: en ? "Balance due" : "尾款应付",
     fcBarNoData: en ? "No payments fall in this 13-month window." : "该 13 个月内无应付金额。",
+    lcTitle: en ? "Landed cost cash flow" : "Landed cost 现金流",
+    lcHint: en
+      ? "Same rows as the forecast table above (Comment = Ok). Landed cost uses Forecast incoterm FOB/DAP/DDP, latest Unit cost by SKU+supplier, and your shipping mode. Tariff must be set on the quote or landed cost shows —."
+      : "与上方 Forecast 表相同（评论为 Ok）。到岸成本按 Forecast 贸易术语 FOB/DAP/DDP、SKU+供应商最新单位成本及所选运输方式计算；报价未填目的国关税时到岸成本显示「—」。",
+    lcColMonth: en ? "Forecast Month" : "Forecast 月份",
+    lcColForecastNo: en ? "Forecast #" : "Forecast #",
+    lcColRegion: en ? "Region" : "区域",
+    lcColDestination: en ? "Destination country" : "目的国",
+    lcColSupplier: en ? "Supplier name" : "供应商名称",
+    lcColMfr: en ? "Manufacturer country" : "生产商国家",
+    lcColSku: "SKU",
+    lcColBto: en ? "Build to Order" : "按单生产",
+    lcColBts: en ? "Build to Stock" : "备货生产",
+    lcColCreated: en ? "Created At" : "创建日期",
+    lcColPoIssue: en ? "PO issue date" : "订单下达日期",
+    lcColIncoterm: en ? "Incoterm" : "贸易术语",
+    lcColShip: en ? "Shipping mode" : "运输方式",
+    lcColDepart: en ? "Departure date" : "离港/发运日",
+    lcColLanded: en ? "Landed cost" : "到岸成本（单价）",
+    lcColTotal: en ? "Total amount (USD)" : "总金额 (USD)",
+    lcColPayDue: en ? "Payment due" : "付款到期日",
+    lcColComment: en ? "Comment" : "评论",
+    lcShipOcean: en ? "Shipping: ocean" : "运输方式 · 海运",
+    lcShipAir: en ? "Shipping: air" : "运输方式 · 空运",
+    lcNoRows: en ? "No landed-cost rows (same rule as forecast cash flow)." : "暂无数据（与 Forecast 现金流相同条件）。",
   };
 }
 
@@ -388,6 +446,8 @@ export function CashFlowDashboard({
   const [finMax, setFinMax] = useState("");
   const [drill, setDrill] = useState<{ periodLabel: string; rows: EnrichedCashFlow[] } | null>(null);
   const [fcPoSavingId, setFcPoSavingId] = useState<string | null>(null);
+  const [fcShippingSavingId, setFcShippingSavingId] = useState<string | null>(null);
+  const fcDestinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
 
   const enriched = useMemo(() => enrichCashFlowRows(entries, costAnalysisEntries), [entries, costAnalysisEntries]);
 
@@ -568,6 +628,8 @@ export function CashFlowDashboard({
         supplierName?: string;
         unitPriceUsd?: number | null;
         poIssueDate?: string | null;
+        shippingMode?: ForecastCashFlowRow["cashFlowShippingMode"];
+        latestUnitCostQuote?: UnitCostQuoteEntry | null;
       };
       setFcPoSavingId(null);
       if (!res.ok) {
@@ -581,6 +643,42 @@ export function CashFlowDashboard({
         supplierName: String(data.supplierName ?? ""),
         unitPriceUsd: data.unitPriceUsd ?? null,
         poIssueDate: data.poIssueDate ?? null,
+        shippingMode: data.shippingMode === "air" ? "air" : "ocean",
+        latestUnitCostQuote: data.latestUnitCostQuote ?? null,
+      });
+    },
+    [language, onForecastCashFlowSettingsError, onForecastCashFlowSettingsSaved],
+  );
+
+  const persistFcShippingMode = useCallback(
+    async (forecastId: string, mode: ForecastCashFlowRow["cashFlowShippingMode"]) => {
+      setFcShippingSavingId(forecastId);
+      const res = await fetch("/api/cost-control/forecast-cash-flow", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ forecastId, shippingMode: mode }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        message?: string;
+        supplierName?: string;
+        unitPriceUsd?: number | null;
+        poIssueDate?: string | null;
+        shippingMode?: ForecastCashFlowRow["cashFlowShippingMode"];
+        latestUnitCostQuote?: UnitCostQuoteEntry | null;
+      };
+      setFcShippingSavingId(null);
+      if (!res.ok) {
+        onForecastCashFlowSettingsError?.(
+          data.message || (language === "en" ? "Could not save shipping mode." : "保存运输方式失败。"),
+        );
+        return;
+      }
+      onForecastCashFlowSettingsSaved?.(forecastId, {
+        supplierName: String(data.supplierName ?? ""),
+        unitPriceUsd: data.unitPriceUsd ?? null,
+        poIssueDate: data.poIssueDate ?? null,
+        shippingMode: data.shippingMode === "air" ? "air" : "ocean",
+        latestUnitCostQuote: data.latestUnitCostQuote ?? null,
       });
     },
     [language, onForecastCashFlowSettingsError, onForecastCashFlowSettingsSaved],
@@ -840,6 +938,122 @@ export function CashFlowDashboard({
                   </BarChart>
                 </ResponsiveContainer>
               )}
+            </div>
+          </div>
+
+          <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
+            <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.lcTitle}</h6>
+            <p className="mt-1 text-xs text-[#9CA3AF]">{t.lcHint}</p>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[2200px] border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColMonth}</th>
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColForecastNo}</th>
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColRegion}</th>
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColDestination}</th>
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColSupplier}</th>
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColMfr}</th>
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColSku}</th>
+                    <th className="whitespace-nowrap py-2 pr-2 text-right">{t.lcColBto}</th>
+                    <th className="whitespace-nowrap py-2 pr-2 text-right">{t.lcColBts}</th>
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColCreated}</th>
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColPoIssue}</th>
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColIncoterm}</th>
+                    <th className="min-w-[11rem] whitespace-nowrap py-2 pr-2">{t.lcColShip}</th>
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColDepart}</th>
+                    <th className="whitespace-nowrap py-2 pr-2 text-right">{t.lcColLanded}</th>
+                    <th className="whitespace-nowrap py-2 pr-2 text-right">{t.lcColTotal}</th>
+                    <th className="whitespace-nowrap py-2 pr-2">{t.lcColPayDue}</th>
+                    <th className="min-w-[10rem] py-2 pr-2">{t.lcColComment}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {forecastCashFlowRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={18} className="py-8 text-center text-slate-400">
+                        {t.lcNoRows}
+                      </td>
+                    </tr>
+                  ) : (
+                    forecastCashFlowRows.map((row) => {
+                      const q = row.latestUnitCostQuote;
+                      const mfr = (q?.manufacturerCountry ?? "").trim();
+                      const landed = computeLandedCostPerUnitUsd({
+                        forecastIncoterm: row.incoterm,
+                        shippingMode: row.cashFlowShippingMode,
+                        unitPriceUsd: row.unitPriceUsd,
+                        destinationTariffPct: q?.destinationTariffPct ?? null,
+                        seaFreightUsd: q?.seaFreightUnitPrice ?? null,
+                        airFreightUsd: q?.airFreightUnitPrice ?? null,
+                      });
+                      const qty = Number(row.buildToOrder) + Number(row.buildToStock);
+                      const totalUsd =
+                        landed != null && Number.isFinite(qty) && qty > 0 ? landed * qty : null;
+                      const depYmd = computeDepartureDateYmd(row.poIssueDate, mfr, row.cashFlowShippingMode);
+                      const payYmd = computePaymentDueYmd(depYmd);
+                      return (
+                        <tr key={`lc-${row.id}`} className="border-b border-app-border/60">
+                          <td className="whitespace-nowrap py-2 pr-2">
+                            {formatForecastMonthCell(row.month, language)}
+                          </td>
+                          <td className="py-2 pr-2">{row.poNumber || t.na}</td>
+                          <td className="py-2 pr-2">{row.region}</td>
+                          <td className="max-w-[10rem] break-words py-2 pr-2">
+                            {forecastDestinationDisplay(row.destination, language, fcDestinationOptions)}
+                          </td>
+                          <td className="max-w-[10rem] truncate py-2 pr-2">
+                            {row.cashFlowSupplierName.trim() || t.na}
+                          </td>
+                          <td className="max-w-[8rem] truncate py-2 pr-2">{mfr || t.na}</td>
+                          <td className="py-2 pr-2 font-medium">{row.sku}</td>
+                          <td className="py-2 pr-2 text-right tabular-nums">{row.buildToOrder}</td>
+                          <td className="py-2 pr-2 text-right tabular-nums">{row.buildToStock}</td>
+                          <td className="whitespace-nowrap py-2 pr-2 tabular-nums">
+                            {row.createdAt.slice(0, 10)}
+                          </td>
+                          <td className="whitespace-nowrap py-2 pr-2" lang="en">
+                            {row.poIssueDate ? formatPoIssueDateEnglish(row.poIssueDate) : t.na}
+                          </td>
+                          <td className="py-2 pr-2 font-medium">{row.incoterm}</td>
+                          <td className="py-2 pr-2 align-top">
+                            <select
+                              value={row.cashFlowShippingMode}
+                              onChange={(e) =>
+                                void persistFcShippingMode(
+                                  row.id,
+                                  e.target.value as ForecastCashFlowRow["cashFlowShippingMode"],
+                                )
+                              }
+                              disabled={fcShippingSavingId === row.id}
+                              className="w-full max-w-[13rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
+                              aria-label={t.lcColShip}
+                            >
+                              <option value="ocean">{t.lcShipOcean}</option>
+                              <option value="air">{t.lcShipAir}</option>
+                            </select>
+                          </td>
+                          <td className="whitespace-nowrap py-2 pr-2" lang="en">
+                            {depYmd ? formatPoIssueDateEnglish(depYmd) : t.na}
+                          </td>
+                          <td className="py-2 pr-2 text-right tabular-nums">
+                            {landed != null ? formatUsd(landed, 4) : t.na}
+                          </td>
+                          <td className="py-2 pr-2 text-right tabular-nums">
+                            {totalUsd != null ? formatUsd(totalUsd, 2) : t.na}
+                          </td>
+                          <td className="whitespace-nowrap py-2 pr-2" lang="en">
+                            {payYmd ? formatPoIssueDateEnglish(payYmd) : t.na}
+                          </td>
+                          <td className="max-w-[14rem] break-words py-2 pr-2 text-slate-600 dark:text-slate-300">
+                            {row.remark?.trim() ? row.remark : t.na}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

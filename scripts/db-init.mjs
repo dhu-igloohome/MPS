@@ -498,6 +498,7 @@ async function main() {
     );
   `;
   await sql`alter table forecast_cash_flow_settings add column if not exists po_issue_date date;`;
+  await sql`alter table forecast_cash_flow_settings add column if not exists shipping_mode text not null default 'ocean';`;
 
   await sql`
     create table if not exists mass_production_kanban (
