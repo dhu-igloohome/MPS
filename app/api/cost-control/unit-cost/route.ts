@@ -6,7 +6,7 @@ import { getSession } from "@/lib/session";
 import type { UnitCostQuoteIncoterm } from "@/lib/types";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const INCOTERMS: UnitCostQuoteIncoterm[] = ["EXW", "FOB", "DDP"];
+const INCOTERMS: UnitCostQuoteIncoterm[] = ["EXW", "FOB", "DAP", "DDP"];
 
 function optPct(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid quote date (YYYY-MM-DD)" }, { status: 400 });
   }
   if (incoterm == null) {
-    return NextResponse.json({ message: "Invalid incoterm (EXW, FOB, or DDP)" }, { status: 400 });
+    return NextResponse.json({ message: "Invalid incoterm (EXW, FOB, DAP, or DDP)" }, { status: 400 });
   }
   if (body.destinationTariffPct !== undefined && body.destinationTariffPct !== "" && destinationTariffPct === null) {
     return NextResponse.json({ message: "Destination tariff must be between 0 and 100" }, { status: 400 });

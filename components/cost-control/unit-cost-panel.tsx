@@ -86,6 +86,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     incoterm: "Incoterm",
     incotermExw: "EXW",
     incotermFob: "FOB",
+    incotermDap: "DAP",
     incotermDdp: "DDP",
     hint: en
       ? "Supplier names match Supply Chain → Suppliers (active). Add a row for each new quote; history lists all records."
@@ -453,6 +454,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
             >
               <option value="EXW">{t.incotermExw}</option>
               <option value="FOB">{t.incotermFob}</option>
+              <option value="DAP">{t.incotermDap}</option>
               <option value="DDP">{t.incotermDdp}</option>
             </select>
           </label>
@@ -643,6 +645,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                 >
                   <option value="EXW">{t.incotermExw}</option>
                   <option value="FOB">{t.incotermFob}</option>
+                  <option value="DAP">{t.incotermDap}</option>
                   <option value="DDP">{t.incotermDdp}</option>
                 </select>
               </label>

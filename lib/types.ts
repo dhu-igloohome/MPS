@@ -578,7 +578,7 @@ export type CostAnalysisEntry = {
 };
 
 /** 单位成本报价 Incoterm（与报价行一致） */
-export type UnitCostQuoteIncoterm = "EXW" | "FOB" | "DDP";
+export type UnitCostQuoteIncoterm = "EXW" | "FOB" | "DAP" | "DDP";
 
 /** 成本控制 — 单位成本报价（历史记录多条按时间保留） */
 export type UnitCostQuoteEntry = {

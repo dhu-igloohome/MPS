@@ -4956,7 +4956,7 @@ function quoteNullableNum(v: string | number | null | undefined): number | null 
 
 function normalizeUnitCostIncoterm(v: string | null | undefined): UnitCostQuoteIncoterm {
   const s = (v || "").trim().toUpperCase();
-  if (s === "FOB" || s === "DDP" || s === "EXW") return s;
+  if (s === "FOB" || s === "DAP" || s === "DDP" || s === "EXW") return s as UnitCostQuoteIncoterm;
   return "EXW";
 }
 
