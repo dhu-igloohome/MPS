@@ -7,7 +7,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  ComposedChart,
   LabelList,
   Legend,
   Line,
@@ -188,31 +187,84 @@ function labels(language: Language) {
   };
 }
 
-function FcBarMonthTotalLabelList(props: {
-  x?: number | string;
-  y?: number | string;
-  payload?: Record<string, string | number>;
-}) {
-  const x = typeof props.x === "string" ? Number(props.x) : props.x;
-  const y = typeof props.y === "string" ? Number(props.y) : props.y;
-  const { payload } = props;
-  if (x == null || y == null || !Number.isFinite(x) || !Number.isFinite(y) || !payload) return null;
-  const total = Number(payload.monthTotal);
-  if (!Number.isFinite(total) || total <= 0) return null;
-  return (
-    <text
-      x={x}
-      y={y - 6}
-      textAnchor="middle"
-      dominantBaseline="auto"
-      fill="currentColor"
-      fontSize={10}
-      fontWeight={600}
-      className="tabular-nums text-slate-700 dark:text-slate-200"
-    >
-      {formatUsd(total, 0)}
-    </text>
-  );
+function fcLabelCoord(v: number | string | undefined): number | null {
+  if (v == null) return null;
+  const n = typeof v === "string" ? Number(v) : v;
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Label at the top of a deposit or balance stack (one label per month per stack). */
+function fcStackSumLabelContent(kind: "deposit" | "balance", stackIndex: number, stackSize: number) {
+  return function FcStackSumLabel(props: {
+    x?: number | string;
+    y?: number | string;
+    width?: number | string;
+    payload?: Record<string, string | number>;
+  }) {
+    const x = fcLabelCoord(props.x);
+    const y = fcLabelCoord(props.y);
+    const w = fcLabelCoord(props.width);
+    const { payload } = props;
+    if (x == null || y == null || w == null || !payload) return null;
+    const keyPrefix = kind === "deposit" ? "d" : "b";
+    const self = Number(payload[`${keyPrefix}${stackIndex}`] ?? 0);
+    if (!Number.isFinite(self) || self <= 0) return null;
+    let topIdx = -1;
+    for (let j = stackSize - 1; j >= 0; j--) {
+      if (Number(payload[`${keyPrefix}${j}`] ?? 0) > 0) {
+        topIdx = j;
+        break;
+      }
+    }
+    if (stackIndex !== topIdx) return null;
+    const total = Number(kind === "deposit" ? payload.depositTotal : payload.balanceTotal);
+    if (!Number.isFinite(total) || total <= 0) return null;
+    const cx = x + w / 2;
+    return (
+      <text
+        x={cx}
+        y={y - 6}
+        textAnchor="middle"
+        dominantBaseline="auto"
+        fill="currentColor"
+        fontSize={10}
+        fontWeight={600}
+        className="tabular-nums text-slate-700 dark:text-slate-200"
+      >
+        {formatUsd(total, 0)}
+      </text>
+    );
+  };
+}
+
+function fcSingleBarTopLabel(totalKey: "depositTotal" | "balanceTotal") {
+  return function FcSingleBarTopLabelInner(props: {
+    x?: number | string;
+    y?: number | string;
+    width?: number | string;
+    payload?: Record<string, string | number>;
+  }) {
+    const x = fcLabelCoord(props.x);
+    const y = fcLabelCoord(props.y);
+    const w = fcLabelCoord(props.width);
+    const total = Number(props.payload?.[totalKey]);
+    if (x == null || y == null || w == null || !Number.isFinite(total) || total <= 0) return null;
+    const cx = x + w / 2;
+    return (
+      <text
+        x={cx}
+        y={y - 6}
+        textAnchor="middle"
+        dominantBaseline="auto"
+        fill="currentColor"
+        fontSize={10}
+        fontWeight={600}
+        className="tabular-nums text-slate-700 dark:text-slate-200"
+      >
+        {formatUsd(total, 0)}
+      </text>
+    );
+  };
 }
 
 function FcPaymentBarTooltip({
@@ -707,7 +759,7 @@ export function CashFlowDashboard({
                 <p className="py-16 text-center text-sm text-slate-400">{t.fcBarNoData}</p>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
+                  <BarChart
                     data={fcPaymentBar.chartData}
                     margin={{ top: 28, right: 12, left: 4, bottom: 28 }}
                   >
@@ -723,8 +775,12 @@ export function CashFlowDashboard({
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     {fcPaymentBar.suppliers.length === 0 ? (
                       <>
-                        <Bar dataKey="depositTotal" name={t.fcBarDeposit} fill={FC_DEP_STACK[0]} />
-                        <Bar dataKey="balanceTotal" name={t.fcBarBalance} fill={FC_BAL_STACK[0]} />
+                        <Bar dataKey="depositTotal" name={t.fcBarDeposit} fill={FC_DEP_STACK[0]}>
+                          <LabelList content={fcSingleBarTopLabel("depositTotal")} />
+                        </Bar>
+                        <Bar dataKey="balanceTotal" name={t.fcBarBalance} fill={FC_BAL_STACK[0]}>
+                          <LabelList content={fcSingleBarTopLabel("balanceTotal")} />
+                        </Bar>
                       </>
                     ) : (
                       <>
@@ -735,7 +791,9 @@ export function CashFlowDashboard({
                             dataKey={`d${i}`}
                             name={language === "en" ? `${s} · deposit` : `${s} · 订金`}
                             fill={FC_DEP_STACK[i % FC_DEP_STACK.length]}
-                          />
+                          >
+                            <LabelList content={fcStackSumLabelContent("deposit", i, fcPaymentBar.suppliers.length)} />
+                          </Bar>
                         ))}
                         {fcPaymentBar.suppliers.map((s, i) => (
                           <Bar
@@ -744,23 +802,13 @@ export function CashFlowDashboard({
                             dataKey={`b${i}`}
                             name={language === "en" ? `${s} · balance` : `${s} · 尾款`}
                             fill={FC_BAL_STACK[i % FC_BAL_STACK.length]}
-                          />
+                          >
+                            <LabelList content={fcStackSumLabelContent("balance", i, fcPaymentBar.suppliers.length)} />
+                          </Bar>
                         ))}
                       </>
                     )}
-                    <Line
-                      type="monotone"
-                      dataKey="monthLabelY"
-                      stroke="transparent"
-                      strokeWidth={0}
-                      dot={false}
-                      isAnimationActive={false}
-                      legendType="none"
-                      tooltipType="none"
-                    >
-                      <LabelList content={FcBarMonthTotalLabelList} />
-                    </Line>
-                  </ComposedChart>
+                  </BarChart>
                 </ResponsiveContainer>
               )}
             </div>
