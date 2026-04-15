@@ -78,6 +78,10 @@ export function buildForecastCashPaymentBarData(
     });
     row.depositTotal = Math.round(depSum * 100) / 100;
     row.balanceTotal = Math.round(balSum * 100) / 100;
+    /** Sum of scheduled deposits + balances in this month (for bar-top labels). */
+    row.monthTotal = Math.round((depSum + balSum) * 100) / 100;
+    /** Y-axis anchor: top of the taller of the two side-by-side stacks (deposits vs balances). */
+    row.monthLabelY = Math.round(Math.max(depSum, balSum) * 100) / 100;
     return row;
   });
 

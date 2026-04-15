@@ -7,6 +7,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
+  LabelList,
   Legend,
   Line,
   LineChart,
@@ -184,6 +186,33 @@ function labels(language: Language) {
     fcBarBalance: en ? "Balance due" : "尾款应付",
     fcBarNoData: en ? "No payments fall in this 13-month window." : "该 13 个月内无应付金额。",
   };
+}
+
+function FcBarMonthTotalLabelList(props: {
+  x?: number | string;
+  y?: number | string;
+  payload?: Record<string, string | number>;
+}) {
+  const x = typeof props.x === "string" ? Number(props.x) : props.x;
+  const y = typeof props.y === "string" ? Number(props.y) : props.y;
+  const { payload } = props;
+  if (x == null || y == null || !Number.isFinite(x) || !Number.isFinite(y) || !payload) return null;
+  const total = Number(payload.monthTotal);
+  if (!Number.isFinite(total) || total <= 0) return null;
+  return (
+    <text
+      x={x}
+      y={y - 6}
+      textAnchor="middle"
+      dominantBaseline="auto"
+      fill="currentColor"
+      fontSize={10}
+      fontWeight={600}
+      className="tabular-nums text-slate-700 dark:text-slate-200"
+    >
+      {formatUsd(total, 0)}
+    </text>
+  );
 }
 
 function FcPaymentBarTooltip({
@@ -678,9 +707,9 @@ export function CashFlowDashboard({
                 <p className="py-16 text-center text-sm text-slate-400">{t.fcBarNoData}</p>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
+                  <ComposedChart
                     data={fcPaymentBar.chartData}
-                    margin={{ top: 8, right: 12, left: 4, bottom: 28 }}
+                    margin={{ top: 28, right: 12, left: 4, bottom: 28 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-32} textAnchor="end" height={70} stroke="#64748b" />
@@ -719,7 +748,19 @@ export function CashFlowDashboard({
                         ))}
                       </>
                     )}
-                  </BarChart>
+                    <Line
+                      type="monotone"
+                      dataKey="monthLabelY"
+                      stroke="transparent"
+                      strokeWidth={0}
+                      dot={false}
+                      isAnimationActive={false}
+                      legendType="none"
+                      tooltipType="none"
+                    >
+                      <LabelList content={FcBarMonthTotalLabelList} />
+                    </Line>
+                  </ComposedChart>
                 </ResponsiveContainer>
               )}
             </div>
