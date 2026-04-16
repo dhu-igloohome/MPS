@@ -263,6 +263,8 @@ function labels(language: Language) {
     lcTipTotal: en ? "Line total (USD)" : "行总金额 (USD)",
     lcTipDue: en ? "Payment due" : "付款到期日",
     lcTipMonthTotal: en ? "Month total" : "当月合计",
+    lcSumLabel: en ? "Sum (lines with landed total)" : "可计算 landed 总金额的行合计",
+    lcSumLineCount: en ? "computable / total lines" : "可算金额 / 总行数",
   };
 }
 
@@ -718,6 +720,32 @@ export function CashFlowDashboard({
     () => lcPaymentBar.chartData.some((r) => Number(r.monthTotal) > 0),
     [lcPaymentBar.chartData],
   );
+
+  /** Landed cost table footer: Σ Total amount (USD) for rows where landed × qty is computable. */
+  const lcTableSums = useMemo(() => {
+    let sumTotalUsd = 0;
+    let computableLines = 0;
+    for (const row of forecastCashFlowRows) {
+      const q = row.latestUnitCostQuote;
+      const mfr = (q?.manufacturerCountry ?? "").trim();
+      const landed = computeLandedCostPerUnitUsd({
+        forecastIncoterm: row.incoterm,
+        shippingMode: row.cashFlowShippingMode,
+        unitPriceUsd: row.unitPriceUsd,
+        destinationTariffPct: q?.destinationTariffPct ?? null,
+        seaFreightUsd: q?.seaFreightUnitPrice ?? null,
+        airFreightUsd: q?.airFreightUnitPrice ?? null,
+      });
+      const qty = Number(row.buildToOrder) + Number(row.buildToStock);
+      const totalUsd =
+        landed != null && Number.isFinite(qty) && qty > 0 ? landed * qty : null;
+      if (totalUsd != null && Number.isFinite(totalUsd)) {
+        sumTotalUsd += totalUsd;
+        computableLines += 1;
+      }
+    }
+    return { sumTotalUsd, computableLines };
+  }, [forecastCashFlowRows]);
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
 
@@ -1204,6 +1232,28 @@ export function CashFlowDashboard({
                     })
                   )}
                 </tbody>
+                {forecastCashFlowRows.length > 0 ? (
+                  <tfoot>
+                    <tr className="border-t border-slate-200 bg-slate-50/90 dark:border-slate-600 dark:bg-slate-800/60">
+                      <td
+                        colSpan={15}
+                        className="py-2.5 pr-2 text-left text-xs font-medium text-slate-600 dark:text-slate-300"
+                      >
+                        {t.lcSumLabel}
+                      </td>
+                      <td className="py-2.5 pr-2 text-right text-sm font-semibold tabular-nums text-emerald-800 dark:text-emerald-300">
+                        {lcTableSums.sumTotalUsd > 0 ? formatUsd(lcTableSums.sumTotalUsd, 2) : <span className="text-slate-400">{t.na}</span>}
+                      </td>
+                      <td
+                        colSpan={2}
+                        className="py-2.5 pr-2 text-left text-[11px] text-slate-500 dark:text-slate-400"
+                        title={t.lcSumLineCount}
+                      >
+                        {lcTableSums.computableLines} / {forecastCashFlowRows.length}
+                      </td>
+                    </tr>
+                  </tfoot>
+                ) : null}
               </table>
             </div>
 
