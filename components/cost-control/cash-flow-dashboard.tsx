@@ -35,7 +35,11 @@ import {
   type RangePreset,
 } from "@/lib/cash-flow-dashboard-agg";
 import { buildForecastCashPaymentBarData } from "@/lib/forecast-cash-flow-payment-bars";
-import { buildLandedCostBarRowInputs, buildLandedCostPaymentBarData } from "@/lib/landed-cost-cash-flow-chart";
+import {
+  buildLandedCostBarRowInputs,
+  buildLandedCostPaymentBarData,
+  type LandedCostBarSeriesMeta,
+} from "@/lib/landed-cost-cash-flow-chart";
 import {
   computeForecastPaymentSchedule,
   formatScheduleDateEnglish,
@@ -124,6 +128,8 @@ const COLORS = {
 /** Stacked deposit / balance segments by supplier index (Forecast payment bar chart). */
 const FC_DEP_STACK = ["#4f46e5", "#6366f1", "#7c3aed", "#8b5cf6", "#a855f7", "#c084fc"];
 const FC_BAL_STACK = ["#047857", "#059669", "#0d9488", "#10b981", "#34d399", "#6ee7b7"];
+/** Landed cost stacked bars (one segment per forecast line). */
+const LC_PAY_STACK = ["#0369a1", "#0284c7", "#0ea5e9", "#38bdf8", "#7dd3fc", "#bae6fd", "#4f46e5", "#6366f1", "#8b5cf6", "#a78bfa", "#c084fc", "#059669"];
 
 function optNum(s: string): number | null {
   if (s.trim() === "") return null;
@@ -212,19 +218,13 @@ function labels(language: Language) {
     fcNoRows: en
       ? "No forecast cash flow rows (Comment must be Ok on the Forecast page)."
       : "暂无 Forecast 现金流数据（请在 Forecast 页将评论设为 Ok）。",
-    combinedBarTitle: en ? "Scheduled vs landed cost by due month" : "订金尾款与 Landed cost（按应付月）",
-    combinedBarHint: en
-      ? "Grouped bars per month: scheduled = sum of deposit + balance due in that month (from the Forecast table); landed = sum of landed-cost line totals due in that month (from the Landed cost table). Same 13-month window (current month ±6)."
-      : "每月两组柱形：左侧为「订金+尾款」在该自然月的应付合计（与上方 Forecast 表一致）；右侧为「Landed cost」在该月到期的行金额合计（与 Landed cost 表一致）。时间窗为当前月 ±6 个自然月。",
-    combinedSidebarTitle: en ? "Monthly amounts (USD)" : "当月金额 (USD)",
-    combinedColPeriod: en ? "Month" : "月份",
-    combinedColScheduled: en ? "Scheduled" : "订金+尾款",
-    combinedColLanded: en ? "Landed" : "Landed",
-    combinedSeriesScheduled: en ? "Scheduled (deposit + balance)" : "订金+尾款（应付）",
-    combinedSeriesLanded: en ? "Landed cost payment" : "Landed cost 付款",
-    combinedNoData: en
-      ? "No scheduled or landed-cost amounts fall in this 13-month window."
-      : "该 13 个月内无订金/尾款或 Landed cost 应付金额。",
+    fcBarTitle: en ? "Scheduled payments by due month" : "按应付月份的订金与尾款",
+    fcBarHint: en
+      ? "Uses deposit/balance due dates from the table above, grouped by calendar month. Bars stack by supplier (left stack = deposits, right = balances). Window: 6 months before through 6 months after this month."
+      : "按上方表格的订金/尾款应付日汇总到自然月；柱形按供应商堆叠（左堆订金、右堆尾款）。范围：当前月前 6 个月至后 6 个月。",
+    fcBarDeposit: en ? "Deposit due" : "订金应付",
+    fcBarBalance: en ? "Balance due" : "尾款应付",
+    fcBarNoData: en ? "No payments fall in this 13-month window." : "该 13 个月内无应付金额。",
     lcTitle: en ? "Landed cost cash flow" : "Landed cost 现金流",
     lcHint: en
       ? "Same rows as the forecast table above (Comment = Ok). Landed cost uses Forecast incoterm FOB/DAP/DDP, latest Unit cost by SKU+supplier, and your shipping mode. Tariff must be set on the quote or landed cost shows —."
@@ -250,6 +250,19 @@ function labels(language: Language) {
     lcShipOcean: en ? "Shipping: ocean" : "运输方式 · 海运",
     lcShipAir: en ? "Shipping: air" : "运输方式 · 空运",
     lcNoRows: en ? "No landed-cost rows (same rule as forecast cash flow)." : "暂无数据（与 Forecast 现金流相同条件）。",
+    lcBarTitle: en ? "Landed cost payments by due month" : "Landed cost 按付款到期月",
+    lcBarHint: en
+      ? "Each stacked segment is one forecast line (SKU + destination). Amounts use Total amount (USD) and Payment due from the table above, grouped by calendar month. Window: 6 months before through 6 months after the current month."
+      : "每个色块对应一行 Forecast（SKU + 目的国）。金额与上方表格的「总金额 (USD)」「付款到期日」一致，按自然月汇总。横轴范围：当前月前 6 个月至后 6 个月。",
+    lcBarNoData: en ? "No landed-cost payments fall in this 13-month window." : "该 13 个月内无到期的 Landed cost 付款。",
+    lcBarLegendHint: en
+      ? "Many lines: legend is hidden — hover a bar for SKU, destination, total, and payment due."
+      : "行数较多时已隐藏图例 — 悬停柱形可查看 SKU、目的国、总金额与付款到期日。",
+    lcTipSku: "SKU",
+    lcTipDest: en ? "Destination" : "目的国",
+    lcTipTotal: en ? "Line total (USD)" : "行总金额 (USD)",
+    lcTipDue: en ? "Payment due" : "付款到期日",
+    lcTipMonthTotal: en ? "Month total" : "当月合计",
     lcSumLabel: en ? "Sum (lines with landed total)" : "可计算 landed 总金额的行合计",
     lcSumLineCount: en ? "computable / total lines" : "可算金额 / 总行数",
   };
@@ -278,40 +291,110 @@ function fcBarLabelLayout(props: Record<string, unknown>): { cx: number; yTop: n
   return { cx: x + w / 2, yTop: y };
 }
 
-type FcLcCombinedChartRow = {
-  monthKey: string;
-  name: string;
-  scheduledTotal: number;
-  landedTotal: number;
-};
-
-function resolveBarChartDataIndex(props: Record<string, unknown>, chartData: { monthKey: string }[]): number {
-  let monthIdx = typeof props.index === "number" ? props.index : Number(props.index);
-  if (!Number.isFinite(monthIdx) || monthIdx < 0) {
-    const pl = props.payload as Record<string, unknown> | undefined;
-    const mk = pl && typeof pl.monthKey === "string" ? pl.monthKey : null;
-    if (mk) monthIdx = chartData.findIndex((r) => r.monthKey === mk);
-  }
-  if (!Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return -1;
-  return monthIdx;
-}
-
-/** Always-visible USD label on top of each grouped bar segment. */
-function combinedBarTopLabel(
-  chartData: FcLcCombinedChartRow[],
-  dataKey: "scheduledTotal" | "landedTotal",
-): LabelContentType {
+/** Label at the top of a deposit or balance stack (one label per month per stack). */
+function fcStackSumLabelContent(
+  kind: "deposit" | "balance",
+  stackIndex: number,
+  stackSize: number,
+  chartData: Record<string, string | number>[],
+) {
   const labelFn = (props: Record<string, unknown>) => {
     const layout = fcBarLabelLayout(props);
-    const monthIdx = resolveBarChartDataIndex(props, chartData);
-    if (layout == null || monthIdx < 0) return null;
+    const monthIdx = typeof props.index === "number" ? props.index : Number(props.index);
+    if (layout == null || !Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return null;
     const row = chartData[monthIdx];
-    const val = Number(row[dataKey]);
-    if (!Number.isFinite(val) || val <= 0) return null;
+    if (!row) return null;
+    const keyPrefix = kind === "deposit" ? "d" : "b";
+    const self = Number(row[`${keyPrefix}${stackIndex}`] ?? 0);
+    if (!Number.isFinite(self) || self <= 0) return null;
+    let topIdx = -1;
+    for (let j = stackSize - 1; j >= 0; j--) {
+      if (Number(row[`${keyPrefix}${j}`] ?? 0) > 0) {
+        topIdx = j;
+        break;
+      }
+    }
+    if (stackIndex !== topIdx) return null;
+    const total = Number(kind === "deposit" ? row.depositTotal : row.balanceTotal);
+    if (!Number.isFinite(total) || total <= 0) return null;
     return (
       <text
         x={layout.cx}
-        y={layout.yTop - 4}
+        y={layout.yTop - 6}
+        textAnchor="middle"
+        dominantBaseline="auto"
+        fill="currentColor"
+        fontSize={10}
+        fontWeight={600}
+        className="tabular-nums text-slate-700 dark:text-slate-200"
+      >
+        {formatUsd(total, 0)}
+      </text>
+    );
+  };
+  return labelFn as LabelContentType;
+}
+
+function fcSingleBarTopLabel(chartData: Record<string, string | number>[], totalKey: "depositTotal" | "balanceTotal") {
+  const labelFn = (props: Record<string, unknown>) => {
+    const layout = fcBarLabelLayout(props);
+    const monthIdx = typeof props.index === "number" ? props.index : Number(props.index);
+    if (layout == null || !Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return null;
+    const total = Number(chartData[monthIdx]?.[totalKey]);
+    if (!Number.isFinite(total) || total <= 0) return null;
+    return (
+      <text
+        x={layout.cx}
+        y={layout.yTop - 6}
+        textAnchor="middle"
+        dominantBaseline="auto"
+        fill="currentColor"
+        fontSize={10}
+        fontWeight={600}
+        className="tabular-nums text-slate-700 dark:text-slate-200"
+      >
+        {formatUsd(total, 0)}
+      </text>
+    );
+  };
+  return labelFn as LabelContentType;
+}
+
+/**
+ * Month total on top of each bar (always visible). Recharts 3 LabelList often omits `dataKey`
+ * from custom `content` props — pass `seriesDataKey` via closure so we can detect the top stack segment.
+ */
+function lcMonthlyTotalTopLabelForSeries(
+  chartData: Record<string, string | number>[],
+  seriesOrder: string[],
+  seriesDataKey: string,
+): LabelContentType {
+  const labelFn = (props: Record<string, unknown>) => {
+    const layout = fcBarLabelLayout(props);
+    let monthIdx = typeof props.index === "number" ? props.index : Number(props.index);
+    if (!Number.isFinite(monthIdx) || monthIdx < 0) {
+      const pl = props.payload as Record<string, unknown> | undefined;
+      const mk = pl && typeof pl.monthKey === "string" ? pl.monthKey : null;
+      if (mk) monthIdx = chartData.findIndex((r) => String(r.monthKey) === mk);
+    }
+    if (!Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return null;
+    const row = chartData[monthIdx];
+    if (!row) return null;
+    const total = Number(row.monthTotal);
+    if (!Number.isFinite(total) || total <= 0) return null;
+    let topIdx = -1;
+    for (let j = seriesOrder.length - 1; j >= 0; j--) {
+      if (Number(row[seriesOrder[j]] ?? 0) > 0) {
+        topIdx = j;
+        break;
+      }
+    }
+    const selfIdx = seriesOrder.indexOf(seriesDataKey);
+    if (selfIdx < 0 || selfIdx !== topIdx) return null;
+    return (
+      <text
+        x={layout.cx}
+        y={layout.yTop - 6}
         textAnchor="middle"
         dominantBaseline="auto"
         fill="currentColor"
@@ -319,34 +402,137 @@ function combinedBarTopLabel(
         fontWeight={600}
         className="tabular-nums text-slate-800 dark:text-slate-100"
       >
-        {formatUsd(val, 2)}
+        {formatUsd(total, 2)}
       </text>
     );
   };
   return labelFn as LabelContentType;
 }
 
-function FcLandedCombinedTooltip({
+function LcPaymentBarTooltip({
   active,
   payload,
   label,
+  seriesMeta,
+  tipSku,
+  tipDest,
+  tipTotal,
+  tipDue,
+  tipMonthTotal,
 }: {
   active?: boolean;
-  payload?: { name?: string; value?: number; color?: string }[];
+  payload?: { dataKey?: string | number; name?: string; value?: number; color?: string }[];
   label?: string;
+  seriesMeta: Record<string, LandedCostBarSeriesMeta>;
+  tipSku: string;
+  tipDest: string;
+  tipTotal: string;
+  tipDue: string;
+  tipMonthTotal: string;
 }) {
   if (!active || !payload?.length) return null;
-  const rows = payload.filter((p) => Number(p.value) > 0);
+  const withVal = payload.filter((p) => {
+    const k = String(p.dataKey ?? "");
+    return k.startsWith("lc_") && Number(p.value) > 0;
+  });
+  if (withVal.length === 0) return null;
+  const first = payload[0] as { payload?: Record<string, string | number> } | undefined;
+  const rowPayload = first?.payload;
+  const monthTotal =
+    rowPayload && typeof rowPayload.monthTotal === "number" ? rowPayload.monthTotal : null;
+  return (
+    <div className="max-w-sm rounded-lg border border-app-border bg-white/95 px-3 py-2 text-xs shadow-md backdrop-blur dark:bg-slate-900/95">
+      <p className="mb-1 font-medium text-[#111827] dark:text-slate-100">{label}</p>
+      {monthTotal != null && Number.isFinite(monthTotal) && monthTotal > 0 ? (
+        <p className="mb-2 border-b border-app-border/80 pb-2 font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+          {tipMonthTotal}: {formatUsd(monthTotal, 2)}
+        </p>
+      ) : null}
+      <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+        {withVal.map((p) => {
+          const meta = seriesMeta[String(p.dataKey ?? "")];
+          if (!meta) return null;
+          return (
+            <div key={String(p.dataKey)} className="rounded-md border border-app-border/60 bg-app-surface/50 p-2">
+              <p className="font-medium tabular-nums text-[#111827] dark:text-slate-100">
+                <span style={{ color: p.color }}>■ </span>
+                {formatUsd(Number(p.value), 2)}
+              </p>
+              <p className="mt-1 text-[11px] text-[#4B5563] dark:text-slate-400">
+                {tipSku}: <span className="text-foreground">{meta.sku}</span>
+              </p>
+              <p className="text-[11px] text-[#4B5563] dark:text-slate-400">
+                {tipDest}: <span className="text-foreground">{meta.destinationLabel}</span>
+              </p>
+              <p className="text-[11px] text-[#4B5563] dark:text-slate-400">
+                {tipTotal}: <span className="text-foreground">{formatUsd(meta.totalUsd, 2)}</span>
+              </p>
+              <p className="text-[11px] text-[#4B5563] dark:text-slate-400">
+                {tipDue}:{" "}
+                <span className="text-foreground" lang="en">
+                  {formatPoIssueDateEnglish(meta.paymentDueYmd)}
+                </span>
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FcPaymentBarTooltip({
+  active,
+  payload,
+  label,
+  language,
+}: {
+  active?: boolean;
+  payload?: { dataKey?: string | number; name?: string; value?: number; color?: string }[];
+  label?: string;
+  language: Language;
+}) {
+  const en = language === "en";
+  if (!active || !payload?.length) return null;
+  const withVal = payload.filter((p) => Number(p.value) > 0);
+  const deposits = withVal.filter((p) => String(p.dataKey ?? "").startsWith("d"));
+  const balances = withVal.filter((p) => String(p.dataKey ?? "").startsWith("b"));
+  const totals = withVal.filter((p) => p.dataKey === "depositTotal" || p.dataKey === "balanceTotal");
+  const rows = deposits.length + balances.length > 0 ? [...deposits, ...balances] : totals;
   if (rows.length === 0) return null;
   return (
-    <div className="max-w-xs rounded-lg border border-app-border bg-white/95 px-3 py-2 text-xs shadow-md backdrop-blur dark:bg-slate-900/95">
-      <p className="mb-1 font-medium text-[#111827] dark:text-slate-100">{label}</p>
-      {rows.map((p) => (
-        <p key={String(p.name)} className="tabular-nums text-[#4B5563] dark:text-slate-300">
+    <div className="max-w-xs rounded-lg border border-app-border bg-white/95 px-3 py-2 text-xs shadow-md backdrop-blur">
+      <p className="mb-1.5 font-medium text-[#111827]">{label}</p>
+      {deposits.length > 0 ? (
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-indigo-600">
+          {en ? "Deposits" : "订金"}
+        </p>
+      ) : null}
+      {deposits.map((p) => (
+        <p key={String(p.dataKey)} className="tabular-nums text-[#4B5563]">
           <span style={{ color: p.color }}>{p.name}: </span>
           {formatUsd(Number(p.value), 2)}
         </p>
       ))}
+      {balances.length > 0 ? (
+        <p className="mb-1 mt-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+          {en ? "Balances" : "尾款"}
+        </p>
+      ) : null}
+      {balances.map((p) => (
+        <p key={String(p.dataKey)} className="tabular-nums text-[#4B5563]">
+          <span style={{ color: p.color }}>{p.name}: </span>
+          {formatUsd(Number(p.value), 2)}
+        </p>
+      ))}
+      {deposits.length === 0 && balances.length === 0 && totals.length > 0
+        ? totals.map((p) => (
+            <p key={String(p.dataKey)} className="tabular-nums text-[#4B5563]">
+              <span style={{ color: p.color }}>{p.name}: </span>
+              {formatUsd(Number(p.value), 2)}
+            </p>
+          ))
+        : null}
     </div>
   );
 }
@@ -520,6 +706,11 @@ export function CashFlowDashboard({
     return buildForecastCashPaymentBarData(inputs, monthKeys, monthLabelFn);
   }, [fcDashboardRows, language]);
 
+  const fcBarHasAnyAmount = useMemo(
+    () => fcPaymentBar.chartData.some((r) => Number(r.depositTotal) > 0 || Number(r.balanceTotal) > 0),
+    [fcPaymentBar.chartData],
+  );
+
   const lcPaymentBar = useMemo(() => {
     const monthKeys = paymentMonthWindowAroundToday(6, 6);
     const monthLabelFn = (mk: string) => {
@@ -533,29 +724,9 @@ export function CashFlowDashboard({
     return buildLandedCostPaymentBarData(rowInputs, monthKeys, monthLabelFn);
   }, [forecastCashFlowRows, language, fcDestinationOptions]);
 
-  /** One row per calendar month: Forecast scheduled (deposit + balance) vs landed-cost totals. */
-  const fcLcCombinedChartRows = useMemo((): FcLcCombinedChartRow[] => {
-    const fc = fcPaymentBar.chartData;
-    const lc = lcPaymentBar.chartData;
-    const n = Math.max(fc.length, lc.length);
-    const out: FcLcCombinedChartRow[] = [];
-    for (let i = 0; i < n; i++) {
-      const fcRow = fc[i];
-      const lcRow = lc[i];
-      const monthKey = String(fcRow?.monthKey ?? lcRow?.monthKey ?? "");
-      const name = String(fcRow?.name ?? lcRow?.name ?? monthKey);
-      const dep = fcRow ? Number(fcRow.depositTotal) : 0;
-      const bal = fcRow ? Number(fcRow.balanceTotal) : 0;
-      const scheduled = Math.round((dep + bal) * 100) / 100;
-      const landed = lcRow ? Math.round(Number(lcRow.monthTotal) * 100) / 100 : 0;
-      out.push({ monthKey, name, scheduledTotal: scheduled, landedTotal: landed });
-    }
-    return out;
-  }, [fcPaymentBar.chartData, lcPaymentBar.chartData]);
-
-  const fcLcCombinedHasData = useMemo(
-    () => fcLcCombinedChartRows.some((r) => r.scheduledTotal > 0 || r.landedTotal > 0),
-    [fcLcCombinedChartRows],
+  const lcBarHasAnyAmount = useMemo(
+    () => lcPaymentBar.chartData.some((r) => Number(r.monthTotal) > 0),
+    [lcPaymentBar.chartData],
   );
 
   /** Landed cost table footer: Σ Total amount (USD) for rows where landed × qty is computable. */
@@ -879,88 +1050,81 @@ export function CashFlowDashboard({
           </div>
 
           <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
-            <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.combinedBarTitle}</h6>
-            <p className="mt-1 text-xs text-[#9CA3AF]">{t.combinedBarHint}</p>
-            <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-stretch">
-              <div className="h-80 min-w-0 flex-1">
-                {!fcLcCombinedHasData ? (
-                  <p className="py-16 text-center text-sm text-slate-400">{t.combinedNoData}</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={fcLcCombinedChartRows}
-                      margin={{ top: 52, right: 8, left: 4, bottom: 28 }}
-                      barGap={6}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fontSize: 10 }}
-                        interval={0}
-                        angle={-32}
-                        textAnchor="end"
-                        height={70}
-                        stroke="#64748b"
-                      />
-                      <YAxis
-                        tick={{ fontSize: 11 }}
-                        stroke="#64748b"
-                        tickFormatter={(v) => formatUsd(Number(v), 0)}
-                        width={56}
-                      />
-                      <Tooltip content={<FcLandedCombinedTooltip />} />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar
-                        dataKey="scheduledTotal"
-                        name={t.combinedSeriesScheduled}
-                        fill={FC_DEP_STACK[0]}
-                        isAnimationActive={false}
-                      >
-                        <LabelList content={combinedBarTopLabel(fcLcCombinedChartRows, "scheduledTotal")} />
-                      </Bar>
-                      <Bar
-                        dataKey="landedTotal"
-                        name={t.combinedSeriesLanded}
-                        fill={FC_BAL_STACK[0]}
-                        isAnimationActive={false}
-                      >
-                        <LabelList content={combinedBarTopLabel(fcLcCombinedChartRows, "landedTotal")} />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-              <aside className="w-full shrink-0 rounded-xl border border-slate-200 bg-app-surface/90 p-3 dark:border-slate-600 lg:w-72">
-                <h6 className="text-xs font-semibold text-slate-800 dark:text-slate-100">{t.combinedSidebarTitle}</h6>
-                <div className="mt-2 max-h-80 overflow-y-auto text-xs">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b border-app-border/80 text-left text-app-muted">
-                        <th className="py-1.5 pr-2 font-medium">{t.combinedColPeriod}</th>
-                        <th className="py-1.5 pr-1 text-right font-medium">{t.combinedColScheduled}</th>
-                        <th className="py-1.5 text-right font-medium">{t.combinedColLanded}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {fcLcCombinedChartRows.map((r) => (
-                        <tr key={r.monthKey} className="border-b border-app-border/50 last:border-0">
-                          <td className="py-2 pr-2 font-medium text-slate-800 dark:text-slate-100">{r.name}</td>
-                          <td className="py-2 pr-1 text-right tabular-nums text-slate-700 dark:text-slate-200">
-                            {r.scheduledTotal > 0 ? (
-                              formatUsd(r.scheduledTotal, 2)
-                            ) : (
-                              <span className="text-slate-400">{t.na}</span>
-                            )}
-                          </td>
-                          <td className="py-2 text-right tabular-nums text-slate-700 dark:text-slate-200">
-                            {r.landedTotal > 0 ? formatUsd(r.landedTotal, 2) : <span className="text-slate-400">{t.na}</span>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </aside>
+            <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcBarTitle}</h6>
+            <p className="mt-1 text-xs text-[#9CA3AF]">{t.fcBarHint}</p>
+            <div className="mt-3 h-80 w-full min-w-0">
+              {!fcBarHasAnyAmount ? (
+                <p className="py-16 text-center text-sm text-slate-400">{t.fcBarNoData}</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={fcPaymentBar.chartData}
+                    margin={{ top: 40, right: 12, left: 4, bottom: 28 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-32} textAnchor="end" height={70} stroke="#64748b" />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      stroke="#64748b"
+                      tickFormatter={(v) => formatUsd(Number(v), 0)}
+                      width={56}
+                    />
+                    <Tooltip content={<FcPaymentBarTooltip language={language} />} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    {fcPaymentBar.suppliers.length === 0 ? (
+                      <>
+                        <Bar
+                          dataKey="depositTotal"
+                          name={t.fcBarDeposit}
+                          fill={FC_DEP_STACK[0]}
+                          isAnimationActive={false}
+                        >
+                          <LabelList content={fcSingleBarTopLabel(fcPaymentBar.chartData, "depositTotal")} />
+                        </Bar>
+                        <Bar
+                          dataKey="balanceTotal"
+                          name={t.fcBarBalance}
+                          fill={FC_BAL_STACK[0]}
+                          isAnimationActive={false}
+                        >
+                          <LabelList content={fcSingleBarTopLabel(fcPaymentBar.chartData, "balanceTotal")} />
+                        </Bar>
+                      </>
+                    ) : (
+                      <>
+                        {fcPaymentBar.suppliers.map((s, i) => (
+                          <Bar
+                            key={`fc-dep-${s}-${i}`}
+                            stackId="fcDep"
+                            dataKey={`d${i}`}
+                            name={language === "en" ? `${s} · deposit` : `${s} · 订金`}
+                            fill={FC_DEP_STACK[i % FC_DEP_STACK.length]}
+                            isAnimationActive={false}
+                          >
+                            <LabelList
+                              content={fcStackSumLabelContent("deposit", i, fcPaymentBar.suppliers.length, fcPaymentBar.chartData)}
+                            />
+                          </Bar>
+                        ))}
+                        {fcPaymentBar.suppliers.map((s, i) => (
+                          <Bar
+                            key={`fc-bal-${s}-${i}`}
+                            stackId="fcBal"
+                            dataKey={`b${i}`}
+                            name={language === "en" ? `${s} · balance` : `${s} · 尾款`}
+                            fill={FC_BAL_STACK[i % FC_BAL_STACK.length]}
+                            isAnimationActive={false}
+                          >
+                            <LabelList
+                              content={fcStackSumLabelContent("balance", i, fcPaymentBar.suppliers.length, fcPaymentBar.chartData)}
+                            />
+                          </Bar>
+                        ))}
+                      </>
+                    )}
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
@@ -1099,6 +1263,86 @@ export function CashFlowDashboard({
                   </tfoot>
                 ) : null}
               </table>
+            </div>
+
+            <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
+              <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.lcBarTitle}</h6>
+              <p className="mt-1 text-xs text-[#9CA3AF]">{t.lcBarHint}</p>
+              {lcPaymentBar.seriesOrder.length > 12 ? (
+                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{t.lcBarLegendHint}</p>
+              ) : null}
+              <div className="mt-3 h-80 w-full min-w-0">
+                {!lcBarHasAnyAmount ? (
+                  <p className="py-16 text-center text-sm text-slate-400">{t.lcBarNoData}</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={lcPaymentBar.chartData}
+                      margin={{ top: 56, right: 12, left: 4, bottom: 28 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 10 }}
+                        interval={0}
+                        angle={-32}
+                        textAnchor="end"
+                        height={70}
+                        stroke="#64748b"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11 }}
+                        stroke="#64748b"
+                        tickFormatter={(v) => formatUsd(Number(v), 0)}
+                        width={56}
+                      />
+                      <Tooltip
+                        content={
+                          <LcPaymentBarTooltip
+                            seriesMeta={lcPaymentBar.seriesMeta}
+                            tipSku={t.lcTipSku}
+                            tipDest={t.lcTipDest}
+                            tipTotal={t.lcTipTotal}
+                            tipDue={t.lcTipDue}
+                            tipMonthTotal={t.lcTipMonthTotal}
+                          />
+                        }
+                      />
+                      {lcPaymentBar.seriesOrder.length > 0 && lcPaymentBar.seriesOrder.length <= 12 ? (
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
+                      ) : null}
+                      {lcPaymentBar.seriesOrder.map((stackKey, i) => {
+                        const meta = lcPaymentBar.seriesMeta[stackKey];
+                        const legendName = meta
+                          ? `${meta.sku} · ${
+                              meta.destinationLabel.length > 28
+                                ? `${meta.destinationLabel.slice(0, 28)}…`
+                                : meta.destinationLabel
+                            }`
+                          : stackKey;
+                        return (
+                          <Bar
+                            key={stackKey}
+                            stackId="lcPay"
+                            dataKey={stackKey}
+                            name={legendName}
+                            fill={LC_PAY_STACK[i % LC_PAY_STACK.length]}
+                            isAnimationActive={false}
+                          >
+                            <LabelList
+                              content={lcMonthlyTotalTopLabelForSeries(
+                                lcPaymentBar.chartData,
+                                lcPaymentBar.seriesOrder,
+                                stackKey,
+                              )}
+                            />
+                          </Bar>
+                        );
+                      })}
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
             </div>
           </div>
         </div>
