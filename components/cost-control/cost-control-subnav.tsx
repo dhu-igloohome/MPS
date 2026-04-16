@@ -34,11 +34,11 @@ export function CostControlSubnav({ language, active }: Props) {
   return (
     <div className="flex flex-wrap gap-2" role="tablist" aria-label={language === "en" ? "Cost control sections" : "成本控制板块"}>
       <Link
-        href="/supply-chain/cost-control"
-        className={`${tabBtn} ${active === "cost" ? activeCls : inactive}`}
-        aria-current={active === "cost" ? "page" : undefined}
+        href="/supply-chain/cost-control/unit-cost"
+        className={`${tabBtn} ${active === "unit" ? activeCls : inactive}`}
+        aria-current={active === "unit" ? "page" : undefined}
       >
-        {t.costAnalysis}
+        {t.unitCost}
       </Link>
       <Link
         href="/supply-chain/cost-control?tab=cashflow"
@@ -48,11 +48,11 @@ export function CostControlSubnav({ language, active }: Props) {
         {t.cashFlow}
       </Link>
       <Link
-        href="/supply-chain/cost-control/unit-cost"
-        className={`${tabBtn} ${active === "unit" ? activeCls : inactive}`}
-        aria-current={active === "unit" ? "page" : undefined}
+        href="/supply-chain/cost-control"
+        className={`${tabBtn} ${active === "cost" ? activeCls : inactive}`}
+        aria-current={active === "cost" ? "page" : undefined}
       >
-        {t.unitCost}
+        {t.costAnalysis}
       </Link>
     </div>
   );
