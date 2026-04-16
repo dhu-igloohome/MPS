@@ -36,6 +36,11 @@ import {
 } from "@/lib/cash-flow-dashboard-agg";
 import { buildForecastCashPaymentBarData } from "@/lib/forecast-cash-flow-payment-bars";
 import {
+  buildLandedCostBarRowInputs,
+  buildLandedCostPaymentBarData,
+  type LandedCostBarSeriesMeta,
+} from "@/lib/landed-cost-cash-flow-chart";
+import {
   computeForecastPaymentSchedule,
   formatScheduleDateEnglish,
   type ForecastPaySchedule,
@@ -123,6 +128,8 @@ const COLORS = {
 /** Stacked deposit / balance segments by supplier index (Forecast payment bar chart). */
 const FC_DEP_STACK = ["#4f46e5", "#6366f1", "#7c3aed", "#8b5cf6", "#a855f7", "#c084fc"];
 const FC_BAL_STACK = ["#047857", "#059669", "#0d9488", "#10b981", "#34d399", "#6ee7b7"];
+/** Landed cost stacked bars (one segment per forecast line). */
+const LC_PAY_STACK = ["#0369a1", "#0284c7", "#0ea5e9", "#38bdf8", "#7dd3fc", "#bae6fd", "#4f46e5", "#6366f1", "#8b5cf6", "#a78bfa", "#c084fc", "#059669"];
 
 function optNum(s: string): number | null {
   if (s.trim() === "") return null;
@@ -243,6 +250,19 @@ function labels(language: Language) {
     lcShipOcean: en ? "Shipping: ocean" : "运输方式 · 海运",
     lcShipAir: en ? "Shipping: air" : "运输方式 · 空运",
     lcNoRows: en ? "No landed-cost rows (same rule as forecast cash flow)." : "暂无数据（与 Forecast 现金流相同条件）。",
+    lcBarTitle: en ? "Landed cost payments by due month" : "Landed cost 按付款到期月",
+    lcBarHint: en
+      ? "Each stacked segment is one forecast line (SKU + destination). Amounts use Total amount (USD) and Payment due from the table above, grouped by calendar month. Window: 6 months before through 6 months after the current month."
+      : "每个色块对应一行 Forecast（SKU + 目的国）。金额与上方表格的「总金额 (USD)」「付款到期日」一致，按自然月汇总。横轴范围：当前月前 6 个月至后 6 个月。",
+    lcBarNoData: en ? "No landed-cost payments fall in this 13-month window." : "该 13 个月内无到期的 Landed cost 付款。",
+    lcBarLegendHint: en
+      ? "Many lines: legend is hidden — hover a bar for SKU, destination, total, and payment due."
+      : "行数较多时已隐藏图例 — 悬停柱形可查看 SKU、目的国、总金额与付款到期日。",
+    lcTipSku: "SKU",
+    lcTipDest: en ? "Destination" : "目的国",
+    lcTipTotal: en ? "Line total (USD)" : "行总金额 (USD)",
+    lcTipDue: en ? "Payment due" : "付款到期日",
+    lcTipMonthTotal: en ? "Month total" : "当月合计",
   };
 }
 
@@ -336,6 +356,119 @@ function fcSingleBarTopLabel(chartData: Record<string, string | number>[], total
     );
   };
   return labelFn as LabelContentType;
+}
+
+/** Month total label on top of the landed-cost stack (only on the top non-zero segment). */
+function lcMonthlyTotalTopLabel(
+  chartData: Record<string, string | number>[],
+  seriesOrder: string[],
+): LabelContentType {
+  const labelFn = (props: Record<string, unknown>) => {
+    const layout = fcBarLabelLayout(props);
+    const monthIdx = typeof props.index === "number" ? props.index : Number(props.index);
+    if (layout == null || !Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return null;
+    const row = chartData[monthIdx];
+    if (!row) return null;
+    const total = Number(row.monthTotal);
+    if (!Number.isFinite(total) || total <= 0) return null;
+    const curKey = String(props.dataKey ?? "");
+    let topIdx = -1;
+    for (let j = seriesOrder.length - 1; j >= 0; j--) {
+      if (Number(row[seriesOrder[j]] ?? 0) > 0) {
+        topIdx = j;
+        break;
+      }
+    }
+    const selfIdx = seriesOrder.indexOf(curKey);
+    if (selfIdx < 0 || selfIdx !== topIdx) return null;
+    return (
+      <text
+        x={layout.cx}
+        y={layout.yTop - 6}
+        textAnchor="middle"
+        dominantBaseline="auto"
+        fill="currentColor"
+        fontSize={10}
+        fontWeight={600}
+        className="tabular-nums text-slate-700 dark:text-slate-200"
+      >
+        {formatUsd(total, 0)}
+      </text>
+    );
+  };
+  return labelFn as LabelContentType;
+}
+
+function LcPaymentBarTooltip({
+  active,
+  payload,
+  label,
+  seriesMeta,
+  tipSku,
+  tipDest,
+  tipTotal,
+  tipDue,
+  tipMonthTotal,
+}: {
+  active?: boolean;
+  payload?: { dataKey?: string | number; name?: string; value?: number; color?: string }[];
+  label?: string;
+  seriesMeta: Record<string, LandedCostBarSeriesMeta>;
+  tipSku: string;
+  tipDest: string;
+  tipTotal: string;
+  tipDue: string;
+  tipMonthTotal: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const withVal = payload.filter((p) => {
+    const k = String(p.dataKey ?? "");
+    return k.startsWith("lc_") && Number(p.value) > 0;
+  });
+  if (withVal.length === 0) return null;
+  const first = payload[0] as { payload?: Record<string, string | number> } | undefined;
+  const rowPayload = first?.payload;
+  const monthTotal =
+    rowPayload && typeof rowPayload.monthTotal === "number" ? rowPayload.monthTotal : null;
+  return (
+    <div className="max-w-sm rounded-lg border border-app-border bg-white/95 px-3 py-2 text-xs shadow-md backdrop-blur dark:bg-slate-900/95">
+      <p className="mb-1 font-medium text-[#111827] dark:text-slate-100">{label}</p>
+      {monthTotal != null && Number.isFinite(monthTotal) && monthTotal > 0 ? (
+        <p className="mb-2 border-b border-app-border/80 pb-2 font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+          {tipMonthTotal}: {formatUsd(monthTotal, 2)}
+        </p>
+      ) : null}
+      <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+        {withVal.map((p) => {
+          const meta = seriesMeta[String(p.dataKey ?? "")];
+          if (!meta) return null;
+          return (
+            <div key={String(p.dataKey)} className="rounded-md border border-app-border/60 bg-app-surface/50 p-2">
+              <p className="font-medium tabular-nums text-[#111827] dark:text-slate-100">
+                <span style={{ color: p.color }}>■ </span>
+                {formatUsd(Number(p.value), 2)}
+              </p>
+              <p className="mt-1 text-[11px] text-[#4B5563] dark:text-slate-400">
+                {tipSku}: <span className="text-foreground">{meta.sku}</span>
+              </p>
+              <p className="text-[11px] text-[#4B5563] dark:text-slate-400">
+                {tipDest}: <span className="text-foreground">{meta.destinationLabel}</span>
+              </p>
+              <p className="text-[11px] text-[#4B5563] dark:text-slate-400">
+                {tipTotal}: <span className="text-foreground">{formatUsd(meta.totalUsd, 2)}</span>
+              </p>
+              <p className="text-[11px] text-[#4B5563] dark:text-slate-400">
+                {tipDue}:{" "}
+                <span className="text-foreground" lang="en">
+                  {formatPoIssueDateEnglish(meta.paymentDueYmd)}
+                </span>
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function FcPaymentBarTooltip({
@@ -566,6 +699,24 @@ export function CashFlowDashboard({
   const fcBarHasAnyAmount = useMemo(
     () => fcPaymentBar.chartData.some((r) => Number(r.depositTotal) > 0 || Number(r.balanceTotal) > 0),
     [fcPaymentBar.chartData],
+  );
+
+  const lcPaymentBar = useMemo(() => {
+    const monthKeys = paymentMonthWindowAroundToday(6, 6);
+    const monthLabelFn = (mk: string) => {
+      const [y, m] = mk.split("-").map(Number);
+      if (language === "en") {
+        return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+      }
+      return `${y}年${m}月`;
+    };
+    const rowInputs = buildLandedCostBarRowInputs(forecastCashFlowRows, language, fcDestinationOptions);
+    return buildLandedCostPaymentBarData(rowInputs, monthKeys, monthLabelFn);
+  }, [forecastCashFlowRows, language, fcDestinationOptions]);
+
+  const lcBarHasAnyAmount = useMemo(
+    () => lcPaymentBar.chartData.some((r) => Number(r.monthTotal) > 0),
+    [lcPaymentBar.chartData],
   );
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
@@ -1054,6 +1205,82 @@ export function CashFlowDashboard({
                   )}
                 </tbody>
               </table>
+            </div>
+
+            <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
+              <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.lcBarTitle}</h6>
+              <p className="mt-1 text-xs text-[#9CA3AF]">{t.lcBarHint}</p>
+              {lcPaymentBar.seriesOrder.length > 12 ? (
+                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{t.lcBarLegendHint}</p>
+              ) : null}
+              <div className="mt-3 h-80 w-full min-w-0">
+                {!lcBarHasAnyAmount ? (
+                  <p className="py-16 text-center text-sm text-slate-400">{t.lcBarNoData}</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={lcPaymentBar.chartData}
+                      margin={{ top: 44, right: 12, left: 4, bottom: 28 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 10 }}
+                        interval={0}
+                        angle={-32}
+                        textAnchor="end"
+                        height={70}
+                        stroke="#64748b"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11 }}
+                        stroke="#64748b"
+                        tickFormatter={(v) => formatUsd(Number(v), 0)}
+                        width={56}
+                      />
+                      <Tooltip
+                        content={
+                          <LcPaymentBarTooltip
+                            seriesMeta={lcPaymentBar.seriesMeta}
+                            tipSku={t.lcTipSku}
+                            tipDest={t.lcTipDest}
+                            tipTotal={t.lcTipTotal}
+                            tipDue={t.lcTipDue}
+                            tipMonthTotal={t.lcTipMonthTotal}
+                          />
+                        }
+                      />
+                      {lcPaymentBar.seriesOrder.length > 0 && lcPaymentBar.seriesOrder.length <= 12 ? (
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
+                      ) : null}
+                      {lcPaymentBar.seriesOrder.map((stackKey, i) => {
+                        const meta = lcPaymentBar.seriesMeta[stackKey];
+                        const legendName = meta
+                          ? `${meta.sku} · ${
+                              meta.destinationLabel.length > 28
+                                ? `${meta.destinationLabel.slice(0, 28)}…`
+                                : meta.destinationLabel
+                            }`
+                          : stackKey;
+                        return (
+                          <Bar
+                            key={stackKey}
+                            stackId="lcPay"
+                            dataKey={stackKey}
+                            name={legendName}
+                            fill={LC_PAY_STACK[i % LC_PAY_STACK.length]}
+                            isAnimationActive={false}
+                          >
+                            <LabelList
+                              content={lcMonthlyTotalTopLabel(lcPaymentBar.chartData, lcPaymentBar.seriesOrder)}
+                            />
+                          </Bar>
+                        );
+                      })}
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
             </div>
           </div>
         </div>
