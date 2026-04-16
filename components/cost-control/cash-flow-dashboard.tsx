@@ -360,20 +360,28 @@ function fcSingleBarTopLabel(chartData: Record<string, string | number>[], total
   return labelFn as LabelContentType;
 }
 
-/** Month total label on top of the landed-cost stack (only on the top non-zero segment). */
-function lcMonthlyTotalTopLabel(
+/**
+ * Month total on top of each bar (always visible). Recharts 3 LabelList often omits `dataKey`
+ * from custom `content` props — pass `seriesDataKey` via closure so we can detect the top stack segment.
+ */
+function lcMonthlyTotalTopLabelForSeries(
   chartData: Record<string, string | number>[],
   seriesOrder: string[],
+  seriesDataKey: string,
 ): LabelContentType {
   const labelFn = (props: Record<string, unknown>) => {
     const layout = fcBarLabelLayout(props);
-    const monthIdx = typeof props.index === "number" ? props.index : Number(props.index);
-    if (layout == null || !Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return null;
+    let monthIdx = typeof props.index === "number" ? props.index : Number(props.index);
+    if (!Number.isFinite(monthIdx) || monthIdx < 0) {
+      const pl = props.payload as Record<string, unknown> | undefined;
+      const mk = pl && typeof pl.monthKey === "string" ? pl.monthKey : null;
+      if (mk) monthIdx = chartData.findIndex((r) => String(r.monthKey) === mk);
+    }
+    if (!Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return null;
     const row = chartData[monthIdx];
     if (!row) return null;
     const total = Number(row.monthTotal);
     if (!Number.isFinite(total) || total <= 0) return null;
-    const curKey = String(props.dataKey ?? "");
     let topIdx = -1;
     for (let j = seriesOrder.length - 1; j >= 0; j--) {
       if (Number(row[seriesOrder[j]] ?? 0) > 0) {
@@ -381,7 +389,7 @@ function lcMonthlyTotalTopLabel(
         break;
       }
     }
-    const selfIdx = seriesOrder.indexOf(curKey);
+    const selfIdx = seriesOrder.indexOf(seriesDataKey);
     if (selfIdx < 0 || selfIdx !== topIdx) return null;
     return (
       <text
@@ -390,11 +398,11 @@ function lcMonthlyTotalTopLabel(
         textAnchor="middle"
         dominantBaseline="auto"
         fill="currentColor"
-        fontSize={10}
+        fontSize={11}
         fontWeight={600}
-        className="tabular-nums text-slate-700 dark:text-slate-200"
+        className="tabular-nums text-slate-800 dark:text-slate-100"
       >
-        {formatUsd(total, 0)}
+        {formatUsd(total, 2)}
       </text>
     );
   };
@@ -1270,7 +1278,7 @@ export function CashFlowDashboard({
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={lcPaymentBar.chartData}
-                      margin={{ top: 44, right: 12, left: 4, bottom: 28 }}
+                      margin={{ top: 56, right: 12, left: 4, bottom: 28 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis
@@ -1322,7 +1330,11 @@ export function CashFlowDashboard({
                             isAnimationActive={false}
                           >
                             <LabelList
-                              content={lcMonthlyTotalTopLabel(lcPaymentBar.chartData, lcPaymentBar.seriesOrder)}
+                              content={lcMonthlyTotalTopLabelForSeries(
+                                lcPaymentBar.chartData,
+                                lcPaymentBar.seriesOrder,
+                                stackKey,
+                              )}
                             />
                           </Bar>
                         );
