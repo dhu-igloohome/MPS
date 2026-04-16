@@ -265,6 +265,20 @@ function labels(language: Language) {
     lcTipMonthTotal: en ? "Month total" : "当月合计",
     lcSumLabel: en ? "Sum (lines with landed total)" : "可计算 landed 总金额的行合计",
     lcSumLineCount: en ? "computable / total lines" : "可算金额 / 总行数",
+    /** Third chart: same monthly numbers as the two bar charts above, grouped for comparison. */
+    summaryBarTitle: en ? "Scheduled vs landed cost (comparison)" : "订金尾款与 Landed cost 对照",
+    summaryBarHint: en
+      ? "Additional chart built from the same data as the two charts above: per month, scheduled = deposit + balance totals; landed = landed-cost due totals. Same 13-month window."
+      : "在上方两个柱状图数据基础上增加的对照图：每月「订金+尾款」合计与「Landed cost」应付合计并列展示，时间窗与上图一致（当前月 ±6）。",
+    summarySidebarTitle: en ? "Monthly amounts (USD)" : "当月金额 (USD)",
+    summaryColPeriod: en ? "Month" : "月份",
+    summaryColScheduled: en ? "Scheduled" : "订金+尾款",
+    summaryColLanded: en ? "Landed" : "Landed",
+    summarySeriesScheduled: en ? "Scheduled (deposit + balance)" : "订金+尾款（应付）",
+    summarySeriesLanded: en ? "Landed cost payment" : "Landed cost 付款",
+    summaryNoData: en
+      ? "No scheduled or landed-cost amounts in this window to compare."
+      : "该时间窗内无可对照的订金/尾款或 Landed cost 金额。",
   };
 }
 
@@ -377,7 +391,7 @@ function lcMonthlyTotalTopLabelForSeries(
       const mk = pl && typeof pl.monthKey === "string" ? pl.monthKey : null;
       if (mk) monthIdx = chartData.findIndex((r) => String(r.monthKey) === mk);
     }
-    if (!Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return null;
+    if (layout == null || !Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return null;
     const row = chartData[monthIdx];
     if (!row) return null;
     const total = Number(row.monthTotal);
@@ -533,6 +547,78 @@ function FcPaymentBarTooltip({
             </p>
           ))
         : null}
+    </div>
+  );
+}
+
+type FcLcSummaryChartRow = {
+  monthKey: string;
+  name: string;
+  scheduledTotal: number;
+  landedTotal: number;
+};
+
+function resolveSummaryBarDataIndex(props: Record<string, unknown>, chartData: { monthKey: string }[]): number {
+  let monthIdx = typeof props.index === "number" ? props.index : Number(props.index);
+  if (!Number.isFinite(monthIdx) || monthIdx < 0) {
+    const pl = props.payload as Record<string, unknown> | undefined;
+    const mk = pl && typeof pl.monthKey === "string" ? pl.monthKey : null;
+    if (mk) monthIdx = chartData.findIndex((r) => r.monthKey === mk);
+  }
+  if (!Number.isFinite(monthIdx) || monthIdx < 0 || monthIdx >= chartData.length) return -1;
+  return monthIdx;
+}
+
+function summaryBarTopLabel(
+  chartData: FcLcSummaryChartRow[],
+  dataKey: "scheduledTotal" | "landedTotal",
+): LabelContentType {
+  const labelFn = (props: Record<string, unknown>) => {
+    const layout = fcBarLabelLayout(props);
+    const monthIdx = resolveSummaryBarDataIndex(props, chartData);
+    if (layout == null || monthIdx < 0) return null;
+    const row = chartData[monthIdx];
+    const val = Number(row[dataKey]);
+    if (!Number.isFinite(val) || val <= 0) return null;
+    return (
+      <text
+        x={layout.cx}
+        y={layout.yTop - 4}
+        textAnchor="middle"
+        dominantBaseline="auto"
+        fill="currentColor"
+        fontSize={11}
+        fontWeight={600}
+        className="tabular-nums text-slate-800 dark:text-slate-100"
+      >
+        {formatUsd(val, 2)}
+      </text>
+    );
+  };
+  return labelFn as LabelContentType;
+}
+
+function FcLandedSummaryTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { name?: string; value?: number; color?: string }[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const rows = payload.filter((p) => Number(p.value) > 0);
+  if (rows.length === 0) return null;
+  return (
+    <div className="max-w-xs rounded-lg border border-app-border bg-white/95 px-3 py-2 text-xs shadow-md backdrop-blur dark:bg-slate-900/95">
+      <p className="mb-1 font-medium text-[#111827] dark:text-slate-100">{label}</p>
+      {rows.map((p) => (
+        <p key={String(p.name)} className="tabular-nums text-[#4B5563] dark:text-slate-300">
+          <span style={{ color: p.color }}>{p.name}: </span>
+          {formatUsd(Number(p.value), 2)}
+        </p>
+      ))}
     </div>
   );
 }
@@ -727,6 +813,31 @@ export function CashFlowDashboard({
   const lcBarHasAnyAmount = useMemo(
     () => lcPaymentBar.chartData.some((r) => Number(r.monthTotal) > 0),
     [lcPaymentBar.chartData],
+  );
+
+  /** Same source rows as fcPaymentBar + lcPaymentBar: monthly scheduled (dep+bal) vs landed totals. */
+  const fcLcSummaryChartRows = useMemo((): FcLcSummaryChartRow[] => {
+    const fc = fcPaymentBar.chartData;
+    const lc = lcPaymentBar.chartData;
+    const n = Math.max(fc.length, lc.length);
+    const out: FcLcSummaryChartRow[] = [];
+    for (let i = 0; i < n; i++) {
+      const fcRow = fc[i];
+      const lcRow = lc[i];
+      const monthKey = String(fcRow?.monthKey ?? lcRow?.monthKey ?? "");
+      const name = String(fcRow?.name ?? lcRow?.name ?? monthKey);
+      const dep = fcRow ? Number(fcRow.depositTotal) : 0;
+      const bal = fcRow ? Number(fcRow.balanceTotal) : 0;
+      const scheduled = Math.round((dep + bal) * 100) / 100;
+      const landed = lcRow ? Math.round(Number(lcRow.monthTotal) * 100) / 100 : 0;
+      out.push({ monthKey, name, scheduledTotal: scheduled, landedTotal: landed });
+    }
+    return out;
+  }, [fcPaymentBar.chartData, lcPaymentBar.chartData]);
+
+  const fcLcSummaryHasData = useMemo(
+    () => fcLcSummaryChartRows.some((r) => r.scheduledTotal > 0 || r.landedTotal > 0),
+    [fcLcSummaryChartRows],
   );
 
   /** Landed cost table footer: Σ Total amount (USD) for rows where landed × qty is computable. */
@@ -1343,6 +1454,92 @@ export function CashFlowDashboard({
                   </ResponsiveContainer>
                 )}
               </div>
+            </div>
+          </div>
+
+          <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
+            <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.summaryBarTitle}</h6>
+            <p className="mt-1 text-xs text-[#9CA3AF]">{t.summaryBarHint}</p>
+            <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-stretch">
+              <div className="h-80 min-w-0 flex-1">
+                {!fcLcSummaryHasData ? (
+                  <p className="py-16 text-center text-sm text-slate-400">{t.summaryNoData}</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={fcLcSummaryChartRows}
+                      margin={{ top: 52, right: 8, left: 4, bottom: 28 }}
+                      barGap={6}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 10 }}
+                        interval={0}
+                        angle={-32}
+                        textAnchor="end"
+                        height={70}
+                        stroke="#64748b"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11 }}
+                        stroke="#64748b"
+                        tickFormatter={(v) => formatUsd(Number(v), 0)}
+                        width={56}
+                      />
+                      <Tooltip content={<FcLandedSummaryTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar
+                        dataKey="scheduledTotal"
+                        name={t.summarySeriesScheduled}
+                        fill={FC_DEP_STACK[0]}
+                        isAnimationActive={false}
+                      >
+                        <LabelList content={summaryBarTopLabel(fcLcSummaryChartRows, "scheduledTotal")} />
+                      </Bar>
+                      <Bar
+                        dataKey="landedTotal"
+                        name={t.summarySeriesLanded}
+                        fill={FC_BAL_STACK[0]}
+                        isAnimationActive={false}
+                      >
+                        <LabelList content={summaryBarTopLabel(fcLcSummaryChartRows, "landedTotal")} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+              <aside className="w-full shrink-0 rounded-xl border border-slate-200 bg-app-surface/90 p-3 dark:border-slate-600 lg:w-72">
+                <h6 className="text-xs font-semibold text-slate-800 dark:text-slate-100">{t.summarySidebarTitle}</h6>
+                <div className="mt-2 max-h-80 overflow-y-auto text-xs">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b border-app-border/80 text-left text-app-muted">
+                        <th className="py-1.5 pr-2 font-medium">{t.summaryColPeriod}</th>
+                        <th className="py-1.5 pr-1 text-right font-medium">{t.summaryColScheduled}</th>
+                        <th className="py-1.5 text-right font-medium">{t.summaryColLanded}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {fcLcSummaryChartRows.map((r) => (
+                        <tr key={r.monthKey} className="border-b border-app-border/50 last:border-0">
+                          <td className="py-2 pr-2 font-medium text-slate-800 dark:text-slate-100">{r.name}</td>
+                          <td className="py-2 pr-1 text-right tabular-nums text-slate-700 dark:text-slate-200">
+                            {r.scheduledTotal > 0 ? (
+                              formatUsd(r.scheduledTotal, 2)
+                            ) : (
+                              <span className="text-slate-400">{t.na}</span>
+                            )}
+                          </td>
+                          <td className="py-2 text-right tabular-nums text-slate-700 dark:text-slate-200">
+                            {r.landedTotal > 0 ? formatUsd(r.landedTotal, 2) : <span className="text-slate-400">{t.na}</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </aside>
             </div>
           </div>
         </div>
