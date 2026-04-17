@@ -78,7 +78,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
       ? "English name is stored; TW/HK/MO use Taiwan, China / Hong Kong, China / Macau, China."
       : "保存英文标准名称；台湾/香港/澳门在中文界面显示为中国台湾、中国香港、中国澳门。",
     destinationTariff: en ? "Destination tariff (%)" : "目的国关税 (%)",
-    cmUnitTaxRate: en ? "CM unit price tax rate (%)" : "CM 单价含税税率 (%)",
     seaMode: en ? "Shipping: ocean" : "运输方式 · 海运",
     seaFreightUnit: en ? "Ocean freight (USD / unit)" : "海运运费单价 (USD)",
     airMode: en ? "Shipping: air" : "运输方式 · 空运",
@@ -140,7 +139,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [eManufacturerCountry, setEManufacturerCountry] = useState("");
   const [eDestinationCountry, setEDestinationCountry] = useState("");
   const [eDestinationTariffPct, setEDestinationTariffPct] = useState("");
-  const [eCmUnitPriceTaxRatePct, setECmUnitPriceTaxRatePct] = useState("");
   const [eSeaFreightUnitPrice, setESeaFreightUnitPrice] = useState("");
   const [eAirFreightUnitPrice, setEAirFreightUnitPrice] = useState("");
   const [eIncoterm, setEIncoterm] = useState<UnitCostQuoteIncoterm>("EXW");
@@ -169,7 +167,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     setEManufacturerCountry(row.manufacturerCountry);
     setEDestinationCountry(row.destinationCountry);
     setEDestinationTariffPct(row.destinationTariffPct != null ? String(row.destinationTariffPct) : "");
-    setECmUnitPriceTaxRatePct(row.cmUnitPriceTaxRatePct != null ? String(row.cmUnitPriceTaxRatePct) : "");
     setESeaFreightUnitPrice(row.seaFreightUnitPrice != null ? String(row.seaFreightUnitPrice) : "");
     setEAirFreightUnitPrice(row.airFreightUnitPrice != null ? String(row.airFreightUnitPrice) : "");
     setEIncoterm(row.incoterm);
@@ -214,7 +211,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
         manufacturerCountry: eManufacturerCountry.trim(),
         destinationCountry: eDestinationCountry.trim(),
         destinationTariffPct: eDestinationTariffPct.trim() === "" ? null : Number(eDestinationTariffPct),
-        cmUnitPriceTaxRatePct: eCmUnitPriceTaxRatePct.trim() === "" ? null : Number(eCmUnitPriceTaxRatePct),
         seaFreightUnitPrice: eSeaFreightUnitPrice.trim() === "" ? null : Number(eSeaFreightUnitPrice),
         airFreightUnitPrice: eAirFreightUnitPrice.trim() === "" ? null : Number(eAirFreightUnitPrice),
         incoterm: eIncoterm,
@@ -267,7 +263,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
         manufacturerCountry: manufacturerCountry.trim(),
         destinationCountry: destinationCountry.trim(),
         destinationTariffPct: destinationTariffPct.trim() === "" ? null : Number(destinationTariffPct),
-        cmUnitPriceTaxRatePct: null,
         seaFreightUnitPrice: seaFreightUnitPrice.trim() === "" ? null : Number(seaFreightUnitPrice),
         airFreightUnitPrice: airFreightUnitPrice.trim() === "" ? null : Number(airFreightUnitPrice),
         incoterm,
@@ -585,18 +580,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
                 />
               </label>
-              <label className="block">
-                <span className="mb-1 block text-sm text-foreground/85">{t.cmUnitTaxRate}</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step="0.01"
-                  value={eCmUnitPriceTaxRatePct}
-                  onChange={(ev) => setECmUnitPriceTaxRatePct(ev.target.value)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                />
-              </label>
               <label className="block sm:col-span-2">
                 <span className="mb-1 block text-sm text-foreground/85">{t.seaMode}</span>
                 <span className="mb-1 block text-xs text-app-muted">{t.seaFreightUnit}</span>
@@ -687,7 +670,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                 <th className="whitespace-nowrap px-2 py-2">{t.manufacturerCountry}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.destinationCountry}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.destinationTariff}</th>
-                <th className="whitespace-nowrap px-2 py-2">{t.cmUnitTaxRate}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.seaFreightUnit}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.airFreightUnit}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.incoterm}</th>
@@ -699,7 +681,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
             <tbody>
               {filteredHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={15} className="px-2 py-6 text-center text-app-muted">
+                  <td colSpan={14} className="px-2 py-6 text-center text-app-muted">
                     {t.empty}
                   </td>
                 </tr>
@@ -719,9 +701,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                     </td>
                     <td className="whitespace-nowrap px-2 py-2 tabular-nums">
                       {fmtPct(row.destinationTariffPct, t.na)}
-                    </td>
-                    <td className="whitespace-nowrap px-2 py-2 tabular-nums">
-                      {fmtPct(row.cmUnitPriceTaxRatePct, t.na)}
                     </td>
                     <td className="whitespace-nowrap px-2 py-2 tabular-nums">
                       {fmtUsd(row.seaFreightUnitPrice, t.na)}

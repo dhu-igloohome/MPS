@@ -589,8 +589,6 @@ export type UnitCostQuoteEntry = {
   destinationCountry: string;
   /** 目的国关税比例 %，未填为 null */
   destinationTariffPct: number | null;
-  /** CM 单价含税税率 %，未填为 null */
-  cmUnitPriceTaxRatePct: number | null;
   /** 海运运费单价 (USD)，未填为 null */
   seaFreightUnitPrice: number | null;
   /** 空运运费单价 (USD)，未填为 null */

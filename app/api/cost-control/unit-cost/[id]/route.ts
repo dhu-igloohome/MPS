@@ -41,7 +41,6 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
   const manufacturerCountry = String(body.manufacturerCountry ?? "").trim();
   const destinationCountry = String(body.destinationCountry ?? "").trim();
   const destinationTariffPct = optPct(body.destinationTariffPct);
-  const cmUnitPriceTaxRatePct = optPct(body.cmUnitPriceTaxRatePct);
   const seaFreightUnitPrice = optFreightUsd(body.seaFreightUnitPrice);
   const airFreightUnitPrice = optFreightUsd(body.airFreightUnitPrice);
   const incotermRaw = String(body.incoterm ?? "EXW").trim().toUpperCase();
@@ -64,16 +63,28 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
   if (incoterm == null) {
     return NextResponse.json({ message: "Invalid incoterm (EXW, FOB, DAP, or DDP)" }, { status: 400 });
   }
-  if (body.destinationTariffPct !== undefined && body.destinationTariffPct !== "" && destinationTariffPct === null) {
+  if (
+    body.destinationTariffPct !== undefined &&
+    body.destinationTariffPct !== null &&
+    body.destinationTariffPct !== "" &&
+    destinationTariffPct === null
+  ) {
     return NextResponse.json({ message: "Destination tariff must be between 0 and 100" }, { status: 400 });
   }
-  if (body.cmUnitPriceTaxRatePct !== undefined && body.cmUnitPriceTaxRatePct !== "" && cmUnitPriceTaxRatePct === null) {
-    return NextResponse.json({ message: "CM tax rate must be between 0 and 100" }, { status: 400 });
-  }
-  if (body.seaFreightUnitPrice !== undefined && body.seaFreightUnitPrice !== "" && seaFreightUnitPrice === null) {
+  if (
+    body.seaFreightUnitPrice !== undefined &&
+    body.seaFreightUnitPrice !== null &&
+    body.seaFreightUnitPrice !== "" &&
+    seaFreightUnitPrice === null
+  ) {
     return NextResponse.json({ message: "Sea freight unit price must be a non-negative number" }, { status: 400 });
   }
-  if (body.airFreightUnitPrice !== undefined && body.airFreightUnitPrice !== "" && airFreightUnitPrice === null) {
+  if (
+    body.airFreightUnitPrice !== undefined &&
+    body.airFreightUnitPrice !== null &&
+    body.airFreightUnitPrice !== "" &&
+    airFreightUnitPrice === null
+  ) {
     return NextResponse.json({ message: "Air freight unit price must be a non-negative number" }, { status: 400 });
   }
   if (destinationCountry && !isForecastDestinationInputValid(destinationCountry)) {
@@ -94,7 +105,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
       manufacturerCountry,
       destinationCountry,
       destinationTariffPct,
-      cmUnitPriceTaxRatePct,
+      cmUnitPriceTaxRatePct: null,
       seaFreightUnitPrice,
       airFreightUnitPrice,
       incoterm,

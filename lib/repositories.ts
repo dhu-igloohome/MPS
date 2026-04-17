@@ -4972,7 +4972,6 @@ function mapUnitCostQuote(row: UnitCostQuoteRow): UnitCostQuoteEntry {
     manufacturerCountry: row.manufacturer_country ?? "",
     destinationCountry: row.destination_country ?? "",
     destinationTariffPct: quoteNullableNum(row.destination_tariff_pct),
-    cmUnitPriceTaxRatePct: quoteNullableNum(row.cm_unit_price_tax_rate_pct),
     seaFreightUnitPrice: quoteNullableNum(row.sea_freight_unit_price),
     airFreightUnitPrice: quoteNullableNum(row.air_freight_unit_price),
     incoterm: normalizeUnitCostIncoterm(row.incoterm),
