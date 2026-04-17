@@ -8,6 +8,7 @@ import {
   forecastIncotermRequiresLandedCostInputs,
   type ForecastIncoterm,
 } from "@/lib/forecast-incoterm";
+import { buildForecastDestinationOptions, forecastDestinationDisplay } from "@/lib/forecast-destination-countries";
 import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
 import { computeDepartureDateYmd, computePaymentDueYmd } from "@/lib/landed-cost-cash-flow";
@@ -93,6 +94,10 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
     bts: en ? "Build to Stock" : "备货生产",
     poIssue: en ? "PO issue date" : "订单下达日期",
     total: en ? "Total amount (USD)" : "总金额 (USD)",
+    destCountry: en ? "Destination country" : "目的国",
+    destCountryTitle: en
+      ? "Same field as Supply Chain → Cost control → Cash flow analysis → Forecast cash flow → Destination (from Forecast Collection)."
+      : "与「供应链 → 成本控制 → 现金流分析 → Forecast cash flow」中的「目的国 / Destination」一致，数据来自 Forecast 录入。",
     tariff: en ? "Destination tariff (%)" : "目的国关税 (%)",
     ship: en ? "Shipping mode" : "运输方式",
     shipOcean: en ? "Shipping: ocean" : "运输方式 · 海运",
@@ -129,6 +134,8 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
     setRows(initialRows);
   }, [initialRows]);
 
+  const fcDestinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
+
   const dashboardRows = useMemo(() => {
     return rows.map((row) => {
       const needsLandedInputs = forecastIncotermRequiresLandedCostInputs(row.incoterm);
@@ -138,6 +145,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
           ? computeDepartureDateYmd(row.poIssueDate, mfg, row.cashFlowShippingMode)
           : null;
       const paymentDueYmd = departureYmd ? computePaymentDueYmd(departureYmd) : null;
+      const destinationLabel = forecastDestinationDisplay(row.destination, language, fcDestinationOptions);
       return {
         row,
         lineTotal: forecastLineTotalUsd(row),
@@ -145,10 +153,11 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
         needsLandedInputs,
         departureYmd,
         paymentDueYmd,
+        destinationLabel,
         supplierLabel: row.cashFlowSupplierName.trim() || t.na,
       };
     });
-  }, [rows, t.na]);
+  }, [rows, t.na, language, fcDestinationOptions]);
 
   const sumComputable = useMemo(
     () => dashboardRows.reduce((s, x) => s + (x.lineTotal ?? 0), 0),
@@ -184,7 +193,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
         <p className="mt-1 text-xs text-[#9CA3AF]">{t.hint}</p>
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[1480px] border-collapse text-xs sm:text-sm">
+          <table className="w-full min-w-[1600px] border-collapse text-xs sm:text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700 dark:text-slate-400">
                 <th className="py-2 pr-3">{t.supplier}</th>
@@ -195,6 +204,9 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                   {t.poIssue}
                 </th>
                 <th className="py-2 pr-3 text-right">{t.total}</th>
+                <th className="min-w-[8rem] py-2 pr-3" title={t.destCountryTitle}>
+                  {t.destCountry}
+                </th>
                 <th className="min-w-[7rem] py-2 pr-3 text-right">{t.tariff}</th>
                 <th className="min-w-[9rem] py-2 pr-3">{t.ship}</th>
                 <th className="min-w-[8rem] py-2 pr-3 text-right">{t.freight}</th>
@@ -211,12 +223,13 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
             <tbody>
               {dashboardRows.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="py-8 text-center text-slate-400">
+                  <td colSpan={14} className="py-8 text-center text-slate-400">
                     {t.empty}
                   </td>
                 </tr>
               ) : (
-                dashboardRows.map(({ row, lineTotal, landed, needsLandedInputs, departureYmd, paymentDueYmd, supplierLabel }) => (
+                dashboardRows.map(
+                  ({ row, lineTotal, landed, needsLandedInputs, departureYmd, paymentDueYmd, destinationLabel, supplierLabel }) => (
                   <tr key={row.id} className="border-b border-app-border/60">
                     <td className="max-w-[12rem] truncate py-2 pr-3">{supplierLabel}</td>
                     <td className="py-2 pr-3 font-medium">{row.sku}</td>
@@ -239,6 +252,12 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                     </td>
                     <td className="py-2 pr-3 text-right tabular-nums">
                       {lineTotal != null ? formatUsd(lineTotal, 2) : t.na}
+                    </td>
+                    <td
+                      className="max-w-[10rem] truncate py-2 pr-3 text-slate-800 dark:text-slate-100"
+                      title={destinationLabel || undefined}
+                    >
+                      {row.destination.trim() ? destinationLabel : t.na}
                     </td>
                     <td className="py-2 pr-3 text-right align-top">
                       {needsLandedInputs ? (
@@ -366,7 +385,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                       <td className="py-2 pr-3 text-right text-base font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
                         {formatUsd(sumComputable, 2)}
                       </td>
-                      <td colSpan={6} className="py-2 pr-3 text-right text-xs text-slate-500 dark:text-slate-400">
+                      <td colSpan={7} className="py-2 pr-3 text-right text-xs text-slate-500 dark:text-slate-400">
                         {en ? "Σ Landed cost" : "到岸成本合计"}
                       </td>
                       <td className="py-2 pr-3 text-right text-base font-semibold tabular-nums text-emerald-800 dark:text-emerald-300">
@@ -374,7 +393,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                       </td>
                     </>
                   ) : (
-                    <td colSpan={13} className="py-3 text-center text-xs text-slate-400">
+                    <td colSpan={14} className="py-3 text-center text-xs text-slate-400">
                       {t.sumEmpty}
                     </td>
                   )}
