@@ -1,4 +1,8 @@
-import { normalizeForecastIncotermStored, type ForecastIncoterm } from "@/lib/forecast-incoterm";
+import {
+  forecastIncotermRequiresLandedCostInputs,
+  normalizeForecastIncotermStored,
+  type ForecastIncoterm,
+} from "@/lib/forecast-incoterm";
 import { computeLandedCostPerUnitUsd } from "@/lib/landed-cost-cash-flow";
 import type {
   ForecastCashFlowRow,
@@ -63,6 +67,7 @@ export type ForecastRowLandedMetrics = {
  * Landed cost for a forecast cash-flow row **only** when a Landed cost consolidate snapshot exists for that PO
  * (after Create or Save in Logistics). Tariff / freight / incoterm follow the snapshot; numeric gaps fall back to
  * unit-cost quotes as-of the snapshot quote date. With no snapshot, landed totals stay empty (no quote-only path).
+ * If the **Forecast Input** line incoterm is not FOB, DAP, or DDP, landed amounts stay empty even when a snapshot exists.
  */
 export function computeForecastRowLandedMetrics(input: {
   row: ForecastCashFlowRow;
@@ -73,14 +78,32 @@ export function computeForecastRowLandedMetrics(input: {
   const po = (row.poNumber || "").trim();
   const snap = po ? latestLccByPo.get(po) ?? null : null;
   const qRow = row.latestUnitCostQuote;
+  const forecastLineIncoterm = normalizeForecastIncotermStored(row.incoterm);
 
   if (!snap) {
     return {
       landedPerUnit: null,
       totalUsd: null,
-      displayIncoterm: normalizeForecastIncotermStored(row.incoterm),
+      displayIncoterm: forecastLineIncoterm,
       usesConsolidateSnapshot: false,
       manufacturerCountry: (qRow?.manufacturerCountry ?? "").trim(),
+    };
+  }
+
+  if (!forecastIncotermRequiresLandedCostInputs(forecastLineIncoterm)) {
+    let manufacturerCountry = "";
+    if (quotes.length) {
+      const qAsOf = resolveQuoteForRow(row, quotes, snap.quoteDate);
+      manufacturerCountry = (qAsOf?.manufacturerCountry ?? qRow?.manufacturerCountry ?? "").trim();
+    } else {
+      manufacturerCountry = (qRow?.manufacturerCountry ?? "").trim();
+    }
+    return {
+      landedPerUnit: null,
+      totalUsd: null,
+      displayIncoterm: forecastLineIncoterm,
+      usesConsolidateSnapshot: false,
+      manufacturerCountry,
     };
   }
 

@@ -1,8 +1,6 @@
 import { addCalendarDays } from "@/lib/cash-flow-overview";
-import type { ForecastIncoterm } from "@/lib/forecast-incoterm";
+import { forecastIncotermRequiresLandedCostInputs, type ForecastIncoterm } from "@/lib/forecast-incoterm";
 import type { ForecastCashFlowShippingMode } from "@/lib/types";
-
-const LANDED_ELIGIBLE_INCOTERMS: ReadonlySet<ForecastIncoterm> = new Set(["FOB", "DAP", "DDP"]);
 
 /** China / Korea → shorter lead times; else other countries. */
 export function landedCostManufacturerBucket(manufacturerCountry: string): "cnKr" | "other" {
@@ -29,7 +27,7 @@ export function computeLandedCostPerUnitUsd(input: {
   seaFreightUsd: number | null;
   airFreightUsd: number | null;
 }): number | null {
-  if (!LANDED_ELIGIBLE_INCOTERMS.has(input.forecastIncoterm)) return null;
+  if (!forecastIncotermRequiresLandedCostInputs(input.forecastIncoterm)) return null;
   if (input.destinationTariffPct == null) return null;
   const up = input.unitPriceUsd;
   if (up == null || !Number.isFinite(up)) return null;

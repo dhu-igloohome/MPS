@@ -3,6 +3,13 @@ import type { Language } from "@/lib/i18n";
 export const FORECAST_INCOTERMS = ["EXW", "FOB", "DAP", "DDP"] as const;
 export type ForecastIncoterm = (typeof FORECAST_INCOTERMS)[number];
 
+/** Forecast Input incoterm: landed-cost fields and totals apply only for these. */
+const FORECAST_INCOTERMS_WITH_LANDED_COST: ReadonlySet<ForecastIncoterm> = new Set(["FOB", "DAP", "DDP"]);
+
+export function forecastIncotermRequiresLandedCostInputs(incoterm: ForecastIncoterm): boolean {
+  return FORECAST_INCOTERMS_WITH_LANDED_COST.has(incoterm);
+}
+
 export function parseForecastIncoterm(raw: unknown): ForecastIncoterm | null {
   const s = String(raw ?? "").trim().toUpperCase();
   return (FORECAST_INCOTERMS as readonly string[]).includes(s) ? (s as ForecastIncoterm) : null;

@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { FORECAST_INCOTERMS, type ForecastIncoterm } from "@/lib/forecast-incoterm";
+import {
+  FORECAST_INCOTERMS,
+  forecastIncotermRequiresLandedCostInputs,
+  type ForecastIncoterm,
+} from "@/lib/forecast-incoterm";
 import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
 import type { ForecastCashFlowRow, UnitCostQuoteEntry } from "@/lib/types";
@@ -22,6 +26,7 @@ function forecastLineTotalUsd(row: ForecastCashFlowRow): number | null {
 
 /** Landed = Total amount (USD) × (tariff % / 100) + Freight (USD/unit) × (BTO + BTS qty). */
 function computeLogisticsLandedCostUsd(row: ForecastCashFlowRow): number | null {
+  if (!forecastIncotermRequiresLandedCostInputs(row.incoterm)) return null;
   const qty = Number(row.buildToOrder) + Number(row.buildToStock);
   if (!Number.isFinite(qty) || qty <= 0) return null;
   const lineTotal = forecastLineTotalUsd(row);
@@ -79,8 +84,8 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
   const t = {
     title: en ? "Forecast cash flow (for dashboard)" : "Forecast 现金流（看板汇总）",
     hint: en
-      ? "Line total from Unit cost; PO issue date in English. Same persisted row as Supply Chain → Cost control → Cash flow analysis. Landed cost (USD) = Total amount (USD) × (Destination tariff % ÷ 100) + Freight cost (USD/unit) × (Build to Order + Build to Stock)."
-      : "行总金额来自单位成本；订单下达日期以英文展示；与「供应链 → 成本控制 → 现金流分析」共用同一套持久化数据。Landed cost (USD) = 总金额 (USD) ×（目的国关税 % ÷ 100）+ 运费 (USD/单位) ×（按单生产 + 备货生产数量）。",
+      ? "Line total from Unit cost; PO issue date in English. Same persisted row as Supply Chain → Cost control → Cash flow analysis. Destination tariff, shipping mode, freight, incoterm override, and Landed cost apply only when Forecast Input incoterm is FOB, DAP, or DDP. Landed cost (USD) = Total amount (USD) × (Destination tariff % ÷ 100) + Freight cost (USD/unit) × (Build to Order + Build to Stock)."
+      : "行总金额来自单位成本；订单下达日期以英文展示；与「供应链 → 成本控制 → 现金流分析」共用同一套持久化数据。仅当 Forecast 录入行的贸易术语为 FOB、DAP 或 DDP 时，才需填写目的国关税、运输方式、运费、Incoterm 覆盖及到岸成本。Landed cost (USD) = 总金额 (USD) ×（目的国关税 % ÷ 100）+ 运费 (USD/单位) ×（按单生产 + 备货生产数量）。",
     supplier: en ? "Supplier name" : "供应商名称",
     sku: "SKU",
     bto: en ? "Build to Order" : "按单生产",
@@ -120,6 +125,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
       row,
       lineTotal: forecastLineTotalUsd(row),
       landed: computeLogisticsLandedCostUsd(row),
+      needsLandedInputs: forecastIncotermRequiresLandedCostInputs(row.incoterm),
       supplierLabel: row.cashFlowSupplierName.trim() || t.na,
     }));
   }, [rows, t.na]);
@@ -184,7 +190,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                   </td>
                 </tr>
               ) : (
-                dashboardRows.map(({ row, lineTotal, landed, supplierLabel }) => (
+                dashboardRows.map(({ row, lineTotal, landed, needsLandedInputs, supplierLabel }) => (
                   <tr key={row.id} className="border-b border-app-border/60">
                     <td className="max-w-[12rem] truncate py-2 pr-3">{supplierLabel}</td>
                     <td className="py-2 pr-3 font-medium">{row.sku}</td>
@@ -209,93 +215,109 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                       {lineTotal != null ? formatUsd(lineTotal, 2) : t.na}
                     </td>
                     <td className="py-2 pr-3 text-right align-top">
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        step={0.01}
-                        defaultValue={row.cashFlowDestinationTariffPct ?? ""}
-                        key={`tariff-${row.id}-${row.cashFlowDestinationTariffPct ?? "x"}`}
-                        onBlur={(e) => {
-                          const raw = e.target.value.trim();
-                          if (raw === "") {
-                            void patchForecast(row.id, { destinationTariffPct: null });
-                            return;
-                          }
-                          const n = Number(raw);
-                          if (!Number.isFinite(n) || n < 0 || n > 100) {
-                            setMessage(en ? "Tariff must be between 0 and 100." : "关税须在 0–100 之间。");
-                            return;
-                          }
-                          void patchForecast(row.id, { destinationTariffPct: n });
-                        }}
-                        disabled={rowSavingId === row.id}
-                        className="w-full max-w-[6.5rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums dark:border-slate-600 dark:bg-slate-800"
-                        aria-label={t.tariff}
-                      />
+                      {needsLandedInputs ? (
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.01}
+                          defaultValue={row.cashFlowDestinationTariffPct ?? ""}
+                          key={`tariff-${row.id}-${row.cashFlowDestinationTariffPct ?? "x"}`}
+                          onBlur={(e) => {
+                            const raw = e.target.value.trim();
+                            if (raw === "") {
+                              void patchForecast(row.id, { destinationTariffPct: null });
+                              return;
+                            }
+                            const n = Number(raw);
+                            if (!Number.isFinite(n) || n < 0 || n > 100) {
+                              setMessage(en ? "Tariff must be between 0 and 100." : "关税须在 0–100 之间。");
+                              return;
+                            }
+                            void patchForecast(row.id, { destinationTariffPct: n });
+                          }}
+                          disabled={rowSavingId === row.id}
+                          className="w-full max-w-[6.5rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums dark:border-slate-600 dark:bg-slate-800"
+                          aria-label={t.tariff}
+                        />
+                      ) : (
+                        <span className="tabular-nums text-slate-400 dark:text-slate-500">{t.na}</span>
+                      )}
                     </td>
                     <td className="py-2 pr-3 align-top">
-                      <select
-                        value={row.cashFlowShippingMode}
-                        onChange={(e) =>
-                          void patchForecast(row.id, {
-                            shippingMode: e.target.value as ForecastCashFlowRow["cashFlowShippingMode"],
-                          })
-                        }
-                        disabled={rowSavingId === row.id}
-                        className="w-full max-w-[11rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
-                        aria-label={t.ship}
-                      >
-                        <option value="ocean">{t.shipOcean}</option>
-                        <option value="air">{t.shipAir}</option>
-                      </select>
+                      {needsLandedInputs ? (
+                        <select
+                          value={row.cashFlowShippingMode}
+                          onChange={(e) =>
+                            void patchForecast(row.id, {
+                              shippingMode: e.target.value as ForecastCashFlowRow["cashFlowShippingMode"],
+                            })
+                          }
+                          disabled={rowSavingId === row.id}
+                          className="w-full max-w-[11rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
+                          aria-label={t.ship}
+                        >
+                          <option value="ocean">{t.shipOcean}</option>
+                          <option value="air">{t.shipAir}</option>
+                        </select>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500">{t.na}</span>
+                      )}
                     </td>
                     <td className="py-2 pr-3 text-right align-top">
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        defaultValue={row.cashFlowFreightUsdPerUnit ?? ""}
-                        key={`freight-${row.id}-${row.cashFlowFreightUsdPerUnit ?? "x"}`}
-                        onBlur={(e) => {
-                          const raw = e.target.value.trim();
-                          if (raw === "") {
-                            void patchForecast(row.id, { freightUsdPerUnit: null });
-                            return;
-                          }
-                          const n = Number(raw);
-                          if (!Number.isFinite(n) || n < 0) {
-                            setMessage(en ? "Freight must be a non-negative number." : "运费须为非负数。");
-                            return;
-                          }
-                          void patchForecast(row.id, { freightUsdPerUnit: n });
-                        }}
-                        disabled={rowSavingId === row.id}
-                        className="w-full max-w-[7rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums dark:border-slate-600 dark:bg-slate-800"
-                        aria-label={t.freight}
-                      />
+                      {needsLandedInputs ? (
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          defaultValue={row.cashFlowFreightUsdPerUnit ?? ""}
+                          key={`freight-${row.id}-${row.cashFlowFreightUsdPerUnit ?? "x"}`}
+                          onBlur={(e) => {
+                            const raw = e.target.value.trim();
+                            if (raw === "") {
+                              void patchForecast(row.id, { freightUsdPerUnit: null });
+                              return;
+                            }
+                            const n = Number(raw);
+                            if (!Number.isFinite(n) || n < 0) {
+                              setMessage(en ? "Freight must be a non-negative number." : "运费须为非负数。");
+                              return;
+                            }
+                            void patchForecast(row.id, { freightUsdPerUnit: n });
+                          }}
+                          disabled={rowSavingId === row.id}
+                          className="w-full max-w-[7rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums dark:border-slate-600 dark:bg-slate-800"
+                          aria-label={t.freight}
+                        />
+                      ) : (
+                        <span className="tabular-nums text-slate-400 dark:text-slate-500">{t.na}</span>
+                      )}
                     </td>
                     <td className="py-2 pr-3 align-top">
-                      <select
-                        value={effectiveIncoterm(row)}
-                        onChange={(e) =>
-                          void patchForecast(row.id, {
-                            cashFlowIncoterm: e.target.value as ForecastIncoterm,
-                          })
-                        }
-                        disabled={rowSavingId === row.id}
-                        className="w-full max-w-[5.5rem] rounded-lg border border-slate-200 bg-white px-1 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
-                        aria-label={t.incoterm}
-                      >
-                        {FORECAST_INCOTERMS.map((ic) => (
-                          <option key={ic} value={ic}>
-                            {ic}
-                          </option>
-                        ))}
-                      </select>
+                      {needsLandedInputs ? (
+                        <select
+                          value={effectiveIncoterm(row)}
+                          onChange={(e) =>
+                            void patchForecast(row.id, {
+                              cashFlowIncoterm: e.target.value as ForecastIncoterm,
+                            })
+                          }
+                          disabled={rowSavingId === row.id}
+                          className="w-full max-w-[5.5rem] rounded-lg border border-slate-200 bg-white px-1 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
+                          aria-label={t.incoterm}
+                        >
+                          {FORECAST_INCOTERMS.map((ic) => (
+                            <option key={ic} value={ic}>
+                              {ic}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{row.incoterm}</span>
+                      )}
                     </td>
                     <td className="py-2 pr-3 text-right tabular-nums font-medium">
-                      {landed != null ? formatUsd(landed, 2) : t.na}
+                      {needsLandedInputs && landed != null ? formatUsd(landed, 2) : t.na}
                     </td>
                   </tr>
                 ))
