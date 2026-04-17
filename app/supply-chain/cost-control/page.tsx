@@ -11,7 +11,9 @@ import {
   getForecastsByRegions,
   listCashFlowEntries,
   listCostAnalysisEntries,
+  listLogisticsLandedCostConsolidateSnapshots,
   listSuppliers,
+  listUnitCostQuotes,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
@@ -23,12 +25,15 @@ export default async function SupplyChainCostControlPage() {
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const [cashFlowEntries, costAnalysisEntries, forecastRecords, suppliers] = await Promise.all([
-    listCashFlowEntries(),
-    listCostAnalysisEntries(),
-    getForecastsByRegions(session.regions),
-    listSuppliers(),
-  ]);
+  const [cashFlowEntries, costAnalysisEntries, forecastRecords, suppliers, landedSnapshots, unitCostQuotes] =
+    await Promise.all([
+      listCashFlowEntries(),
+      listCostAnalysisEntries(),
+      getForecastsByRegions(session.regions),
+      listSuppliers(),
+      listLogisticsLandedCostConsolidateSnapshots(300),
+      listUnitCostQuotes(),
+    ]);
   const forecastCashFlowRows = await enrichForecastRecordsForCashFlow(forecastRecords);
   const fcSupplierNames = [
     ...new Set(
@@ -55,6 +60,8 @@ export default async function SupplyChainCostControlPage() {
           forecastCashFlowRows={forecastCashFlowRows}
           fcSupplierNames={fcSupplierNames}
           suppliers={suppliers}
+          landedCostConsolidateSnapshots={landedSnapshots}
+          unitCostQuotes={unitCostQuotes}
         />
       </Suspense>
     </AppShell>

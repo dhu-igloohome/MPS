@@ -6,7 +6,12 @@ import { useEffect, useState } from "react";
 import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
 import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
-import type { ForecastCashFlowRow, SupplierEntry, UnitCostQuoteEntry } from "@/lib/types";
+import type {
+  ForecastCashFlowRow,
+  LogisticsLandedCostConsolidateSnapshot,
+  SupplierEntry,
+  UnitCostQuoteEntry,
+} from "@/lib/types";
 
 type CashFlowPanelProps = {
   language: Language;
@@ -15,6 +20,8 @@ type CashFlowPanelProps = {
   fcSupplierNames: string[];
   /** Supplier master data for payment schedule (terms + lead time). */
   fcSuppliers: SupplierEntry[];
+  landedCostConsolidateSnapshots: LogisticsLandedCostConsolidateSnapshot[];
+  unitCostQuotes: UnitCostQuoteEntry[];
 };
 
 function formatForecastMonthCell(ym: string, language: Language): string {
@@ -33,7 +40,7 @@ const LABELS = {
   en: {
     fcTitle: "Forecast cash flow",
     fcHint:
-      "Only forecast rows whose Comment is \"Ok\" appear here (set on the Forecast page). Pick a supplier per row; Unit price (USD) is the latest matching quote from Unit cost (same SKU + supplier).",
+      "Only forecast rows whose Comment is \"Ok\" appear here (set on the Forecast page). Pick a supplier per row; Unit price (USD) is the latest matching quote from Unit cost (same SKU + supplier). Landed cost cash flow below follows Logistics → Landed cost consolidate when that PO has been saved there (drafts are created when you open that page).",
     fcSupplierName: "Supplier name",
     fcUnitPriceUsd: "Unit price (USD)",
     fcSelectSupplier: "Select supplier…",
@@ -56,7 +63,7 @@ const LABELS = {
   zh: {
     fcTitle: "Forecast 现金流",
     fcHint:
-      "仅显示 Forecast 页面评论（Comment）为 Ok 的行。每行可选供应商；单价 (USD) 取自「单位成本」中该 SKU + 供应商的最新报价。",
+      "仅显示 Forecast 页面评论（Comment）为 Ok 的行。每行可选供应商；单价 (USD) 取自「单位成本」中该 SKU + 供应商的最新报价。下方的 Landed cost 现金流在「物流进度 → 到岸成本汇总」保存该 PO 后以汇总为准（打开该页会为各 PO 自动生成草稿）。",
     fcSupplierName: "供应商名称",
     fcUnitPriceUsd: "单价 (USD)",
     fcSelectSupplier: "选择供应商…",
@@ -83,6 +90,8 @@ export function CashFlowPanel({
   forecastCashFlowRows,
   fcSupplierNames,
   fcSuppliers,
+  landedCostConsolidateSnapshots,
+  unitCostQuotes,
 }: CashFlowPanelProps) {
   const t = LABELS[language];
   const [fcRows, setFcRows] = useState(forecastCashFlowRows);
@@ -236,6 +245,8 @@ export function CashFlowPanel({
         entries={[]}
         costAnalysisEntries={[]}
         forecastCashFlowRows={fcRows}
+        landedCostConsolidateSnapshots={landedCostConsolidateSnapshots}
+        unitCostQuotes={unitCostQuotes}
         fcSuppliers={fcSuppliers}
         showForecastCashFlowSummary
         forecastSummaryOnly

@@ -3,12 +3,9 @@ import {
   type ForecastDestinationOption,
 } from "@/lib/forecast-destination-countries";
 import type { Language } from "@/lib/i18n";
-import {
-  computeDepartureDateYmd,
-  computeLandedCostPerUnitUsd,
-  computePaymentDueYmd,
-} from "@/lib/landed-cost-cash-flow";
-import type { ForecastCashFlowRow } from "@/lib/types";
+import { computeForecastRowLandedMetrics } from "@/lib/forecast-landed-cost-merge";
+import { computeDepartureDateYmd, computePaymentDueYmd } from "@/lib/landed-cost-cash-flow";
+import type { ForecastCashFlowRow, LogisticsLandedCostConsolidateSnapshot, UnitCostQuoteEntry } from "@/lib/types";
 
 export type LandedCostBarRowInput = {
   rowId: string;
@@ -36,23 +33,23 @@ export function buildLandedCostBarRowInputs(
   rows: ForecastCashFlowRow[],
   language: Language,
   destinationOptions: readonly ForecastDestinationOption[],
+  opts?: {
+    latestLccByPo?: Map<string, LogisticsLandedCostConsolidateSnapshot>;
+    quotes?: readonly UnitCostQuoteEntry[];
+  },
 ): LandedCostBarRowInput[] {
+  const latest = opts?.latestLccByPo ?? new Map<string, LogisticsLandedCostConsolidateSnapshot>();
+  const quotes = opts?.quotes ?? [];
   const out: LandedCostBarRowInput[] = [];
   for (const row of rows) {
-    const q = row.latestUnitCostQuote;
-    const mfr = (q?.manufacturerCountry ?? "").trim();
-    const landed = computeLandedCostPerUnitUsd({
-      forecastIncoterm: row.incoterm,
-      shippingMode: row.cashFlowShippingMode,
-      unitPriceUsd: row.unitPriceUsd,
-      destinationTariffPct: q?.destinationTariffPct ?? null,
-      seaFreightUsd: q?.seaFreightUnitPrice ?? null,
-      airFreightUsd: q?.airFreightUnitPrice ?? null,
-    });
-    const qty = Number(row.buildToOrder) + Number(row.buildToStock);
-    const totalUsd = landed != null && Number.isFinite(qty) && qty > 0 ? landed * qty : null;
+    const m = computeForecastRowLandedMetrics({ row, latestLccByPo: latest, quotes });
+    const totalUsd = m.totalUsd;
     if (totalUsd == null || !Number.isFinite(totalUsd) || totalUsd <= 0) continue;
-    const depYmd = computeDepartureDateYmd(row.poIssueDate, mfr, row.cashFlowShippingMode);
+    const depYmd = computeDepartureDateYmd(
+      row.poIssueDate,
+      m.manufacturerCountry,
+      row.cashFlowShippingMode,
+    );
     const payYmd = computePaymentDueYmd(depYmd);
     if (!payYmd || !/^\d{4}-\d{2}-\d{2}$/.test(payYmd)) continue;
     out.push({

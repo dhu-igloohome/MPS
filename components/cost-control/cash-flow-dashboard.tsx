@@ -50,16 +50,14 @@ import {
   forecastDestinationDisplay,
 } from "@/lib/forecast-destination-countries";
 import { formatUsd } from "@/lib/format-usd";
-import {
-  computeLandedCostPerUnitUsd,
-  computeDepartureDateYmd,
-  computePaymentDueYmd,
-} from "@/lib/landed-cost-cash-flow";
+import { computeForecastRowLandedMetrics, pickLatestLccSnapshotByPo } from "@/lib/forecast-landed-cost-merge";
+import { computeDepartureDateYmd, computePaymentDueYmd } from "@/lib/landed-cost-cash-flow";
 import type { Language } from "@/lib/i18n";
 import type {
   CashFlowEntry,
   CostAnalysisEntry,
   ForecastCashFlowRow,
+  LogisticsLandedCostConsolidateSnapshot,
   SupplierEntry,
   UnitCostQuoteEntry,
 } from "@/lib/types";
@@ -71,6 +69,10 @@ type Props = {
   costAnalysisEntries: CostAnalysisEntry[];
   /** Ok-comment forecast rows with supplier / unit cost (same source as Forecast cash flow table). */
   forecastCashFlowRows?: ForecastCashFlowRow[];
+  /** Newest LCC snapshot per PO (all users); drives Landed cost cash flow after Logistics save. */
+  landedCostConsolidateSnapshots?: LogisticsLandedCostConsolidateSnapshot[];
+  /** Full quote list for as-of unit price when a consolidate snapshot sets `quoteDate`. */
+  unitCostQuotes?: UnitCostQuoteEntry[];
   /** Supplier master (payment terms, lead time) from Supply Chain → Suppliers. */
   fcSuppliers?: SupplierEntry[];
   /** When true, show the Forecast summary table above KPIs (Supply Chain cost control). */
@@ -227,8 +229,8 @@ function labels(language: Language) {
     fcBarNoData: en ? "No payments fall in this 13-month window." : "该 13 个月内无应付金额。",
     lcTitle: en ? "Landed cost cash flow" : "Landed cost 现金流",
     lcHint: en
-      ? "Same rows as the forecast table above (Comment = Ok). Landed cost uses Forecast incoterm FOB/DAP/DDP, latest Unit cost by SKU+supplier, and your shipping mode. Tariff must be set on the quote or landed cost shows —."
-      : "与上方 Forecast 表相同（评论为 Ok）。到岸成本按 Forecast 贸易术语 FOB/DAP/DDP、SKU+供应商最新单位成本及所选运输方式计算；报价未填目的国关税时到岸成本显示「—」。",
+      ? "Same rows as the forecast table above (Comment = Ok). When Landed cost consolidate has been saved for a PO, tariff / freight / incoterm follow that snapshot (empty fields fall back to unit-cost quotes as of the snapshot quote date). Otherwise Forecast incoterm + latest quote by SKU+supplier apply. Open Logistics → Landed cost consolidate to auto-seed a draft per PO, fill tariff, then save."
+      : "与上方 Forecast 表相同（评论为 Ok）。若「物流进度 → 到岸成本汇总」已保存该 PO，则关税/运费/贸易条款以该汇总为准（留空时按汇总中的报价日期回退到单位成本报价）；否则按 Forecast 术语与 SKU+供应商最新报价。请在物流页打开汇总以自动生成各 PO 草稿，填妥关税等后保存。",
     lcColMonth: en ? "Forecast Month" : "Forecast 月份",
     lcColForecastNo: en ? "Forecast #" : "Forecast #",
     lcColRegion: en ? "Region" : "区域",
@@ -653,6 +655,8 @@ export function CashFlowDashboard({
   entries,
   costAnalysisEntries,
   forecastCashFlowRows = [],
+  landedCostConsolidateSnapshots = [],
+  unitCostQuotes = [],
   fcSuppliers = [],
   showForecastCashFlowSummary = false,
   onForecastCashFlowSettingsSaved,
@@ -660,6 +664,10 @@ export function CashFlowDashboard({
   forecastSummaryOnly = false,
 }: Props) {
   const t = labels(language);
+  const latestLccByPo = useMemo(
+    () => pickLatestLccSnapshotByPo(landedCostConsolidateSnapshots),
+    [landedCostConsolidateSnapshots],
+  );
   const [rangePreset, setRangePreset] = useState<RangePreset>("12m");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -806,9 +814,12 @@ export function CashFlowDashboard({
       }
       return `${y}年${m}月`;
     };
-    const rowInputs = buildLandedCostBarRowInputs(forecastCashFlowRows, language, fcDestinationOptions);
+    const rowInputs = buildLandedCostBarRowInputs(forecastCashFlowRows, language, fcDestinationOptions, {
+      latestLccByPo,
+      quotes: unitCostQuotes,
+    });
     return buildLandedCostPaymentBarData(rowInputs, monthKeys, monthLabelFn);
-  }, [forecastCashFlowRows, language, fcDestinationOptions]);
+  }, [forecastCashFlowRows, language, fcDestinationOptions, latestLccByPo, unitCostQuotes]);
 
   const lcBarHasAnyAmount = useMemo(
     () => lcPaymentBar.chartData.some((r) => Number(r.monthTotal) > 0),
@@ -845,26 +856,19 @@ export function CashFlowDashboard({
     let sumTotalUsd = 0;
     let computableLines = 0;
     for (const row of forecastCashFlowRows) {
-      const q = row.latestUnitCostQuote;
-      const mfr = (q?.manufacturerCountry ?? "").trim();
-      const landed = computeLandedCostPerUnitUsd({
-        forecastIncoterm: row.incoterm,
-        shippingMode: row.cashFlowShippingMode,
-        unitPriceUsd: row.unitPriceUsd,
-        destinationTariffPct: q?.destinationTariffPct ?? null,
-        seaFreightUsd: q?.seaFreightUnitPrice ?? null,
-        airFreightUsd: q?.airFreightUnitPrice ?? null,
+      const m = computeForecastRowLandedMetrics({
+        row,
+        latestLccByPo,
+        quotes: unitCostQuotes,
       });
-      const qty = Number(row.buildToOrder) + Number(row.buildToStock);
-      const totalUsd =
-        landed != null && Number.isFinite(qty) && qty > 0 ? landed * qty : null;
+      const totalUsd = m.totalUsd;
       if (totalUsd != null && Number.isFinite(totalUsd)) {
         sumTotalUsd += totalUsd;
         computableLines += 1;
       }
     }
     return { sumTotalUsd, computableLines };
-  }, [forecastCashFlowRows]);
+  }, [forecastCashFlowRows, latestLccByPo, unitCostQuotes]);
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
 
@@ -1275,19 +1279,14 @@ export function CashFlowDashboard({
                     </tr>
                   ) : (
                     forecastCashFlowRows.map((row) => {
-                      const q = row.latestUnitCostQuote;
-                      const mfr = (q?.manufacturerCountry ?? "").trim();
-                      const landed = computeLandedCostPerUnitUsd({
-                        forecastIncoterm: row.incoterm,
-                        shippingMode: row.cashFlowShippingMode,
-                        unitPriceUsd: row.unitPriceUsd,
-                        destinationTariffPct: q?.destinationTariffPct ?? null,
-                        seaFreightUsd: q?.seaFreightUnitPrice ?? null,
-                        airFreightUsd: q?.airFreightUnitPrice ?? null,
+                      const m = computeForecastRowLandedMetrics({
+                        row,
+                        latestLccByPo,
+                        quotes: unitCostQuotes,
                       });
-                      const qty = Number(row.buildToOrder) + Number(row.buildToStock);
-                      const totalUsd =
-                        landed != null && Number.isFinite(qty) && qty > 0 ? landed * qty : null;
+                      const mfr = m.manufacturerCountry;
+                      const landed = m.landedPerUnit;
+                      const totalUsd = m.totalUsd;
                       const depYmd = computeDepartureDateYmd(row.poIssueDate, mfr, row.cashFlowShippingMode);
                       const payYmd = computePaymentDueYmd(depYmd);
                       return (
@@ -1313,7 +1312,7 @@ export function CashFlowDashboard({
                           <td className="whitespace-nowrap py-2 pr-2" lang="en">
                             {row.poIssueDate ? formatPoIssueDateEnglish(row.poIssueDate) : t.na}
                           </td>
-                          <td className="py-2 pr-2 font-medium">{row.incoterm}</td>
+                          <td className="py-2 pr-2 font-medium">{m.displayIncoterm}</td>
                           <td className="py-2 pr-2 align-top">
                             <select
                               value={row.cashFlowShippingMode}

@@ -7,7 +7,14 @@ import { CostAnalysisPanel } from "@/components/cost-control/cost-analysis-panel
 import { PoCashFlowPanel } from "@/components/cost-control/po-cash-flow-panel";
 import { CostControlSubnav } from "@/components/cost-control/cost-control-subnav";
 import type { Language } from "@/lib/i18n";
-import type { CashFlowEntry, CostAnalysisEntry, ForecastCashFlowRow, SupplierEntry } from "@/lib/types";
+import type {
+  CashFlowEntry,
+  CostAnalysisEntry,
+  ForecastCashFlowRow,
+  LogisticsLandedCostConsolidateSnapshot,
+  SupplierEntry,
+  UnitCostQuoteEntry,
+} from "@/lib/types";
 
 type CostControlPanelProps = {
   language: Language;
@@ -17,6 +24,8 @@ type CostControlPanelProps = {
   fcSupplierNames: string[];
   /** Full supplier records (payment terms, lead time) for forecast dashboard schedule. */
   suppliers: SupplierEntry[];
+  landedCostConsolidateSnapshots: LogisticsLandedCostConsolidateSnapshot[];
+  unitCostQuotes: UnitCostQuoteEntry[];
 };
 
 const COPY = {
@@ -37,6 +46,8 @@ export function CostControlPanel({
   forecastCashFlowRows,
   fcSupplierNames,
   suppliers,
+  landedCostConsolidateSnapshots,
+  unitCostQuotes,
 }: CostControlPanelProps) {
   const t = COPY[language];
   const searchParams = useSearchParams();
@@ -69,6 +80,8 @@ export function CostControlPanel({
               forecastCashFlowRows={forecastCashFlowRows}
               fcSupplierNames={fcSupplierNames}
               fcSuppliers={suppliers}
+              landedCostConsolidateSnapshots={landedCostConsolidateSnapshots}
+              unitCostQuotes={unitCostQuotes}
             />
           </>
         )}

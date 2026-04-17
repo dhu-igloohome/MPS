@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { formatUsd } from "@/lib/format-usd";
@@ -9,6 +9,7 @@ import {
   isForecastDestinationInputValid,
   withLegacyForecastDestination,
 } from "@/lib/forecast-destination-countries";
+import { resolveQuoteForRow } from "@/lib/forecast-landed-cost-merge";
 import { normalizeForecastIncotermStored, type ForecastIncoterm } from "@/lib/forecast-incoterm";
 import type { Language } from "@/lib/i18n";
 import { computeLandedCostPerUnitUsd } from "@/lib/landed-cost-cash-flow";
@@ -33,29 +34,6 @@ function formatSavedAt(iso: string): string {
 
 function poKey(row: ForecastCashFlowRow): string {
   return row.poNumber.trim();
-}
-
-/** Latest unit-cost quote for SKU + supplier, optionally as of quote date (YYYY-MM-DD inclusive). */
-function resolveQuoteForRow(
-  row: ForecastCashFlowRow,
-  quotes: readonly UnitCostQuoteEntry[],
-  asOfDateYmd: string,
-): UnitCostQuoteEntry | null {
-  const sku = row.sku.trim();
-  const sup = row.cashFlowSupplierName.trim();
-  if (!sup) return null;
-  const cutoff = asOfDateYmd.trim();
-  const candidates = quotes.filter((q) => {
-    if (q.sku.trim() !== sku || q.supplierName.trim() !== sup) return false;
-    if (!cutoff) return true;
-    return q.quoteDate <= cutoff;
-  });
-  if (candidates.length === 0) return null;
-  return [...candidates].sort((a, b) => {
-    const c = b.quoteDate.localeCompare(a.quoteDate);
-    if (c !== 0) return c;
-    return Number(b.id) - Number(a.id);
-  })[0]!;
 }
 
 function optPctOverride(form: string, quoteVal: number | null | undefined): number | null {
@@ -115,12 +93,13 @@ function computeConsolidatedUsd(
 
 export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, initialSnapshots }: Props) {
   const router = useRouter();
+  const seedOnceRef = useRef(false);
   const en = language === "en";
   const t = {
     title: en ? "Landed cost consolidate" : "到岸成本汇总",
     hint: en
-      ? "Select a PO, set quote date and optional freight/tariff/incoterm (empty numeric fields use the matching unit-cost quote as of that date). Consolidated = Σ (landed USD/unit × BTO+BTS quantity). Saving again with the same PO overwrites your previous record (same user). On Save, destination / tariff / freight / incoterm are also written as new unit-cost quote rows (per SKU + cash-flow supplier) so Cost Control → Cash flow Landed cost keeps working."
-      : "选择 PO，设置报价日期及可选的运费/关税/贸易条款（数字留空则按该日期前最新单位成本报价取值）。汇总 = Σ（到岸单价 USD × BTO+BTS 数量）。同一用户再次保存相同 PO 会覆盖该用户此前的保存记录。保存时，目的国/关税/运费/Incoterm 会同步写入新的「单位成本报价」行（按 SKU + 现金流供应商），以便「成本控制 → 现金流」中的到岸成本继续按最新报价计算。",
+      ? "Opening this page creates draft LCC rows per PO (if you do not have one yet) from the same Forecast cash-flow lines. Select a PO, set quote date and optional freight/tariff/incoterm (empty numeric fields use the matching unit-cost quote as of that date). Consolidated = Σ (landed USD/unit × BTO+BTS quantity). Saving overwrites your row for that PO (same user). On Save, values are written to unit-cost quotes so Supply Chain → Cost control → Landed cost cash flow can follow this snapshot."
+      : "首次打开本页会为每个尚未建档的 PO 自动生成一条到岸成本汇总草稿（数据来源与 Forecast 现金流一致）。选择 PO，设置报价日期及可选运费/关税/贸易条款（数字留空则按该日期前最新单位成本报价）。汇总 = Σ（到岸单价 × 数量）。同一用户保存相同 PO 会覆盖该用户记录。保存时会写入单位成本报价，供「供应链 → 成本控制 → Landed cost 现金流」按汇总结果计算。",
     poOrder: en ? "PO order" : "PO 订单",
     selectPo: en ? "Select PO order…" : "选择 PO…",
     emptyPo: en ? "(no PO on file)" : "（无 PO）",
@@ -182,6 +161,19 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
         ? `Also created ${ins} unit-cost quote row(s) for cash flow.${sk > 0 ? ` ${sk} SKU line(s) skipped (no supplier in cash-flow settings or no baseline unit-cost quote).` : ""}`
         : `并已生成 ${ins} 条单位成本报价供现金流使用。${sk > 0 ? `另有 ${sk} 行未写回（现金流未选供应商或尚无该 SKU+供应商的基准报价）。` : ""}`,
   };
+
+  useEffect(() => {
+    if (rows.length === 0 || seedOnceRef.current) return;
+    seedOnceRef.current = true;
+    void (async () => {
+      const res = await fetch("/api/logistics/landed-cost-consolidate/seed", { method: "POST" });
+      if (!res.ok) return;
+      const data = (await res.json().catch(() => ({}))) as { created?: number };
+      if (Number(data.created) > 0) {
+        router.refresh();
+      }
+    })();
+  }, [rows.length, router]);
 
   const [selectedPo, setSelectedPo] = useState("");
   const [quoteDate, setQuoteDate] = useState(() => new Date().toISOString().slice(0, 10));

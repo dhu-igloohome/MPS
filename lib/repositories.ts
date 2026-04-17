@@ -5460,18 +5460,21 @@ function mapLogisticsLccRow(row: LogisticsLccRow): LogisticsLandedCostConsolidat
 }
 
 /** Insert or update (same `po_number` + `created_by` overwrites the previous row). */
-export async function upsertLogisticsLandedCostConsolidateSnapshot(input: {
-  poNumber: string;
-  quoteDate: string;
-  destinationCountry: string;
-  destinationTariffPct: number | null;
-  seaFreightUsd: number | null;
-  airFreightUsd: number | null;
-  incoterm: ForecastIncoterm;
-  consolidatedUsd: number | null;
-  lineItems: LogisticsLandedCostConsolidateLineItem[];
-  createdBy: string;
-}): Promise<{
+export async function upsertLogisticsLandedCostConsolidateSnapshot(
+  input: {
+    poNumber: string;
+    quoteDate: string;
+    destinationCountry: string;
+    destinationTariffPct: number | null;
+    seaFreightUsd: number | null;
+    airFreightUsd: number | null;
+    incoterm: ForecastIncoterm;
+    consolidatedUsd: number | null;
+    lineItems: LogisticsLandedCostConsolidateLineItem[];
+    createdBy: string;
+  },
+  options?: { syncQuotes?: boolean },
+): Promise<{
   snapshot: LogisticsLandedCostConsolidateSnapshot;
   quoteSync: { inserted: number; skipped: number };
 }> {
@@ -5530,17 +5533,93 @@ export async function upsertLogisticsLandedCostConsolidateSnapshot(input: {
   const row = rows[0];
   if (!row) throw new Error("Save failed");
   const snapshot = mapLogisticsLccRow(row);
-  const quoteSync = await syncLandedConsolidateSnapshotToUnitCostQuotes({
-    quoteDate: input.quoteDate,
-    destinationCountry: input.destinationCountry,
-    destinationTariffPct: input.destinationTariffPct,
-    seaFreightUsd: input.seaFreightUsd,
-    airFreightUsd: input.airFreightUsd,
-    incoterm: input.incoterm,
-    lineItems: input.lineItems,
-    createdBy: input.createdBy,
-  });
+  const quoteSync =
+    options?.syncQuotes === false
+      ? { inserted: 0, skipped: 0 }
+      : await syncLandedConsolidateSnapshotToUnitCostQuotes({
+          quoteDate: input.quoteDate,
+          destinationCountry: input.destinationCountry,
+          destinationTariffPct: input.destinationTariffPct,
+          seaFreightUsd: input.seaFreightUsd,
+          airFreightUsd: input.airFreightUsd,
+          incoterm: input.incoterm,
+          lineItems: input.lineItems,
+          createdBy: input.createdBy,
+        });
   return { snapshot, quoteSync };
+}
+
+/**
+ * For each forecast PO in the user’s regions, create an initial LCC snapshot (same user + PO) if none exists yet.
+ * Does not write unit-cost quotes — user fills tariff/freight in Logistics and saves again to sync quotes.
+ */
+export async function seedUserLccDraftsFromForecasts(input: {
+  sessionRegions: Region[];
+  username: string;
+}): Promise<{ created: number; skipped: number }> {
+  await ensureDatabase();
+  const db = getSql();
+  const forecasts = await getForecastsByRegions(input.sessionRegions);
+  const rows = await enrichForecastRecordsForCashFlow(forecasts);
+  const existing = await db<{ po_number: string }[]>`
+    select po_number from logistics_landed_cost_consolidate where created_by = ${input.username};
+  `;
+  const existingSet = new Set(existing.map((r) => (r.po_number || "").trim()).filter(Boolean));
+
+  const byPo = new Map<string, ForecastCashFlowRow[]>();
+  for (const r of rows) {
+    const po = (r.poNumber || "").trim();
+    if (!po) continue;
+    const arr = byPo.get(po) ?? [];
+    arr.push(r);
+    byPo.set(po, arr);
+  }
+
+  const quoteDate = new Date().toISOString().slice(0, 10);
+  let created = 0;
+  let skipped = 0;
+
+  for (const [po, group] of byPo) {
+    if (existingSet.has(po)) {
+      skipped += 1;
+      continue;
+    }
+    const lineItems: LogisticsLandedCostConsolidateLineItem[] = group
+      .map((r) => {
+        const bto = Math.trunc(Number(r.buildToOrder));
+        const bts = Math.trunc(Number(r.buildToStock));
+        return {
+          forecastId: r.id,
+          sku: r.sku.trim(),
+          buildToOrder: Number.isFinite(bto) ? bto : 0,
+          buildToStock: Number.isFinite(bts) ? bts : 0,
+          quantity: (Number.isFinite(bto) ? bto : 0) + (Number.isFinite(bts) ? bts : 0),
+          region: r.region,
+          month: r.month,
+          productName: r.productName.trim(),
+        };
+      })
+      .sort((a, b) => a.sku.localeCompare(b.sku) || a.month.localeCompare(b.month));
+
+    await upsertLogisticsLandedCostConsolidateSnapshot(
+      {
+        poNumber: po,
+        quoteDate,
+        destinationCountry: "",
+        destinationTariffPct: null,
+        seaFreightUsd: null,
+        airFreightUsd: null,
+        incoterm: "EXW",
+        consolidatedUsd: null,
+        lineItems,
+        createdBy: input.username,
+      },
+      { syncQuotes: false },
+    );
+    existingSet.add(po);
+    created += 1;
+  }
+  return { created, skipped };
 }
 
 export async function listLogisticsLandedCostConsolidateSnapshots(
