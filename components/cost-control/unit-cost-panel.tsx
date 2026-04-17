@@ -57,8 +57,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     manufacturerCountry: en ? "Manufacturer country" : "生产商国家",
     selectMfrCountry: en ? "Select country…" : "选择国家…",
     hint: en
-      ? "Supplier names match Supply Chain → Suppliers (active). Destination, tariff, freight, and quote incoterm are maintained in Logistics → Landed cost consolidate (saved rows sync to the latest unit-cost quote for cash flow)."
-      : "供应商名称与「供应链 → 供应商」中启用供应商一致。目的国、关税、运费及报价 Incoterm 请在「物流进度 → 到岸成本汇总」维护（保存后会写入最新单位成本报价供现金流使用）。",
+      ? "Supplier names match Supply Chain → Suppliers (active). Forecast destination is set on Forecast Input. Tariff, freight, and shipping for landed cost are edited on Logistics → Landed cost consolidate; use Save next to Landed cost (USD) to publish a line to Cost control → Cash flow analysis."
+      : "供应商名称与「供应链 → 供应商」中启用供应商一致。Forecast 目的国在 Forecast 填报中维护；到岸相关关税、运费、运输方式在「物流进度 → 到岸成本汇总」编辑，并在「到岸成本 (USD)」右侧点击「保存」以发布到「成本控制 → 现金流分析」。",
     edit: en ? "Edit" : "编辑",
     editTitle: en ? "Edit quotation" : "编辑报价",
     cancel: en ? "Cancel" : "取消",

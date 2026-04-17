@@ -8,6 +8,7 @@ import {
   forecastIncotermRequiresLandedCostInputs,
   type ForecastIncoterm,
 } from "@/lib/forecast-incoterm";
+import { computeLogisticsForecastLandedTotalUsd } from "@/lib/forecast-landed-cost-merge";
 import { buildForecastDestinationOptions, forecastDestinationDisplay } from "@/lib/forecast-destination-countries";
 import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
@@ -28,16 +29,7 @@ function forecastLineTotalUsd(row: ForecastCashFlowRow): number | null {
 
 /** Landed = Total amount (USD) × (tariff % / 100) + Freight (USD/unit) × (BTO + BTS qty). */
 function computeLogisticsLandedCostUsd(row: ForecastCashFlowRow): number | null {
-  if (!forecastIncotermRequiresLandedCostInputs(row.incoterm)) return null;
-  const qty = Number(row.buildToOrder) + Number(row.buildToStock);
-  if (!Number.isFinite(qty) || qty <= 0) return null;
-  const lineTotal = forecastLineTotalUsd(row);
-  if (lineTotal == null || !Number.isFinite(lineTotal)) return null;
-  const tariff = row.cashFlowDestinationTariffPct;
-  const freight = row.cashFlowFreightUsdPerUnit;
-  const t = tariff != null && Number.isFinite(tariff) ? tariff : 0;
-  const f = freight != null && Number.isFinite(freight) ? freight : 0;
-  return lineTotal * (t / 100) + f * qty;
+  return computeLogisticsForecastLandedTotalUsd(row);
 }
 
 function formatPoIssueDateEnglish(ymd: string | null | undefined): string {
@@ -61,6 +53,7 @@ type PatchResponse = {
   destinationTariffPct?: number | null;
   freightUsdPerUnit?: number | null;
   cashFlowIncoterm?: ForecastIncoterm | null;
+  landedCostCashFlowPublishedAt?: string | null;
 };
 
 function mergeRowFromPatch(r: ForecastCashFlowRow, data: PatchResponse): ForecastCashFlowRow {
@@ -77,6 +70,8 @@ function mergeRowFromPatch(r: ForecastCashFlowRow, data: PatchResponse): Forecas
     cashFlowFreightUsdPerUnit:
       data.freightUsdPerUnit !== undefined ? data.freightUsdPerUnit : r.cashFlowFreightUsdPerUnit,
     cashFlowIncoterm: data.cashFlowIncoterm !== undefined ? data.cashFlowIncoterm : r.cashFlowIncoterm,
+    landedCostCashFlowPublishedAt:
+      data.landedCostCashFlowPublishedAt !== undefined ? data.landedCostCashFlowPublishedAt : r.landedCostCashFlowPublishedAt,
   };
 }
 
@@ -113,6 +108,10 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
       ? "Departure date + 30 calendar days."
       : "发货日起算 30 个自然日。",
     landed: en ? "Landed cost (USD)" : "到岸成本 (USD)",
+    saveLanded: en ? "Save" : "保存",
+    saveLandedTitle: en
+      ? "Publish this line to Supply Chain → Cost control → Cash flow analysis → Landed cost cash flow and charts."
+      : "将本行发布到「供应链 → 成本控制 → 现金流分析」中的 Landed cost 现金流及柱状图。",
     poIssueTitle:
       language === "en"
         ? "Order date in English; use the picker to change."
@@ -218,12 +217,13 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                   {t.paymentDue}
                 </th>
                 <th className="py-2 pr-3 text-right">{t.landed}</th>
+                <th className="min-w-[4.5rem] py-2 pr-3 text-center">{t.saveLanded}</th>
               </tr>
             </thead>
             <tbody>
               {dashboardRows.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="py-8 text-center text-slate-400">
+                  <td colSpan={15} className="py-8 text-center text-slate-400">
                     {t.empty}
                   </td>
                 </tr>
@@ -370,6 +370,25 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                     <td className="py-2 pr-3 text-right tabular-nums font-medium">
                       {needsLandedInputs && landed != null ? formatUsd(landed, 2) : t.na}
                     </td>
+                    <td className="py-2 pr-3 align-top">
+                      {needsLandedInputs && landed != null ? (
+                        <button
+                          type="button"
+                          title={t.saveLandedTitle}
+                          disabled={rowSavingId === row.id}
+                          onClick={() =>
+                            void patchForecast(row.id, {
+                              landedCostCashFlowPublishedAt: new Date().toISOString(),
+                            })
+                          }
+                          className="rounded-lg border border-emerald-600/80 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-900 hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-500/60 dark:bg-emerald-950/40 dark:text-emerald-100 dark:hover:bg-emerald-900/50"
+                        >
+                          {t.saveLanded}
+                        </button>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500">{t.na}</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -385,7 +404,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                       <td className="py-2 pr-3 text-right text-base font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
                         {formatUsd(sumComputable, 2)}
                       </td>
-                      <td colSpan={7} className="py-2 pr-3 text-right text-xs text-slate-500 dark:text-slate-400">
+                      <td colSpan={8} className="py-2 pr-3 text-right text-xs text-slate-500 dark:text-slate-400">
                         {en ? "Σ Landed cost" : "到岸成本合计"}
                       </td>
                       <td className="py-2 pr-3 text-right text-base font-semibold tabular-nums text-emerald-800 dark:text-emerald-300">
@@ -393,7 +412,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                       </td>
                     </>
                   ) : (
-                    <td colSpan={14} className="py-3 text-center text-xs text-slate-400">
+                    <td colSpan={15} className="py-3 text-center text-xs text-slate-400">
                       {t.sumEmpty}
                     </td>
                   )}

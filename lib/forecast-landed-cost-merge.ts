@@ -3,14 +3,9 @@ import {
   normalizeForecastIncotermStored,
   type ForecastIncoterm,
 } from "@/lib/forecast-incoterm";
-import { computeLandedCostPerUnitUsd } from "@/lib/landed-cost-cash-flow";
-import type {
-  ForecastCashFlowRow,
-  LogisticsLandedCostConsolidateSnapshot,
-  UnitCostQuoteEntry,
-} from "@/lib/types";
+import type { ForecastCashFlowRow, LogisticsLandedCostConsolidateSnapshot } from "@/lib/types";
 
-/** Latest snapshot per PO by `updatedAt` / `createdAt` (for cross-user “source of truth”). */
+/** Latest snapshot per PO by `updatedAt` / `createdAt` (legacy LCC table; cash flow no longer reads this). */
 export function pickLatestLccSnapshotByPo(
   snapshots: readonly LogisticsLandedCostConsolidateSnapshot[],
 ): Map<string, LogisticsLandedCostConsolidateSnapshot> {
@@ -31,117 +26,74 @@ export function pickLatestLccSnapshotByPo(
   return m;
 }
 
-/** Latest unit-cost quote for SKU + supplier on or before `asOfDateYmd` (YYYY-MM-DD). */
-export function resolveQuoteForRow(
-  row: ForecastCashFlowRow,
-  quotes: readonly UnitCostQuoteEntry[],
-  asOfDateYmd: string,
-): UnitCostQuoteEntry | null {
-  const sku = row.sku.trim();
-  const sup = row.cashFlowSupplierName.trim();
-  if (!sup) return null;
-  const cutoff = asOfDateYmd.trim();
-  const candidates = quotes.filter((q) => {
-    if (q.sku.trim() !== sku || q.supplierName.trim() !== sup) return false;
-    if (!cutoff) return true;
-    return q.quoteDate <= cutoff;
-  });
-  if (candidates.length === 0) return null;
-  return [...candidates].sort((a, b) => {
-    const c = b.quoteDate.localeCompare(a.quoteDate);
-    if (c !== 0) return c;
-    return Number(b.id) - Number(a.id);
-  })[0]!;
+/**
+ * Same total as Logistics → Landed cost consolidate: line total × (tariff %) + freight × qty.
+ * Only when Forecast line incoterm is FOB/DAP/DDP.
+ */
+export function computeLogisticsForecastLandedTotalUsd(row: ForecastCashFlowRow): number | null {
+  if (!forecastIncotermRequiresLandedCostInputs(row.incoterm)) return null;
+  const qty = Number(row.buildToOrder) + Number(row.buildToStock);
+  if (!Number.isFinite(qty) || qty <= 0) return null;
+  if (row.unitPriceUsd == null || !Number.isFinite(row.unitPriceUsd)) return null;
+  const lineTotal = row.unitPriceUsd * qty;
+  const tariff = row.cashFlowDestinationTariffPct;
+  const freight = row.cashFlowFreightUsdPerUnit;
+  const t = tariff != null && Number.isFinite(tariff) ? tariff : 0;
+  const f = freight != null && Number.isFinite(freight) ? freight : 0;
+  return lineTotal * (t / 100) + f * qty;
 }
 
 export type ForecastRowLandedMetrics = {
   landedPerUnit: number | null;
   totalUsd: number | null;
   displayIncoterm: ForecastIncoterm;
+  /** True when this row is included in Landed cost cash flow (user saved from Logistics LCC). */
   usesConsolidateSnapshot: boolean;
   /** For departure lead (manufacturer bucket). */
   manufacturerCountry: string;
 };
 
 /**
- * Landed cost for a forecast cash-flow row **only** when a Landed cost consolidate snapshot exists for that PO
- * (after Create or Save in Logistics). Tariff / freight / incoterm follow the snapshot; numeric gaps fall back to
- * unit-cost quotes as-of the snapshot quote date. With no snapshot, landed totals stay empty (no quote-only path).
- * If the **Forecast Input** line incoterm is not FOB, DAP, or DDP, landed amounts stay empty even when a snapshot exists.
+ * Landed cost for cash flow when the user has published the row from Logistics → Landed cost consolidate
+ * (Save next to Landed cost). Amounts follow the same formula as that page; departure uses PO issue + mfr + mode.
  */
-export function computeForecastRowLandedMetrics(input: {
-  row: ForecastCashFlowRow;
-  latestLccByPo: Map<string, LogisticsLandedCostConsolidateSnapshot>;
-  quotes: readonly UnitCostQuoteEntry[];
-}): ForecastRowLandedMetrics {
-  const { row, latestLccByPo, quotes } = input;
-  const po = (row.poNumber || "").trim();
-  const snap = po ? latestLccByPo.get(po) ?? null : null;
-  const qRow = row.latestUnitCostQuote;
+export function computeForecastRowLandedMetrics(input: { row: ForecastCashFlowRow }): ForecastRowLandedMetrics {
+  const { row } = input;
   const forecastLineIncoterm = normalizeForecastIncotermStored(row.incoterm);
-
-  if (!snap) {
-    return {
-      landedPerUnit: null,
-      totalUsd: null,
-      displayIncoterm: forecastLineIncoterm,
-      usesConsolidateSnapshot: false,
-      manufacturerCountry: (qRow?.manufacturerCountry ?? "").trim(),
-    };
-  }
+  const mfg = (row.latestUnitCostQuote?.manufacturerCountry ?? "").trim();
+  const displayIncoterm = row.cashFlowIncoterm ?? forecastLineIncoterm;
 
   if (!forecastIncotermRequiresLandedCostInputs(forecastLineIncoterm)) {
-    let manufacturerCountry = "";
-    if (quotes.length) {
-      const qAsOf = resolveQuoteForRow(row, quotes, snap.quoteDate);
-      manufacturerCountry = (qAsOf?.manufacturerCountry ?? qRow?.manufacturerCountry ?? "").trim();
-    } else {
-      manufacturerCountry = (qRow?.manufacturerCountry ?? "").trim();
-    }
     return {
       landedPerUnit: null,
       totalUsd: null,
-      displayIncoterm: forecastLineIncoterm,
+      displayIncoterm,
       usesConsolidateSnapshot: false,
-      manufacturerCountry,
+      manufacturerCountry: mfg,
     };
   }
 
-  let manufacturerCountry = "";
-  if (quotes.length) {
-    const qAsOf = resolveQuoteForRow(row, quotes, snap.quoteDate);
-    manufacturerCountry = (qAsOf?.manufacturerCountry ?? qRow?.manufacturerCountry ?? "").trim();
-  } else {
-    manufacturerCountry = (qRow?.manufacturerCountry ?? "").trim();
+  const published = (row.landedCostCashFlowPublishedAt ?? "").trim();
+  if (!published) {
+    return {
+      landedPerUnit: null,
+      totalUsd: null,
+      displayIncoterm,
+      usesConsolidateSnapshot: false,
+      manufacturerCountry: mfg,
+    };
   }
 
-  const qAsOf = quotes.length ? resolveQuoteForRow(row, quotes, snap.quoteDate) : qRow;
-  const unit =
-    qAsOf != null
-      ? qAsOf.unitPrice
-      : row.unitPriceUsd != null && Number.isFinite(row.unitPriceUsd)
-        ? row.unitPriceUsd
-        : null;
-  const tariff =
-    snap.destinationTariffPct ?? qAsOf?.destinationTariffPct ?? qRow?.destinationTariffPct ?? null;
-  const sea = snap.seaFreightUsd ?? qAsOf?.seaFreightUnitPrice ?? qRow?.seaFreightUnitPrice ?? null;
-  const air = snap.airFreightUsd ?? qAsOf?.airFreightUnitPrice ?? qRow?.airFreightUnitPrice ?? null;
-  const incoterm = normalizeForecastIncotermStored(snap.incoterm);
-  const landed = computeLandedCostPerUnitUsd({
-    forecastIncoterm: incoterm,
-    shippingMode: row.cashFlowShippingMode,
-    unitPriceUsd: unit,
-    destinationTariffPct: tariff,
-    seaFreightUsd: sea,
-    airFreightUsd: air,
-  });
+  const totalUsd = computeLogisticsForecastLandedTotalUsd(row);
   const qty = Number(row.buildToOrder) + Number(row.buildToStock);
-  const totalUsd = landed != null && Number.isFinite(qty) && qty > 0 ? landed * qty : null;
+  const landedPerUnit =
+    totalUsd != null && Number.isFinite(totalUsd) && Number.isFinite(qty) && qty > 0 ? totalUsd / qty : null;
+
   return {
-    landedPerUnit: landed,
+    landedPerUnit,
     totalUsd,
-    displayIncoterm: incoterm,
+    displayIncoterm,
     usesConsolidateSnapshot: true,
-    manufacturerCountry,
+    manufacturerCountry: mfg,
   };
 }

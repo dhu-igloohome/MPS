@@ -5279,6 +5279,7 @@ export async function enrichForecastRecordsForCashFlow(
       destination_tariff_pct: string | number | null;
       freight_usd_per_unit: string | number | null;
       cash_flow_incoterm: string | null;
+      landed_cost_cash_flow_published_at: string | null;
     }[]
   >`
     select
@@ -5288,7 +5289,8 @@ export async function enrichForecastRecordsForCashFlow(
       shipping_mode,
       destination_tariff_pct::text,
       freight_usd_per_unit::text,
-      cash_flow_incoterm
+      cash_flow_incoterm,
+      landed_cost_cash_flow_published_at::text as landed_cost_cash_flow_published_at
     from forecast_cash_flow_settings
     where forecast_id = any(${ids});
   `;
@@ -5306,6 +5308,7 @@ export async function enrichForecastRecordsForCashFlow(
       destinationTariffPct: number | null;
       freightUsdPerUnit: number | null;
       cashFlowIncoterm: ForecastIncoterm | null;
+      landedCostCashFlowPublishedAt: string | null;
     }
   >();
   for (const r of settingsRows) {
@@ -5313,6 +5316,9 @@ export async function enrichForecastRecordsForCashFlow(
       r.po_issue_date && /^\d{4}-\d{2}-\d{2}/.test(r.po_issue_date)
         ? r.po_issue_date.slice(0, 10)
         : null;
+    const pubRaw = r.landed_cost_cash_flow_published_at;
+    const landedCostCashFlowPublishedAt =
+      pubRaw != null && String(pubRaw).trim() !== "" ? String(pubRaw).trim() : null;
     settings.set(String(r.forecast_id), {
       supplier: (r.supplier_name || "").trim(),
       poIssueDate: po,
@@ -5320,6 +5326,7 @@ export async function enrichForecastRecordsForCashFlow(
       destinationTariffPct: lccNum(r.destination_tariff_pct),
       freightUsdPerUnit: lccNum(r.freight_usd_per_unit),
       cashFlowIncoterm: r.cash_flow_incoterm ? parseForecastIncoterm(r.cash_flow_incoterm) : null,
+      landedCostCashFlowPublishedAt,
     });
   }
   const quotes = await listUnitCostQuotes();
@@ -5333,6 +5340,7 @@ export async function enrichForecastRecordsForCashFlow(
       destinationTariffPct: null as number | null,
       freightUsdPerUnit: null as number | null,
       cashFlowIncoterm: null as ForecastIncoterm | null,
+      landedCostCashFlowPublishedAt: null as string | null,
     };
     const supplier = s.supplier;
     const key = `${f.sku.trim()}::${supplier}`;
@@ -5348,6 +5356,7 @@ export async function enrichForecastRecordsForCashFlow(
       cashFlowDestinationTariffPct: s.destinationTariffPct,
       cashFlowFreightUsdPerUnit: s.freightUsdPerUnit,
       cashFlowIncoterm: s.cashFlowIncoterm,
+      landedCostCashFlowPublishedAt: s.landedCostCashFlowPublishedAt,
     };
   });
 }
@@ -5368,6 +5377,8 @@ export async function patchForecastCashFlowSettings(input: {
   freightUsdPerUnit?: number | null;
   /** When set, replaces cash-flow incoterm override; null clears (use forecast line incoterm). */
   cashFlowIncoterm?: ForecastIncoterm | null;
+  /** When set, publishes this row to Landed cost cash flow (ISO timestamp string); null clears. */
+  landedCostCashFlowPublishedAt?: string | null;
 }): Promise<{
   supplierName: string;
   unitPriceUsd: number | null;
@@ -5377,6 +5388,7 @@ export async function patchForecastCashFlowSettings(input: {
   destinationTariffPct: number | null;
   freightUsdPerUnit: number | null;
   cashFlowIncoterm: ForecastIncoterm | null;
+  landedCostCashFlowPublishedAt: string | null;
 }> {
   await ensureDatabase();
   const db = getSql();
@@ -5401,9 +5413,10 @@ export async function patchForecastCashFlowSettings(input: {
   const hasDestTariff = input.destinationTariffPct !== undefined;
   const hasFreight = input.freightUsdPerUnit !== undefined;
   const hasCfInc = input.cashFlowIncoterm !== undefined;
-  if (!hasSupplier && !hasPo && !hasShippingMode && !hasDestTariff && !hasFreight && !hasCfInc) {
+  const hasPublishLanded = input.landedCostCashFlowPublishedAt !== undefined;
+  if (!hasSupplier && !hasPo && !hasShippingMode && !hasDestTariff && !hasFreight && !hasCfInc && !hasPublishLanded) {
     throw new Error(
-      "supplierName, poIssueDate, shippingMode, destinationTariffPct, freightUsdPerUnit, or cashFlowIncoterm is required",
+      "supplierName, poIssueDate, shippingMode, destinationTariffPct, freightUsdPerUnit, cashFlowIncoterm, or landedCostCashFlowPublishedAt is required",
     );
   }
 
@@ -5415,10 +5428,12 @@ export async function patchForecastCashFlowSettings(input: {
       destination_tariff_pct: string | null;
       freight_usd_per_unit: string | null;
       cash_flow_incoterm: string | null;
+      landed_cost_cash_flow_published_at: string | null;
     }[]
   >`
     select supplier_name, po_issue_date::text as po_issue_date, shipping_mode,
-      destination_tariff_pct::text, freight_usd_per_unit::text, cash_flow_incoterm
+      destination_tariff_pct::text, freight_usd_per_unit::text, cash_flow_incoterm,
+      landed_cost_cash_flow_published_at::text as landed_cost_cash_flow_published_at
     from forecast_cash_flow_settings
     where forecast_id = ${fid}
     limit 1;
@@ -5440,6 +5455,12 @@ export async function patchForecastCashFlowSettings(input: {
   const readCfInc = (): ForecastIncoterm | null => {
     const v = curRow?.cash_flow_incoterm;
     return v ? parseForecastIncoterm(v) : null;
+  };
+
+  const readPublish = (): string | null => {
+    const v = curRow?.landed_cost_cash_flow_published_at;
+    if (v == null || String(v).trim() === "") return null;
+    return String(v).trim();
   };
 
   const supplier = hasSupplier ? String(input.supplierName ?? "").trim() : (curRow?.supplier_name ?? "").trim();
@@ -5520,6 +5541,22 @@ export async function patchForecastCashFlowSettings(input: {
     cashFlowIncotermOut = readCfInc();
   }
 
+  let landedCostCashFlowPublishedAtOut: string | null;
+  if (hasPublishLanded) {
+    const v = input.landedCostCashFlowPublishedAt;
+    if (v === null || v === undefined || v === "") {
+      landedCostCashFlowPublishedAtOut = null;
+    } else {
+      const s = String(v).trim();
+      if (Number.isNaN(Date.parse(s))) {
+        throw new Error("Invalid landedCostCashFlowPublishedAt");
+      }
+      landedCostCashFlowPublishedAtOut = s;
+    }
+  } else {
+    landedCostCashFlowPublishedAtOut = readPublish();
+  }
+
   await db`
     insert into forecast_cash_flow_settings (
       forecast_id,
@@ -5529,6 +5566,7 @@ export async function patchForecastCashFlowSettings(input: {
       destination_tariff_pct,
       freight_usd_per_unit,
       cash_flow_incoterm,
+      landed_cost_cash_flow_published_at,
       updated_by
     )
     values (
@@ -5539,6 +5577,7 @@ export async function patchForecastCashFlowSettings(input: {
       ${destinationTariffPct},
       ${freightUsdPerUnit},
       ${cashFlowIncotermOut},
+      ${landedCostCashFlowPublishedAtOut},
       ${input.updatedBy}
     )
     on conflict (forecast_id) do update
@@ -5549,6 +5588,7 @@ export async function patchForecastCashFlowSettings(input: {
       destination_tariff_pct = excluded.destination_tariff_pct,
       freight_usd_per_unit = excluded.freight_usd_per_unit,
       cash_flow_incoterm = excluded.cash_flow_incoterm,
+      landed_cost_cash_flow_published_at = excluded.landed_cost_cash_flow_published_at,
       updated_by = excluded.updated_by,
       updated_at = now();
   `;
@@ -5565,6 +5605,7 @@ export async function patchForecastCashFlowSettings(input: {
     destinationTariffPct,
     freightUsdPerUnit,
     cashFlowIncoterm: cashFlowIncotermOut,
+    landedCostCashFlowPublishedAt: landedCostCashFlowPublishedAtOut,
   };
 }
 

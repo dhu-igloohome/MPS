@@ -41,7 +41,7 @@ const LABELS = {
   en: {
     fcTitle: "Forecast cash flow",
     fcHint:
-      "Only forecast rows whose Comment is \"Ok\" appear here (set on the Forecast page). Pick a supplier per row; Unit price (USD) is the latest matching quote from Unit cost (same SKU + supplier). Landed cost cash flow below stays empty until you Create or Save that PO in Logistics → Landed cost consolidate.",
+      "Only forecast rows whose Comment is \"Ok\" appear here (set on the Forecast page). Pick a supplier per row; Unit price (USD) is the latest matching quote from Unit cost (same SKU + supplier). Landed cost cash flow below lists only rows you publish from Logistics → Landed cost consolidate using Save next to Landed cost (USD).",
     fcSupplierName: "Supplier name",
     fcUnitPriceUsd: "Unit price (USD)",
     fcSelectSupplier: "Select supplier…",
@@ -64,7 +64,7 @@ const LABELS = {
   zh: {
     fcTitle: "Forecast 现金流",
     fcHint:
-      "仅显示 Forecast 页面评论（Comment）为 Ok 的行。每行可选供应商；单价 (USD) 取自「单位成本」中该 SKU + 供应商的最新报价。下方 Landed cost 现金流仅在「物流进度 → 到岸成本汇总」对该 PO 点击「创建」或「保存」后才会有数据。",
+      "仅显示 Forecast 页面评论（Comment）为 Ok 的行。每行可选供应商；单价 (USD) 取自「单位成本」中该 SKU + 供应商的最新报价。下方 Landed cost 现金流仅包含您在「物流进度 → 到岸成本汇总」中对「到岸成本 (USD)」右侧点击「保存」后发布的行。",
     fcSupplierName: "供应商名称",
     fcUnitPriceUsd: "单价 (USD)",
     fcSelectSupplier: "选择供应商…",
@@ -121,6 +121,7 @@ export function CashFlowPanel({
       destinationTariffPct?: number | null;
       freightUsdPerUnit?: number | null;
       cashFlowIncoterm?: ForecastIncoterm | null;
+      landedCostCashFlowPublishedAt?: string | null;
     };
     setFcRowSavingId(null);
     if (!res.ok) {
@@ -146,6 +147,10 @@ export function CashFlowPanel({
               cashFlowFreightUsdPerUnit:
                 data.freightUsdPerUnit !== undefined ? data.freightUsdPerUnit : r.cashFlowFreightUsdPerUnit,
               cashFlowIncoterm: data.cashFlowIncoterm !== undefined ? data.cashFlowIncoterm : r.cashFlowIncoterm,
+              landedCostCashFlowPublishedAt:
+                data.landedCostCashFlowPublishedAt !== undefined
+                  ? data.landedCostCashFlowPublishedAt
+                  : r.landedCostCashFlowPublishedAt,
             }
           : r,
       ),
@@ -273,6 +278,7 @@ export function CashFlowPanel({
                     cashFlowDestinationTariffPct: payload.destinationTariffPct,
                     cashFlowFreightUsdPerUnit: payload.freightUsdPerUnit,
                     cashFlowIncoterm: payload.cashFlowIncoterm,
+                    landedCostCashFlowPublishedAt: payload.landedCostCashFlowPublishedAt,
                   }
                 : r,
             ),

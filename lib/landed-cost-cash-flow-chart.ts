@@ -5,7 +5,7 @@ import {
 import type { Language } from "@/lib/i18n";
 import { computeForecastRowLandedMetrics } from "@/lib/forecast-landed-cost-merge";
 import { computeDepartureDateYmd, computePaymentDueYmd } from "@/lib/landed-cost-cash-flow";
-import type { ForecastCashFlowRow, LogisticsLandedCostConsolidateSnapshot, UnitCostQuoteEntry } from "@/lib/types";
+import type { ForecastCashFlowRow } from "@/lib/types";
 
 export type LandedCostBarRowInput = {
   rowId: string;
@@ -33,16 +33,10 @@ export function buildLandedCostBarRowInputs(
   rows: ForecastCashFlowRow[],
   language: Language,
   destinationOptions: readonly ForecastDestinationOption[],
-  opts?: {
-    latestLccByPo?: Map<string, LogisticsLandedCostConsolidateSnapshot>;
-    quotes?: readonly UnitCostQuoteEntry[];
-  },
 ): LandedCostBarRowInput[] {
-  const latest = opts?.latestLccByPo ?? new Map<string, LogisticsLandedCostConsolidateSnapshot>();
-  const quotes = opts?.quotes ?? [];
   const out: LandedCostBarRowInput[] = [];
   for (const row of rows) {
-    const m = computeForecastRowLandedMetrics({ row, latestLccByPo: latest, quotes });
+    const m = computeForecastRowLandedMetrics({ row });
     const totalUsd = m.totalUsd;
     if (totalUsd == null || !Number.isFinite(totalUsd) || totalUsd <= 0) continue;
     const depYmd = computeDepartureDateYmd(

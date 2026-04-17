@@ -647,6 +647,11 @@ export type ForecastCashFlowRow = ForecastEntry & {
    * Null means use the forecast line’s incoterm.
    */
   cashFlowIncoterm: ForecastIncoterm | null;
+  /**
+   * Set when the user clicks Save next to Landed cost on Logistics → Landed cost consolidate;
+   * Supply Chain → Cash flow analysis shows this row in Landed cost cash flow / charts.
+   */
+  landedCostCashFlowPublishedAt: string | null;
 };
 
 /** 成本控制 — 现金流分析（与 Excel 列一致） */

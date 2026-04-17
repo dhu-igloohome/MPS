@@ -25,6 +25,7 @@ export async function PATCH(request: Request) {
   const hasDestTariff = Object.prototype.hasOwnProperty.call(body, "destinationTariffPct");
   const hasFreight = Object.prototype.hasOwnProperty.call(body, "freightUsdPerUnit");
   const hasCfInc = Object.prototype.hasOwnProperty.call(body, "cashFlowIncoterm");
+  const hasPublishLanded = Object.prototype.hasOwnProperty.call(body, "landedCostCashFlowPublishedAt");
 
   if (!forecastId) {
     return NextResponse.json({ message: "forecastId is required" }, { status: 400 });
@@ -35,12 +36,13 @@ export async function PATCH(request: Request) {
     !hasShippingMode &&
     !hasDestTariff &&
     !hasFreight &&
-    !hasCfInc
+    !hasCfInc &&
+    !hasPublishLanded
   ) {
     return NextResponse.json(
       {
         message:
-          "supplierName, poIssueDate, shippingMode, destinationTariffPct, freightUsdPerUnit, and/or cashFlowIncoterm is required",
+          "supplierName, poIssueDate, shippingMode, destinationTariffPct, freightUsdPerUnit, cashFlowIncoterm, and/or landedCostCashFlowPublishedAt is required",
       },
       { status: 400 },
     );
@@ -113,6 +115,20 @@ export async function PATCH(request: Request) {
     if (hasFreight) patchInput.freightUsdPerUnit = freightUsdPerUnit!;
     if (hasCfInc) patchInput.cashFlowIncoterm = cashFlowIncoterm!;
 
+    let landedCostCashFlowPublishedAt: string | null | undefined;
+    if (hasPublishLanded) {
+      if (body.landedCostCashFlowPublishedAt === null || body.landedCostCashFlowPublishedAt === "") {
+        landedCostCashFlowPublishedAt = null;
+      } else {
+        const s = String(body.landedCostCashFlowPublishedAt).trim();
+        if (Number.isNaN(Date.parse(s))) {
+          return NextResponse.json({ message: "landedCostCashFlowPublishedAt must be ISO date-time or null" }, { status: 400 });
+        }
+        landedCostCashFlowPublishedAt = s;
+      }
+      patchInput.landedCostCashFlowPublishedAt = landedCostCashFlowPublishedAt;
+    }
+
     const {
       supplierName: savedSupplier,
       unitPriceUsd,
@@ -122,6 +138,7 @@ export async function PATCH(request: Request) {
       destinationTariffPct: savedTariff,
       freightUsdPerUnit: savedFreight,
       cashFlowIncoterm: savedInc,
+      landedCostCashFlowPublishedAt: savedPublish,
     } = await patchForecastCashFlowSettings(patchInput);
     return NextResponse.json({
       ok: true,
@@ -133,6 +150,7 @@ export async function PATCH(request: Request) {
       destinationTariffPct: savedTariff,
       freightUsdPerUnit: savedFreight,
       cashFlowIncoterm: savedInc,
+      landedCostCashFlowPublishedAt: savedPublish,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Update failed";

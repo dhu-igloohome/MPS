@@ -50,7 +50,7 @@ import {
   forecastDestinationDisplay,
 } from "@/lib/forecast-destination-countries";
 import { formatUsd } from "@/lib/format-usd";
-import { computeForecastRowLandedMetrics, pickLatestLccSnapshotByPo } from "@/lib/forecast-landed-cost-merge";
+import { computeForecastRowLandedMetrics } from "@/lib/forecast-landed-cost-merge";
 import { computeDepartureDateYmd, computePaymentDueYmd } from "@/lib/landed-cost-cash-flow";
 import type { Language } from "@/lib/i18n";
 import type {
@@ -70,7 +70,7 @@ type Props = {
   costAnalysisEntries: CostAnalysisEntry[];
   /** Ok-comment forecast rows with supplier / unit cost (same source as Forecast cash flow table). */
   forecastCashFlowRows?: ForecastCashFlowRow[];
-  /** Newest LCC snapshot per PO (all users); drives Landed cost cash flow after Logistics save. */
+  /** @deprecated No longer used; landed cost cash flow follows Logistics Save + forecast publish timestamp. */
   landedCostConsolidateSnapshots?: LogisticsLandedCostConsolidateSnapshot[];
   /** Full quote list for as-of unit price when a consolidate snapshot sets `quoteDate`. */
   unitCostQuotes?: UnitCostQuoteEntry[];
@@ -89,6 +89,7 @@ type Props = {
       destinationTariffPct: number | null;
       freightUsdPerUnit: number | null;
       cashFlowIncoterm: ForecastIncoterm | null;
+      landedCostCashFlowPublishedAt: string | null;
     },
   ) => void;
   onForecastCashFlowSettingsError?: (message: string) => void;
@@ -233,11 +234,11 @@ function labels(language: Language) {
     fcBarNoData: en ? "No payments fall in this 13-month window." : "该 13 个月内无应付金额。",
     lcTitle: en ? "Landed cost cash flow" : "Landed cost 现金流",
     lcHint: en
-      ? "Same rows as the forecast table above (Comment = Ok). Landed cost amounts appear only after you Create or Save that PO under Logistics → Landed cost consolidate; until then this section stays empty (— / no bar totals). With a snapshot, tariff / freight / incoterm follow it (empty fields fall back to unit-cost quotes as of the snapshot quote date)."
-      : "与上方 Forecast 表相同（评论为 Ok）。到岸金额仅在「物流进度 → 到岸成本汇总」对该 PO 点击「创建」或「保存」之后才会显示；此前本段为空白（— / 柱状无额）。有汇总记录后，关税/运费/贸易条款以汇总为准（留空时按汇总报价日期回退到单位成本报价）。",
+      ? "Same rows as the forecast table above (Comment = Ok), but only lines you have published from Logistics → Landed cost consolidate (Save next to Landed cost (USD)) appear here. Amounts and payment timing follow the Logistics table (tariff on line total + per-unit freight × qty; departure from PO issue + manufacturer country + shipping mode; payment due = departure + 30 days)."
+      : "与上方 Forecast 表相同（评论为 Ok），但仅显示您在「物流进度 → 到岸成本汇总」中对「到岸成本 (USD)」点击「保存」后发布的行。金额与付款节奏与物流页一致（关税按行总金额、单位运费×数量；发货日由订单下达日+生产商国家+运输方式推算；付款到期=发货日+30 天）。",
     lcEmptyUntilLogistics: en
-      ? "No landed cost data yet. Open Logistics → Landed cost consolidate, select a PO, then click Create (first time) or Save."
-      : "暂无到岸成本数据。请打开「物流进度 → 到岸成本汇总」，选择 PO 后点击「创建」（首次）或「保存」。",
+      ? "No published landed cost rows yet. Open Logistics → Landed cost consolidate, fill tariff / freight / mode where applicable, then click Save to the right of Landed cost (USD) for each line you want in this section."
+      : "暂无已发布的到岸成本行。请打开「物流进度 → 到岸成本汇总」，在适用情况下填写关税/运费/运输方式，并在「到岸成本 (USD)」右侧点击「保存」以将各行发布到本段。",
     lcColMonth: en ? "Forecast Month" : "Forecast 月份",
     lcColForecastNo: en ? "Forecast #" : "Forecast #",
     lcColRegion: en ? "Region" : "区域",
@@ -662,8 +663,8 @@ export function CashFlowDashboard({
   entries,
   costAnalysisEntries,
   forecastCashFlowRows = [],
-  landedCostConsolidateSnapshots = [],
-  unitCostQuotes = [],
+  landedCostConsolidateSnapshots: _legacyLccSnapshots = [], // kept for API compatibility; unused
+  unitCostQuotes: _unitCostQuotes = [],
   fcSuppliers = [],
   showForecastCashFlowSummary = false,
   onForecastCashFlowSettingsSaved,
@@ -671,17 +672,11 @@ export function CashFlowDashboard({
   forecastSummaryOnly = false,
 }: Props) {
   const t = labels(language);
-  const latestLccByPo = useMemo(
-    () => pickLatestLccSnapshotByPo(landedCostConsolidateSnapshots),
-    [landedCostConsolidateSnapshots],
+  const publishedLandedRows = useMemo(
+    () => forecastCashFlowRows.filter((r) => (r.landedCostCashFlowPublishedAt ?? "").trim() !== ""),
+    [forecastCashFlowRows],
   );
-  const hasAnyLccBackedPo = useMemo(() => {
-    for (const row of forecastCashFlowRows) {
-      const po = (row.poNumber || "").trim();
-      if (po && latestLccByPo.has(po)) return true;
-    }
-    return false;
-  }, [forecastCashFlowRows, latestLccByPo]);
+  const hasAnyPublishedLandedCost = publishedLandedRows.length > 0;
   const [rangePreset, setRangePreset] = useState<RangePreset>("12m");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -828,12 +823,9 @@ export function CashFlowDashboard({
       }
       return `${y}年${m}月`;
     };
-    const rowInputs = buildLandedCostBarRowInputs(forecastCashFlowRows, language, fcDestinationOptions, {
-      latestLccByPo,
-      quotes: unitCostQuotes,
-    });
+    const rowInputs = buildLandedCostBarRowInputs(forecastCashFlowRows, language, fcDestinationOptions);
     return buildLandedCostPaymentBarData(rowInputs, monthKeys, monthLabelFn);
-  }, [forecastCashFlowRows, language, fcDestinationOptions, latestLccByPo, unitCostQuotes]);
+  }, [forecastCashFlowRows, language, fcDestinationOptions]);
 
   const lcBarHasAnyAmount = useMemo(
     () => lcPaymentBar.chartData.some((r) => Number(r.monthTotal) > 0),
@@ -869,12 +861,8 @@ export function CashFlowDashboard({
   const lcTableSums = useMemo(() => {
     let sumTotalUsd = 0;
     let computableLines = 0;
-    for (const row of forecastCashFlowRows) {
-      const m = computeForecastRowLandedMetrics({
-        row,
-        latestLccByPo,
-        quotes: unitCostQuotes,
-      });
+    for (const row of publishedLandedRows) {
+      const m = computeForecastRowLandedMetrics({ row });
       const totalUsd = m.totalUsd;
       if (totalUsd != null && Number.isFinite(totalUsd)) {
         sumTotalUsd += totalUsd;
@@ -882,7 +870,7 @@ export function CashFlowDashboard({
       }
     }
     return { sumTotalUsd, computableLines };
-  }, [forecastCashFlowRows, latestLccByPo, unitCostQuotes]);
+  }, [publishedLandedRows]);
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
 
@@ -949,6 +937,7 @@ export function CashFlowDashboard({
         destinationTariffPct?: number | null;
         freightUsdPerUnit?: number | null;
         cashFlowIncoterm?: ForecastIncoterm | null;
+        landedCostCashFlowPublishedAt?: string | null;
       };
       setFcPoSavingId(null);
       if (!res.ok) {
@@ -967,6 +956,7 @@ export function CashFlowDashboard({
         destinationTariffPct: data.destinationTariffPct ?? null,
         freightUsdPerUnit: data.freightUsdPerUnit ?? null,
         cashFlowIncoterm: data.cashFlowIncoterm ?? null,
+        landedCostCashFlowPublishedAt: data.landedCostCashFlowPublishedAt ?? null,
       });
     },
     [language, onForecastCashFlowSettingsError, onForecastCashFlowSettingsSaved],
@@ -990,6 +980,7 @@ export function CashFlowDashboard({
         destinationTariffPct?: number | null;
         freightUsdPerUnit?: number | null;
         cashFlowIncoterm?: ForecastIncoterm | null;
+        landedCostCashFlowPublishedAt?: string | null;
       };
       setFcShippingSavingId(null);
       if (!res.ok) {
@@ -1007,6 +998,7 @@ export function CashFlowDashboard({
         destinationTariffPct: data.destinationTariffPct ?? null,
         freightUsdPerUnit: data.freightUsdPerUnit ?? null,
         cashFlowIncoterm: data.cashFlowIncoterm ?? null,
+        landedCostCashFlowPublishedAt: data.landedCostCashFlowPublishedAt ?? null,
       });
     },
     [language, onForecastCashFlowSettingsError, onForecastCashFlowSettingsSaved],
@@ -1303,19 +1295,15 @@ export function CashFlowDashboard({
                         {t.lcNoRows}
                       </td>
                     </tr>
-                  ) : !hasAnyLccBackedPo ? (
+                  ) : !hasAnyPublishedLandedCost ? (
                     <tr>
                       <td colSpan={18} className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">
                         {t.lcEmptyUntilLogistics}
                       </td>
                     </tr>
                   ) : (
-                    forecastCashFlowRows.map((row) => {
-                      const m = computeForecastRowLandedMetrics({
-                        row,
-                        latestLccByPo,
-                        quotes: unitCostQuotes,
-                      });
+                    publishedLandedRows.map((row) => {
+                      const m = computeForecastRowLandedMetrics({ row });
                       const mfr = m.manufacturerCountry;
                       const landed = m.landedPerUnit;
                       const totalUsd = m.totalUsd;
@@ -1382,7 +1370,7 @@ export function CashFlowDashboard({
                     })
                   )}
                 </tbody>
-                {forecastCashFlowRows.length > 0 && hasAnyLccBackedPo ? (
+                {forecastCashFlowRows.length > 0 && hasAnyPublishedLandedCost ? (
                   <tfoot>
                     <tr className="border-t border-slate-200 bg-slate-50/90 dark:border-slate-600 dark:bg-slate-800/60">
                       <td
@@ -1399,7 +1387,7 @@ export function CashFlowDashboard({
                         className="py-2.5 pr-2 text-left text-[11px] text-slate-500 dark:text-slate-400"
                         title={t.lcSumLineCount}
                       >
-                        {lcTableSums.computableLines} / {forecastCashFlowRows.length}
+                        {lcTableSums.computableLines} / {publishedLandedRows.length}
                       </td>
                     </tr>
                   </tfoot>
@@ -1407,7 +1395,7 @@ export function CashFlowDashboard({
               </table>
             </div>
 
-            {forecastCashFlowRows.length > 0 && hasAnyLccBackedPo ? (
+            {forecastCashFlowRows.length > 0 && hasAnyPublishedLandedCost ? (
             <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
               <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.lcBarTitle}</h6>
               <p className="mt-1 text-xs text-[#9CA3AF]">{t.lcBarHint}</p>

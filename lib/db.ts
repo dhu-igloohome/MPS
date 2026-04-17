@@ -593,6 +593,21 @@ async function setupSchema() {
   await db`alter table forecast_cash_flow_settings add column if not exists destination_tariff_pct double precision;`;
   await db`alter table forecast_cash_flow_settings add column if not exists freight_usd_per_unit double precision;`;
   await db`alter table forecast_cash_flow_settings add column if not exists cash_flow_incoterm text;`;
+  await db`alter table forecast_cash_flow_settings add column if not exists landed_cost_cash_flow_published_at timestamptz;`;
+
+  await db`
+    create table if not exists app_schema_migrations (
+      id text primary key,
+      applied_at timestamptz not null default now()
+    );
+  `;
+  const lccClearDone = await db<{ id: string }[]>`
+    select id from app_schema_migrations where id = 'clear_lcc_for_publish_flow' limit 1
+  `;
+  if (lccClearDone.length === 0) {
+    await db`delete from logistics_landed_cost_consolidate`;
+    await db`insert into app_schema_migrations (id) values ('clear_lcc_for_publish_flow')`;
+  }
 
   await db`
     create table if not exists npi_bom_entries (
