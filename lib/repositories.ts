@@ -5182,6 +5182,85 @@ export async function getLatestUnitCostQuoteBySkuSupplier(
   return rows[0] ? mapUnitCostQuote(rows[0]) : null;
 }
 
+/**
+ * After saving a landed-cost consolidate snapshot, push destination / tariff / freight / incoterm
+ * into new `unit_cost_quotes` rows (one per distinct SKU + cash-flow supplier) so Cash flow Landed
+ * cost keeps reading the latest quote. Skips rows with no supplier setting or no baseline quote.
+ */
+export async function syncLandedConsolidateSnapshotToUnitCostQuotes(input: {
+  quoteDate: string;
+  destinationCountry: string;
+  destinationTariffPct: number | null;
+  seaFreightUsd: number | null;
+  airFreightUsd: number | null;
+  incoterm: ForecastIncoterm;
+  lineItems: LogisticsLandedCostConsolidateLineItem[];
+  createdBy: string;
+}): Promise<{ inserted: number; skipped: number }> {
+  await ensureDatabase();
+  const fidSet = new Set<number>();
+  for (const li of input.lineItems) {
+    const n = Number(li.forecastId);
+    if (Number.isFinite(n) && n >= 1) fidSet.add(n);
+  }
+  const forecastIds = [...fidSet];
+  const supplierByForecast = new Map<number, string>();
+  if (forecastIds.length > 0) {
+    const db = getSql();
+    const srows = await db<{ forecast_id: number; supplier_name: string }[]>`
+      select forecast_id, trim(supplier_name) as supplier_name
+      from forecast_cash_flow_settings
+      where forecast_id = any(${forecastIds});
+    `;
+    for (const r of srows) {
+      supplierByForecast.set(Number(r.forecast_id), (r.supplier_name || "").trim());
+    }
+  }
+
+  const quoteIncoterm = normalizeUnitCostIncoterm(input.incoterm);
+  const seen = new Set<string>();
+  let inserted = 0;
+  let skipped = 0;
+
+  for (const line of input.lineItems) {
+    const fid = Number(line.forecastId);
+    const supplier = supplierByForecast.get(fid) ?? "";
+    const sku = line.sku.trim();
+    if (!sku || !supplier) {
+      skipped += 1;
+      continue;
+    }
+    const key = `${sku}::${supplier}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const latest = await getLatestUnitCostQuoteBySkuSupplier(sku, supplier);
+    if (!latest) {
+      skipped += 1;
+      continue;
+    }
+
+    await createUnitCostQuote({
+      sku: latest.sku,
+      unitPrice: latest.unitPrice,
+      taxIncluded: latest.taxIncluded,
+      supplierName: supplier,
+      quoteDate: input.quoteDate.trim(),
+      manufacturerCountry: latest.manufacturerCountry.trim(),
+      destinationCountry: input.destinationCountry.trim(),
+      destinationTariffPct: input.destinationTariffPct,
+      cmUnitPriceTaxRatePct: null,
+      seaFreightUnitPrice: input.seaFreightUsd,
+      airFreightUnitPrice: input.airFreightUsd,
+      incoterm: quoteIncoterm,
+      createdBy: input.createdBy.trim(),
+    });
+    inserted += 1;
+  }
+
+  return { inserted, skipped };
+}
+
 export async function enrichForecastRecordsForCashFlow(
   forecasts: ForecastEntry[],
 ): Promise<ForecastCashFlowRow[]> {
@@ -5392,7 +5471,10 @@ export async function upsertLogisticsLandedCostConsolidateSnapshot(input: {
   consolidatedUsd: number | null;
   lineItems: LogisticsLandedCostConsolidateLineItem[];
   createdBy: string;
-}): Promise<LogisticsLandedCostConsolidateSnapshot> {
+}): Promise<{
+  snapshot: LogisticsLandedCostConsolidateSnapshot;
+  quoteSync: { inserted: number; skipped: number };
+}> {
   await ensureDatabase();
   const db = getSql();
   const rows = await db<LogisticsLccRow[]>`
@@ -5447,7 +5529,18 @@ export async function upsertLogisticsLandedCostConsolidateSnapshot(input: {
   `;
   const row = rows[0];
   if (!row) throw new Error("Save failed");
-  return mapLogisticsLccRow(row);
+  const snapshot = mapLogisticsLccRow(row);
+  const quoteSync = await syncLandedConsolidateSnapshotToUnitCostQuotes({
+    quoteDate: input.quoteDate,
+    destinationCountry: input.destinationCountry,
+    destinationTariffPct: input.destinationTariffPct,
+    seaFreightUsd: input.seaFreightUsd,
+    airFreightUsd: input.airFreightUsd,
+    incoterm: input.incoterm,
+    lineItems: input.lineItems,
+    createdBy: input.createdBy,
+  });
+  return { snapshot, quoteSync };
 }
 
 export async function listLogisticsLandedCostConsolidateSnapshots(

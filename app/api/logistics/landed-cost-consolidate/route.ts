@@ -110,7 +110,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const snapshot = await upsertLogisticsLandedCostConsolidateSnapshot({
+    const { snapshot, quoteSync } = await upsertLogisticsLandedCostConsolidateSnapshot({
       poNumber,
       quoteDate,
       destinationCountry,
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
       lineItems,
       createdBy: session.username,
     });
-    return NextResponse.json({ snapshot });
+    return NextResponse.json({ snapshot, quoteSync });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Save failed";
     return NextResponse.json({ message: msg }, { status: 400 });

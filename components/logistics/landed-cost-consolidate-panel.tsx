@@ -119,8 +119,8 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
   const t = {
     title: en ? "Landed cost consolidate" : "到岸成本汇总",
     hint: en
-      ? "Select a PO, set quote date and optional freight/tariff/incoterm (empty numeric fields use the matching unit-cost quote as of that date). Consolidated = Σ (landed USD/unit × BTO+BTS quantity). Saving again with the same PO overwrites your previous record (same user)."
-      : "选择 PO，设置报价日期及可选的运费/关税/贸易条款（数字留空则按该日期前最新单位成本报价取值）。汇总 = Σ（到岸单价 USD × BTO+BTS 数量）。同一用户再次保存相同 PO 会覆盖该用户此前的保存记录。",
+      ? "Select a PO, set quote date and optional freight/tariff/incoterm (empty numeric fields use the matching unit-cost quote as of that date). Consolidated = Σ (landed USD/unit × BTO+BTS quantity). Saving again with the same PO overwrites your previous record (same user). On Save, destination / tariff / freight / incoterm are also written as new unit-cost quote rows (per SKU + cash-flow supplier) so Cost Control → Cash flow Landed cost keeps working."
+      : "选择 PO，设置报价日期及可选的运费/关税/贸易条款（数字留空则按该日期前最新单位成本报价取值）。汇总 = Σ（到岸单价 USD × BTO+BTS 数量）。同一用户再次保存相同 PO 会覆盖该用户此前的保存记录。保存时，目的国/关税/运费/Incoterm 会同步写入新的「单位成本报价」行（按 SKU + 现金流供应商），以便「成本控制 → 现金流」中的到岸成本继续按最新报价计算。",
     poOrder: en ? "PO order" : "PO 订单",
     selectPo: en ? "Select PO order…" : "选择 PO…",
     emptyPo: en ? "(no PO on file)" : "（无 PO）",
@@ -177,6 +177,10 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
     historyColBy: en ? "By" : "录入人",
     historyColSaved: en ? "Last saved" : "最近保存",
     historyLoad: en ? "Load into form" : "载入表单",
+    quoteSyncLine: (ins: number, sk: number) =>
+      en
+        ? `Also created ${ins} unit-cost quote row(s) for cash flow.${sk > 0 ? ` ${sk} SKU line(s) skipped (no supplier in cash-flow settings or no baseline unit-cost quote).` : ""}`
+        : `并已生成 ${ins} 条单位成本报价供现金流使用。${sk > 0 ? `另有 ${sk} 行未写回（现金流未选供应商或尚无该 SKU+供应商的基准报价）。` : ""}`,
   };
 
   const [selectedPo, setSelectedPo] = useState("");
@@ -322,7 +326,10 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
         lineItems: poLines,
       }),
     });
-    const data = (await res.json().catch(() => ({}))) as { message?: string };
+    const data = (await res.json().catch(() => ({}))) as {
+      message?: string;
+      quoteSync?: { inserted: number; skipped: number };
+    };
     setSaveLoading(false);
     if (!res.ok) {
       setSaveError(true);
@@ -330,7 +337,10 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
       return;
     }
     setSaveError(false);
-    setSaveMessage(t.saved);
+    const qs = data.quoteSync;
+    const extra =
+      qs != null ? ` ${t.quoteSyncLine(qs.inserted, qs.skipped)}` : "";
+    setSaveMessage(`${t.saved}${extra}`);
     router.refresh();
   }
 
