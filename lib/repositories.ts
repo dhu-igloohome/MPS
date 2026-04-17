@@ -5347,6 +5347,7 @@ type LogisticsLccRow = {
   line_items_json: unknown;
   created_by: string;
   created_at: string;
+  updated_at?: string | null;
 };
 
 function mapLogisticsLccRow(row: LogisticsLccRow): LogisticsLandedCostConsolidateSnapshot {
@@ -5359,6 +5360,9 @@ function mapLogisticsLccRow(row: LogisticsLccRow): LogisticsLandedCostConsolidat
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
   };
+  const updatedRaw = row.updated_at;
+  const updatedAt =
+    updatedRaw != null && String(updatedRaw).trim() !== "" ? String(updatedRaw) : null;
   return {
     id: String(row.id),
     poNumber: row.po_number || "",
@@ -5372,10 +5376,12 @@ function mapLogisticsLccRow(row: LogisticsLccRow): LogisticsLandedCostConsolidat
     lineItems,
     createdBy: row.created_by,
     createdAt: row.created_at,
+    updatedAt,
   };
 }
 
-export async function createLogisticsLandedCostConsolidateSnapshot(input: {
+/** Insert or update (same `po_number` + `created_by` overwrites the previous row). */
+export async function upsertLogisticsLandedCostConsolidateSnapshot(input: {
   poNumber: string;
   quoteDate: string;
   destinationCountry: string;
@@ -5414,6 +5420,16 @@ export async function createLogisticsLandedCostConsolidateSnapshot(input: {
       ${db.json(JSON.parse(JSON.stringify(input.lineItems)) as import("postgres").JSONValue)},
       ${input.createdBy}
     )
+    on conflict (po_number, created_by) do update set
+      quote_date = excluded.quote_date,
+      destination_country = excluded.destination_country,
+      destination_tariff_pct = excluded.destination_tariff_pct,
+      sea_freight_usd = excluded.sea_freight_usd,
+      air_freight_usd = excluded.air_freight_usd,
+      incoterm = excluded.incoterm,
+      consolidated_usd = excluded.consolidated_usd,
+      line_items_json = excluded.line_items_json,
+      updated_at = now()
     returning
       id,
       po_number,
@@ -5426,9 +5442,38 @@ export async function createLogisticsLandedCostConsolidateSnapshot(input: {
       consolidated_usd::text,
       line_items_json,
       created_by,
-      created_at::text;
+      created_at::text,
+      updated_at::text;
   `;
   const row = rows[0];
-  if (!row) throw new Error("Insert failed");
+  if (!row) throw new Error("Save failed");
   return mapLogisticsLccRow(row);
+}
+
+export async function listLogisticsLandedCostConsolidateSnapshots(
+  limit = 120,
+): Promise<LogisticsLandedCostConsolidateSnapshot[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const lim = Math.min(Math.max(limit, 1), 300);
+  const rows = await db<LogisticsLccRow[]>`
+    select
+      id,
+      po_number,
+      quote_date::text,
+      destination_country,
+      destination_tariff_pct::text,
+      sea_freight_usd::text,
+      air_freight_usd::text,
+      incoterm,
+      consolidated_usd::text,
+      line_items_json,
+      created_by,
+      created_at::text,
+      updated_at::text
+    from logistics_landed_cost_consolidate
+    order by greatest(created_at, updated_at) desc, id desc
+    limit ${lim}
+  `;
+  return rows.map(mapLogisticsLccRow);
 }

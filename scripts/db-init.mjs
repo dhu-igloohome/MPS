@@ -513,12 +513,18 @@ async function main() {
       consolidated_usd numeric(16, 4),
       line_items_json jsonb not null default '[]'::jsonb,
       created_by text not null references users(username),
-      created_at timestamptz not null default now()
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
     );
   `;
   await sql`
     create index if not exists idx_logistics_landed_cost_consolidate_created
     on logistics_landed_cost_consolidate (created_at desc, id desc);
+  `;
+  await sql`alter table logistics_landed_cost_consolidate add column if not exists updated_at timestamptz not null default now();`;
+  await sql`
+    create unique index if not exists idx_lcc_po_created_by
+    on logistics_landed_cost_consolidate (po_number, created_by);
   `;
 
   await sql`

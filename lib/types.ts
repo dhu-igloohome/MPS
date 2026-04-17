@@ -506,6 +506,8 @@ export type LogisticsLandedCostConsolidateSnapshot = {
   lineItems: LogisticsLandedCostConsolidateLineItem[];
   createdBy: string;
   createdAt: string;
+  /** Last update time when an existing row was overwritten (same PO + same user). */
+  updatedAt: string | null;
 };
 
 export type InventoryGlobalEntry = {

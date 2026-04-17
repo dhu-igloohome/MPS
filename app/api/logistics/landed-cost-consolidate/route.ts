@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
 import { parseForecastIncoterm } from "@/lib/forecast-incoterm";
-import { createLogisticsLandedCostConsolidateSnapshot } from "@/lib/repositories";
+import { upsertLogisticsLandedCostConsolidateSnapshot } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import type { LogisticsLandedCostConsolidateLineItem, Region } from "@/lib/types";
 
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const snapshot = await createLogisticsLandedCostConsolidateSnapshot({
+    const snapshot = await upsertLogisticsLandedCostConsolidateSnapshot({
       poNumber,
       quoteDate,
       destinationCountry,

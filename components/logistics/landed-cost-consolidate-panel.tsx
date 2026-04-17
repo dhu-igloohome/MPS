@@ -15,6 +15,7 @@ import { computeLandedCostPerUnitUsd } from "@/lib/landed-cost-cash-flow";
 import type {
   ForecastCashFlowRow,
   LogisticsLandedCostConsolidateLineItem,
+  LogisticsLandedCostConsolidateSnapshot,
   UnitCostQuoteEntry,
 } from "@/lib/types";
 
@@ -22,7 +23,13 @@ type Props = {
   language: Language;
   rows: ForecastCashFlowRow[];
   unitCostQuotes: UnitCostQuoteEntry[];
+  initialSnapshots: LogisticsLandedCostConsolidateSnapshot[];
 };
+
+function formatSavedAt(iso: string): string {
+  if (!iso) return "—";
+  return iso.slice(0, 19).replace("T", " ");
+}
 
 function poKey(row: ForecastCashFlowRow): string {
   return row.poNumber.trim();
@@ -106,14 +113,14 @@ function computeConsolidatedUsd(
   return anyLine ? sum : null;
 }
 
-export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: Props) {
+export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, initialSnapshots }: Props) {
   const router = useRouter();
   const en = language === "en";
   const t = {
     title: en ? "Landed cost consolidate" : "到岸成本汇总",
     hint: en
-      ? "Select a PO, set quote date and optional freight/tariff/incoterm (empty numeric fields use the matching unit-cost quote as of that date). Consolidated = Σ (landed USD/unit × BTO+BTS quantity)."
-      : "选择 PO，设置报价日期及可选的运费/关税/贸易条款（数字留空则按该日期前最新单位成本报价取值）。汇总 = Σ（到岸单价 USD × BTO+BTS 数量）。",
+      ? "Select a PO, set quote date and optional freight/tariff/incoterm (empty numeric fields use the matching unit-cost quote as of that date). Consolidated = Σ (landed USD/unit × BTO+BTS quantity). Saving again with the same PO overwrites your previous record (same user)."
+      : "选择 PO，设置报价日期及可选的运费/关税/贸易条款（数字留空则按该日期前最新单位成本报价取值）。汇总 = Σ（到岸单价 USD × BTO+BTS 数量）。同一用户再次保存相同 PO 会覆盖该用户此前的保存记录。",
     poOrder: en ? "PO order" : "PO 订单",
     selectPo: en ? "Select PO order…" : "选择 PO…",
     emptyPo: en ? "(no PO on file)" : "（无 PO）",
@@ -156,6 +163,20 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
     saving: en ? "Saving…" : "保存中…",
     saved: en ? "Saved." : "已保存。",
     saveFailed: en ? "Save failed." : "保存失败。",
+    historyTitle: en ? "Saved history" : "历史保存记录",
+    historyHint: en
+      ? "Latest 120 snapshots (all users). Load fills the form from a past save; saving again updates your row for that PO if it is yours."
+      : "最近 120 条保存记录（含所有用户）。载入可将历史数据填回表单；若该条为您本人保存的同一 PO，再次保存会覆盖该记录。",
+    historyEmpty: en ? "No saved snapshots yet." : "暂无保存记录。",
+    historyColPo: en ? "PO" : "PO",
+    historyColQuoteDate: en ? "Quote date" : "报价日期",
+    historyColDest: en ? "Destination" : "目的国",
+    historyColIncoterm: en ? "Incoterm" : "贸易条款",
+    historyColLanded: en ? "Landed (USD)" : "到岸(USD)",
+    historyColLines: en ? "Lines" : "行数",
+    historyColBy: en ? "By" : "录入人",
+    historyColSaved: en ? "Last saved" : "最近保存",
+    historyLoad: en ? "Load into form" : "载入表单",
   };
 
   const [selectedPo, setSelectedPo] = useState("");
@@ -167,6 +188,7 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
   const [incoterm, setIncoterm] = useState<ForecastIncoterm>("EXW");
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [saveError, setSaveError] = useState(false);
 
   const baseDestinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
   const destinationOptions = useMemo(
@@ -187,6 +209,16 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
       return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
     });
   }, [rows]);
+
+  const poSelectOptions = useMemo(() => {
+    const set = new Set(poOptions);
+    if (selectedPo && !set.has(selectedPo)) {
+      return [...poOptions, selectedPo].sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }),
+      );
+    }
+    return poOptions;
+  }, [poOptions, selectedPo]);
 
   const poLines = useMemo((): LogisticsLandedCostConsolidateLineItem[] => {
     if (!selectedPo) return [];
@@ -254,10 +286,23 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
   const destInvalid =
     destinationCountry.trim() !== "" && !isForecastDestinationInputValid(destinationCountry);
 
+  function loadFromSnapshot(s: LogisticsLandedCostConsolidateSnapshot) {
+    setSelectedPo(s.poNumber);
+    setQuoteDate(s.quoteDate);
+    setDestinationCountry(s.destinationCountry.trim());
+    setDestinationTariffPct(s.destinationTariffPct != null ? String(s.destinationTariffPct) : "");
+    setSeaFreightUnitPrice(s.seaFreightUsd != null ? String(s.seaFreightUsd) : "");
+    setAirFreightUnitPrice(s.airFreightUsd != null ? String(s.airFreightUsd) : "");
+    setIncoterm(s.incoterm);
+    setSaveMessage("");
+    setSaveError(false);
+  }
+
   async function onSave() {
     if (!selectedPo || destInvalid || saveLoading) return;
     setSaveLoading(true);
     setSaveMessage("");
+    setSaveError(false);
     const destTariffNum =
       destinationTariffPct.trim() === "" ? null : Number(destinationTariffPct);
     const seaNum = seaFreightUnitPrice.trim() === "" ? null : Number(seaFreightUnitPrice);
@@ -280,9 +325,11 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     setSaveLoading(false);
     if (!res.ok) {
+      setSaveError(true);
       setSaveMessage(data.message || t.saveFailed);
       return;
     }
+    setSaveError(false);
     setSaveMessage(t.saved);
     router.refresh();
   }
@@ -314,7 +361,7 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
                   className="w-full rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground"
                 >
                   <option value="">{t.selectPo}</option>
-                  {poOptions.map((po) => (
+                  {poSelectOptions.map((po) => (
                     <option key={po || "__empty__"} value={po}>
                       {po ? po : t.emptyPo}
                     </option>
@@ -474,15 +521,73 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
                   {saveLoading ? t.saving : t.save}
                 </button>
                 {saveMessage ? (
-                  <p
-                    className={`text-sm ${saveMessage === t.saved ? "text-app-muted" : "text-red-600"}`}
-                  >
-                    {saveMessage}
-                  </p>
+                  <p className={`text-sm ${saveError ? "text-red-600" : "text-app-muted"}`}>{saveMessage}</p>
                 ) : null}
               </div>
             ) : null}
           </>
+        )}
+      </section>
+
+      <section className="app-panel p-5 sm:p-6">
+        <h3 className="mb-1 text-base font-semibold text-foreground">{t.historyTitle}</h3>
+        <p className="mb-4 text-sm text-app-muted">{t.historyHint}</p>
+        {initialSnapshots.length === 0 ? (
+          <p className="text-sm text-app-muted">{t.historyEmpty}</p>
+        ) : (
+          <div className="app-table-shell overflow-x-auto">
+            <table className="app-table min-w-[960px]">
+              <thead>
+                <tr>
+                  <th>{t.historyColPo}</th>
+                  <th>{t.historyColQuoteDate}</th>
+                  <th>{t.historyColDest}</th>
+                  <th>{t.historyColIncoterm}</th>
+                  <th>{t.historyColLanded}</th>
+                  <th>{t.historyColLines}</th>
+                  <th>{t.historyColBy}</th>
+                  <th>{t.historyColSaved}</th>
+                  <th>{en ? "Action" : "操作"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {initialSnapshots.map((s) => {
+                  const destShort =
+                    s.destinationCountry.trim().length > 36
+                      ? `${s.destinationCountry.trim().slice(0, 36)}…`
+                      : s.destinationCountry.trim() || "—";
+                  const lastAt = formatSavedAt(s.updatedAt || s.createdAt);
+                  return (
+                    <tr key={s.id}>
+                      <td className="font-medium whitespace-nowrap">{s.poNumber || "—"}</td>
+                      <td className="whitespace-nowrap tabular-nums">{s.quoteDate}</td>
+                      <td className="max-w-[14rem] truncate" title={s.destinationCountry}>
+                        {destShort}
+                      </td>
+                      <td>{s.incoterm}</td>
+                      <td className="whitespace-nowrap tabular-nums">
+                        {s.consolidatedUsd != null && Number.isFinite(s.consolidatedUsd)
+                          ? formatUsd(s.consolidatedUsd, 2)
+                          : "—"}
+                      </td>
+                      <td className="tabular-nums">{s.lineItems.length}</td>
+                      <td className="whitespace-nowrap">{s.createdBy}</td>
+                      <td className="whitespace-nowrap text-app-muted tabular-nums">{lastAt}</td>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => loadFromSnapshot(s)}
+                          className="rounded-md border border-app-border px-2 py-1 text-xs font-medium text-app-accent hover:bg-app-accent-soft"
+                        >
+                          {t.historyLoad}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </div>

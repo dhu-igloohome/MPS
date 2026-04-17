@@ -8,6 +8,7 @@ import { normalizeLanguage } from "@/lib/i18n";
 import {
   enrichForecastRecordsForCashFlow,
   getForecastsByRegions,
+  listLogisticsLandedCostConsolidateSnapshots,
   listUnitCostQuotes,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
@@ -19,9 +20,10 @@ export default async function LandedCostConsolidatePage() {
   if (!session) redirect("/login");
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const [forecasts, unitCostQuotes] = await Promise.all([
+  const [forecasts, unitCostQuotes, landedSnapshots] = await Promise.all([
     getForecastsByRegions(session.regions),
     listUnitCostQuotes(),
+    listLogisticsLandedCostConsolidateSnapshots(120),
   ]);
   const cashFlowRows = await enrichForecastRecordsForCashFlow(forecasts);
 
@@ -41,6 +43,7 @@ export default async function LandedCostConsolidatePage() {
           language={language}
           rows={cashFlowRows}
           unitCostQuotes={unitCostQuotes}
+          initialSnapshots={landedSnapshots}
         />
       </div>
     </AppShell>
