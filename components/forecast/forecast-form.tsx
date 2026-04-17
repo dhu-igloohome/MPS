@@ -49,6 +49,14 @@ type ForecastEditDraft = {
   poNumber: string;
 };
 
+/** Stored value stays `USA`; dropdown / table show North America (EN) or 北美 (ZH). */
+function forecastRegionSelectLabel(region: Region, language: Language): string {
+  if (region === "USA") {
+    return language === "en" ? "North America" : "北美";
+  }
+  return region;
+}
+
 function newDraftForecastLine(products: ProductItem[]): DraftForecastLine {
   const first = products[0];
   return {
@@ -591,7 +599,7 @@ export function ForecastForm({
           >
             {allowedRegions.map((item) => (
               <option key={item} value={item}>
-                {item}
+                {forecastRegionSelectLabel(item, language)}
               </option>
             ))}
           </select>
@@ -833,7 +841,7 @@ export function ForecastForm({
               >
                 {allowedRegions.map((item) => (
                   <option key={item} value={item}>
-                    {item}
+                    {forecastRegionSelectLabel(item, language)}
                   </option>
                 ))}
               </select>
@@ -1046,7 +1054,7 @@ export function ForecastForm({
                     ) : null}
                     <td className="px-2 py-2">{formatForecastMonthDisplay(item.month, language)}</td>
                     <td className="px-2 py-2">{item.poNumber || "—"}</td>
-                    <td className="px-2 py-2">{item.region}</td>
+                    <td className="px-2 py-2">{forecastRegionSelectLabel(item.region, language)}</td>
                     <td className="px-2 py-2">
                       {forecastDestinationDisplay(item.destination, language, destinationOptions)}
                     </td>
