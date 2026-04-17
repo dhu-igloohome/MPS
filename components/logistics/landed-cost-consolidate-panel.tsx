@@ -5,14 +5,12 @@ import { useRouter } from "next/navigation";
 
 import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
-import type { ForecastCashFlowRow, SupplierEntry, UnitCostQuoteEntry } from "@/lib/types";
+import type { ForecastCashFlowRow, UnitCostQuoteEntry } from "@/lib/types";
 
 type Props = {
   language: Language;
   /** Same source as Supply Chain → Cost control → Forecast cash flow (Comment = Ok, enriched). */
   rows: ForecastCashFlowRow[];
-  /** Passed for parity with cost control (optional future columns); same row set as cost control. */
-  fcSuppliers: SupplierEntry[];
 };
 
 function forecastLineTotalUsd(row: ForecastCashFlowRow): number | null {
@@ -29,7 +27,7 @@ function formatPoIssueDateEnglish(ymd: string | null | undefined): string {
   return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function LandedCostConsolidatePanel({ language, rows: initialRows, fcSuppliers: _fcSuppliers }: Props) {
+export function LandedCostConsolidatePanel({ language, rows: initialRows }: Props) {
   const router = useRouter();
   const en = language === "en";
   const t = {
