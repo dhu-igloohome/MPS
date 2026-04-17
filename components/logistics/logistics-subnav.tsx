@@ -17,6 +17,10 @@ export function LogisticsSubnav({ language }: { language: Language }) {
       href: "/logistics-progress/inventory-global",
       label: language === "en" ? "Inventory Global" : "Inventory Global",
     },
+    {
+      href: "/logistics-progress/landed-cost-consolidate",
+      label: language === "en" ? "Landed cost consolidate" : "到岸成本汇总",
+    },
   ];
   const isOn = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   return (

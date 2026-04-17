@@ -71,6 +71,10 @@ export async function AppShell({ session, title, description, children }: AppShe
           href: "/logistics-progress/inventory-global",
           label: language === "en" ? "Inventory Global" : "Inventory Global",
         },
+        {
+          href: "/logistics-progress/landed-cost-consolidate",
+          label: language === "en" ? "Landed cost consolidate" : "到岸成本汇总",
+        },
       ],
     },
     {
