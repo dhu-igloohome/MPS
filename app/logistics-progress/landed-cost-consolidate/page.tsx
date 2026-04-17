@@ -5,12 +5,7 @@ import { LandedCostConsolidatePanel } from "@/components/logistics/landed-cost-c
 import { LogisticsSubnav } from "@/components/logistics/logistics-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
-import {
-  enrichForecastRecordsForCashFlow,
-  getForecastsByRegions,
-  listLogisticsLandedCostConsolidateSnapshots,
-  listUnitCostQuotes,
-} from "@/lib/repositories";
+import { enrichForecastRecordsForCashFlow, getForecastsByRegions, listSuppliers } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +15,9 @@ export default async function LandedCostConsolidatePage() {
   if (!session) redirect("/login");
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const [forecasts, unitCostQuotes, landedSnapshots] = await Promise.all([
+  const [forecasts, suppliers] = await Promise.all([
     getForecastsByRegions(session.regions),
-    listUnitCostQuotes(),
-    listLogisticsLandedCostConsolidateSnapshots(120),
+    listSuppliers(),
   ]);
   const cashFlowRows = await enrichForecastRecordsForCashFlow(forecasts);
 
@@ -33,19 +27,13 @@ export default async function LandedCostConsolidatePage() {
       title={language === "en" ? "Logistics Progress · Landed cost consolidate" : "物流进度 · 到岸成本汇总"}
       description={
         language === "en"
-          ? "Pick a forecast PO to view consolidated landed cost (USD) from approved forecast lines in your regions."
-          : "按 Forecast PO 查看您负责区域内已批准行的到岸成本（美元）汇总。"
+          ? "Forecast cash flow (for dashboard) — same table and PO date edits as Supply Chain → Cost control → Cash flow analysis."
+          : "与「供应链 → 成本控制 → 现金流分析」中 Forecast 现金流（看板汇总）相同的表格与订单下达日期编辑。"
       }
     >
       <div className="space-y-4">
         <LogisticsSubnav language={language} />
-        <LandedCostConsolidatePanel
-          language={language}
-          rows={cashFlowRows}
-          unitCostQuotes={unitCostQuotes}
-          initialSnapshots={landedSnapshots}
-          currentUsername={session.username}
-        />
+        <LandedCostConsolidatePanel language={language} rows={cashFlowRows} fcSuppliers={suppliers} />
       </div>
     </AppShell>
   );

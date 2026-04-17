@@ -1,659 +1,198 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { formatUsd } from "@/lib/format-usd";
-import {
-  buildForecastDestinationOptions,
-  isForecastDestinationInputValid,
-  withLegacyForecastDestination,
-} from "@/lib/forecast-destination-countries";
-import { resolveQuoteForRow } from "@/lib/forecast-landed-cost-merge";
-import { normalizeForecastIncotermStored, type ForecastIncoterm } from "@/lib/forecast-incoterm";
 import type { Language } from "@/lib/i18n";
-import { computeLandedCostPerUnitUsd } from "@/lib/landed-cost-cash-flow";
-import type {
-  ForecastCashFlowRow,
-  LogisticsLandedCostConsolidateLineItem,
-  LogisticsLandedCostConsolidateSnapshot,
-  UnitCostQuoteEntry,
-} from "@/lib/types";
+import type { ForecastCashFlowRow, SupplierEntry, UnitCostQuoteEntry } from "@/lib/types";
 
 type Props = {
   language: Language;
+  /** Same source as Supply Chain → Cost control → Forecast cash flow (Comment = Ok, enriched). */
   rows: ForecastCashFlowRow[];
-  unitCostQuotes: UnitCostQuoteEntry[];
-  initialSnapshots: LogisticsLandedCostConsolidateSnapshot[];
-  currentUsername: string;
+  /** Passed for parity with cost control (optional future columns); same row set as cost control. */
+  fcSuppliers: SupplierEntry[];
 };
 
-function formatSavedAt(iso: string): string {
-  if (!iso) return "—";
-  return iso.slice(0, 19).replace("T", " ");
+function forecastLineTotalUsd(row: ForecastCashFlowRow): number | null {
+  if (row.unitPriceUsd == null) return null;
+  const qty = Number(row.buildToOrder) + Number(row.buildToStock);
+  if (!Number.isFinite(qty) || qty <= 0) return null;
+  return row.unitPriceUsd * qty;
 }
 
-function poKey(row: ForecastCashFlowRow): string {
-  return row.poNumber.trim();
+function formatPoIssueDateEnglish(ymd: string | null | undefined): string {
+  if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return "";
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function optPctOverride(form: string, quoteVal: number | null | undefined): number | null {
-  const t = form.trim();
-  if (t !== "") {
-    const n = Number(t);
-    if (!Number.isFinite(n) || n < 0 || n > 100) return null;
-    return n;
-  }
-  return quoteVal ?? null;
-}
-
-function optUsdOverride(form: string, quoteVal: number | null | undefined): number | null {
-  const t = form.trim();
-  if (t !== "") {
-    const n = Number(t);
-    if (!Number.isFinite(n) || n < 0) return null;
-    return n;
-  }
-  return quoteVal ?? null;
-}
-
-function computeConsolidatedUsd(
-  rows: ForecastCashFlowRow[],
-  selectedPo: string,
-  quotes: readonly UnitCostQuoteEntry[],
-  quoteDateYmd: string,
-  incoterm: ForecastIncoterm,
-  destTariffForm: string,
-  seaForm: string,
-  airForm: string,
-): number | null {
-  let sum = 0;
-  let anyLine = false;
-  for (const row of rows) {
-    if (poKey(row) !== selectedPo) continue;
-    const q = resolveQuoteForRow(row, quotes, quoteDateYmd);
-    const unit = q != null ? q.unitPrice : row.unitPriceUsd;
-    const tariff = optPctOverride(destTariffForm, q?.destinationTariffPct);
-    const sea = optUsdOverride(seaForm, q?.seaFreightUnitPrice);
-    const air = optUsdOverride(airForm, q?.airFreightUnitPrice);
-    const landed = computeLandedCostPerUnitUsd({
-      forecastIncoterm: incoterm,
-      shippingMode: row.cashFlowShippingMode,
-      unitPriceUsd: unit != null && Number.isFinite(unit) ? unit : null,
-      destinationTariffPct: tariff,
-      seaFreightUsd: sea,
-      airFreightUsd: air,
-    });
-    const qty = Number(row.buildToOrder) + Number(row.buildToStock);
-    if (landed == null || !Number.isFinite(qty) || qty <= 0) continue;
-    anyLine = true;
-    sum += landed * qty;
-  }
-  return anyLine ? sum : null;
-}
-
-export function LandedCostConsolidatePanel({
-  language,
-  rows,
-  unitCostQuotes,
-  initialSnapshots,
-  currentUsername,
-}: Props) {
+export function LandedCostConsolidatePanel({ language, rows: initialRows, fcSuppliers: _fcSuppliers }: Props) {
   const router = useRouter();
   const en = language === "en";
   const t = {
-    title: en ? "Landed cost consolidate" : "到岸成本汇总",
+    title: en ? "Forecast cash flow (for dashboard)" : "Forecast 现金流（看板汇总）",
     hint: en
-      ? "Supply Chain → Cost control → Landed cost cash flow stays empty until you Create (first-time draft) or Save here for a PO. Select a PO, click Create if you have no draft yet, then set quote date and freight/tariff/incoterm (empty numbers use the matching unit-cost quote as of that date). Save writes unit-cost quotes so landed cash flow can show amounts when FOB/DAP/DDP + tariff etc. are computable."
-      : "「供应链 → 成本控制 → Landed cost 现金流」在您于本页对该 PO 点击「创建」或「保存」之前保持空白。请选择 PO；若尚无草稿请先点「创建」，再填写报价日期及运费/关税/贸易条款（数字留空则按该日期前最新单位成本报价）。保存后会写入单位成本报价；满足 FOB/DAP/DDP 与关税等条件后现金流才会显示到岸金额。",
-    poOrder: en ? "PO order" : "PO 订单",
-    selectPo: en ? "Select PO order…" : "选择 PO…",
-    emptyPo: en ? "(no PO on file)" : "（无 PO）",
-    quoteDate: en ? "Quote date" : "报价日期",
-    destinationCountry: en ? "Destination country" : "目的国",
-    selectDestinationCountry: en
-      ? "Select destination country (optional)…"
-      : "选择目的国（选填）…",
-    destinationCountryHint: en
-      ? "English name is stored; TW/HK/MO use Taiwan, China / Hong Kong, China / Macau, China."
-      : "保存英文标准名称；台湾/香港/澳门在中文界面显示为中国台湾、中国香港、中国澳门。",
-    destinationTariff: en ? "Destination tariff (%)" : "目的国关税 (%)",
-    seaMode: en ? "Shipping: ocean" : "运输方式 · 海运",
-    seaFreightUnit: en ? "Ocean freight (USD / unit)" : "海运运费单价 (USD)",
-    airMode: en ? "Shipping: air" : "运输方式 · 空运",
-    airFreightUnit: en ? "Air freight (USD / unit)" : "空运运费单价 (USD)",
-    incoterm: "Incoterm",
-    incotermExw: "EXW",
-    incotermFob: "FOB",
-    incotermDap: "DAP",
-    incotermDdp: "DDP",
-    optionalPh: en ? "Optional" : "选填",
-    landedCost: en ? "Landed cost" : "到岸成本",
-    consolidated: en ? "Consolidated (USD)" : "汇总（USD）",
-    noRows: en ? "No forecast cash-flow lines in your regions." : "当前区域下无可用于汇总的 Forecast 现金流行。",
-    noPo: en ? "No PO numbers found on those lines." : "这些行上没有 PO 编号。",
-    cannotCompute: en
-      ? "No computable landed cost for this PO (check incoterm FOB/DAP/DDP, tariff, unit price, supplier, quote date)."
-      : "该 PO 暂无可计算的到岸成本（请检查贸易条款 FOB/DAP/DDP、关税、单价、供应商、报价日期等）。",
-    destInvalid: en ? "Destination country is not a valid stored name." : "目的国名称无效，请从列表选择或按规范填写。",
-    poLinesTitle: en ? "SKU & quantities for this PO" : "该 PO 下的 SKU 与数量",
-    colSku: "SKU",
-    colBto: en ? "BTO" : "BTO",
-    colBts: en ? "BTS" : "BTS",
-    colQty: en ? "Total qty" : "合计数量",
-    colMonth: en ? "Month" : "月份",
-    colRegion: en ? "Region" : "区域",
-    colProduct: en ? "Product" : "产品",
-    create: en ? "Create" : "创建",
-    creating: en ? "Creating…" : "创建中…",
-    created: en ? "Draft created. You can edit and Save." : "已创建草稿，可编辑后保存。",
-    createFailed: en ? "Create failed." : "创建失败。",
-    createExists: en ? "You already have a draft or save for this PO — edit and Save." : "该 PO 您已有记录，请直接修改后保存。",
-    save: en ? "Save" : "保存",
-    saving: en ? "Saving…" : "保存中…",
-    saved: en ? "Saved." : "已保存。",
-    saveFailed: en ? "Save failed." : "保存失败。",
-    historyTitle: en ? "Saved history" : "历史保存记录",
-    historyHint: en
-      ? "Latest 120 snapshots (all users). Load fills the form from a past save; saving again updates your row for that PO if it is yours."
-      : "最近 120 条保存记录（含所有用户）。载入可将历史数据填回表单；若该条为您本人保存的同一 PO，再次保存会覆盖该记录。",
-    historyEmpty: en ? "No saved snapshots yet." : "暂无保存记录。",
-    historyColPo: en ? "PO" : "PO",
-    historyColQuoteDate: en ? "Quote date" : "报价日期",
-    historyColDest: en ? "Destination" : "目的国",
-    historyColIncoterm: en ? "Incoterm" : "贸易条款",
-    historyColLanded: en ? "Landed (USD)" : "到岸(USD)",
-    historyColLines: en ? "Lines" : "行数",
-    historyColBy: en ? "By" : "录入人",
-    historyColSaved: en ? "Last saved" : "最近保存",
-    historyLoad: en ? "Load into form" : "载入表单",
-    quoteSyncLine: (ins: number, sk: number) =>
-      en
-        ? `Also created ${ins} unit-cost quote row(s) for cash flow.${sk > 0 ? ` ${sk} SKU line(s) skipped (no supplier in cash-flow settings or no baseline unit-cost quote).` : ""}`
-        : `并已生成 ${ins} 条单位成本报价供现金流使用。${sk > 0 ? `另有 ${sk} 行未写回（现金流未选供应商或尚无该 SKU+供应商的基准报价）。` : ""}`,
+      ? "Line total from Unit cost; PO issue date in English. Same data and edits as Supply Chain → Cost control → Cash flow analysis (forecast rows with Comment = Ok)."
+      : "行总金额来自单位成本；订单下达日期以英文展示。数据与编辑与「供应链 → 成本控制 → 现金流分析」中的 Forecast 现金流行（评论为 Ok）一致。",
+    supplier: en ? "Supplier name" : "供应商名称",
+    sku: "SKU",
+    bto: en ? "Build to Order" : "按单生产",
+    bts: en ? "Build to Stock" : "备货生产",
+    poIssue: en ? "PO issue date" : "订单下达日期",
+    total: en ? "Total amount (USD)" : "总金额 (USD)",
+    poIssueTitle:
+      language === "en"
+        ? "Order date in English; use the picker to change."
+        : "订单日期以英文展示，可用日期选择器修改。",
+    empty: en
+      ? "No forecast cash flow rows (Comment must be Ok on the Forecast page)."
+      : "暂无 Forecast 现金流数据（请在 Forecast 页将评论设为 Ok）。",
+    sumLabel: en ? "Sum (computable lines)" : "可计算行合计",
+    sumEmpty: en ? "No rows with a computable total (pick supplier + Unit cost quote)." : "暂无可计算总金额的行（请选择供应商并确保单位成本有报价）。",
+    saveErr: en ? "Could not save PO issue date." : "保存订单下达日期失败。",
+    na: "—",
   };
 
-  const [selectedPo, setSelectedPo] = useState("");
-  const [quoteDate, setQuoteDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [destinationCountry, setDestinationCountry] = useState("");
-  const [destinationTariffPct, setDestinationTariffPct] = useState("");
-  const [seaFreightUnitPrice, setSeaFreightUnitPrice] = useState("");
-  const [airFreightUnitPrice, setAirFreightUnitPrice] = useState("");
-  const [incoterm, setIncoterm] = useState<ForecastIncoterm>("EXW");
-  const [saveLoading, setSaveLoading] = useState(false);
-  const [saveMessage, setSaveMessage] = useState("");
-  const [saveError, setSaveError] = useState(false);
-  const [createLoading, setCreateLoading] = useState(false);
-  const [createMessage, setCreateMessage] = useState("");
-  const [createError, setCreateError] = useState(false);
+  const [rows, setRows] = useState(initialRows);
+  const [poSavingId, setPoSavingId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
 
-  const baseDestinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
-  const destinationOptions = useMemo(
-    () => withLegacyForecastDestination(destinationCountry, baseDestinationOptions),
-    [destinationCountry, baseDestinationOptions],
+  useEffect(() => {
+    setRows(initialRows);
+  }, [initialRows]);
+
+  const dashboardRows = useMemo(() => {
+    return rows.map((row) => ({
+      row,
+      lineTotal: forecastLineTotalUsd(row),
+      supplierLabel: row.cashFlowSupplierName.trim() || t.na,
+    }));
+  }, [rows, t.na]);
+
+  const sumComputable = useMemo(
+    () => dashboardRows.reduce((s, x) => s + (x.lineTotal ?? 0), 0),
+    [dashboardRows],
   );
 
-  const poOptions = useMemo(() => {
-    const poSet = new Set<string>();
-    for (const row of rows) {
-      poSet.add(poKey(row));
-    }
-    return [...poSet].sort((a, b) => {
-      const ae = a === "";
-      const be = b === "";
-      if (ae && !be) return 1;
-      if (!ae && be) return -1;
-      return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
-    });
-  }, [rows]);
-
-  const poSelectOptions = useMemo(() => {
-    const set = new Set(poOptions);
-    if (selectedPo && !set.has(selectedPo)) {
-      return [...poOptions, selectedPo].sort((a, b) =>
-        a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }),
-      );
-    }
-    return poOptions;
-  }, [poOptions, selectedPo]);
-
-  const poLines = useMemo((): LogisticsLandedCostConsolidateLineItem[] => {
-    if (!selectedPo) return [];
-    return rows
-      .filter((r) => poKey(r) === selectedPo)
-      .map((r) => {
-        const bto = Math.trunc(Number(r.buildToOrder));
-        const bts = Math.trunc(Number(r.buildToStock));
-        return {
-          forecastId: r.id,
-          sku: r.sku.trim(),
-          buildToOrder: Number.isFinite(bto) ? bto : 0,
-          buildToStock: Number.isFinite(bts) ? bts : 0,
-          quantity: (Number.isFinite(bto) ? bto : 0) + (Number.isFinite(bts) ? bts : 0),
-          region: r.region,
-          month: r.month,
-          productName: r.productName.trim(),
-        };
-      })
-      .sort((a, b) => a.sku.localeCompare(b.sku) || a.month.localeCompare(b.month));
-  }, [rows, selectedPo]);
-
-  const hasUserDraftForSelectedPo = useMemo(() => {
-    const p = selectedPo.trim();
-    if (!p) return false;
-    const u = currentUsername.trim();
-    return initialSnapshots.some(
-      (s) => (s.poNumber || "").trim() === p && (s.createdBy || "").trim() === u,
-    );
-  }, [selectedPo, currentUsername, initialSnapshots]);
-
-  async function onCreate() {
-    if (!selectedPo || poLines.length === 0 || createLoading || hasUserDraftForSelectedPo) return;
-    setCreateLoading(true);
-    setCreateMessage("");
-    setCreateError(false);
-    const res = await fetch("/api/logistics/landed-cost-consolidate/draft", {
-      method: "POST",
+  async function persistFcPoIssueDate(forecastId: string, isoDay: string) {
+    setPoSavingId(forecastId);
+    setMessage("");
+    const res = await fetch("/api/cost-control/forecast-cash-flow", {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ poNumber: selectedPo.trim() }),
-    });
-    const data = (await res.json().catch(() => ({}))) as { message?: string; created?: boolean };
-    setCreateLoading(false);
-    if (!res.ok) {
-      setCreateError(true);
-      setCreateMessage(data.message || t.createFailed);
-      return;
-    }
-    if (!data.created) {
-      setCreateError(false);
-      setCreateMessage(t.createExists);
-      return;
-    }
-    setCreateError(false);
-    setCreateMessage(t.created);
-    router.refresh();
-  }
-
-  function applyPrefillForPo(po: string) {
-    if (!po) return;
-    const first = rows.find((r) => poKey(r) === po);
-    if (!first) return;
-    setDestinationCountry((first.destination || "").trim());
-    setIncoterm(normalizeForecastIncotermStored(first.incoterm));
-    const q = resolveQuoteForRow(first, unitCostQuotes, quoteDate);
-    setDestinationTariffPct(q?.destinationTariffPct != null ? String(q.destinationTariffPct) : "");
-    setSeaFreightUnitPrice(q?.seaFreightUnitPrice != null ? String(q.seaFreightUnitPrice) : "");
-    setAirFreightUnitPrice(q?.airFreightUnitPrice != null ? String(q.airFreightUnitPrice) : "");
-  }
-
-  const consolidatedUsd = useMemo(() => {
-    if (!selectedPo) return null;
-    return computeConsolidatedUsd(
-      rows,
-      selectedPo,
-      unitCostQuotes,
-      quoteDate,
-      incoterm,
-      destinationTariffPct,
-      seaFreightUnitPrice,
-      airFreightUnitPrice,
-    );
-  }, [
-    rows,
-    selectedPo,
-    unitCostQuotes,
-    quoteDate,
-    incoterm,
-    destinationTariffPct,
-    seaFreightUnitPrice,
-    airFreightUnitPrice,
-  ]);
-
-  const landedLabel =
-    selectedPo === ""
-      ? ""
-      : consolidatedUsd != null && Number.isFinite(consolidatedUsd)
-        ? formatUsd(consolidatedUsd, 2)
-        : null;
-
-  const destInvalid =
-    destinationCountry.trim() !== "" && !isForecastDestinationInputValid(destinationCountry);
-
-  function loadFromSnapshot(s: LogisticsLandedCostConsolidateSnapshot) {
-    setSelectedPo(s.poNumber);
-    setQuoteDate(s.quoteDate);
-    setDestinationCountry(s.destinationCountry.trim());
-    setDestinationTariffPct(s.destinationTariffPct != null ? String(s.destinationTariffPct) : "");
-    setSeaFreightUnitPrice(s.seaFreightUsd != null ? String(s.seaFreightUsd) : "");
-    setAirFreightUnitPrice(s.airFreightUsd != null ? String(s.airFreightUsd) : "");
-    setIncoterm(s.incoterm);
-    setSaveMessage("");
-    setSaveError(false);
-    setCreateMessage("");
-    setCreateError(false);
-  }
-
-  async function onSave() {
-    if (!selectedPo || destInvalid || saveLoading) return;
-    setSaveLoading(true);
-    setSaveMessage("");
-    setSaveError(false);
-    setCreateMessage("");
-    setCreateError(false);
-    const destTariffNum =
-      destinationTariffPct.trim() === "" ? null : Number(destinationTariffPct);
-    const seaNum = seaFreightUnitPrice.trim() === "" ? null : Number(seaFreightUnitPrice);
-    const airNum = airFreightUnitPrice.trim() === "" ? null : Number(airFreightUnitPrice);
-    const res = await fetch("/api/logistics/landed-cost-consolidate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        poNumber: selectedPo,
-        quoteDate: quoteDate.trim(),
-        destinationCountry: destinationCountry.trim(),
-        destinationTariffPct: destTariffNum,
-        seaFreightUsd: seaNum,
-        airFreightUsd: airNum,
-        incoterm,
-        consolidatedUsd: consolidatedUsd != null && Number.isFinite(consolidatedUsd) ? consolidatedUsd : null,
-        lineItems: poLines,
-      }),
+      body: JSON.stringify({ forecastId, poIssueDate: isoDay || null }),
     });
     const data = (await res.json().catch(() => ({}))) as {
       message?: string;
-      quoteSync?: { inserted: number; skipped: number };
+      supplierName?: string;
+      unitPriceUsd?: number | null;
+      poIssueDate?: string | null;
+      shippingMode?: ForecastCashFlowRow["cashFlowShippingMode"];
+      latestUnitCostQuote?: UnitCostQuoteEntry | null;
     };
-    setSaveLoading(false);
+    setPoSavingId(null);
     if (!res.ok) {
-      setSaveError(true);
-      setSaveMessage(data.message || t.saveFailed);
+      setMessage(data.message || t.saveErr);
       return;
     }
-    setSaveError(false);
-    const qs = data.quoteSync;
-    const extra =
-      qs != null ? ` ${t.quoteSyncLine(qs.inserted, qs.skipped)}` : "";
-    setSaveMessage(`${t.saved}${extra}`);
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === forecastId
+          ? {
+              ...r,
+              cashFlowSupplierName: String(data.supplierName ?? r.cashFlowSupplierName),
+              unitPriceUsd: data.unitPriceUsd ?? r.unitPriceUsd,
+              poIssueDate: data.poIssueDate !== undefined ? data.poIssueDate : r.poIssueDate,
+              cashFlowShippingMode: data.shippingMode === "air" ? "air" : "ocean",
+              latestUnitCostQuote: data.latestUnitCostQuote ?? r.latestUnitCostQuote,
+            }
+          : r,
+      ),
+    );
     router.refresh();
   }
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-app-muted">{t.hint}</p>
-
-      <section className="app-panel p-5 sm:p-6">
-        <h3 className="mb-4 text-base font-semibold text-foreground">{t.title}</h3>
-
-        {rows.length === 0 ? (
-          <p className="text-sm text-app-muted">{t.noRows}</p>
-        ) : poOptions.length === 0 || (poOptions.length === 1 && poOptions[0] === "") ? (
-          <p className="text-sm text-app-muted">{t.noPo}</p>
-        ) : (
-          <>
-            <div className="grid max-w-5xl gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <label className="block md:col-span-2 xl:col-span-3">
-                <span className="mb-1 block text-sm text-foreground/85">{t.poOrder}</span>
-                <select
-                  value={selectedPo}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setSelectedPo(v);
-                    setSaveMessage("");
-                    setCreateMessage("");
-                    setCreateError(false);
-                    if (v) applyPrefillForPo(v);
-                  }}
-                  className="w-full rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground"
-                >
-                  <option value="">{t.selectPo}</option>
-                  {poSelectOptions.map((po) => (
-                    <option key={po || "__empty__"} value={po}>
-                      {po ? po : t.emptyPo}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {selectedPo ? (
-                <div className="md:col-span-2 xl:col-span-3">
-                  <h4 className="mb-2 text-sm font-semibold text-foreground">{t.poLinesTitle}</h4>
-                  <div className="app-table-shell overflow-x-auto">
-                    <table className="app-table min-w-[640px]">
-                      <thead>
-                        <tr>
-                          <th>{t.colSku}</th>
-                          <th>{t.colBto}</th>
-                          <th>{t.colBts}</th>
-                          <th>{t.colQty}</th>
-                          <th>{t.colMonth}</th>
-                          <th>{t.colRegion}</th>
-                          <th>{t.colProduct}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {poLines.length === 0 ? (
-                          <tr>
-                            <td colSpan={7} className="text-center text-app-muted">
-                              —
-                            </td>
-                          </tr>
-                        ) : (
-                          poLines.map((line) => (
-                            <tr key={`${line.forecastId}-${line.sku}-${line.month}`}>
-                              <td className="font-medium">{line.sku}</td>
-                              <td className="tabular-nums">{line.buildToOrder}</td>
-                              <td className="tabular-nums">{line.buildToStock}</td>
-                              <td className="tabular-nums">{line.quantity}</td>
-                              <td className="whitespace-nowrap tabular-nums">{line.month}</td>
-                              <td>{line.region}</td>
-                              <td className="max-w-[14rem] truncate">{line.productName || "—"}</td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : null}
-
-              <label className="block">
-                <span className="mb-1 block text-sm text-foreground/85">{t.quoteDate}</span>
-                <input
-                  type="date"
-                  value={quoteDate}
-                  onChange={(e) => setQuoteDate(e.target.value)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                />
-              </label>
-
-              <label className="block md:col-span-2 xl:col-span-2">
-                <span className="mb-1 block text-sm text-foreground/85">{t.destinationCountry}</span>
-                <select
-                  value={destinationCountry}
-                  onChange={(e) => setDestinationCountry(e.target.value)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                >
-                  <option value="">{t.selectDestinationCountry}</option>
-                  {destinationOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {en ? opt.labelEn : opt.labelZh}
-                    </option>
-                  ))}
-                </select>
-                <span className="mt-1 block text-xs text-app-muted">{t.destinationCountryHint}</span>
-                {destInvalid ? <span className="mt-1 block text-xs text-red-600">{t.destInvalid}</span> : null}
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm text-foreground/85">{t.destinationTariff}</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step="0.01"
-                  value={destinationTariffPct}
-                  onChange={(e) => setDestinationTariffPct(e.target.value)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                  placeholder={t.optionalPh}
-                />
-              </label>
-
-              <label className="block md:col-span-2 xl:col-span-2">
-                <span className="mb-1 block text-sm text-foreground/85">{t.seaMode}</span>
-                <span className="mb-1 block text-xs text-app-muted">{t.seaFreightUnit}</span>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.0001"
-                  value={seaFreightUnitPrice}
-                  onChange={(e) => setSeaFreightUnitPrice(e.target.value)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                  placeholder={t.optionalPh}
-                />
-              </label>
-
-              <label className="block md:col-span-2 xl:col-span-2">
-                <span className="mb-1 block text-sm text-foreground/85">{t.airMode}</span>
-                <span className="mb-1 block text-xs text-app-muted">{t.airFreightUnit}</span>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.0001"
-                  value={airFreightUnitPrice}
-                  onChange={(e) => setAirFreightUnitPrice(e.target.value)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                  placeholder={t.optionalPh}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
-                <select
-                  value={incoterm}
-                  onChange={(e) => setIncoterm(e.target.value as ForecastIncoterm)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                >
-                  <option value="EXW">{t.incotermExw}</option>
-                  <option value="FOB">{t.incotermFob}</option>
-                  <option value="DAP">{t.incotermDap}</option>
-                  <option value="DDP">{t.incotermDdp}</option>
-                </select>
-              </label>
-
-              <label className="block md:col-span-2 xl:col-span-3">
-                <span className="mb-1 block text-sm text-foreground/85">{t.landedCost}</span>
-                <span className="mb-1 block text-xs text-app-muted">{t.consolidated}</span>
-                <input
-                  readOnly
-                  value={selectedPo === "" ? "" : landedLabel != null ? landedLabel : "—"}
-                  placeholder={selectedPo === "" ? (en ? "Select a PO" : "请选择 PO") : ""}
-                  className="w-full max-w-md rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm font-medium text-foreground tabular-nums"
-                />
-              </label>
-              {selectedPo !== "" && landedLabel == null && !destInvalid ? (
-                <p className="text-sm text-app-muted md:col-span-2 xl:col-span-3">{t.cannotCompute}</p>
-              ) : null}
-            </div>
-
-            {selectedPo ? (
-              <div className="mt-8 flex max-w-5xl flex-col gap-3 border-t border-app-border pt-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void onCreate()}
-                    disabled={
-                      createLoading ||
-                      saveLoading ||
-                      poLines.length === 0 ||
-                      hasUserDraftForSelectedPo
-                    }
-                    className="inline-flex min-h-[2.5rem] items-center justify-center rounded-lg border border-app-border bg-app-surface px-5 py-2 text-sm font-medium text-foreground hover:bg-app-accent-soft disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {createLoading ? t.creating : t.create}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onSave}
-                    disabled={saveLoading || createLoading || destInvalid || poLines.length === 0}
-                    className="app-button-primary inline-flex min-h-[2.5rem] items-center justify-center px-5 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {saveLoading ? t.saving : t.save}
-                  </button>
-                </div>
-                <div className="min-w-0 flex-1 space-y-1">
-                  {createMessage ? (
-                    <p className={`text-sm ${createError ? "text-red-600" : "text-app-muted"}`}>{createMessage}</p>
-                  ) : null}
-                  {saveMessage ? (
-                    <p className={`text-sm ${saveError ? "text-red-600" : "text-app-muted"}`}>{saveMessage}</p>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </>
-        )}
-      </section>
-
-      <section className="app-panel p-5 sm:p-6">
-        <h3 className="mb-1 text-base font-semibold text-foreground">{t.historyTitle}</h3>
-        <p className="mb-4 text-sm text-app-muted">{t.historyHint}</p>
-        {initialSnapshots.length === 0 ? (
-          <p className="text-sm text-app-muted">{t.historyEmpty}</p>
-        ) : (
-          <div className="app-table-shell overflow-x-auto">
-            <table className="app-table min-w-[960px]">
-              <thead>
+      <section className="app-card p-4">
+        <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.title}</h5>
+        <p className="mt-1 text-xs text-[#9CA3AF]">{t.hint}</p>
+        {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[720px] border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                <th className="py-2 pr-3">{t.supplier}</th>
+                <th className="py-2 pr-3">{t.sku}</th>
+                <th className="py-2 pr-3 text-right tabular-nums">{t.bto}</th>
+                <th className="py-2 pr-3 text-right tabular-nums">{t.bts}</th>
+                <th className="min-w-[10rem] py-2 pr-3" title={t.poIssueTitle}>
+                  {t.poIssue}
+                </th>
+                <th className="py-2 pr-3 text-right">{t.total}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dashboardRows.length === 0 ? (
                 <tr>
-                  <th>{t.historyColPo}</th>
-                  <th>{t.historyColQuoteDate}</th>
-                  <th>{t.historyColDest}</th>
-                  <th>{t.historyColIncoterm}</th>
-                  <th>{t.historyColLanded}</th>
-                  <th>{t.historyColLines}</th>
-                  <th>{t.historyColBy}</th>
-                  <th>{t.historyColSaved}</th>
-                  <th>{en ? "Action" : "操作"}</th>
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                    {t.empty}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {initialSnapshots.map((s) => {
-                  const destShort =
-                    s.destinationCountry.trim().length > 36
-                      ? `${s.destinationCountry.trim().slice(0, 36)}…`
-                      : s.destinationCountry.trim() || "—";
-                  const lastAt = formatSavedAt(s.updatedAt || s.createdAt);
-                  return (
-                    <tr key={s.id}>
-                      <td className="font-medium whitespace-nowrap">{s.poNumber || "—"}</td>
-                      <td className="whitespace-nowrap tabular-nums">{s.quoteDate}</td>
-                      <td className="max-w-[14rem] truncate" title={s.destinationCountry}>
-                        {destShort}
+              ) : (
+                dashboardRows.map(({ row, lineTotal, supplierLabel }) => (
+                  <tr key={row.id} className="border-b border-app-border/60">
+                    <td className="max-w-[12rem] truncate py-2 pr-3">{supplierLabel}</td>
+                    <td className="py-2 pr-3 font-medium">{row.sku}</td>
+                    <td className="py-2 pr-3 text-right tabular-nums">{row.buildToOrder}</td>
+                    <td className="py-2 pr-3 text-right tabular-nums">{row.buildToStock}</td>
+                    <td className="py-2 pr-3 align-top" lang="en">
+                      <div className="flex min-w-[9rem] flex-col gap-1">
+                        <span className="whitespace-nowrap tabular-nums text-xs font-medium text-slate-800 dark:text-slate-100">
+                          {row.poIssueDate ? formatPoIssueDateEnglish(row.poIssueDate) : t.na}
+                        </span>
+                        <input
+                          type="date"
+                          value={row.poIssueDate ?? ""}
+                          onChange={(e) => void persistFcPoIssueDate(row.id, e.target.value)}
+                          disabled={poSavingId === row.id}
+                          className="w-full max-w-[11rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                          aria-label={t.poIssue}
+                        />
+                      </div>
+                    </td>
+                    <td className="py-2 pr-3 text-right tabular-nums">
+                      {lineTotal != null ? formatUsd(lineTotal, 2) : t.na}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+            {dashboardRows.length > 0 ? (
+              <tfoot>
+                <tr className="border-t border-slate-200 dark:border-slate-600">
+                  {sumComputable > 0 ? (
+                    <>
+                      <td className="py-2 pr-3 font-medium text-slate-600 dark:text-slate-300" colSpan={5}>
+                        {t.sumLabel}
                       </td>
-                      <td>{s.incoterm}</td>
-                      <td className="whitespace-nowrap tabular-nums">
-                        {s.consolidatedUsd != null && Number.isFinite(s.consolidatedUsd)
-                          ? formatUsd(s.consolidatedUsd, 2)
-                          : "—"}
+                      <td className="py-2 pr-3 text-right text-base font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
+                        {formatUsd(sumComputable, 2)}
                       </td>
-                      <td className="tabular-nums">{s.lineItems.length}</td>
-                      <td className="whitespace-nowrap">{s.createdBy}</td>
-                      <td className="whitespace-nowrap text-app-muted tabular-nums">{lastAt}</td>
-                      <td>
-                        <button
-                          type="button"
-                          onClick={() => loadFromSnapshot(s)}
-                          className="rounded-md border border-app-border px-2 py-1 text-xs font-medium text-app-accent hover:bg-app-accent-soft"
-                        >
-                          {t.historyLoad}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                    </>
+                  ) : (
+                    <td colSpan={6} className="py-3 text-center text-xs text-slate-400">
+                      {t.sumEmpty}
+                    </td>
+                  )}
+                </tr>
+              </tfoot>
+            ) : null}
+          </table>
+        </div>
       </section>
     </div>
   );
