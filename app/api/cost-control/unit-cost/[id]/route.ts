@@ -22,6 +22,13 @@ function optFreightUsd(v: unknown): number | null {
   return n;
 }
 
+function parseIncoterm(body: Record<string, unknown>): UnitCostQuoteIncoterm {
+  const incotermRaw = String(body.incoterm ?? "EXW").trim().toUpperCase();
+  return INCOTERMS.includes(incotermRaw as UnitCostQuoteIncoterm)
+    ? (incotermRaw as UnitCostQuoteIncoterm)
+    : "EXW";
+}
+
 export async function PATCH(request: Request, ctx: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -43,10 +50,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
   const destinationTariffPct = optPct(body.destinationTariffPct);
   const seaFreightUnitPrice = optFreightUsd(body.seaFreightUnitPrice);
   const airFreightUnitPrice = optFreightUsd(body.airFreightUnitPrice);
-  const incotermRaw = String(body.incoterm ?? "EXW").trim().toUpperCase();
-  const incoterm = INCOTERMS.includes(incotermRaw as UnitCostQuoteIncoterm)
-    ? (incotermRaw as UnitCostQuoteIncoterm)
-    : null;
+  const incoterm = parseIncoterm(body);
 
   if (!sku) {
     return NextResponse.json({ message: "SKU is required" }, { status: 400 });
@@ -59,9 +63,6 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
   }
   if (!quoteDate || !DATE_RE.test(quoteDate)) {
     return NextResponse.json({ message: "Invalid quote date (YYYY-MM-DD)" }, { status: 400 });
-  }
-  if (incoterm == null) {
-    return NextResponse.json({ message: "Invalid incoterm (EXW, FOB, DAP, or DDP)" }, { status: 400 });
   }
   if (
     body.destinationTariffPct !== undefined &&

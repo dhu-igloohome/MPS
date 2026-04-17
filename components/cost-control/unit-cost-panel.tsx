@@ -3,13 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  buildForecastDestinationOptions,
-  forecastDestinationDisplay,
-  withLegacyForecastDestination,
-} from "@/lib/forecast-destination-countries";
 import type { Language } from "@/lib/i18n";
-import type { ProductItem, SupplierEntry, UnitCostQuoteEntry, UnitCostQuoteIncoterm } from "@/lib/types";
+import type { ProductItem, SupplierEntry, UnitCostQuoteEntry } from "@/lib/types";
 
 type Props = {
   language: Language;
@@ -17,16 +12,6 @@ type Props = {
   products: ProductItem[];
   suppliers: SupplierEntry[];
 };
-
-function fmtPct(v: number | null, na: string): string {
-  if (v == null) return na;
-  return `${v.toFixed(2)}%`;
-}
-
-function fmtUsd(v: number | null, na: string): string {
-  if (v == null) return na;
-  return v.toFixed(4);
-}
 
 /** 生产商国家下拉（与报价存储英文一致）；编辑时若历史值不在列表则追加一项 */
 const MANUFACTURER_COUNTRY_OPTIONS = [
@@ -69,35 +54,17 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     no: en ? "No" : "否",
     by: en ? "By" : "录入人",
     at: en ? "Recorded at" : "录入时间",
-    na: en ? "—" : "—",
     manufacturerCountry: en ? "Manufacturer country" : "生产商国家",
     selectMfrCountry: en ? "Select country…" : "选择国家…",
-    destinationCountry: en ? "Destination country" : "目的国",
-    selectDestinationCountry: en ? "Select destination country (optional)…" : "选择目的国（选填）…",
-    destinationCountryHint: en
-      ? "English name is stored; TW/HK/MO use Taiwan, China / Hong Kong, China / Macau, China."
-      : "保存英文标准名称；台湾/香港/澳门在中文界面显示为中国台湾、中国香港、中国澳门。",
-    destinationTariff: en ? "Destination tariff (%)" : "目的国关税 (%)",
-    seaMode: en ? "Shipping: ocean" : "运输方式 · 海运",
-    seaFreightUnit: en ? "Ocean freight (USD / unit)" : "海运运费单价 (USD)",
-    airMode: en ? "Shipping: air" : "运输方式 · 空运",
-    airFreightUnit: en ? "Air freight (USD / unit)" : "空运运费单价 (USD)",
-    incoterm: "Incoterm",
-    incotermExw: "EXW",
-    incotermFob: "FOB",
-    incotermDap: "DAP",
-    incotermDdp: "DDP",
     hint: en
-      ? "Supplier names match Supply Chain → Suppliers (active). Add a row for each new quote; history lists all records."
-      : "供应商名称与「供应链 → 供应商」中启用供应商一致。每次新报价保存一条；下方为全部历史记录，可按 SKU 筛选。",
+      ? "Supplier names match Supply Chain → Suppliers (active). Destination, tariff, freight, and quote incoterm are maintained in Logistics → Landed cost consolidate (saved rows sync to the latest unit-cost quote for cash flow)."
+      : "供应商名称与「供应链 → 供应商」中启用供应商一致。目的国、关税、运费及报价 Incoterm 请在「物流进度 → 到岸成本汇总」维护（保存后会写入最新单位成本报价供现金流使用）。",
     edit: en ? "Edit" : "编辑",
     editTitle: en ? "Edit quotation" : "编辑报价",
     cancel: en ? "Cancel" : "取消",
     saveChanges: en ? "Save changes" : "保存修改",
     savingEdit: en ? "Saving…" : "保存中…",
   };
-
-  const destinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
 
   const skuOptions = useMemo(() => {
     const set = new Set<string>();
@@ -121,11 +88,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [supplierName, setSupplierName] = useState("");
   const [quoteDate, setQuoteDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [manufacturerCountry, setManufacturerCountry] = useState("");
-  const [destinationCountry, setDestinationCountry] = useState("");
-  const [destinationTariffPct, setDestinationTariffPct] = useState("");
-  const [seaFreightUnitPrice, setSeaFreightUnitPrice] = useState("");
-  const [airFreightUnitPrice, setAirFreightUnitPrice] = useState("");
-  const [incoterm, setIncoterm] = useState<UnitCostQuoteIncoterm>("EXW");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [filterSku, setFilterSku] = useState("");
@@ -137,18 +99,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [eSupplierName, setESupplierName] = useState("");
   const [eQuoteDate, setEQuoteDate] = useState("");
   const [eManufacturerCountry, setEManufacturerCountry] = useState("");
-  const [eDestinationCountry, setEDestinationCountry] = useState("");
-  const [eDestinationTariffPct, setEDestinationTariffPct] = useState("");
-  const [eSeaFreightUnitPrice, setESeaFreightUnitPrice] = useState("");
-  const [eAirFreightUnitPrice, setEAirFreightUnitPrice] = useState("");
-  const [eIncoterm, setEIncoterm] = useState<UnitCostQuoteIncoterm>("EXW");
   const [editLoading, setEditLoading] = useState(false);
   const [editMessage, setEditMessage] = useState("");
-
-  const editDestinationOptions = useMemo(
-    () => withLegacyForecastDestination(eDestinationCountry, destinationOptions),
-    [eDestinationCountry, destinationOptions],
-  );
 
   const supplierOptionsForEdit = useMemo(() => {
     const set = new Set(activeSupplierNames);
@@ -165,11 +117,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     setESupplierName(row.supplierName);
     setEQuoteDate(row.quoteDate);
     setEManufacturerCountry(row.manufacturerCountry);
-    setEDestinationCountry(row.destinationCountry);
-    setEDestinationTariffPct(row.destinationTariffPct != null ? String(row.destinationTariffPct) : "");
-    setESeaFreightUnitPrice(row.seaFreightUnitPrice != null ? String(row.seaFreightUnitPrice) : "");
-    setEAirFreightUnitPrice(row.airFreightUnitPrice != null ? String(row.airFreightUnitPrice) : "");
-    setEIncoterm(row.incoterm);
     setEditMessage("");
   }
 
@@ -209,11 +156,11 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
         supplierName: eSupplierName.trim(),
         quoteDate: eQuoteDate.trim(),
         manufacturerCountry: eManufacturerCountry.trim(),
-        destinationCountry: eDestinationCountry.trim(),
-        destinationTariffPct: eDestinationTariffPct.trim() === "" ? null : Number(eDestinationTariffPct),
-        seaFreightUnitPrice: eSeaFreightUnitPrice.trim() === "" ? null : Number(eSeaFreightUnitPrice),
-        airFreightUnitPrice: eAirFreightUnitPrice.trim() === "" ? null : Number(eAirFreightUnitPrice),
-        incoterm: eIncoterm,
+        destinationCountry: editRow.destinationCountry.trim(),
+        destinationTariffPct: editRow.destinationTariffPct,
+        seaFreightUnitPrice: editRow.seaFreightUnitPrice,
+        airFreightUnitPrice: editRow.airFreightUnitPrice,
+        incoterm: editRow.incoterm,
       }),
     });
     const data = (await res.json().catch(() => ({}))) as { message?: string };
@@ -261,11 +208,11 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
         supplierName: supplierName.trim(),
         quoteDate: quoteDate.trim(),
         manufacturerCountry: manufacturerCountry.trim(),
-        destinationCountry: destinationCountry.trim(),
-        destinationTariffPct: destinationTariffPct.trim() === "" ? null : Number(destinationTariffPct),
-        seaFreightUnitPrice: seaFreightUnitPrice.trim() === "" ? null : Number(seaFreightUnitPrice),
-        airFreightUnitPrice: airFreightUnitPrice.trim() === "" ? null : Number(airFreightUnitPrice),
-        incoterm,
+        destinationCountry: "",
+        destinationTariffPct: null,
+        seaFreightUnitPrice: null,
+        airFreightUnitPrice: null,
+        incoterm: "EXW",
       }),
     });
     const data = (await res.json().catch(() => ({}))) as { message?: string };
@@ -277,11 +224,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     setMessage(en ? "Saved." : "已保存。");
     setUnitPrice("");
     setManufacturerCountry("");
-    setDestinationCountry("");
-    setDestinationTariffPct("");
-    setSeaFreightUnitPrice("");
-    setAirFreightUnitPrice("");
-    setIncoterm("EXW");
     router.refresh();
   }
 
@@ -368,74 +310,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   {c}
                 </option>
               ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm text-foreground/85">{t.destinationCountry}</span>
-            <select
-              value={destinationCountry}
-              onChange={(e) => setDestinationCountry(e.target.value)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-            >
-              <option value="">{t.selectDestinationCountry}</option>
-              {destinationOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {en ? opt.labelEn : opt.labelZh}
-                </option>
-              ))}
-            </select>
-            <span className="mt-1 block text-xs text-app-muted">{t.destinationCountryHint}</span>
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm text-foreground/85">{t.destinationTariff}</span>
-            <input
-              type="number"
-              min={0}
-              max={100}
-              step="0.01"
-              value={destinationTariffPct}
-              onChange={(e) => setDestinationTariffPct(e.target.value)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-              placeholder={en ? "Optional" : "选填"}
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm text-foreground/85">{t.seaMode}</span>
-            <span className="mb-1 block text-xs text-app-muted">{t.seaFreightUnit}</span>
-            <input
-              type="number"
-              min={0}
-              step="0.0001"
-              value={seaFreightUnitPrice}
-              onChange={(e) => setSeaFreightUnitPrice(e.target.value)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-              placeholder={en ? "Optional" : "选填"}
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm text-foreground/85">{t.airMode}</span>
-            <span className="mb-1 block text-xs text-app-muted">{t.airFreightUnit}</span>
-            <input
-              type="number"
-              min={0}
-              step="0.0001"
-              value={airFreightUnitPrice}
-              onChange={(e) => setAirFreightUnitPrice(e.target.value)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-              placeholder={en ? "Optional" : "选填"}
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
-            <select
-              value={incoterm}
-              onChange={(e) => setIncoterm(e.target.value as UnitCostQuoteIncoterm)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-            >
-              <option value="EXW">{t.incotermExw}</option>
-              <option value="FOB">{t.incotermFob}</option>
-              <option value="DAP">{t.incotermDap}</option>
-              <option value="DDP">{t.incotermDdp}</option>
             </select>
           </label>
           <div className="flex items-end xl:col-span-1">
@@ -552,71 +426,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   ))}
                 </select>
               </label>
-              <label className="block sm:col-span-2">
-                <span className="mb-1 block text-sm text-foreground/85">{t.destinationCountry}</span>
-                <select
-                  value={eDestinationCountry}
-                  onChange={(ev) => setEDestinationCountry(ev.target.value)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                >
-                  <option value="">{t.selectDestinationCountry}</option>
-                  {editDestinationOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {en ? opt.labelEn : opt.labelZh}
-                    </option>
-                  ))}
-                </select>
-                <span className="mt-1 block text-xs text-app-muted">{t.destinationCountryHint}</span>
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm text-foreground/85">{t.destinationTariff}</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step="0.01"
-                  value={eDestinationTariffPct}
-                  onChange={(ev) => setEDestinationTariffPct(ev.target.value)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block sm:col-span-2">
-                <span className="mb-1 block text-sm text-foreground/85">{t.seaMode}</span>
-                <span className="mb-1 block text-xs text-app-muted">{t.seaFreightUnit}</span>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.0001"
-                  value={eSeaFreightUnitPrice}
-                  onChange={(ev) => setESeaFreightUnitPrice(ev.target.value)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block sm:col-span-2">
-                <span className="mb-1 block text-sm text-foreground/85">{t.airMode}</span>
-                <span className="mb-1 block text-xs text-app-muted">{t.airFreightUnit}</span>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.0001"
-                  value={eAirFreightUnitPrice}
-                  onChange={(ev) => setEAirFreightUnitPrice(ev.target.value)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block sm:col-span-2">
-                <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
-                <select
-                  value={eIncoterm}
-                  onChange={(ev) => setEIncoterm(ev.target.value as UnitCostQuoteIncoterm)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                >
-                  <option value="EXW">{t.incotermExw}</option>
-                  <option value="FOB">{t.incotermFob}</option>
-                  <option value="DAP">{t.incotermDap}</option>
-                  <option value="DDP">{t.incotermDdp}</option>
-                </select>
-              </label>
               {editMessage ? <p className="text-sm text-red-600 sm:col-span-2">{editMessage}</p> : null}
               <div className="flex flex-wrap gap-2 sm:col-span-2">
                 <button
@@ -659,7 +468,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
           </label>
         </div>
         <div className="app-table-shell overflow-x-auto">
-          <table className="w-full min-w-[1280px] border-collapse text-sm">
+          <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-app-border text-left text-app-muted">
                 <th className="whitespace-nowrap px-2 py-2">{t.quoteDate}</th>
@@ -668,11 +477,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                 <th className="whitespace-nowrap px-2 py-2">{t.taxIncluded}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.supplier}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.manufacturerCountry}</th>
-                <th className="whitespace-nowrap px-2 py-2">{t.destinationCountry}</th>
-                <th className="whitespace-nowrap px-2 py-2">{t.destinationTariff}</th>
-                <th className="whitespace-nowrap px-2 py-2">{t.seaFreightUnit}</th>
-                <th className="whitespace-nowrap px-2 py-2">{t.airFreightUnit}</th>
-                <th className="whitespace-nowrap px-2 py-2">{t.incoterm}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.by}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.at}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.edit}</th>
@@ -681,7 +485,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
             <tbody>
               {filteredHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="px-2 py-6 text-center text-app-muted">
+                  <td colSpan={9} className="px-2 py-6 text-center text-app-muted">
                     {t.empty}
                   </td>
                 </tr>
@@ -693,22 +497,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                     <td className="whitespace-nowrap px-2 py-2 tabular-nums">{row.unitPrice.toFixed(4)}</td>
                     <td className="whitespace-nowrap px-2 py-2">{row.taxIncluded ? t.yes : t.no}</td>
                     <td className="max-w-[10rem] truncate px-2 py-2">{row.supplierName}</td>
-                    <td className="max-w-[8rem] truncate px-2 py-2">{row.manufacturerCountry || t.na}</td>
-                    <td className="max-w-[10rem] truncate px-2 py-2">
-                      {row.destinationCountry.trim()
-                        ? forecastDestinationDisplay(row.destinationCountry, language, destinationOptions)
-                        : t.na}
-                    </td>
-                    <td className="whitespace-nowrap px-2 py-2 tabular-nums">
-                      {fmtPct(row.destinationTariffPct, t.na)}
-                    </td>
-                    <td className="whitespace-nowrap px-2 py-2 tabular-nums">
-                      {fmtUsd(row.seaFreightUnitPrice, t.na)}
-                    </td>
-                    <td className="whitespace-nowrap px-2 py-2 tabular-nums">
-                      {fmtUsd(row.airFreightUnitPrice, t.na)}
-                    </td>
-                    <td className="whitespace-nowrap px-2 py-2 font-medium">{row.incoterm}</td>
+                    <td className="max-w-[8rem] truncate px-2 py-2">{row.manufacturerCountry || "—"}</td>
                     <td className="whitespace-nowrap px-2 py-2">{row.createdBy}</td>
                     <td className="whitespace-nowrap px-2 py-2 tabular-nums text-app-muted">
                       {row.createdAt.slice(0, 19).replace("T", " ")}
