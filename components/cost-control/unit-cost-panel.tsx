@@ -124,7 +124,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [manufacturerCountry, setManufacturerCountry] = useState("");
   const [destinationCountry, setDestinationCountry] = useState("");
   const [destinationTariffPct, setDestinationTariffPct] = useState("");
-  const [cmUnitPriceTaxRatePct, setCmUnitPriceTaxRatePct] = useState("");
   const [seaFreightUnitPrice, setSeaFreightUnitPrice] = useState("");
   const [airFreightUnitPrice, setAirFreightUnitPrice] = useState("");
   const [incoterm, setIncoterm] = useState<UnitCostQuoteIncoterm>("EXW");
@@ -268,7 +267,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
         manufacturerCountry: manufacturerCountry.trim(),
         destinationCountry: destinationCountry.trim(),
         destinationTariffPct: destinationTariffPct.trim() === "" ? null : Number(destinationTariffPct),
-        cmUnitPriceTaxRatePct: cmUnitPriceTaxRatePct.trim() === "" ? null : Number(cmUnitPriceTaxRatePct),
+        cmUnitPriceTaxRatePct: null,
         seaFreightUnitPrice: seaFreightUnitPrice.trim() === "" ? null : Number(seaFreightUnitPrice),
         airFreightUnitPrice: airFreightUnitPrice.trim() === "" ? null : Number(airFreightUnitPrice),
         incoterm,
@@ -285,7 +284,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     setManufacturerCountry("");
     setDestinationCountry("");
     setDestinationTariffPct("");
-    setCmUnitPriceTaxRatePct("");
     setSeaFreightUnitPrice("");
     setAirFreightUnitPrice("");
     setIncoterm("EXW");
@@ -402,19 +400,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               step="0.01"
               value={destinationTariffPct}
               onChange={(e) => setDestinationTariffPct(e.target.value)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-              placeholder={en ? "Optional" : "选填"}
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm text-foreground/85">{t.cmUnitTaxRate}</span>
-            <input
-              type="number"
-              min={0}
-              max={100}
-              step="0.01"
-              value={cmUnitPriceTaxRatePct}
-              onChange={(e) => setCmUnitPriceTaxRatePct(e.target.value)}
               className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
               placeholder={en ? "Optional" : "选填"}
             />
