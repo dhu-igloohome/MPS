@@ -5,7 +5,11 @@ import { LandedCostConsolidatePanel } from "@/components/logistics/landed-cost-c
 import { LogisticsSubnav } from "@/components/logistics/logistics-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
-import { enrichForecastRecordsForCashFlow, getForecastsByRegions } from "@/lib/repositories";
+import {
+  enrichForecastRecordsForCashFlow,
+  getForecastsByRegions,
+  listUnitCostQuotes,
+} from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +19,10 @@ export default async function LandedCostConsolidatePage() {
   if (!session) redirect("/login");
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const forecasts = await getForecastsByRegions(session.regions);
+  const [forecasts, unitCostQuotes] = await Promise.all([
+    getForecastsByRegions(session.regions),
+    listUnitCostQuotes(),
+  ]);
   const cashFlowRows = await enrichForecastRecordsForCashFlow(forecasts);
 
   return (
@@ -30,7 +37,11 @@ export default async function LandedCostConsolidatePage() {
     >
       <div className="space-y-4">
         <LogisticsSubnav language={language} />
-        <LandedCostConsolidatePanel language={language} rows={cashFlowRows} />
+        <LandedCostConsolidatePanel
+          language={language}
+          rows={cashFlowRows}
+          unitCostQuotes={unitCostQuotes}
+        />
       </div>
     </AppShell>
   );
