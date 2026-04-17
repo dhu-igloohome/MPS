@@ -57,6 +57,7 @@ import type {
   CashFlowEntry,
   CostAnalysisEntry,
   ForecastCashFlowRow,
+  ForecastIncoterm,
   LogisticsLandedCostConsolidateSnapshot,
   SupplierEntry,
   UnitCostQuoteEntry,
@@ -85,6 +86,9 @@ type Props = {
       poIssueDate: string | null;
       shippingMode: ForecastCashFlowRow["cashFlowShippingMode"];
       latestUnitCostQuote: UnitCostQuoteEntry | null;
+      destinationTariffPct: number | null;
+      freightUsdPerUnit: number | null;
+      cashFlowIncoterm: ForecastIncoterm | null;
     },
   ) => void;
   onForecastCashFlowSettingsError?: (message: string) => void;
@@ -942,6 +946,9 @@ export function CashFlowDashboard({
         poIssueDate?: string | null;
         shippingMode?: ForecastCashFlowRow["cashFlowShippingMode"];
         latestUnitCostQuote?: UnitCostQuoteEntry | null;
+        destinationTariffPct?: number | null;
+        freightUsdPerUnit?: number | null;
+        cashFlowIncoterm?: ForecastIncoterm | null;
       };
       setFcPoSavingId(null);
       if (!res.ok) {
@@ -957,6 +964,9 @@ export function CashFlowDashboard({
         poIssueDate: data.poIssueDate ?? null,
         shippingMode: data.shippingMode === "air" ? "air" : "ocean",
         latestUnitCostQuote: data.latestUnitCostQuote ?? null,
+        destinationTariffPct: data.destinationTariffPct ?? null,
+        freightUsdPerUnit: data.freightUsdPerUnit ?? null,
+        cashFlowIncoterm: data.cashFlowIncoterm ?? null,
       });
     },
     [language, onForecastCashFlowSettingsError, onForecastCashFlowSettingsSaved],
@@ -977,6 +987,9 @@ export function CashFlowDashboard({
         poIssueDate?: string | null;
         shippingMode?: ForecastCashFlowRow["cashFlowShippingMode"];
         latestUnitCostQuote?: UnitCostQuoteEntry | null;
+        destinationTariffPct?: number | null;
+        freightUsdPerUnit?: number | null;
+        cashFlowIncoterm?: ForecastIncoterm | null;
       };
       setFcShippingSavingId(null);
       if (!res.ok) {
@@ -991,6 +1004,9 @@ export function CashFlowDashboard({
         poIssueDate: data.poIssueDate ?? null,
         shippingMode: data.shippingMode === "air" ? "air" : "ocean",
         latestUnitCostQuote: data.latestUnitCostQuote ?? null,
+        destinationTariffPct: data.destinationTariffPct ?? null,
+        freightUsdPerUnit: data.freightUsdPerUnit ?? null,
+        cashFlowIncoterm: data.cashFlowIncoterm ?? null,
       });
     },
     [language, onForecastCashFlowSettingsError, onForecastCashFlowSettingsSaved],

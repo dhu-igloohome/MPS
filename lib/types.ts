@@ -638,6 +638,15 @@ export type ForecastCashFlowRow = ForecastEntry & {
   cashFlowShippingMode: ForecastCashFlowShippingMode;
   /** Latest unit cost quote for this SKU + supplier (quote_date desc), or null. */
   latestUnitCostQuote: UnitCostQuoteEntry | null;
+  /** Logistics / landed consolidate: destination tariff % (0–100), null if unset. */
+  cashFlowDestinationTariffPct: number | null;
+  /** Logistics: freight USD per unit for the selected shipping mode row. */
+  cashFlowFreightUsdPerUnit: number | null;
+  /**
+   * When set, overrides `ForecastEntry.incoterm` for cash-flow / logistics views only.
+   * Null means use the forecast line’s incoterm.
+   */
+  cashFlowIncoterm: ForecastIncoterm | null;
 };
 
 /** 成本控制 — 现金流分析（与 Excel 列一致） */

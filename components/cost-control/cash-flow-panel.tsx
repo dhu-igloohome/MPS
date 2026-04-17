@@ -8,6 +8,7 @@ import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
 import type {
   ForecastCashFlowRow,
+  ForecastIncoterm,
   LogisticsLandedCostConsolidateSnapshot,
   SupplierEntry,
   UnitCostQuoteEntry,
@@ -117,6 +118,9 @@ export function CashFlowPanel({
       poIssueDate?: string | null;
       shippingMode?: ForecastCashFlowRow["cashFlowShippingMode"];
       latestUnitCostQuote?: UnitCostQuoteEntry | null;
+      destinationTariffPct?: number | null;
+      freightUsdPerUnit?: number | null;
+      cashFlowIncoterm?: ForecastIncoterm | null;
     };
     setFcRowSavingId(null);
     if (!res.ok) {
@@ -137,6 +141,11 @@ export function CashFlowPanel({
               poIssueDate: data.poIssueDate !== undefined ? data.poIssueDate : r.poIssueDate,
               cashFlowShippingMode: data.shippingMode === "air" ? "air" : "ocean",
               latestUnitCostQuote: data.latestUnitCostQuote ?? r.latestUnitCostQuote,
+              cashFlowDestinationTariffPct:
+                data.destinationTariffPct !== undefined ? data.destinationTariffPct : r.cashFlowDestinationTariffPct,
+              cashFlowFreightUsdPerUnit:
+                data.freightUsdPerUnit !== undefined ? data.freightUsdPerUnit : r.cashFlowFreightUsdPerUnit,
+              cashFlowIncoterm: data.cashFlowIncoterm !== undefined ? data.cashFlowIncoterm : r.cashFlowIncoterm,
             }
           : r,
       ),
@@ -261,6 +270,9 @@ export function CashFlowPanel({
                     poIssueDate: payload.poIssueDate,
                     cashFlowShippingMode: payload.shippingMode,
                     latestUnitCostQuote: payload.latestUnitCostQuote,
+                    cashFlowDestinationTariffPct: payload.destinationTariffPct,
+                    cashFlowFreightUsdPerUnit: payload.freightUsdPerUnit,
+                    cashFlowIncoterm: payload.cashFlowIncoterm,
                   }
                 : r,
             ),

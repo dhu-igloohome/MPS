@@ -1,5 +1,5 @@
 import { ensureDatabase, getSql } from "@/lib/db";
-import { normalizeForecastIncotermStored } from "@/lib/forecast-incoterm";
+import { normalizeForecastIncotermStored, parseForecastIncoterm } from "@/lib/forecast-incoterm";
 import { forecastPoPrefixForRegion, singaporeYmdCompact } from "@/lib/forecast-po";
 import type { ParsedOrderProgressDeliveryPlan } from "@/lib/order-progress-delivery-plans";
 import { hashPassword, verifyPassword } from "@/lib/security";
@@ -5271,15 +5271,42 @@ export async function enrichForecastRecordsForCashFlow(
   const db = getSql();
   const ids = okOnly.map((f) => Number(f.id));
   const settingsRows = await db<
-    { forecast_id: number; supplier_name: string; po_issue_date: string | null; shipping_mode: string | null }[]
+    {
+      forecast_id: number;
+      supplier_name: string;
+      po_issue_date: string | null;
+      shipping_mode: string | null;
+      destination_tariff_pct: string | number | null;
+      freight_usd_per_unit: string | number | null;
+      cash_flow_incoterm: string | null;
+    }[]
   >`
-    select forecast_id, supplier_name, po_issue_date::text as po_issue_date, shipping_mode
+    select
+      forecast_id,
+      supplier_name,
+      po_issue_date::text as po_issue_date,
+      shipping_mode,
+      destination_tariff_pct::text,
+      freight_usd_per_unit::text,
+      cash_flow_incoterm
     from forecast_cash_flow_settings
     where forecast_id = any(${ids});
   `;
+  const lccNum = (v: string | number | null | undefined): number | null => {
+    if (v == null || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
   const settings = new Map<
     string,
-    { supplier: string; poIssueDate: string | null; shippingMode: ForecastCashFlowShippingMode }
+    {
+      supplier: string;
+      poIssueDate: string | null;
+      shippingMode: ForecastCashFlowShippingMode;
+      destinationTariffPct: number | null;
+      freightUsdPerUnit: number | null;
+      cashFlowIncoterm: ForecastIncoterm | null;
+    }
   >();
   for (const r of settingsRows) {
     const po =
@@ -5290,6 +5317,9 @@ export async function enrichForecastRecordsForCashFlow(
       supplier: (r.supplier_name || "").trim(),
       poIssueDate: po,
       shippingMode: normalizeForecastShippingMode(r.shipping_mode),
+      destinationTariffPct: lccNum(r.destination_tariff_pct),
+      freightUsdPerUnit: lccNum(r.freight_usd_per_unit),
+      cashFlowIncoterm: r.cash_flow_incoterm ? parseForecastIncoterm(r.cash_flow_incoterm) : null,
     });
   }
   const quotes = await listUnitCostQuotes();
@@ -5300,6 +5330,9 @@ export async function enrichForecastRecordsForCashFlow(
       supplier: "",
       poIssueDate: null,
       shippingMode: "ocean" as ForecastCashFlowShippingMode,
+      destinationTariffPct: null as number | null,
+      freightUsdPerUnit: null as number | null,
+      cashFlowIncoterm: null as ForecastIncoterm | null,
     };
     const supplier = s.supplier;
     const key = `${f.sku.trim()}::${supplier}`;
@@ -5312,6 +5345,9 @@ export async function enrichForecastRecordsForCashFlow(
       poIssueDate: s.poIssueDate,
       cashFlowShippingMode: s.shippingMode,
       latestUnitCostQuote,
+      cashFlowDestinationTariffPct: s.destinationTariffPct,
+      cashFlowFreightUsdPerUnit: s.freightUsdPerUnit,
+      cashFlowIncoterm: s.cashFlowIncoterm,
     };
   });
 }
@@ -5326,12 +5362,21 @@ export async function patchForecastCashFlowSettings(input: {
   poIssueDate?: string | null;
   /** When set, replaces shipping mode for landed cost (ocean | air). */
   shippingMode?: ForecastCashFlowShippingMode;
+  /** When set, replaces destination tariff % (0–100); null clears. */
+  destinationTariffPct?: number | null;
+  /** When set, replaces freight USD per unit; null clears. */
+  freightUsdPerUnit?: number | null;
+  /** When set, replaces cash-flow incoterm override; null clears (use forecast line incoterm). */
+  cashFlowIncoterm?: ForecastIncoterm | null;
 }): Promise<{
   supplierName: string;
   unitPriceUsd: number | null;
   poIssueDate: string | null;
   shippingMode: ForecastCashFlowShippingMode;
   latestUnitCostQuote: UnitCostQuoteEntry | null;
+  destinationTariffPct: number | null;
+  freightUsdPerUnit: number | null;
+  cashFlowIncoterm: ForecastIncoterm | null;
 }> {
   await ensureDatabase();
   const db = getSql();
@@ -5353,17 +5398,50 @@ export async function patchForecastCashFlowSettings(input: {
   const hasSupplier = input.supplierName !== undefined;
   const hasPo = input.poIssueDate !== undefined;
   const hasShippingMode = input.shippingMode !== undefined;
-  if (!hasSupplier && !hasPo && !hasShippingMode) {
-    throw new Error("supplierName, poIssueDate, or shippingMode is required");
+  const hasDestTariff = input.destinationTariffPct !== undefined;
+  const hasFreight = input.freightUsdPerUnit !== undefined;
+  const hasCfInc = input.cashFlowIncoterm !== undefined;
+  if (!hasSupplier && !hasPo && !hasShippingMode && !hasDestTariff && !hasFreight && !hasCfInc) {
+    throw new Error(
+      "supplierName, poIssueDate, shippingMode, destinationTariffPct, freightUsdPerUnit, or cashFlowIncoterm is required",
+    );
   }
 
-  const cur = await db<{ supplier_name: string; po_issue_date: string | null; shipping_mode: string | null }[]>`
-    select supplier_name, po_issue_date::text as po_issue_date, shipping_mode
+  const cur = await db<
+    {
+      supplier_name: string;
+      po_issue_date: string | null;
+      shipping_mode: string | null;
+      destination_tariff_pct: string | null;
+      freight_usd_per_unit: string | null;
+      cash_flow_incoterm: string | null;
+    }[]
+  >`
+    select supplier_name, po_issue_date::text as po_issue_date, shipping_mode,
+      destination_tariff_pct::text, freight_usd_per_unit::text, cash_flow_incoterm
     from forecast_cash_flow_settings
     where forecast_id = ${fid}
     limit 1;
   `;
   const curRow = cur[0];
+
+  const readTariff = (): number | null => {
+    const v = curRow?.destination_tariff_pct;
+    if (v == null || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  const readFreight = (): number | null => {
+    const v = curRow?.freight_usd_per_unit;
+    if (v == null || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  const readCfInc = (): ForecastIncoterm | null => {
+    const v = curRow?.cash_flow_incoterm;
+    return v ? parseForecastIncoterm(v) : null;
+  };
+
   const supplier = hasSupplier ? String(input.supplierName ?? "").trim() : (curRow?.supplier_name ?? "").trim();
 
   let poIssueDate: string | null;
@@ -5380,8 +5458,7 @@ export async function patchForecastCashFlowSettings(input: {
     }
   } else {
     const p = curRow?.po_issue_date;
-    poIssueDate =
-      p && /^\d{4}-\d{2}-\d{2}/.test(p) ? p.slice(0, 10) : null;
+    poIssueDate = p && /^\d{4}-\d{2}-\d{2}/.test(p) ? p.slice(0, 10) : null;
   }
 
   let shippingMode: ForecastCashFlowShippingMode;
@@ -5395,14 +5472,83 @@ export async function patchForecastCashFlowSettings(input: {
     shippingMode = normalizeForecastShippingMode(curRow?.shipping_mode);
   }
 
+  let destinationTariffPct: number | null;
+  if (hasDestTariff) {
+    const v = input.destinationTariffPct;
+    if (v === null || v === undefined) {
+      destinationTariffPct = null;
+    } else {
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 0 || n > 100) {
+        throw new Error("Invalid destinationTariffPct");
+      }
+      destinationTariffPct = n;
+    }
+  } else {
+    destinationTariffPct = readTariff();
+  }
+
+  let freightUsdPerUnit: number | null;
+  if (hasFreight) {
+    const v = input.freightUsdPerUnit;
+    if (v === null || v === undefined) {
+      freightUsdPerUnit = null;
+    } else {
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 0) {
+        throw new Error("Invalid freightUsdPerUnit");
+      }
+      freightUsdPerUnit = n;
+    }
+  } else {
+    freightUsdPerUnit = readFreight();
+  }
+
+  let cashFlowIncotermOut: ForecastIncoterm | null;
+  if (hasCfInc) {
+    const v = input.cashFlowIncoterm;
+    if (v === null || v === undefined) {
+      cashFlowIncotermOut = null;
+    } else {
+      const p = parseForecastIncoterm(String(v));
+      if (!p) {
+        throw new Error("Invalid cashFlowIncoterm");
+      }
+      cashFlowIncotermOut = p;
+    }
+  } else {
+    cashFlowIncotermOut = readCfInc();
+  }
+
   await db`
-    insert into forecast_cash_flow_settings (forecast_id, supplier_name, po_issue_date, shipping_mode, updated_by)
-    values (${fid}, ${supplier}, ${poIssueDate}, ${shippingMode}, ${input.updatedBy})
+    insert into forecast_cash_flow_settings (
+      forecast_id,
+      supplier_name,
+      po_issue_date,
+      shipping_mode,
+      destination_tariff_pct,
+      freight_usd_per_unit,
+      cash_flow_incoterm,
+      updated_by
+    )
+    values (
+      ${fid},
+      ${supplier},
+      ${poIssueDate},
+      ${shippingMode},
+      ${destinationTariffPct},
+      ${freightUsdPerUnit},
+      ${cashFlowIncotermOut},
+      ${input.updatedBy}
+    )
     on conflict (forecast_id) do update
     set
       supplier_name = excluded.supplier_name,
       po_issue_date = excluded.po_issue_date,
       shipping_mode = excluded.shipping_mode,
+      destination_tariff_pct = excluded.destination_tariff_pct,
+      freight_usd_per_unit = excluded.freight_usd_per_unit,
+      cash_flow_incoterm = excluded.cash_flow_incoterm,
       updated_by = excluded.updated_by,
       updated_at = now();
   `;
@@ -5410,7 +5556,16 @@ export async function patchForecastCashFlowSettings(input: {
   const sku = (row.sku || "").trim();
   const latestUnitCostQuote = await getLatestUnitCostQuoteBySkuSupplier(sku, supplier);
   const unitPriceUsd = latestUnitCostQuote != null ? latestUnitCostQuote.unitPrice : null;
-  return { supplierName: supplier, unitPriceUsd, poIssueDate, shippingMode, latestUnitCostQuote };
+  return {
+    supplierName: supplier,
+    unitPriceUsd,
+    poIssueDate,
+    shippingMode,
+    latestUnitCostQuote,
+    destinationTariffPct,
+    freightUsdPerUnit,
+    cashFlowIncoterm: cashFlowIncotermOut,
+  };
 }
 
 type LogisticsLccRow = {
