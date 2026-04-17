@@ -2,16 +2,24 @@ import { addCalendarDays } from "@/lib/cash-flow-overview";
 import { forecastIncotermRequiresLandedCostInputs, type ForecastIncoterm } from "@/lib/forecast-incoterm";
 import type { ForecastCashFlowShippingMode } from "@/lib/types";
 
-/** China / Korea → shorter lead times; else other countries. */
-export function landedCostManufacturerBucket(manufacturerCountry: string): "cnKr" | "other" {
+/**
+ * Greater China (mainland, Hong Kong, Macau, Taiwan) → shorter PO→departure leads.
+ * Korea and all other origins use the longer lead (85 air / 90 ocean).
+ */
+export function landedCostManufacturerBucket(manufacturerCountry: string): "greaterChina" | "other" {
   const m = manufacturerCountry.trim().toLowerCase();
-  if (m === "china" || m === "korea" || m === "south korea") return "cnKr";
+  if (!m) return "other";
+  if (m === "hk" || m === "tw" || m === "mo" || m === "china" || m === "prc" || m === "cn") return "greaterChina";
+  if (m.includes("hong kong") || m.includes("hongkong")) return "greaterChina";
+  if (m.includes("taiwan")) return "greaterChina";
+  if (m.includes("macau") || m.includes("macao")) return "greaterChina";
+  if (/\bchina\b/.test(m)) return "greaterChina";
   return "other";
 }
 
 export function departureLeadDays(manufacturerCountry: string, mode: ForecastCashFlowShippingMode): number {
   const b = landedCostManufacturerBucket(manufacturerCountry);
-  if (b === "cnKr") return mode === "air" ? 70 : 75;
+  if (b === "greaterChina") return mode === "air" ? 70 : 75;
   return mode === "air" ? 85 : 90;
 }
 
