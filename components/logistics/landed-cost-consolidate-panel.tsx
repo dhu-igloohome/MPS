@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { formatUsd } from "@/lib/format-usd";
@@ -25,6 +25,7 @@ type Props = {
   rows: ForecastCashFlowRow[];
   unitCostQuotes: UnitCostQuoteEntry[];
   initialSnapshots: LogisticsLandedCostConsolidateSnapshot[];
+  currentUsername: string;
 };
 
 function formatSavedAt(iso: string): string {
@@ -91,15 +92,20 @@ function computeConsolidatedUsd(
   return anyLine ? sum : null;
 }
 
-export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, initialSnapshots }: Props) {
+export function LandedCostConsolidatePanel({
+  language,
+  rows,
+  unitCostQuotes,
+  initialSnapshots,
+  currentUsername,
+}: Props) {
   const router = useRouter();
-  const seedOnceRef = useRef(false);
   const en = language === "en";
   const t = {
     title: en ? "Landed cost consolidate" : "到岸成本汇总",
     hint: en
-      ? "Opening this page creates draft LCC rows per PO (if you do not have one yet) from the same Forecast cash-flow lines. Select a PO, set quote date and optional freight/tariff/incoterm (empty numeric fields use the matching unit-cost quote as of that date). Consolidated = Σ (landed USD/unit × BTO+BTS quantity). Saving overwrites your row for that PO (same user). On Save, values are written to unit-cost quotes so Supply Chain → Cost control → Landed cost cash flow can follow this snapshot."
-      : "首次打开本页会为每个尚未建档的 PO 自动生成一条到岸成本汇总草稿（数据来源与 Forecast 现金流一致）。选择 PO，设置报价日期及可选运费/关税/贸易条款（数字留空则按该日期前最新单位成本报价）。汇总 = Σ（到岸单价 × 数量）。同一用户保存相同 PO 会覆盖该用户记录。保存时会写入单位成本报价，供「供应链 → 成本控制 → Landed cost 现金流」按汇总结果计算。",
+      ? "Supply Chain → Cost control → Landed cost cash flow stays empty until you Create (first-time draft) or Save here for a PO. Select a PO, click Create if you have no draft yet, then set quote date and freight/tariff/incoterm (empty numbers use the matching unit-cost quote as of that date). Save writes unit-cost quotes so landed cash flow can show amounts when FOB/DAP/DDP + tariff etc. are computable."
+      : "「供应链 → 成本控制 → Landed cost 现金流」在您于本页对该 PO 点击「创建」或「保存」之前保持空白。请选择 PO；若尚无草稿请先点「创建」，再填写报价日期及运费/关税/贸易条款（数字留空则按该日期前最新单位成本报价）。保存后会写入单位成本报价；满足 FOB/DAP/DDP 与关税等条件后现金流才会显示到岸金额。",
     poOrder: en ? "PO order" : "PO 订单",
     selectPo: en ? "Select PO order…" : "选择 PO…",
     emptyPo: en ? "(no PO on file)" : "（无 PO）",
@@ -138,6 +144,11 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
     colMonth: en ? "Month" : "月份",
     colRegion: en ? "Region" : "区域",
     colProduct: en ? "Product" : "产品",
+    create: en ? "Create" : "创建",
+    creating: en ? "Creating…" : "创建中…",
+    created: en ? "Draft created. You can edit and Save." : "已创建草稿，可编辑后保存。",
+    createFailed: en ? "Create failed." : "创建失败。",
+    createExists: en ? "You already have a draft or save for this PO — edit and Save." : "该 PO 您已有记录，请直接修改后保存。",
     save: en ? "Save" : "保存",
     saving: en ? "Saving…" : "保存中…",
     saved: en ? "Saved." : "已保存。",
@@ -162,19 +173,6 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
         : `并已生成 ${ins} 条单位成本报价供现金流使用。${sk > 0 ? `另有 ${sk} 行未写回（现金流未选供应商或尚无该 SKU+供应商的基准报价）。` : ""}`,
   };
 
-  useEffect(() => {
-    if (rows.length === 0 || seedOnceRef.current) return;
-    seedOnceRef.current = true;
-    void (async () => {
-      const res = await fetch("/api/logistics/landed-cost-consolidate/seed", { method: "POST" });
-      if (!res.ok) return;
-      const data = (await res.json().catch(() => ({}))) as { created?: number };
-      if (Number(data.created) > 0) {
-        router.refresh();
-      }
-    })();
-  }, [rows.length, router]);
-
   const [selectedPo, setSelectedPo] = useState("");
   const [quoteDate, setQuoteDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [destinationCountry, setDestinationCountry] = useState("");
@@ -185,6 +183,9 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [saveError, setSaveError] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createMessage, setCreateMessage] = useState("");
+  const [createError, setCreateError] = useState(false);
 
   const baseDestinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
   const destinationOptions = useMemo(
@@ -236,6 +237,42 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
       })
       .sort((a, b) => a.sku.localeCompare(b.sku) || a.month.localeCompare(b.month));
   }, [rows, selectedPo]);
+
+  const hasUserDraftForSelectedPo = useMemo(() => {
+    const p = selectedPo.trim();
+    if (!p) return false;
+    const u = currentUsername.trim();
+    return initialSnapshots.some(
+      (s) => (s.poNumber || "").trim() === p && (s.createdBy || "").trim() === u,
+    );
+  }, [selectedPo, currentUsername, initialSnapshots]);
+
+  async function onCreate() {
+    if (!selectedPo || poLines.length === 0 || createLoading || hasUserDraftForSelectedPo) return;
+    setCreateLoading(true);
+    setCreateMessage("");
+    setCreateError(false);
+    const res = await fetch("/api/logistics/landed-cost-consolidate/draft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ poNumber: selectedPo.trim() }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { message?: string; created?: boolean };
+    setCreateLoading(false);
+    if (!res.ok) {
+      setCreateError(true);
+      setCreateMessage(data.message || t.createFailed);
+      return;
+    }
+    if (!data.created) {
+      setCreateError(false);
+      setCreateMessage(t.createExists);
+      return;
+    }
+    setCreateError(false);
+    setCreateMessage(t.created);
+    router.refresh();
+  }
 
   function applyPrefillForPo(po: string) {
     if (!po) return;
@@ -292,6 +329,8 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
     setIncoterm(s.incoterm);
     setSaveMessage("");
     setSaveError(false);
+    setCreateMessage("");
+    setCreateError(false);
   }
 
   async function onSave() {
@@ -299,6 +338,8 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
     setSaveLoading(true);
     setSaveMessage("");
     setSaveError(false);
+    setCreateMessage("");
+    setCreateError(false);
     const destTariffNum =
       destinationTariffPct.trim() === "" ? null : Number(destinationTariffPct);
     const seaNum = seaFreightUnitPrice.trim() === "" ? null : Number(seaFreightUnitPrice);
@@ -358,6 +399,8 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
                     const v = e.target.value;
                     setSelectedPo(v);
                     setSaveMessage("");
+                    setCreateMessage("");
+                    setCreateError(false);
                     if (v) applyPrefillForPo(v);
                   }}
                   className="w-full rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground"
@@ -513,18 +556,38 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes, ini
             </div>
 
             {selectedPo ? (
-              <div className="mt-8 flex max-w-5xl flex-col gap-2 border-t border-app-border pt-6 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  type="button"
-                  onClick={onSave}
-                  disabled={saveLoading || destInvalid || poLines.length === 0}
-                  className="app-button-primary inline-flex min-h-[2.5rem] items-center justify-center px-5 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {saveLoading ? t.saving : t.save}
-                </button>
-                {saveMessage ? (
-                  <p className={`text-sm ${saveError ? "text-red-600" : "text-app-muted"}`}>{saveMessage}</p>
-                ) : null}
+              <div className="mt-8 flex max-w-5xl flex-col gap-3 border-t border-app-border pt-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void onCreate()}
+                    disabled={
+                      createLoading ||
+                      saveLoading ||
+                      poLines.length === 0 ||
+                      hasUserDraftForSelectedPo
+                    }
+                    className="inline-flex min-h-[2.5rem] items-center justify-center rounded-lg border border-app-border bg-app-surface px-5 py-2 text-sm font-medium text-foreground hover:bg-app-accent-soft disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {createLoading ? t.creating : t.create}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onSave}
+                    disabled={saveLoading || createLoading || destInvalid || poLines.length === 0}
+                    className="app-button-primary inline-flex min-h-[2.5rem] items-center justify-center px-5 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {saveLoading ? t.saving : t.save}
+                  </button>
+                </div>
+                <div className="min-w-0 flex-1 space-y-1">
+                  {createMessage ? (
+                    <p className={`text-sm ${createError ? "text-red-600" : "text-app-muted"}`}>{createMessage}</p>
+                  ) : null}
+                  {saveMessage ? (
+                    <p className={`text-sm ${saveError ? "text-red-600" : "text-app-muted"}`}>{saveMessage}</p>
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </>

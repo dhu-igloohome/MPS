@@ -40,7 +40,7 @@ const LABELS = {
   en: {
     fcTitle: "Forecast cash flow",
     fcHint:
-      "Only forecast rows whose Comment is \"Ok\" appear here (set on the Forecast page). Pick a supplier per row; Unit price (USD) is the latest matching quote from Unit cost (same SKU + supplier). Landed cost cash flow below follows Logistics → Landed cost consolidate when that PO has been saved there (drafts are created when you open that page).",
+      "Only forecast rows whose Comment is \"Ok\" appear here (set on the Forecast page). Pick a supplier per row; Unit price (USD) is the latest matching quote from Unit cost (same SKU + supplier). Landed cost cash flow below stays empty until you Create or Save that PO in Logistics → Landed cost consolidate.",
     fcSupplierName: "Supplier name",
     fcUnitPriceUsd: "Unit price (USD)",
     fcSelectSupplier: "Select supplier…",
@@ -63,7 +63,7 @@ const LABELS = {
   zh: {
     fcTitle: "Forecast 现金流",
     fcHint:
-      "仅显示 Forecast 页面评论（Comment）为 Ok 的行。每行可选供应商；单价 (USD) 取自「单位成本」中该 SKU + 供应商的最新报价。下方的 Landed cost 现金流在「物流进度 → 到岸成本汇总」保存该 PO 后以汇总为准（打开该页会为各 PO 自动生成草稿）。",
+      "仅显示 Forecast 页面评论（Comment）为 Ok 的行。每行可选供应商；单价 (USD) 取自「单位成本」中该 SKU + 供应商的最新报价。下方 Landed cost 现金流仅在「物流进度 → 到岸成本汇总」对该 PO 点击「创建」或「保存」后才会有数据。",
     fcSupplierName: "供应商名称",
     fcUnitPriceUsd: "单价 (USD)",
     fcSelectSupplier: "选择供应商…",

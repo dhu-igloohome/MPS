@@ -44,6 +44,7 @@ export default async function LandedCostConsolidatePage() {
           rows={cashFlowRows}
           unitCostQuotes={unitCostQuotes}
           initialSnapshots={landedSnapshots}
+          currentUsername={session.username}
         />
       </div>
     </AppShell>

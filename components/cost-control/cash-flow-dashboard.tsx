@@ -229,8 +229,11 @@ function labels(language: Language) {
     fcBarNoData: en ? "No payments fall in this 13-month window." : "该 13 个月内无应付金额。",
     lcTitle: en ? "Landed cost cash flow" : "Landed cost 现金流",
     lcHint: en
-      ? "Same rows as the forecast table above (Comment = Ok). When Landed cost consolidate has been saved for a PO, tariff / freight / incoterm follow that snapshot (empty fields fall back to unit-cost quotes as of the snapshot quote date). Otherwise Forecast incoterm + latest quote by SKU+supplier apply. Open Logistics → Landed cost consolidate to auto-seed a draft per PO, fill tariff, then save."
-      : "与上方 Forecast 表相同（评论为 Ok）。若「物流进度 → 到岸成本汇总」已保存该 PO，则关税/运费/贸易条款以该汇总为准（留空时按汇总中的报价日期回退到单位成本报价）；否则按 Forecast 术语与 SKU+供应商最新报价。请在物流页打开汇总以自动生成各 PO 草稿，填妥关税等后保存。",
+      ? "Same rows as the forecast table above (Comment = Ok). Landed cost amounts appear only after you Create or Save that PO under Logistics → Landed cost consolidate; until then this section stays empty (— / no bar totals). With a snapshot, tariff / freight / incoterm follow it (empty fields fall back to unit-cost quotes as of the snapshot quote date)."
+      : "与上方 Forecast 表相同（评论为 Ok）。到岸金额仅在「物流进度 → 到岸成本汇总」对该 PO 点击「创建」或「保存」之后才会显示；此前本段为空白（— / 柱状无额）。有汇总记录后，关税/运费/贸易条款以汇总为准（留空时按汇总报价日期回退到单位成本报价）。",
+    lcEmptyUntilLogistics: en
+      ? "No landed cost data yet. Open Logistics → Landed cost consolidate, select a PO, then click Create (first time) or Save."
+      : "暂无到岸成本数据。请打开「物流进度 → 到岸成本汇总」，选择 PO 后点击「创建」（首次）或「保存」。",
     lcColMonth: en ? "Forecast Month" : "Forecast 月份",
     lcColForecastNo: en ? "Forecast #" : "Forecast #",
     lcColRegion: en ? "Region" : "区域",
@@ -668,6 +671,13 @@ export function CashFlowDashboard({
     () => pickLatestLccSnapshotByPo(landedCostConsolidateSnapshots),
     [landedCostConsolidateSnapshots],
   );
+  const hasAnyLccBackedPo = useMemo(() => {
+    for (const row of forecastCashFlowRows) {
+      const po = (row.poNumber || "").trim();
+      if (po && latestLccByPo.has(po)) return true;
+    }
+    return false;
+  }, [forecastCashFlowRows, latestLccByPo]);
   const [rangePreset, setRangePreset] = useState<RangePreset>("12m");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -1277,6 +1287,12 @@ export function CashFlowDashboard({
                         {t.lcNoRows}
                       </td>
                     </tr>
+                  ) : !hasAnyLccBackedPo ? (
+                    <tr>
+                      <td colSpan={18} className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">
+                        {t.lcEmptyUntilLogistics}
+                      </td>
+                    </tr>
                   ) : (
                     forecastCashFlowRows.map((row) => {
                       const m = computeForecastRowLandedMetrics({
@@ -1350,7 +1366,7 @@ export function CashFlowDashboard({
                     })
                   )}
                 </tbody>
-                {forecastCashFlowRows.length > 0 ? (
+                {forecastCashFlowRows.length > 0 && hasAnyLccBackedPo ? (
                   <tfoot>
                     <tr className="border-t border-slate-200 bg-slate-50/90 dark:border-slate-600 dark:bg-slate-800/60">
                       <td
@@ -1375,6 +1391,7 @@ export function CashFlowDashboard({
               </table>
             </div>
 
+            {forecastCashFlowRows.length > 0 && hasAnyLccBackedPo ? (
             <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
               <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.lcBarTitle}</h6>
               <p className="mt-1 text-xs text-[#9CA3AF]">{t.lcBarHint}</p>
@@ -1454,6 +1471,7 @@ export function CashFlowDashboard({
                 )}
               </div>
             </div>
+            ) : null}
           </div>
 
           <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
