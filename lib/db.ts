@@ -411,6 +411,27 @@ async function setupSchema() {
   `;
 
   await db`
+    create table if not exists logistics_landed_cost_consolidate (
+      id bigserial primary key,
+      po_number text not null,
+      quote_date date not null,
+      destination_country text not null default '',
+      destination_tariff_pct numeric(9, 4),
+      sea_freight_usd numeric(14, 4),
+      air_freight_usd numeric(14, 4),
+      incoterm text not null,
+      consolidated_usd numeric(16, 4),
+      line_items_json jsonb not null default '[]'::jsonb,
+      created_by text not null references users(username),
+      created_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_logistics_landed_cost_consolidate_created
+    on logistics_landed_cost_consolidate (created_at desc, id desc);
+  `;
+
+  await db`
     create table if not exists products (
       id bigserial primary key,
       product_name text not null,

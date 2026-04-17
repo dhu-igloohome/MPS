@@ -501,6 +501,27 @@ async function main() {
   await sql`alter table forecast_cash_flow_settings add column if not exists shipping_mode text not null default 'ocean';`;
 
   await sql`
+    create table if not exists logistics_landed_cost_consolidate (
+      id bigserial primary key,
+      po_number text not null,
+      quote_date date not null,
+      destination_country text not null default '',
+      destination_tariff_pct numeric(9, 4),
+      sea_freight_usd numeric(14, 4),
+      air_freight_usd numeric(14, 4),
+      incoterm text not null,
+      consolidated_usd numeric(16, 4),
+      line_items_json jsonb not null default '[]'::jsonb,
+      created_by text not null references users(username),
+      created_at timestamptz not null default now()
+    );
+  `;
+  await sql`
+    create index if not exists idx_logistics_landed_cost_consolidate_created
+    on logistics_landed_cost_consolidate (created_at desc, id desc);
+  `;
+
+  await sql`
     create table if not exists mass_production_kanban (
       id bigserial primary key,
       product_id bigint not null references products(id) on delete restrict,

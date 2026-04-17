@@ -481,6 +481,33 @@ export type ShippingReportEntry = {
   updatedAt: string;
 };
 
+/** Saved snapshot from Logistics → Landed cost consolidate (POST). */
+export type LogisticsLandedCostConsolidateLineItem = {
+  forecastId: string;
+  sku: string;
+  buildToOrder: number;
+  buildToStock: number;
+  quantity: number;
+  region: Region;
+  month: string;
+  productName: string;
+};
+
+export type LogisticsLandedCostConsolidateSnapshot = {
+  id: string;
+  poNumber: string;
+  quoteDate: string;
+  destinationCountry: string;
+  destinationTariffPct: number | null;
+  seaFreightUsd: number | null;
+  airFreightUsd: number | null;
+  incoterm: ForecastIncoterm;
+  consolidatedUsd: number | null;
+  lineItems: LogisticsLandedCostConsolidateLineItem[];
+  createdBy: string;
+  createdAt: string;
+};
+
 export type InventoryGlobalEntry = {
   id: string;
   mainSku: string;

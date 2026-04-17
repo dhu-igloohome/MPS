@@ -43,6 +43,8 @@ import {
   SopStatus,
   ShippingReportEntry,
   InventoryGlobalEntry,
+  LogisticsLandedCostConsolidateLineItem,
+  LogisticsLandedCostConsolidateSnapshot,
   SupplierEntry,
   ToolingEntry,
   ToolingStatus,
@@ -5330,4 +5332,103 @@ export async function patchForecastCashFlowSettings(input: {
   const latestUnitCostQuote = await getLatestUnitCostQuoteBySkuSupplier(sku, supplier);
   const unitPriceUsd = latestUnitCostQuote != null ? latestUnitCostQuote.unitPrice : null;
   return { supplierName: supplier, unitPriceUsd, poIssueDate, shippingMode, latestUnitCostQuote };
+}
+
+type LogisticsLccRow = {
+  id: number;
+  po_number: string;
+  quote_date: string;
+  destination_country: string;
+  destination_tariff_pct: string | number | null;
+  sea_freight_usd: string | number | null;
+  air_freight_usd: string | number | null;
+  incoterm: string;
+  consolidated_usd: string | number | null;
+  line_items_json: unknown;
+  created_by: string;
+  created_at: string;
+};
+
+function mapLogisticsLccRow(row: LogisticsLccRow): LogisticsLandedCostConsolidateSnapshot {
+  const raw = row.line_items_json;
+  const lineItems: LogisticsLandedCostConsolidateLineItem[] = Array.isArray(raw)
+    ? (raw as LogisticsLandedCostConsolidateLineItem[])
+    : [];
+  const num = (v: string | number | null | undefined): number | null => {
+    if (v == null || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  return {
+    id: String(row.id),
+    poNumber: row.po_number || "",
+    quoteDate: String(row.quote_date).slice(0, 10),
+    destinationCountry: row.destination_country ?? "",
+    destinationTariffPct: num(row.destination_tariff_pct),
+    seaFreightUsd: num(row.sea_freight_usd),
+    airFreightUsd: num(row.air_freight_usd),
+    incoterm: normalizeForecastIncotermStored(row.incoterm),
+    consolidatedUsd: num(row.consolidated_usd),
+    lineItems,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+  };
+}
+
+export async function createLogisticsLandedCostConsolidateSnapshot(input: {
+  poNumber: string;
+  quoteDate: string;
+  destinationCountry: string;
+  destinationTariffPct: number | null;
+  seaFreightUsd: number | null;
+  airFreightUsd: number | null;
+  incoterm: ForecastIncoterm;
+  consolidatedUsd: number | null;
+  lineItems: LogisticsLandedCostConsolidateLineItem[];
+  createdBy: string;
+}): Promise<LogisticsLandedCostConsolidateSnapshot> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<LogisticsLccRow[]>`
+    insert into logistics_landed_cost_consolidate (
+      po_number,
+      quote_date,
+      destination_country,
+      destination_tariff_pct,
+      sea_freight_usd,
+      air_freight_usd,
+      incoterm,
+      consolidated_usd,
+      line_items_json,
+      created_by
+    )
+    values (
+      ${input.poNumber.trim()},
+      ${input.quoteDate},
+      ${input.destinationCountry.trim()},
+      ${input.destinationTariffPct},
+      ${input.seaFreightUsd},
+      ${input.airFreightUsd},
+      ${input.incoterm},
+      ${input.consolidatedUsd},
+      ${db.json(JSON.parse(JSON.stringify(input.lineItems)) as import("postgres").JSONValue)},
+      ${input.createdBy}
+    )
+    returning
+      id,
+      po_number,
+      quote_date::text,
+      destination_country,
+      destination_tariff_pct::text,
+      sea_freight_usd::text,
+      air_freight_usd::text,
+      incoterm,
+      consolidated_usd::text,
+      line_items_json,
+      created_by,
+      created_at::text;
+  `;
+  const row = rows[0];
+  if (!row) throw new Error("Insert failed");
+  return mapLogisticsLccRow(row);
 }

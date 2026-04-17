@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { formatUsd } from "@/lib/format-usd";
 import {
@@ -11,7 +12,11 @@ import {
 import { normalizeForecastIncotermStored, type ForecastIncoterm } from "@/lib/forecast-incoterm";
 import type { Language } from "@/lib/i18n";
 import { computeLandedCostPerUnitUsd } from "@/lib/landed-cost-cash-flow";
-import type { ForecastCashFlowRow, UnitCostQuoteEntry } from "@/lib/types";
+import type {
+  ForecastCashFlowRow,
+  LogisticsLandedCostConsolidateLineItem,
+  UnitCostQuoteEntry,
+} from "@/lib/types";
 
 type Props = {
   language: Language;
@@ -102,6 +107,7 @@ function computeConsolidatedUsd(
 }
 
 export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: Props) {
+  const router = useRouter();
   const en = language === "en";
   const t = {
     title: en ? "Landed cost consolidate" : "到岸成本汇总",
@@ -138,6 +144,18 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
       ? "No computable landed cost for this PO (check incoterm FOB/DAP/DDP, tariff, unit price, supplier, quote date)."
       : "该 PO 暂无可计算的到岸成本（请检查贸易条款 FOB/DAP/DDP、关税、单价、供应商、报价日期等）。",
     destInvalid: en ? "Destination country is not a valid stored name." : "目的国名称无效，请从列表选择或按规范填写。",
+    poLinesTitle: en ? "SKU & quantities for this PO" : "该 PO 下的 SKU 与数量",
+    colSku: "SKU",
+    colBto: en ? "BTO" : "BTO",
+    colBts: en ? "BTS" : "BTS",
+    colQty: en ? "Total qty" : "合计数量",
+    colMonth: en ? "Month" : "月份",
+    colRegion: en ? "Region" : "区域",
+    colProduct: en ? "Product" : "产品",
+    save: en ? "Save" : "保存",
+    saving: en ? "Saving…" : "保存中…",
+    saved: en ? "Saved." : "已保存。",
+    saveFailed: en ? "Save failed." : "保存失败。",
   };
 
   const [selectedPo, setSelectedPo] = useState("");
@@ -147,6 +165,8 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
   const [seaFreightUnitPrice, setSeaFreightUnitPrice] = useState("");
   const [airFreightUnitPrice, setAirFreightUnitPrice] = useState("");
   const [incoterm, setIncoterm] = useState<ForecastIncoterm>("EXW");
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
 
   const baseDestinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
   const destinationOptions = useMemo(
@@ -167,6 +187,27 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
       return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
     });
   }, [rows]);
+
+  const poLines = useMemo((): LogisticsLandedCostConsolidateLineItem[] => {
+    if (!selectedPo) return [];
+    return rows
+      .filter((r) => poKey(r) === selectedPo)
+      .map((r) => {
+        const bto = Math.trunc(Number(r.buildToOrder));
+        const bts = Math.trunc(Number(r.buildToStock));
+        return {
+          forecastId: r.id,
+          sku: r.sku.trim(),
+          buildToOrder: Number.isFinite(bto) ? bto : 0,
+          buildToStock: Number.isFinite(bts) ? bts : 0,
+          quantity: (Number.isFinite(bto) ? bto : 0) + (Number.isFinite(bts) ? bts : 0),
+          region: r.region,
+          month: r.month,
+          productName: r.productName.trim(),
+        };
+      })
+      .sort((a, b) => a.sku.localeCompare(b.sku) || a.month.localeCompare(b.month));
+  }, [rows, selectedPo]);
 
   function applyPrefillForPo(po: string) {
     if (!po) return;
@@ -213,6 +254,39 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
   const destInvalid =
     destinationCountry.trim() !== "" && !isForecastDestinationInputValid(destinationCountry);
 
+  async function onSave() {
+    if (!selectedPo || destInvalid || saveLoading) return;
+    setSaveLoading(true);
+    setSaveMessage("");
+    const destTariffNum =
+      destinationTariffPct.trim() === "" ? null : Number(destinationTariffPct);
+    const seaNum = seaFreightUnitPrice.trim() === "" ? null : Number(seaFreightUnitPrice);
+    const airNum = airFreightUnitPrice.trim() === "" ? null : Number(airFreightUnitPrice);
+    const res = await fetch("/api/logistics/landed-cost-consolidate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        poNumber: selectedPo,
+        quoteDate: quoteDate.trim(),
+        destinationCountry: destinationCountry.trim(),
+        destinationTariffPct: destTariffNum,
+        seaFreightUsd: seaNum,
+        airFreightUsd: airNum,
+        incoterm,
+        consolidatedUsd: consolidatedUsd != null && Number.isFinite(consolidatedUsd) ? consolidatedUsd : null,
+        lineItems: poLines,
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { message?: string };
+    setSaveLoading(false);
+    if (!res.ok) {
+      setSaveMessage(data.message || t.saveFailed);
+      return;
+    }
+    setSaveMessage(t.saved);
+    router.refresh();
+  }
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-app-muted">{t.hint}</p>
@@ -225,125 +299,190 @@ export function LandedCostConsolidatePanel({ language, rows, unitCostQuotes }: P
         ) : poOptions.length === 0 || (poOptions.length === 1 && poOptions[0] === "") ? (
           <p className="text-sm text-app-muted">{t.noPo}</p>
         ) : (
-          <div className="grid max-w-5xl gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <label className="block md:col-span-2 xl:col-span-3">
-              <span className="mb-1 block text-sm text-foreground/85">{t.poOrder}</span>
-              <select
-                value={selectedPo}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setSelectedPo(v);
-                  if (v) applyPrefillForPo(v);
-                }}
-                className="w-full rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground"
-              >
-                <option value="">{t.selectPo}</option>
-                {poOptions.map((po) => (
-                  <option key={po || "__empty__"} value={po}>
-                    {po ? po : t.emptyPo}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <>
+            <div className="grid max-w-5xl gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <label className="block md:col-span-2 xl:col-span-3">
+                <span className="mb-1 block text-sm text-foreground/85">{t.poOrder}</span>
+                <select
+                  value={selectedPo}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSelectedPo(v);
+                    setSaveMessage("");
+                    if (v) applyPrefillForPo(v);
+                  }}
+                  className="w-full rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground"
+                >
+                  <option value="">{t.selectPo}</option>
+                  {poOptions.map((po) => (
+                    <option key={po || "__empty__"} value={po}>
+                      {po ? po : t.emptyPo}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="block">
-              <span className="mb-1 block text-sm text-foreground/85">{t.quoteDate}</span>
-              <input
-                type="date"
-                value={quoteDate}
-                onChange={(e) => setQuoteDate(e.target.value)}
-                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-              />
-            </label>
+              {selectedPo ? (
+                <div className="md:col-span-2 xl:col-span-3">
+                  <h4 className="mb-2 text-sm font-semibold text-foreground">{t.poLinesTitle}</h4>
+                  <div className="app-table-shell overflow-x-auto">
+                    <table className="app-table min-w-[640px]">
+                      <thead>
+                        <tr>
+                          <th>{t.colSku}</th>
+                          <th>{t.colBto}</th>
+                          <th>{t.colBts}</th>
+                          <th>{t.colQty}</th>
+                          <th>{t.colMonth}</th>
+                          <th>{t.colRegion}</th>
+                          <th>{t.colProduct}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {poLines.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="text-center text-app-muted">
+                              —
+                            </td>
+                          </tr>
+                        ) : (
+                          poLines.map((line) => (
+                            <tr key={`${line.forecastId}-${line.sku}-${line.month}`}>
+                              <td className="font-medium">{line.sku}</td>
+                              <td className="tabular-nums">{line.buildToOrder}</td>
+                              <td className="tabular-nums">{line.buildToStock}</td>
+                              <td className="tabular-nums">{line.quantity}</td>
+                              <td className="whitespace-nowrap tabular-nums">{line.month}</td>
+                              <td>{line.region}</td>
+                              <td className="max-w-[14rem] truncate">{line.productName || "—"}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
 
-            <label className="block md:col-span-2 xl:col-span-2">
-              <span className="mb-1 block text-sm text-foreground/85">{t.destinationCountry}</span>
-              <select
-                value={destinationCountry}
-                onChange={(e) => setDestinationCountry(e.target.value)}
-                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-              >
-                <option value="">{t.selectDestinationCountry}</option>
-                {destinationOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {en ? opt.labelEn : opt.labelZh}
-                  </option>
-                ))}
-              </select>
-              <span className="mt-1 block text-xs text-app-muted">{t.destinationCountryHint}</span>
-              {destInvalid ? <span className="mt-1 block text-xs text-red-600">{t.destInvalid}</span> : null}
-            </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-foreground/85">{t.quoteDate}</span>
+                <input
+                  type="date"
+                  value={quoteDate}
+                  onChange={(e) => setQuoteDate(e.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                />
+              </label>
 
-            <label className="block">
-              <span className="mb-1 block text-sm text-foreground/85">{t.destinationTariff}</span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step="0.01"
-                value={destinationTariffPct}
-                onChange={(e) => setDestinationTariffPct(e.target.value)}
-                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                placeholder={t.optionalPh}
-              />
-            </label>
+              <label className="block md:col-span-2 xl:col-span-2">
+                <span className="mb-1 block text-sm text-foreground/85">{t.destinationCountry}</span>
+                <select
+                  value={destinationCountry}
+                  onChange={(e) => setDestinationCountry(e.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                >
+                  <option value="">{t.selectDestinationCountry}</option>
+                  {destinationOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {en ? opt.labelEn : opt.labelZh}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-xs text-app-muted">{t.destinationCountryHint}</span>
+                {destInvalid ? <span className="mt-1 block text-xs text-red-600">{t.destInvalid}</span> : null}
+              </label>
 
-            <label className="block md:col-span-2 xl:col-span-2">
-              <span className="mb-1 block text-sm text-foreground/85">{t.seaMode}</span>
-              <span className="mb-1 block text-xs text-app-muted">{t.seaFreightUnit}</span>
-              <input
-                type="number"
-                min={0}
-                step="0.0001"
-                value={seaFreightUnitPrice}
-                onChange={(e) => setSeaFreightUnitPrice(e.target.value)}
-                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                placeholder={t.optionalPh}
-              />
-            </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-foreground/85">{t.destinationTariff}</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  value={destinationTariffPct}
+                  onChange={(e) => setDestinationTariffPct(e.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                  placeholder={t.optionalPh}
+                />
+              </label>
 
-            <label className="block md:col-span-2 xl:col-span-2">
-              <span className="mb-1 block text-sm text-foreground/85">{t.airMode}</span>
-              <span className="mb-1 block text-xs text-app-muted">{t.airFreightUnit}</span>
-              <input
-                type="number"
-                min={0}
-                step="0.0001"
-                value={airFreightUnitPrice}
-                onChange={(e) => setAirFreightUnitPrice(e.target.value)}
-                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-                placeholder={t.optionalPh}
-              />
-            </label>
+              <label className="block md:col-span-2 xl:col-span-2">
+                <span className="mb-1 block text-sm text-foreground/85">{t.seaMode}</span>
+                <span className="mb-1 block text-xs text-app-muted">{t.seaFreightUnit}</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.0001"
+                  value={seaFreightUnitPrice}
+                  onChange={(e) => setSeaFreightUnitPrice(e.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                  placeholder={t.optionalPh}
+                />
+              </label>
 
-            <label className="block">
-              <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
-              <select
-                value={incoterm}
-                onChange={(e) => setIncoterm(e.target.value as ForecastIncoterm)}
-                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
-              >
-                <option value="EXW">{t.incotermExw}</option>
-                <option value="FOB">{t.incotermFob}</option>
-                <option value="DAP">{t.incotermDap}</option>
-                <option value="DDP">{t.incotermDdp}</option>
-              </select>
-            </label>
+              <label className="block md:col-span-2 xl:col-span-2">
+                <span className="mb-1 block text-sm text-foreground/85">{t.airMode}</span>
+                <span className="mb-1 block text-xs text-app-muted">{t.airFreightUnit}</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.0001"
+                  value={airFreightUnitPrice}
+                  onChange={(e) => setAirFreightUnitPrice(e.target.value)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                  placeholder={t.optionalPh}
+                />
+              </label>
 
-            <label className="block md:col-span-2 xl:col-span-3">
-              <span className="mb-1 block text-sm text-foreground/85">{t.landedCost}</span>
-              <span className="mb-1 block text-xs text-app-muted">{t.consolidated}</span>
-              <input
-                readOnly
-                value={selectedPo === "" ? "" : landedLabel != null ? landedLabel : "—"}
-                placeholder={selectedPo === "" ? (en ? "Select a PO" : "请选择 PO") : ""}
-                className="w-full max-w-md rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm font-medium text-foreground tabular-nums"
-              />
-            </label>
-            {selectedPo !== "" && landedLabel == null && !destInvalid ? (
-              <p className="text-sm text-app-muted md:col-span-2 xl:col-span-3">{t.cannotCompute}</p>
+              <label className="block">
+                <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
+                <select
+                  value={incoterm}
+                  onChange={(e) => setIncoterm(e.target.value as ForecastIncoterm)}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                >
+                  <option value="EXW">{t.incotermExw}</option>
+                  <option value="FOB">{t.incotermFob}</option>
+                  <option value="DAP">{t.incotermDap}</option>
+                  <option value="DDP">{t.incotermDdp}</option>
+                </select>
+              </label>
+
+              <label className="block md:col-span-2 xl:col-span-3">
+                <span className="mb-1 block text-sm text-foreground/85">{t.landedCost}</span>
+                <span className="mb-1 block text-xs text-app-muted">{t.consolidated}</span>
+                <input
+                  readOnly
+                  value={selectedPo === "" ? "" : landedLabel != null ? landedLabel : "—"}
+                  placeholder={selectedPo === "" ? (en ? "Select a PO" : "请选择 PO") : ""}
+                  className="w-full max-w-md rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm font-medium text-foreground tabular-nums"
+                />
+              </label>
+              {selectedPo !== "" && landedLabel == null && !destInvalid ? (
+                <p className="text-sm text-app-muted md:col-span-2 xl:col-span-3">{t.cannotCompute}</p>
+              ) : null}
+            </div>
+
+            {selectedPo ? (
+              <div className="mt-8 flex max-w-5xl flex-col gap-2 border-t border-app-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <button
+                  type="button"
+                  onClick={onSave}
+                  disabled={saveLoading || destInvalid || poLines.length === 0}
+                  className="app-button-primary inline-flex min-h-[2.5rem] items-center justify-center px-5 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {saveLoading ? t.saving : t.save}
+                </button>
+                {saveMessage ? (
+                  <p
+                    className={`text-sm ${saveMessage === t.saved ? "text-app-muted" : "text-red-600"}`}
+                  >
+                    {saveMessage}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
-          </div>
+          </>
         )}
       </section>
     </div>
