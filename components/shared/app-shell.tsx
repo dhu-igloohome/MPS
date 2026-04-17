@@ -113,7 +113,7 @@ export async function AppShell({ session, title, description, children }: AppShe
   return (
     <main className="min-h-dvh">
       <AutoHideHeader>
-        <div className="mx-auto flex w-full max-w-[1520px] flex-col gap-4 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-8 lg:px-10 lg:py-5">
+        <div className="mx-auto flex w-full flex-col gap-4 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-8 lg:px-10 lg:py-5 2xl:px-12">
           <div className="min-w-0 space-y-1.5">
             <Image src="/igloo-logo-pinge.svg" alt="Igloo logo" width={87} height={24} priority />
             <p className="text-xs text-app-subtle sm:text-sm">
@@ -132,7 +132,7 @@ export async function AppShell({ session, title, description, children }: AppShe
         </div>
       </AutoHideHeader>
 
-      <div className="mx-auto w-full max-w-[1520px] px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+      <div className="mx-auto w-full px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10 2xl:px-12">
         <AppShellNav items={navItems} language={language}>
           <div className="app-panel p-5 sm:p-6">
             <h2 className="text-xl font-semibold tracking-tight text-[#111827] sm:text-2xl">{title}</h2>
