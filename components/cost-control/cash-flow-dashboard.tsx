@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import {
   Bar,
@@ -16,20 +15,13 @@ import {
 } from "recharts";
 
 import {
-  aggregateToQuarters,
-  buildMonthlyChartSeries,
-  type ChartPoint,
   type DashboardFilters,
-  drillOrdersForOrderMonth,
-  drillOrdersForQuarter,
   enrichCashFlowRows,
-  type EnrichedCashFlow,
   filterEnriched,
   getDateRangePreset,
   computeKpis,
   paymentMonthWindowAroundToday,
   sumActualPaid,
-  type PeriodGrain,
   type RangePreset,
 } from "@/lib/cash-flow-dashboard-agg";
 import { buildForecastCashPaymentBarData } from "@/lib/forecast-cash-flow-payment-bars";
@@ -147,8 +139,8 @@ function labels(language: Language) {
   return {
     title: en ? "Cash flow dashboard" : "现金流可视化看板",
     subtitle: en
-      ? "Overview & drill-down — data refreshes with your filters (order date range)."
-      : "概览与下钻 — 随筛选实时更新（按下单日期范围过滤订单）。",
+      ? "Overview — data refreshes with your filters (order date range)."
+      : "概览 — 随筛选实时更新（按下单日期范围过滤订单）。",
     kpiOrderTotal: en ? "Order total (due)" : "订单总金额（应付）",
     kpiActualPaid: en ? "Actually paid" : "实际支付合计",
     kpiUnpaid: en ? "Outstanding" : "应付未付",
@@ -161,9 +153,6 @@ function labels(language: Language) {
     presetCustom: en ? "Custom" : "自定义",
     from: en ? "From" : "从",
     to: en ? "To" : "至",
-    grain: en ? "Granularity" : "时间粒度",
-    month: en ? "Month" : "月",
-    quarter: en ? "Quarter" : "季度",
     supplier: en ? "Supplier" : "供应商",
     all: en ? "All" : "全部",
     qtyMin: en ? "Qty min" : "数量 ≥",
@@ -175,27 +164,11 @@ function labels(language: Language) {
     finMin: en ? "Actual final min" : "实际尾款 ≥",
     finMax: en ? "Actual final max" : "实际尾款 ≤",
     resetFilters: en ? "Reset filters" : "重置筛选",
-    barTitle: en ? "Actual advance vs actual final (by payment month)" : "实际预付 vs 实际尾款（按付款月）",
-    barHint: en
-      ? "Payment months: 6 months before through 6 months after the current month (rolling window)."
-      : "付款月范围：以当前月为基准，向前 6 个月至向后 6 个月（共 13 个自然月）。",
     waterfallTitle: en ? "Payment composition (filtered total)" : "资金构成（当前筛选合计）",
     wfOrder: en ? "Order total" : "订单合计",
     wfAdv: en ? "Paid advance" : "已付预付",
     wfFin: en ? "Paid final" : "已付尾款",
     wfUnpaid: en ? "Outstanding" : "应付未付",
-    drillTitle: en ? "Orders in period" : "本周期订单明细",
-    close: en ? "Close" : "关闭",
-    colOrder: en ? "Order no." : "订单号",
-    colSku: "SKU",
-    colTotal: en ? "Order total" : "订单总金额",
-    colAdv: en ? "Actual advance" : "实际预付",
-    colFin: en ? "Actual final" : "实际尾款",
-    colAdvDate: en ? "Adv. date" : "预付日期",
-    colFinDate: en ? "Final date" : "尾款日期",
-    colSupplier: en ? "Supplier" : "供应商",
-    openProgress: en ? "Order progress" : "订单进度",
-    clickDrill: en ? "Click a bar or point to drill down" : "点击柱形或折线点查看该期订单",
     na: en ? "—" : "—",
     fcSummaryTitle: en ? "Forecast cash flow (for dashboard)" : "Forecast 现金流（看板汇总）",
     fcSummaryHint: en
@@ -627,31 +600,6 @@ function FcLandedSummaryTooltip({
   );
 }
 
-function ChartTooltip({
-  active,
-  payload,
-  label,
-  language,
-}: {
-  active?: boolean;
-  payload?: { name: string; value: number; color: string }[];
-  label?: string;
-  language: Language;
-}) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg border border-app-border bg-white/95 px-3 py-2 text-xs shadow-[0_8px_24px_rgba(17,24,39,0.08)] backdrop-blur">
-      <p className="mb-1 font-medium text-[#111827]">{label}</p>
-      {payload.map((p) => (
-        <p key={p.name} className="tabular-nums text-[#4B5563]">
-          <span style={{ color: p.color }}>{p.name}: </span>
-          {formatUsd(Number(p.value), 2)}
-        </p>
-      ))}
-    </div>
-  );
-}
-
 export function CashFlowDashboard({
   language,
   entries,
@@ -674,7 +622,6 @@ export function CashFlowDashboard({
   const [rangePreset, setRangePreset] = useState<RangePreset>("12m");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
-  const [grain, setGrain] = useState<PeriodGrain>("month");
   const [supplier, setSupplier] = useState("");
   const [qtyMin, setQtyMin] = useState("");
   const [qtyMax, setQtyMax] = useState("");
@@ -684,7 +631,6 @@ export function CashFlowDashboard({
   const [advMax, setAdvMax] = useState("");
   const [finMin, setFinMin] = useState("");
   const [finMax, setFinMax] = useState("");
-  const [drill, setDrill] = useState<{ periodLabel: string; rows: EnrichedCashFlow[] } | null>(null);
   const [fcPoSavingId, setFcPoSavingId] = useState<string | null>(null);
   const [fcShippingSavingId, setFcShippingSavingId] = useState<string | null>(null);
   const fcDestinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
@@ -868,14 +814,6 @@ export function CashFlowDashboard({
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
 
-  /** Bar chart: fixed rolling month window (current month ±6) on the X-axis; still filtered by order-date range above. */
-  const rollingPaymentMonthChartPoints: ChartPoint[] = useMemo(() => {
-    const months = paymentMonthWindowAroundToday(6, 6);
-    if (months.length === 0) return [];
-    const monthly = buildMonthlyChartSeries(filtered, months);
-    return grain === "month" ? monthly : aggregateToQuarters(monthly);
-  }, [filtered, grain]);
-
   const wf = useMemo(() => {
     const advSum = filtered.reduce((s, e) => s + (e.actualAdvanceAmount ?? 0), 0);
     const finSum = filtered.reduce((s, e) => s + (e.actualFinalAmount ?? 0), 0);
@@ -886,15 +824,6 @@ export function CashFlowDashboard({
       unpaid: kpis.unpaid,
     };
   }, [filtered, kpis.orderTotal, kpis.unpaid]);
-
-  const openDrill = useCallback(
-    (periodKey: string) => {
-      const rows =
-        grain === "month" ? drillOrdersForOrderMonth(filtered, periodKey) : drillOrdersForQuarter(filtered, periodKey);
-      setDrill({ periodLabel: periodKey, rows });
-    },
-    [filtered, grain],
-  );
 
   const resetFilters = () => {
     setSupplier("");
@@ -907,11 +836,6 @@ export function CashFlowDashboard({
     setFinMin("");
     setFinMax("");
   };
-
-  const rollingChartData = rollingPaymentMonthChartPoints.map((p) => ({
-    ...p,
-    name: p.label,
-  }));
 
   const persistFcPoIssueDate = useCallback(
     async (forecastId: string, isoDay: string) => {
@@ -1614,17 +1538,6 @@ export function CashFlowDashboard({
               {dateRange.from} → {dateRange.to}
             </div>
           )}
-          <label className="text-xs font-medium text-[#4B5563]">
-            {t.grain}
-            <select
-              className="mt-1 w-full bg-white px-3 py-2 text-sm"
-              value={grain}
-              onChange={(e) => setGrain(e.target.value as PeriodGrain)}
-            >
-              <option value="month">{t.month}</option>
-              <option value="quarter">{t.quarter}</option>
-            </select>
-          </label>
         </div>
 
         <div className="mt-4 grid gap-3 border-t border-slate-200/80 pt-4 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -1770,61 +1683,7 @@ export function CashFlowDashboard({
         </article>
       </div>
 
-      <p className="text-xs text-[#9CA3AF]">{t.clickDrill}</p>
-
       <div className="grid gap-6 xl:grid-cols-1">
-        <div className="app-card p-4">
-          <h5 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{t.barTitle}</h5>
-          <p className="mb-4 text-xs text-[#9CA3AF]">{t.barHint}</p>
-          <div className="h-72 w-full">
-            {rollingChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={rollingChartData}
-                  margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
-                  onClick={(state) => {
-                    const k =
-                      state && typeof state === "object" && "activeLabel" in state
-                        ? String(state.activeLabel ?? "")
-                        : "";
-                    if (k) openDrill(k);
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#64748b" />
-                  <YAxis tick={{ fontSize: 11 }} stroke="#64748b" tickFormatter={(v) => formatUsd(Number(v), 0)} />
-                  <Tooltip content={<ChartTooltip language={language} />} />
-                  <Legend />
-                  <Bar
-                    dataKey="advancePaidInPeriod"
-                    name={language === "en" ? "Actual advance" : "实际预付"}
-                    fill={COLORS.indigo}
-                    radius={[4, 4, 0, 0]}
-                    cursor="pointer"
-                  >
-                    {rollingChartData.map((_, i) => (
-                      <Cell key={`a-${i}`} cursor="pointer" />
-                    ))}
-                  </Bar>
-                  <Bar
-                    dataKey="finalPaidInPeriod"
-                    name={language === "en" ? "Actual final" : "实际尾款"}
-                    fill={COLORS.emerald}
-                    radius={[4, 4, 0, 0]}
-                    cursor="pointer"
-                  >
-                    {rollingChartData.map((_, i) => (
-                      <Cell key={`f-${i}`} cursor="pointer" />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="py-12 text-center text-sm text-slate-400">{t.na}</p>
-            )}
-          </div>
-        </div>
-
         <div className="rounded-2xl border border-slate-200/90 bg-gradient-to-br from-slate-50 to-white p-5 shadow-sm dark:border-slate-700 dark:from-slate-900/80 dark:to-slate-900/40">
           <h5 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">{t.waterfallTitle}</h5>
           <div className="flex flex-wrap items-stretch justify-between gap-3">
@@ -1858,80 +1717,6 @@ export function CashFlowDashboard({
           </div>
         </div>
       </div>
-
-      {drill ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal
-        >
-          <div className="max-h-[85vh] w-full max-w-5xl overflow-hidden rounded-2xl border border-app-border bg-white shadow-[0_24px_60px_rgba(17,24,39,0.18)]">
-            <div className="flex items-center justify-between border-b border-app-border px-4 py-3">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                {t.drillTitle} · {drill.periodLabel}
-              </h3>
-              <button
-                type="button"
-                className="app-button-secondary px-3 py-1.5 text-sm"
-                onClick={() => setDrill(null)}
-              >
-                {t.close}
-              </button>
-            </div>
-            <div className="max-h-[65vh] overflow-auto p-4">
-              <table className="w-full min-w-[720px] border-collapse text-xs sm:text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                    <th className="py-2 pr-2">{t.colOrder}</th>
-                    <th className="py-2 pr-2">{t.colSku}</th>
-                    <th className="py-2 pr-2">{t.colSupplier}</th>
-                    <th className="py-2 pr-2 text-right">{t.colTotal}</th>
-                    <th className="py-2 pr-2 text-right">{t.colAdv}</th>
-                    <th className="py-2 pr-2 text-right">{t.colFin}</th>
-                    <th className="py-2 pr-2">{t.colAdvDate}</th>
-                    <th className="py-2 pr-2">{t.colFinDate}</th>
-                    <th className="py-2">{t.openProgress}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {drill.rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} className="py-8 text-center text-slate-400">
-                        {t.na}
-                      </td>
-                    </tr>
-                  ) : (
-                    drill.rows.map((r) => (
-                      <tr key={r.id} className="border-b border-app-border/60">
-                        <td className="py-2 pr-2 font-medium">{r.orderNumber}</td>
-                        <td className="py-2 pr-2">{r.sku}</td>
-                        <td className="max-w-[10rem] truncate py-2 pr-2">{r.supplier}</td>
-                        <td className="py-2 pr-2 text-right tabular-nums">{formatUsd(r.totalAmount, 2)}</td>
-                        <td className="py-2 pr-2 text-right tabular-nums">
-                          {r.actualAdvanceAmount != null ? formatUsd(r.actualAdvanceAmount, 2) : t.na}
-                        </td>
-                        <td className="py-2 pr-2 text-right tabular-nums">
-                          {r.actualFinalAmount != null ? formatUsd(r.actualFinalAmount, 2) : t.na}
-                        </td>
-                        <td className="whitespace-nowrap py-2 pr-2">{r.actualAdvanceDate ?? t.na}</td>
-                        <td className="whitespace-nowrap py-2 pr-2">{r.actualFinalDate ?? t.na}</td>
-                        <td className="py-2">
-                          <Link
-                            href="/order-progress"
-                            className="text-[var(--app-accent)] hover:underline"
-                          >
-                            {t.openProgress}
-                          </Link>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
