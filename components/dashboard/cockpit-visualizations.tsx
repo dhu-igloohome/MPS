@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+
+import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
 import {
   Bar,
   BarChart,
@@ -34,7 +36,15 @@ import {
 } from "@/lib/cockpit-dashboard-agg";
 import { getDateRangePreset, monthKeysBetween, type RangePreset } from "@/lib/cash-flow-dashboard-agg";
 import type { Language } from "@/lib/i18n";
-import type { ForecastEntry, LogisticsShipmentEntry, OrderProgressEntry, OrderProgressRegion } from "@/lib/types";
+import type {
+  ForecastCashFlowRow,
+  ForecastEntry,
+  LogisticsShipmentEntry,
+  OrderProgressEntry,
+  OrderProgressRegion,
+  SupplierEntry,
+  UnitCostQuoteEntry,
+} from "@/lib/types";
 
 const COLORS = {
   blue: "#2563eb",
@@ -50,6 +60,9 @@ type Props = {
   forecasts: ForecastEntry[];
   orderProgress: OrderProgressEntry[];
   logistics: LogisticsShipmentEntry[];
+  forecastCashFlowRows: ForecastCashFlowRow[];
+  fcSuppliers: SupplierEntry[];
+  unitCostQuotes: UnitCostQuoteEntry[];
 };
 
 function formatNum(n: number) {
@@ -85,7 +98,15 @@ type DrillState =
   | { module: "logistics"; label: string; rows: LogisticsShipmentEntry[] }
   | null;
 
-export function CockpitVisualizations({ language, forecasts, orderProgress, logistics }: Props) {
+export function CockpitVisualizations({
+  language,
+  forecasts,
+  orderProgress,
+  logistics,
+  forecastCashFlowRows,
+  fcSuppliers,
+  unitCostQuotes,
+}: Props) {
   const en = language === "en";
 
   const [oPreset, setOPreset] = useState<RangePreset>("pm3");
@@ -186,6 +207,39 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
   return (
     <div className="space-y-10">
       <ForecastExecutiveOverview language={language} forecasts={forecasts} />
+
+      {/* Cash flow analysis (same charts as Supply Chain → Cost control → Cash flow analysis) */}
+      <section className="app-card p-5">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold tracking-tight text-[#111827]">
+              {en ? "Cash flow analysis" : "现金流分析"}
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-[#4B5563]">
+              {en
+                ? "Scheduled payments, landed-cost timing, and scheduled vs landed comparison — same logic as Supply Chain Management → Cost control."
+                : "订金/尾款应付、到岸成本付款与对照图 — 与「供应链管理 → 成本控制 → 现金流分析」一致。"}
+            </p>
+          </div>
+          <Link
+            href="/supply-chain/cost-control?tab=cashflow"
+            className="app-button-secondary shrink-0 px-3 py-2 text-sm font-medium"
+          >
+            {en ? "Open cash flow analysis" : "打开现金流分析"}
+          </Link>
+        </div>
+        <CashFlowDashboard
+          language={language}
+          entries={[]}
+          costAnalysisEntries={[]}
+          forecastCashFlowRows={forecastCashFlowRows}
+          fcSuppliers={fcSuppliers}
+          unitCostQuotes={unitCostQuotes}
+          showForecastCashFlowSummary
+          forecastSummaryOnly
+          dashboardChartsOnly
+        />
+      </section>
 
       {/* Order progress */}
       <section className="app-card p-5">

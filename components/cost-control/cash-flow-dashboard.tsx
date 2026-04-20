@@ -84,6 +84,8 @@ type Props = {
   onForecastCashFlowSettingsError?: (message: string) => void;
   /** When true, only render Forecast cash flow (for dashboard) + payment bar chart (Cash flow analysis tab). */
   forecastSummaryOnly?: boolean;
+  /** When true with forecastSummaryOnly: hide editable tables; show chart strip for Dashboard embed. */
+  dashboardChartsOnly?: boolean;
 };
 
 function forecastLineTotalUsd(row: ForecastCashFlowRow): number | null {
@@ -183,6 +185,9 @@ function labels(language: Language) {
     fcSumBalances: en ? "Σ balances" : "尾款合计",
     fcEmpty: en ? "No rows with a computable total (pick supplier + Unit cost quote)." : "暂无可计算总金额的行（请选择供应商并确保单位成本有报价）。",
     fcSumLabel: en ? "Sum (computable lines)" : "可计算行合计",
+    dashForecastTotal: en ? "Computable forecast total (USD)" : "Forecast 可算合计 (USD)",
+    dashDepositDue: en ? "Deposits due (Σ)" : "订金应付 (Σ)",
+    dashBalanceDue: en ? "Balances due (Σ)" : "尾款应付 (Σ)",
     fcNoRows: en
       ? "No forecast cash flow rows (Comment must be Ok on the Forecast page)."
       : "暂无 Forecast 现金流数据（请在 Forecast 页将评论设为 Ok）。",
@@ -193,6 +198,9 @@ function labels(language: Language) {
     fcBarDeposit: en ? "Deposit due" : "订金应付",
     fcBarBalance: en ? "Balance due" : "尾款应付",
     fcBarNoData: en ? "No payments fall in this 13-month window." : "该 13 个月内无应付金额。",
+    fcBarHintDash: en
+      ? "Same schedule logic as Cost control → Cash flow analysis (Comment = Ok, supplier, unit cost, PO date). Stacked by supplier; 13‑month rolling window."
+      : "与供应链成本控制中「现金流分析」相同逻辑（Comment=Ok、供应商、单价、PO 日）。按供应商堆叠；13 个月滚动窗口。",
     lcTitle: en ? "Landed cost cash flow" : "Landed cost 现金流",
     lcHint: en
       ? "Same rows as the forecast table above (Comment = Ok), but only lines you have published from Logistics → Landed cost consolidate (Save next to Landed cost (USD)) appear here. Amounts and payment timing follow the Logistics table (tariff on line total + per-unit freight × qty; departure from PO issue + manufacturer country + shipping mode; payment due = departure + 30 days)."
@@ -606,6 +614,7 @@ export function CashFlowDashboard({
   onForecastCashFlowSettingsSaved,
   onForecastCashFlowSettingsError,
   forecastSummaryOnly = false,
+  dashboardChartsOnly = false,
 }: Props) {
   const t = labels(language);
   const publishedLandedRows = useMemo(
@@ -908,10 +917,34 @@ export function CashFlowDashboard({
   const renderForecastCashFlowSummary = () => {
     if (!showForecastCashFlowSummary) return null;
     return (
-      <div className="app-card p-4">
-          <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcSummaryTitle}</h5>
-          <p className="mt-1 text-xs text-[#9CA3AF]">{t.fcSummaryHint}</p>
-          <div className="mt-3 overflow-x-auto">
+      <div className={dashboardChartsOnly ? "space-y-6" : "app-card p-4"}>
+        {dashboardChartsOnly ? (
+          <div className="grid gap-3 sm:grid-cols-3">
+            <article className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+              <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.dashForecastTotal}</p>
+              <p className="mt-2 text-xl font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
+                {fcSumComputable > 0 ? formatUsd(fcSumComputable, 2) : t.na}
+              </p>
+            </article>
+            <article className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+              <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.dashDepositDue}</p>
+              <p className="mt-2 text-xl font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+                {fcSumDeposits > 0 ? formatUsd(fcSumDeposits, 2) : t.na}
+              </p>
+            </article>
+            <article className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+              <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.dashBalanceDue}</p>
+              <p className="mt-2 text-xl font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+                {fcSumBalances > 0 ? formatUsd(fcSumBalances, 2) : t.na}
+              </p>
+            </article>
+          </div>
+        ) : null}
+        {!dashboardChartsOnly ? (
+          <>
+            <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcSummaryTitle}</h5>
+            <p className="mt-1 text-xs text-[#9CA3AF]">{t.fcSummaryHint}</p>
+            <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[1080px] border-collapse text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-700 dark:text-slate-400">
@@ -1082,10 +1115,18 @@ export function CashFlowDashboard({
               ) : null}
             </table>
           </div>
+          </>
+        ) : null}
 
-          <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
+          <div
+            className={
+              dashboardChartsOnly
+                ? "pt-0"
+                : "mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700"
+            }
+          >
             <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcBarTitle}</h6>
-            <p className="mt-1 text-xs text-[#9CA3AF]">{t.fcBarHint}</p>
+            <p className="mt-1 text-xs text-[#9CA3AF]">{dashboardChartsOnly ? t.fcBarHintDash : t.fcBarHint}</p>
             <div className="mt-3 h-80 w-full min-w-0">
               {!fcBarHasAnyAmount ? (
                 <p className="py-16 text-center text-sm text-slate-400">{t.fcBarNoData}</p>
@@ -1165,6 +1206,7 @@ export function CashFlowDashboard({
           <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
             <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.lcTitle}</h6>
             <p className="mt-1 text-xs text-[#9CA3AF]">{t.lcHint}</p>
+            {!dashboardChartsOnly ? (
             <div className="mt-3 overflow-x-auto">
               <table className="w-full min-w-[2200px] border-collapse text-xs sm:text-sm">
                 <thead>
@@ -1295,6 +1337,7 @@ export function CashFlowDashboard({
                 ) : null}
               </table>
             </div>
+            ) : null}
 
             {forecastCashFlowRows.length > 0 && hasAnyPublishedLandedCost ? (
             <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
@@ -1469,7 +1512,9 @@ export function CashFlowDashboard({
   };
 
   if (forecastSummaryOnly) {
-    return <div className="mb-10 space-y-6">{renderForecastCashFlowSummary()}</div>;
+    return (
+      <div className={dashboardChartsOnly ? "space-y-6" : "mb-10 space-y-6"}>{renderForecastCashFlowSummary()}</div>
+    );
   }
 
   return (
