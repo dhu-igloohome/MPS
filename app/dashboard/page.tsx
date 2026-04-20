@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
 import { CashFlowOverview } from "@/components/dashboard/cash-flow-overview";
 import { CockpitVisualizations } from "@/components/dashboard/cockpit-visualizations";
 import { AppShell } from "@/components/shared/app-shell";
@@ -16,7 +15,6 @@ import { normalizeLanguage } from "@/lib/i18n";
 import {
   getForecastsByRegions,
   listCashFlowEntries,
-  listCostAnalysisEntries,
   listLogisticsShipmentsBySession,
   listOrderProgressBySessionRegions,
 } from "@/lib/repositories";
@@ -34,7 +32,6 @@ export default async function DashboardPage() {
   const orderProgressRows = await listOrderProgressBySessionRegions(session.regions);
   const logisticsRows = await listLogisticsShipmentsBySession(session);
   const cashFlowEntries = await listCashFlowEntries();
-  const costAnalysisEntries = await listCostAnalysisEntries();
   const skuCashMeta = buildSkuCashMetaFromOrderProgress(orderProgressRows);
   const cashFlowForSession = filterCashFlowForSession(cashFlowEntries, skuCashMeta, session);
   const monthlySlices = scheduleCashFlowSlices(cashFlowForSession, skuCashMeta, "month");
@@ -55,8 +52,8 @@ export default async function DashboardPage() {
     title: language === "en" ? "Dashboard" : "仪表盘",
     description:
       language === "en"
-        ? "Forecast overview charts at the top (all records in your scope), then drill-down filters, cash flow, and overview."
-        : "顶部为 Forecast 全景图表（权限内全部记录），下方为筛选下钻、现金流分析与概览。",
+        ? "Forecast overview charts at the top (all records in your scope), then order & logistics analytics and cash flow overview."
+        : "顶部为 Forecast 全景图表（权限内全部记录），下方为订单与物流分析及现金流概览。",
     exportCsv: language === "en" ? "Export forecast CSV" : "导出 Forecast CSV",
   };
 
@@ -72,12 +69,6 @@ export default async function DashboardPage() {
       </div>
 
       <CockpitVisualizations language={language} forecasts={entries} orderProgress={orderProgressRows} logistics={logisticsRows} />
-
-      <CashFlowDashboard
-        language={language}
-        entries={cashFlowEntries}
-        costAnalysisEntries={costAnalysisEntries}
-      />
 
       <CashFlowOverview language={language} monthly={cashFlowMonthly} quarterly={cashFlowQuarterly} />
     </AppShell>
