@@ -1203,6 +1203,8 @@ export function CashFlowDashboard({
             </div>
           </div>
 
+          {!dashboardChartsOnly ? (
+          <>
           <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
             <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.lcTitle}</h6>
             <p className="mt-1 text-xs text-[#9CA3AF]">{t.lcHint}</p>
@@ -1507,6 +1509,8 @@ export function CashFlowDashboard({
               </aside>
             </div>
           </div>
+          </>
+          ) : null}
         </div>
     );
   };

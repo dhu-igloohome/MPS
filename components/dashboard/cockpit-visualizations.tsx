@@ -217,8 +217,8 @@ export function CockpitVisualizations({
             </h3>
             <p className="mt-1 max-w-3xl text-sm text-[#4B5563]">
               {en
-                ? "Scheduled payments, landed-cost timing, and scheduled vs landed comparison — same logic as Supply Chain Management → Cost control."
-                : "订金/尾款应付、到岸成本付款与对照图 — 与「供应链管理 → 成本控制 → 现金流分析」一致。"}
+                ? "Scheduled deposit & balance payments by due month (same logic as Supply Chain → Cost control). Landed-cost sections are available in that module."
+                : "按应付月的订金与尾款（与「供应链管理 → 成本控制 → 现金流分析」一致）。到岸成本相关图表请在成本控制中查看。"}
             </p>
           </div>
           <Link
