@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "db:init": "node scripts/db-init.mjs",
+    "db:reset-password": "node scripts/reset-user-password.mjs",
     "complaints:scrape": "node scripts/reddit-complaints.mjs",
     "build": "next build",
     "start": "next start",

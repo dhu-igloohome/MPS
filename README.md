@@ -32,6 +32,21 @@ Optional:
 
 Use `.env.example` as template.
 
+### Locked out (cannot reach admin to reset passwords)
+
+Anyone with database access can set a new password (same SHA256 scheme as the app):
+
+```bash
+# With POSTGRES_URL or DATABASE_URL set (e.g. from Vercel / Supabase dashboard):
+npm run db:reset-password -- david david123
+```
+
+If you cannot run Node against the DB, print SQL only and run it in the host’s SQL editor:
+
+```bash
+node scripts/reset-user-password.mjs david david123 --sql-only
+```
+
 ## Development
 
 ```bash
