@@ -197,4 +197,23 @@
     padding: 0.625rem 0.75rem;
     vertical-align: middle;
   }
+
+  /* Sonner — align with app shell (see components/ui/app-toaster.tsx) */
+  [data-sonner-toaster] {
+    --normal-bg: var(--app-surface);
+    --normal-border: var(--app-border);
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  [data-sonner-toast][data-type="success"] {
+    --success-bg: rgb(240 253 244);
+    --success-border: rgb(187 247 208);
+    --success-text: rgb(22 101 52);
+  }
+
+  [data-sonner-toast][data-type="error"] {
+    --error-bg: rgb(254 242 242);
+    --error-border: rgb(254 202 202);
+    --error-text: rgb(153 27 27);
+  }
 }

@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { toast } from "@/lib/app-toast";
+
 export function LogoutButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -10,8 +12,12 @@ export function LogoutButton() {
   async function onLogout() {
     setLoading(true);
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
+    setLoading(false);
+    toast.success("Logged out");
+    window.setTimeout(() => {
+      router.push("/login");
+      router.refresh();
+    }, 400);
   }
 
   return (

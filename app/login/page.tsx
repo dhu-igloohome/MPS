@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Globe, Lock, User } from "lucide-react";
 
 import { Language, normalizeLanguage } from "@/lib/i18n";
+import { toast } from "@/lib/app-toast";
 
 const TEXT = {
   en: {
@@ -19,6 +20,9 @@ const TEXT = {
     errorServer:
       "Service temporarily unavailable. Try again later or contact your admin (check database connection).",
     errorNetwork: "Could not reach the server. Check your network and try again.",
+    loginSuccess: "Signed in successfully.",
+    langSwitchToZh: "Switched to 中文.",
+    langSwitchToEn: "Switched to English.",
   },
   zh: {
     title: "igloo订单追踪系统",
@@ -30,6 +34,9 @@ const TEXT = {
     error: "用户名或密码错误。",
     errorServer: "服务暂时不可用，请稍后重试或联系管理员（例如数据库未连接）。",
     errorNetwork: "无法连接服务器，请检查网络后重试。",
+    loginSuccess: "登录成功。",
+    langSwitchToZh: "已切换为中文。",
+    langSwitchToEn: "已切换为 English。",
   },
 };
 
@@ -47,7 +54,6 @@ export default function LoginPage() {
   });
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const t = TEXT[language];
@@ -56,12 +62,12 @@ export default function LoginPage() {
     const nextLanguage: Language = language === "en" ? "zh" : "en";
     setLanguage(nextLanguage);
     document.cookie = `lang=${nextLanguage}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    toast.success(nextLanguage === "zh" ? t.langSwitchToZh : t.langSwitchToEn, { duration: 2200 });
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
-    setError("");
 
     let response: Response;
     try {
@@ -74,7 +80,7 @@ export default function LoginPage() {
       });
     } catch {
       setLoading(false);
-      setError(t.errorNetwork);
+      toast.error(t.errorNetwork);
       return;
     }
 
@@ -82,13 +88,14 @@ export default function LoginPage() {
 
     if (!response.ok) {
       if (response.status >= 500 || response.status === 503) {
-        setError(t.errorServer);
+        toast.error(t.errorServer);
         return;
       }
-      setError(t.error);
+      toast.error(t.error);
       return;
     }
 
+    toast.success(t.loginSuccess, { duration: 2000 });
     router.push("/dashboard");
     router.refresh();
   }
@@ -145,8 +152,6 @@ export default function LoginPage() {
               />
             </div>
           </label>
-
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
           <button
             type="submit"
