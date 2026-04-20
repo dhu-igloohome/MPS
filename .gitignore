@@ -26,6 +26,7 @@
 
 # Upstream clone used only to regenerate Cursor rules (see .cursor/rules/agency-agents-steering.mdc)
 /vendor/agency-agents
+/vendor/ui-ux-pro-max-skill
 
 # debug
 npm-debug.log*

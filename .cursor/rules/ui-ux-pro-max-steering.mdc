@@ -1,0 +1,30 @@
+---
+description: UI/UX Pro Max — when doing visual design, layouts, design systems, or component polish, use the bundled skill and Python search (nextlevelbuilder/ui-ux-pro-max-skill).
+globs: "**/*.tsx,**/*.css,**/app/**/*.tsx,**/components/**/*.tsx"
+alwaysApply: false
+---
+
+# UI/UX Pro Max (this repo)
+
+Installed via `npx uipro-cli init --ai cursor`. Full workflow: **`.cursor/skills/ui-ux-pro-max/SKILL.md`**.
+
+## Path fix (important)
+
+Upstream examples use `skills/ui-ux-pro-max/...`. In Cursor installs, files live under **`.cursor/skills/ui-ux-pro-max/`**. From the repository root, run:
+
+```bash
+python .cursor/skills/ui-ux-pro-max/scripts/search.py "<product + industry + keywords>" --design-system
+```
+
+Use `python3` on macOS/Linux if `python` is missing. On Windows, ensure Python is on PATH or use the `py` launcher.
+
+## This project (Igloo Foretracker)
+
+- Stack: **Next.js + Tailwind** — prefer **`--stack nextjs`** (and **`--stack shadcn`** if you adopt shadcn patterns) instead of the SKILL default `html-tailwind` when generating implementation guidance.
+- For domain-specific UX detail: `--domain ux`, `--domain typography`, `--domain chart`, etc., as described in `SKILL.md`.
+
+## When to activate
+
+Use this skill for: new screens or flows, dashboard/analytics layout, landing/marketing visuals, color/typography decisions, chart choice, accessibility/visual review of UI, or explicit requests to “make it look professional / modern / on-brand.”
+
+Combine with **`@frontend-developer`** or **`@ui-designer`** (Agency rules) when you need both the UUPM design system output and React/Next implementation discipline.
