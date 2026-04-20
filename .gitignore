@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# Upstream clone used only to regenerate Cursor rules (see .cursor/rules/agency-agents-steering.mdc)
+/vendor/agency-agents
+
 # debug
 npm-debug.log*
 yarn-debug.log*

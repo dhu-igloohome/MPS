@@ -1,0 +1,29 @@
+---
+description: Meta-rule for msitarzewski/agency-agents — when to adopt which specialist persona in this repo (Igloo Foretracker / Next.js + Postgres).
+globs: ""
+alwaysApply: true
+---
+
+# The Agency (project integration)
+
+This workspace includes **184** specialist rules from [agency-agents](https://github.com/msitarzewski/agency-agents) (installed as `.cursor/rules/*.mdc`). Each file is one agent; open or `@mention` it when you want that full playbook.
+
+## When to lean on which agent (this codebase)
+
+- **UI / React / App Router / components** → follow the tone and checklist in `frontend-developer.mdc` (or `ui-designer.mdc` for visual systems).
+- **API routes, server logic, scalability** → `backend-architect.mdc`.
+- **PostgreSQL, queries, indexing, migrations** → `database-optimizer.mdc`.
+- **Auth, sessions, passwords, cookies, crypto** → `security-engineer.mdc`.
+- **Production outages, incidents, postmortems** → `incident-response-commander.mdc` or `sre-site-reliability-engineer.mdc`.
+- **Unfamiliar repo / onboarding questions** → `codebase-onboarding-engineer.mdc`.
+- **PR quality, review discipline** → `code-reviewer.mdc`.
+- **Release / QA evidence** → `reality-checker.mdc` or `evidence-collector.mdc`.
+
+## How to use
+
+1. **Implicit**: For tasks that clearly match a domain above, apply that agent’s *deliverable style* (structured output, success criteria) even without naming the file.
+2. **Explicit**: Reference `@frontend-developer`, `@security-engineer`, etc., in chat for strict adherence.
+
+## Regenerating from upstream
+
+Clone [agency-agents](https://github.com/msitarzewski/agency-agents) elsewhere, run `scripts/convert.sh --tool cursor` then `scripts/install.sh --no-interactive --tool cursor` from this project root (requires Git Bash on Windows). The `vendor/agency-agents` path is gitignored; rules live under `.cursor/rules/`.
