@@ -208,12 +208,12 @@ export function CockpitVisualizations({
     <div className="space-y-10">
       <ForecastExecutiveOverview language={language} forecasts={forecasts} />
 
-      {/* Cash flow analysis (same charts as Supply Chain → Cost control → Cash flow analysis) */}
+      {/* Forecast cash flow analysis (scheduled payment chart; full module under Supply Chain → Cost control) */}
       <section className="app-card p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 className="text-base font-semibold tracking-tight text-[#111827]">
-              {en ? "Cash flow analysis" : "现金流分析"}
+              {en ? "Forecast Cash flow analysis" : "Forecast 现金流分析"}
             </h3>
             <p className="mt-1 max-w-3xl text-sm text-[#4B5563]">
               {en
@@ -225,7 +225,7 @@ export function CockpitVisualizations({
             href="/supply-chain/cost-control?tab=cashflow"
             className="app-button-secondary shrink-0 px-3 py-2 text-sm font-medium"
           >
-            {en ? "Open cash flow analysis" : "打开现金流分析"}
+            {en ? "Open Forecast cash flow analysis" : "打开 Forecast 现金流分析"}
           </Link>
         </div>
         <CashFlowDashboard

@@ -38,8 +38,8 @@ export default async function DashboardPage() {
     title: language === "en" ? "Dashboard" : "仪表盘",
     description:
       language === "en"
-        ? "Forecast overview, scheduled cash-flow payment chart (Supply Chain cost control logic), then order & logistics analytics."
-        : "顶部 Forecast 全景，其次为与成本控制一致的订金/尾款应付图表，再为订单与物流分析。",
+        ? "Forecast overview, Forecast Cash flow analysis chart (Supply Chain cost control logic), then order & logistics analytics."
+        : "顶部 Forecast 全景，其次为与成本控制一致的 Forecast 现金流（订金/尾款应付）图表，再为订单与物流分析。",
     exportCsv: language === "en" ? "Export forecast CSV" : "导出 Forecast CSV",
   };
 
