@@ -44,5 +44,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Python bytecode (UI/UX Pro Max skill scripts)
+.cursor/skills/**/__pycache__/
+
 .vercel
 .env*.local
