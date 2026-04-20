@@ -1,20 +1,11 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { CashFlowOverview } from "@/components/dashboard/cash-flow-overview";
 import { CockpitVisualizations } from "@/components/dashboard/cockpit-visualizations";
 import { AppShell } from "@/components/shared/app-shell";
-import {
-  aggregateByPeriod,
-  buildSkuCashMetaFromOrderProgress,
-  filterCashFlowForSession,
-  scheduleCashFlowSlices,
-  topSkuExposure,
-} from "@/lib/cash-flow-overview";
 import { normalizeLanguage } from "@/lib/i18n";
 import {
   getForecastsByRegions,
-  listCashFlowEntries,
   listLogisticsShipmentsBySession,
   listOrderProgressBySessionRegions,
 } from "@/lib/repositories";
@@ -31,19 +22,6 @@ export default async function DashboardPage() {
   const entries = await getForecastsByRegions(session.regions);
   const orderProgressRows = await listOrderProgressBySessionRegions(session.regions);
   const logisticsRows = await listLogisticsShipmentsBySession(session);
-  const cashFlowEntries = await listCashFlowEntries();
-  const skuCashMeta = buildSkuCashMetaFromOrderProgress(orderProgressRows);
-  const cashFlowForSession = filterCashFlowForSession(cashFlowEntries, skuCashMeta, session);
-  const monthlySlices = scheduleCashFlowSlices(cashFlowForSession, skuCashMeta, "month");
-  const quarterlySlices = scheduleCashFlowSlices(cashFlowForSession, skuCashMeta, "quarter");
-  const cashFlowMonthly = {
-    periods: aggregateByPeriod(monthlySlices),
-    topSkus: topSkuExposure(monthlySlices, 12),
-  };
-  const cashFlowQuarterly = {
-    periods: aggregateByPeriod(quarterlySlices),
-    topSkus: topSkuExposure(quarterlySlices, 12),
-  };
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
@@ -52,8 +30,8 @@ export default async function DashboardPage() {
     title: language === "en" ? "Dashboard" : "仪表盘",
     description:
       language === "en"
-        ? "Forecast overview charts at the top (all records in your scope), then order & logistics analytics and cash flow overview."
-        : "顶部为 Forecast 全景图表（权限内全部记录），下方为订单与物流分析及现金流概览。",
+        ? "Forecast overview charts at the top (all records in your scope), then order & logistics analytics."
+        : "顶部为 Forecast 全景图表（权限内全部记录），下方为订单与物流分析。",
     exportCsv: language === "en" ? "Export forecast CSV" : "导出 Forecast CSV",
   };
 
@@ -69,8 +47,6 @@ export default async function DashboardPage() {
       </div>
 
       <CockpitVisualizations language={language} forecasts={entries} orderProgress={orderProgressRows} logistics={logisticsRows} />
-
-      <CashFlowOverview language={language} monthly={cashFlowMonthly} quarterly={cashFlowQuarterly} />
     </AppShell>
   );
 }

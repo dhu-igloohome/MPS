@@ -21,7 +21,6 @@ import {
   getDateRangePreset,
   computeKpis,
   paymentMonthWindowAroundToday,
-  sumActualPaid,
   type RangePreset,
 } from "@/lib/cash-flow-dashboard-agg";
 import { buildForecastCashPaymentBarData } from "@/lib/forecast-cash-flow-payment-bars";
@@ -164,11 +163,6 @@ function labels(language: Language) {
     finMin: en ? "Actual final min" : "实际尾款 ≥",
     finMax: en ? "Actual final max" : "实际尾款 ≤",
     resetFilters: en ? "Reset filters" : "重置筛选",
-    waterfallTitle: en ? "Payment composition (filtered total)" : "资金构成（当前筛选合计）",
-    wfOrder: en ? "Order total" : "订单合计",
-    wfAdv: en ? "Paid advance" : "已付预付",
-    wfFin: en ? "Paid final" : "已付尾款",
-    wfUnpaid: en ? "Outstanding" : "应付未付",
     na: en ? "—" : "—",
     fcSummaryTitle: en ? "Forecast cash flow (for dashboard)" : "Forecast 现金流（看板汇总）",
     fcSummaryHint: en
@@ -813,17 +807,6 @@ export function CashFlowDashboard({
   }, [publishedLandedRows]);
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
-
-  const wf = useMemo(() => {
-    const advSum = filtered.reduce((s, e) => s + (e.actualAdvanceAmount ?? 0), 0);
-    const finSum = filtered.reduce((s, e) => s + (e.actualFinalAmount ?? 0), 0);
-    return {
-      order: kpis.orderTotal,
-      adv: advSum,
-      fin: finSum,
-      unpaid: kpis.unpaid,
-    };
-  }, [filtered, kpis.orderTotal, kpis.unpaid]);
 
   const resetFilters = () => {
     setSupplier("");
@@ -1681,41 +1664,6 @@ export function CashFlowDashboard({
           </p>
           <p className="mt-1 text-xs text-slate-400">{t.kpiHintAvg}</p>
         </article>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-1">
-        <div className="rounded-2xl border border-slate-200/90 bg-gradient-to-br from-slate-50 to-white p-5 shadow-sm dark:border-slate-700 dark:from-slate-900/80 dark:to-slate-900/40">
-          <h5 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">{t.waterfallTitle}</h5>
-          <div className="flex flex-wrap items-stretch justify-between gap-3">
-            <div className="min-w-[7rem] flex-1 rounded-xl border border-slate-200/80 bg-white/80 px-4 py-3 text-center dark:border-slate-600 dark:bg-slate-800/50">
-              <p className="text-xs text-[#9CA3AF]">{t.wfOrder}</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
-                {formatUsd(wf.order, 2)}
-              </p>
-            </div>
-            <div className="flex items-center text-slate-400">−</div>
-            <div className="min-w-[7rem] flex-1 rounded-xl border border-slate-200/80 bg-white/80 px-4 py-3 text-center dark:border-slate-600 dark:bg-slate-800/50">
-              <p className="text-xs text-[#9CA3AF]">{t.wfAdv}</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums text-indigo-600 dark:text-indigo-200">
-                {formatUsd(wf.adv, 2)}
-              </p>
-            </div>
-            <div className="flex items-center text-slate-400">−</div>
-            <div className="min-w-[7rem] flex-1 rounded-xl border border-slate-200/80 bg-white/80 px-4 py-3 text-center dark:border-slate-600 dark:bg-slate-800/50">
-              <p className="text-xs text-[#9CA3AF]">{t.wfFin}</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
-                {formatUsd(wf.fin, 2)}
-              </p>
-            </div>
-            <div className="flex items-center text-slate-400">=</div>
-            <div className="min-w-[7rem] flex-1 rounded-xl border border-amber-200/90 bg-amber-50/90 px-4 py-3 text-center dark:border-amber-800/50 dark:bg-amber-950/40">
-              <p className="text-xs text-amber-800/80 dark:text-amber-200/90">{t.wfUnpaid}</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums text-amber-800 dark:text-amber-200">
-                {formatUsd(wf.unpaid, 2)}
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
