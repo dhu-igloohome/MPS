@@ -19,6 +19,7 @@ Current release includes module 1:
 - `apac_admin / apac123`
 - `eu_admin / eu123`
 - `usa_admin / usa123`
+- `jessie / jessie123` (regional admin, all regions)
 
 ## Persistent Database (Vercel Postgres or Supabase)
 

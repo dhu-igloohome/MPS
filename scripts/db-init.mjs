@@ -43,6 +43,13 @@ const users = [
     role: "regional_admin",
     regions: ["USA"],
   },
+  {
+    username: "jessie",
+    password: "jessie123",
+    displayName: "Jessie",
+    role: "regional_admin",
+    regions: ["APAC", "EU", "USA"],
+  },
 ];
 
 const officesByRegion = {

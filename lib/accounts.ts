@@ -50,4 +50,11 @@ export const USER_ACCOUNTS: UserAccount[] = [
     role: "regional_admin",
     regions: ["USA"],
   },
+  {
+    username: "jessie",
+    password: "jessie123",
+    displayName: "Jessie",
+    role: "regional_admin",
+    regions: ALL_REGIONS,
+  },
 ];

@@ -424,7 +424,7 @@ export async function authenticateUser(username: string, password: string) {
   const users = await db<UserRow[]>`
     select username, password_hash, display_name, role
     from users
-    where username = ${username}
+    where lower(username) = lower(${username})
     limit 1;
   `;
 
@@ -436,7 +436,7 @@ export async function authenticateUser(username: string, password: string) {
   const regions = await db<RegionRow[]>`
     select region
     from user_regions
-    where username = ${username}
+    where username = ${user.username}
     order by region;
   `;
 
