@@ -17,40 +17,24 @@ import {
 
 import { ForecastExecutiveOverview } from "@/components/dashboard/forecast-executive-overview";
 import {
-  aggregateForecastQuarters,
   aggregateLogisticsQuarters,
   aggregateOrderQuarters,
-  buildForecastMonthlySeries,
   buildLogisticsMonthlySeries,
   buildOrderMonthlySeries,
-  drillForecastForMonth,
-  drillForecastForQuarter,
   drillLogisticsForMonth,
   drillLogisticsForQuarter,
   drillOrdersForMonth,
   drillOrdersForQuarterOp,
-  filterForecastByDims,
-  filterForecastByMonthRange,
   filterLogistics,
   filterLogisticsByDateRange,
   filterOrderByDateRange,
   filterOrderProgress,
-  forecastKpis,
-  getForecastMonthRangePreset,
   logisticsKpis,
-  monthKeysForForecastRange,
   orderKpis,
-  type ForecastRangePreset,
 } from "@/lib/cockpit-dashboard-agg";
 import { getDateRangePreset, monthKeysBetween, type RangePreset } from "@/lib/cash-flow-dashboard-agg";
 import type { Language } from "@/lib/i18n";
-import type {
-  ForecastEntry,
-  LogisticsShipmentEntry,
-  OrderProgressEntry,
-  OrderProgressRegion,
-  Region,
-} from "@/lib/types";
+import type { ForecastEntry, LogisticsShipmentEntry, OrderProgressEntry, OrderProgressRegion } from "@/lib/types";
 
 const COLORS = {
   blue: "#2563eb",
@@ -97,21 +81,12 @@ function Tx({
 
 type Grain = "month" | "quarter";
 type DrillState =
-  | { module: "forecast"; label: string; rows: ForecastEntry[] }
   | { module: "order"; label: string; rows: OrderProgressEntry[] }
   | { module: "logistics"; label: string; rows: LogisticsShipmentEntry[] }
   | null;
 
 export function CockpitVisualizations({ language, forecasts, orderProgress, logistics }: Props) {
   const en = language === "en";
-
-  const [fPreset, setFPreset] = useState<ForecastRangePreset>("all");
-  const [fMonthFrom, setFMonthFrom] = useState("");
-  const [fMonthTo, setFMonthTo] = useState("");
-  const [fRegion, setFRegion] = useState("");
-  const [fDest, setFDest] = useState("");
-  const [fProduct, setFProduct] = useState("");
-  const [fGrain, setFGrain] = useState<Grain>("month");
 
   const [oPreset, setOPreset] = useState<RangePreset>("pm3");
   const [oFrom, setOFrom] = useState("");
@@ -131,25 +106,6 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
   const [lGrain, setLGrain] = useState<Grain>("month");
 
   const [drill, setDrill] = useState<DrillState>(null);
-
-  const fMonthRange = useMemo(
-    () => getForecastMonthRangePreset(fPreset, fMonthFrom, fMonthTo, forecasts),
-    [fPreset, fMonthFrom, fMonthTo, forecasts],
-  );
-  const fFiltered = useMemo(() => {
-    const dims = filterForecastByDims(forecasts, {
-      region: fRegion,
-      destination: fDest,
-      productName: fProduct,
-    });
-    return filterForecastByMonthRange(dims, fMonthRange.from, fMonthRange.to);
-  }, [forecasts, fRegion, fDest, fProduct, fMonthRange.from, fMonthRange.to]);
-  const fKpi = useMemo(() => forecastKpis(fFiltered), [fFiltered]);
-  const fChart = useMemo(() => {
-    const keys = monthKeysForForecastRange(fMonthRange.from, fMonthRange.to);
-    const m = buildForecastMonthlySeries(fFiltered, keys);
-    return fGrain === "month" ? m : aggregateForecastQuarters(m);
-  }, [fFiltered, fMonthRange, fGrain]);
 
   const oDateRange = useMemo(() => getDateRangePreset(oPreset, oFrom, oTo), [oPreset, oFrom, oTo]);
   const oFiltered = useMemo(() => {
@@ -184,13 +140,6 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
     return lGrain === "month" ? m : aggregateLogisticsQuarters(m);
   }, [lFiltered, lDateRange, lGrain]);
 
-  const forecastOptions = useMemo(() => {
-    const regions = [...new Set(forecasts.map((e) => e.region))].sort() as Region[];
-    const dest = [...new Set(forecasts.map((e) => e.destination).filter(Boolean))].sort();
-    const prod = [...new Set(forecasts.map((e) => e.productName))].sort();
-    return { regions, dest, prod };
-  }, [forecasts]);
-
   const orderFactories = useMemo(
     () => [...new Set(orderProgress.map((e) => e.factoryName).filter(Boolean))].sort(),
     [orderProgress],
@@ -209,13 +158,6 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
     [logistics],
   );
 
-  const openForecastDrill = useCallback(
-    (key: string) => {
-      const rows = fGrain === "month" ? drillForecastForMonth(fFiltered, key) : drillForecastForQuarter(fFiltered, key);
-      setDrill({ module: "forecast", label: key, rows });
-    },
-    [fFiltered, fGrain],
-  );
   const openOrderDrill = useCallback(
     (key: string) => {
       const rows = oGrain === "month" ? drillOrdersForMonth(oFiltered, key) : drillOrdersForQuarterOp(oFiltered, key);
@@ -231,203 +173,19 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
     [lFiltered, lGrain],
   );
 
-  const chartDataF = fChart.map((p) => ({ ...p, name: p.label }));
   const chartDataO = oChart.map((p) => ({ ...p, name: p.label }));
   const chartDataL = lChart.map((p) => ({ ...p, name: p.label }));
 
-  const chartClick = (key: string | undefined, mod: "f" | "o" | "l") => {
-    if (!key) return;
-    if (mod === "f") openForecastDrill(key);
-    else if (mod === "o") openOrderDrill(key);
-    else openLogDrill(key);
+  const chartClickOrder = (key: string | undefined) => {
+    if (key) openOrderDrill(key);
+  };
+  const chartClickLog = (key: string | undefined) => {
+    if (key) openLogDrill(key);
   };
 
   return (
     <div className="space-y-10">
       <ForecastExecutiveOverview language={language} forecasts={forecasts} />
-
-      {/* Forecast */}
-      <section className="app-card p-5">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="text-base font-semibold tracking-tight text-[#111827]">
-              {en ? "Forecast input" : "Forecast 填报"}
-            </h3>
-            <p className="mt-1 text-sm text-[#4B5563]">
-              {en
-                ? "BTO / BTS by forecast month — default range is current month ±3 months; click chart to drill down."
-                : "按填报月份 — 默认区间为当前月前后各 3 个自然月；点击图表下钻明细。"}
-            </p>
-          </div>
-          <Link
-            href="/forecast"
-            className="app-button-secondary px-3 py-2 text-sm font-medium"
-          >
-            {en ? "Open Forecast" : "打开 Forecast"}
-          </Link>
-        </div>
-
-        <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <label className="text-xs font-medium text-[#4B5563]">
-            {en ? "Range" : "区间"}
-            <select
-              className="mt-1 w-full bg-white px-3 py-2 text-sm"
-              value={fPreset}
-              onChange={(e) => setFPreset(e.target.value as ForecastRangePreset)}
-            >
-              <option value="all">{en ? "All forecast records" : "全部 Forecast 记录"}</option>
-              <option value="pm3">{en ? "Current month ±3 months" : "当前月 ±3 个月"}</option>
-              <option value="12m">{en ? "Last 12 months" : "近 12 个月"}</option>
-              <option value="ytd">{en ? "YTD" : "本年"}</option>
-              <option value="custom">{en ? "Custom" : "自定义"}</option>
-            </select>
-          </label>
-          {fPreset === "custom" ? (
-            <>
-              <label className="text-xs font-medium text-[#4B5563]">
-                {en ? "From" : "从"}
-                <input
-                  type="month"
-                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
-                  value={fMonthFrom}
-                  onChange={(e) => setFMonthFrom(e.target.value)}
-                />
-              </label>
-              <label className="text-xs font-medium text-[#4B5563]">
-                {en ? "To" : "至"}
-                <input
-                  type="month"
-                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
-                  value={fMonthTo}
-                  onChange={(e) => setFMonthTo(e.target.value)}
-                />
-              </label>
-            </>
-          ) : (
-            <p className="text-xs text-slate-500 md:col-span-2 dark:text-slate-400">
-              {fMonthRange.from} → {fMonthRange.to}
-            </p>
-          )}
-          <label className="text-xs font-medium text-[#4B5563]">
-            {en ? "Granularity" : "粒度"}
-            <select
-              className="mt-1 w-full bg-white px-3 py-2 text-sm"
-              value={fGrain}
-              onChange={(e) => setFGrain(e.target.value as Grain)}
-            >
-              <option value="month">{en ? "Month" : "月"}</option>
-              <option value="quarter">{en ? "Quarter" : "季"}</option>
-            </select>
-          </label>
-          <label className="text-xs font-medium text-[#4B5563]">
-            {en ? "Region" : "区域"}
-            <select
-              className="mt-1 w-full bg-white px-3 py-2 text-sm"
-              value={fRegion}
-              onChange={(e) => setFRegion(e.target.value)}
-            >
-              <option value="">{en ? "All" : "全部"}</option>
-              {forecastOptions.regions.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs font-medium text-[#4B5563]">
-            Destination
-            <select
-              className="mt-1 w-full bg-white px-3 py-2 text-sm"
-              value={fDest}
-              onChange={(e) => setFDest(e.target.value)}
-            >
-              <option value="">{en ? "All" : "全部"}</option>
-              {forecastOptions.dest.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs font-medium text-[#4B5563] xl:col-span-2">
-            {en ? "Product" : "产品"}
-            <select
-              className="mt-1 w-full bg-white px-3 py-2 text-sm"
-              value={fProduct}
-              onChange={(e) => setFProduct(e.target.value)}
-            >
-              <option value="">{en ? "All" : "全部"}</option>
-              {forecastOptions.prod.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="app-card p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "BTO" : "按单生产"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(fKpi.bto)}</p>
-          </article>
-          <article className="app-card p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "BTS" : "备货生产"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(fKpi.bts)}</p>
-          </article>
-          <article className="app-card p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Total" : "合计"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(fKpi.total)}</p>
-          </article>
-          <article className="app-card p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "SKU count" : "SKU 数"}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(fKpi.skuCount)}</p>
-          </article>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="app-card h-72 p-2">
-            {chartDataF.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartDataF}
-                  onClick={(s) => chartClick(s && typeof s === "object" && "activeLabel" in s ? String(s.activeLabel) : undefined, "f")}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatNum(Number(v))} />
-                  <Tooltip content={<Tx />} />
-                  <Legend />
-                  <Line type="monotone" dataKey="bto" name="BTO" stroke={COLORS.blue} strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="bts" name="BTS" stroke={COLORS.emerald} strokeWidth={2} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="flex h-full items-center justify-center text-sm text-[#9CA3AF]">—</p>
-            )}
-          </div>
-          <div className="app-card h-72 p-2">
-            {chartDataF.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={chartDataF}
-                  onClick={(s) => chartClick(s && typeof s === "object" && "activeLabel" in s ? String(s.activeLabel) : undefined, "f")}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatNum(Number(v))} />
-                  <Tooltip content={<Tx />} />
-                  <Legend />
-                  <Bar dataKey="bto" name="BTO" fill={COLORS.blue} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="bts" name="BTS" fill={COLORS.emerald} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="flex h-full items-center justify-center text-sm text-[#9CA3AF]">—</p>
-            )}
-          </div>
-        </div>
-      </section>
 
       {/* Order progress */}
       <section className="app-card p-5">
@@ -571,7 +329,9 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={chartDataO}
-                  onClick={(s) => chartClick(s && typeof s === "object" && "activeLabel" in s ? String(s.activeLabel) : undefined, "o")}
+                  onClick={(s) =>
+                    chartClickOrder(s && typeof s === "object" && "activeLabel" in s ? String(s.activeLabel) : undefined)
+                  }
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -590,7 +350,9 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={chartDataO}
-                  onClick={(s) => chartClick(s && typeof s === "object" && "activeLabel" in s ? String(s.activeLabel) : undefined, "o")}
+                  onClick={(s) =>
+                    chartClickOrder(s && typeof s === "object" && "activeLabel" in s ? String(s.activeLabel) : undefined)
+                  }
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -764,7 +526,9 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={chartDataL}
-                  onClick={(s) => chartClick(s && typeof s === "object" && "activeLabel" in s ? String(s.activeLabel) : undefined, "l")}
+                  onClick={(s) =>
+                    chartClickLog(s && typeof s === "object" && "activeLabel" in s ? String(s.activeLabel) : undefined)
+                  }
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -783,7 +547,9 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={chartDataL}
-                  onClick={(s) => chartClick(s && typeof s === "object" && "activeLabel" in s ? String(s.activeLabel) : undefined, "l")}
+                  onClick={(s) =>
+                    chartClickLog(s && typeof s === "object" && "activeLabel" in s ? String(s.activeLabel) : undefined)
+                  }
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -823,30 +589,7 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
               </button>
             </div>
             <div className="max-h-[65vh] overflow-auto p-4 text-sm">
-              {drill.module === "forecast" ? (
-                <table className="w-full min-w-[640px] border-collapse">
-                  <thead>
-                    <tr className="border-b border-app-border text-left text-[#9CA3AF]">
-                      <th className="py-2 pr-2">{en ? "Month" : "月份"}</th>
-                      <th className="py-2 pr-2">{en ? "Region" : "区域"}</th>
-                      <th className="py-2 pr-2">SKU</th>
-                      <th className="py-2 pr-2 text-right">BTO</th>
-                      <th className="py-2 pr-2 text-right">BTS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {drill.rows.map((r) => (
-                      <tr key={r.id} className="border-b border-app-border/60">
-                        <td className="py-2 pr-2">{r.month}</td>
-                        <td className="py-2 pr-2">{r.region}</td>
-                        <td className="py-2 pr-2">{r.sku}</td>
-                        <td className="py-2 pr-2 text-right tabular-nums">{formatNum(r.buildToOrder)}</td>
-                        <td className="py-2 pr-2 text-right tabular-nums">{formatNum(r.buildToStock)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : drill.module === "order" ? (
+              {drill.module === "order" ? (
                 <table className="w-full min-w-[720px] border-collapse">
                   <thead>
                     <tr className="border-b border-app-border text-left text-[#9CA3AF]">

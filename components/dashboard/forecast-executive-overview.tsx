@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
 import {
   Area,
@@ -94,13 +95,21 @@ export function ForecastExecutiveOverview({ language, forecasts }: Props) {
     topProducts: en ? "Top products by volume" : "产品数量 Top",
     trend: en ? "Monthly trend (BTO vs BTS)" : "月度走势（BTO / BTS）",
     empty: en ? "No forecast data yet." : "暂无 Forecast 数据。",
+    openForecast: en ? "Open Forecast" : "打开 Forecast 填报",
   };
 
   if (forecasts.length === 0) {
     return (
       <section className="app-card p-6">
-        <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
-        <p className="mt-1 text-sm text-[#4B5563]">{t.subtitle}</p>
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
+            <p className="mt-1 text-sm text-[#4B5563]">{t.subtitle}</p>
+          </div>
+          <Link href="/forecast" className="app-button-secondary shrink-0 px-3 py-2 text-sm font-medium">
+            {t.openForecast}
+          </Link>
+        </div>
         <p className="mt-6 text-center text-sm text-[#9CA3AF]">{t.empty}</p>
       </section>
     );
@@ -108,9 +117,14 @@ export function ForecastExecutiveOverview({ language, forecasts }: Props) {
 
   return (
     <section className="app-card overflow-hidden p-6">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
-        <p className="mt-1 text-sm text-[#4B5563]">{t.subtitle}</p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
+          <p className="mt-1 text-sm text-[#4B5563]">{t.subtitle}</p>
+        </div>
+        <Link href="/forecast" className="app-button-secondary shrink-0 px-3 py-2 text-sm font-medium">
+          {t.openForecast}
+        </Link>
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
