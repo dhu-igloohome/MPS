@@ -316,12 +316,80 @@ export function monthKeysForForecastRange(monthFrom: string, monthTo: string): s
   return monthKeysBetween(`${monthFrom}-01`, `${monthTo}-01`);
 }
 
+/** 含「全部记录」：按数据中最早/最晚 forecast month。 */
+export type ForecastRangePreset = RangePreset | "all";
+
+function forecastMonthSpanFromEntries(entries: ForecastEntry[]): { from: string; to: string } {
+  if (entries.length === 0) {
+    const today = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const m = `${today.getFullYear()}-${pad(today.getMonth() + 1)}`;
+    return { from: m, to: m };
+  }
+  let min = entries[0].month;
+  let max = entries[0].month;
+  for (const e of entries) {
+    if (e.month < min) min = e.month;
+    if (e.month > max) max = e.month;
+  }
+  return { from: min, to: max };
+}
+
+/** 按区域汇总 BTO+BTS（用于饼图等） */
+export function aggregateForecastByRegion(entries: ForecastEntry[]) {
+  const map = new Map<string, { bto: number; bts: number }>();
+  for (const e of entries) {
+    const cur = map.get(e.region) ?? { bto: 0, bts: 0 };
+    cur.bto += e.buildToOrder;
+    cur.bts += e.buildToStock;
+    map.set(e.region, cur);
+  }
+  return Array.from(map.entries())
+    .map(([region, v]) => ({
+      region,
+      name: region,
+      value: v.bto + v.bts,
+      bto: v.bto,
+      bts: v.bts,
+    }))
+    .sort((a, b) => b.value - a.value);
+}
+
+/** 按产品汇总，取 Top N */
+export function aggregateForecastTopProducts(entries: ForecastEntry[], limit: number) {
+  const map = new Map<string, { bto: number; bts: number }>();
+  for (const e of entries) {
+    const key = e.productName?.trim() || "—";
+    const cur = map.get(key) ?? { bto: 0, bts: 0 };
+    cur.bto += e.buildToOrder;
+    cur.bts += e.buildToStock;
+    map.set(key, cur);
+  }
+  return Array.from(map.entries())
+    .map(([name, v]) => {
+      const short = name.length > 36 ? `${name.slice(0, 34)}…` : name;
+      return {
+        name: short,
+        fullName: name,
+        total: v.bto + v.bts,
+        bto: v.bto,
+        bts: v.bts,
+      };
+    })
+    .sort((a, b) => b.total - a.total)
+    .slice(0, limit);
+}
+
 /** Forecast 使用 YYYY-MM 区间（与订单日历月一致） */
 export function getForecastMonthRangePreset(
-  preset: RangePreset,
+  preset: ForecastRangePreset,
   customMonthFrom: string,
   customMonthTo: string,
+  allEntries?: ForecastEntry[],
 ): { from: string; to: string } {
+  if (preset === "all") {
+    return forecastMonthSpanFromEntries(allEntries ?? []);
+  }
   const today = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const toM = `${today.getFullYear()}-${pad(today.getMonth() + 1)}`;

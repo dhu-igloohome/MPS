@@ -55,8 +55,8 @@ export default async function DashboardPage() {
     title: language === "en" ? "Dashboard" : "仪表盘",
     description:
       language === "en"
-        ? "Forecast, order & logistics analytics — same interactive style as Cost control. Cash flow analysis above, cash flow overview below."
-        : "Forecast、订单与物流分析 — 与成本控制模块相同的交互式看板；上方为现金流分析，下方为现金流概览。",
+        ? "Forecast overview charts at the top (all records in your scope), then drill-down filters, cash flow, and overview."
+        : "顶部为 Forecast 全景图表（权限内全部记录），下方为筛选下钻、现金流分析与概览。",
     exportCsv: language === "en" ? "Export forecast CSV" : "导出 Forecast CSV",
   };
 

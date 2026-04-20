@@ -15,6 +15,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { ForecastExecutiveOverview } from "@/components/dashboard/forecast-executive-overview";
 import {
   aggregateForecastQuarters,
   aggregateLogisticsQuarters,
@@ -39,6 +40,7 @@ import {
   logisticsKpis,
   monthKeysForForecastRange,
   orderKpis,
+  type ForecastRangePreset,
 } from "@/lib/cockpit-dashboard-agg";
 import { getDateRangePreset, monthKeysBetween, type RangePreset } from "@/lib/cash-flow-dashboard-agg";
 import type { Language } from "@/lib/i18n";
@@ -103,7 +105,7 @@ type DrillState =
 export function CockpitVisualizations({ language, forecasts, orderProgress, logistics }: Props) {
   const en = language === "en";
 
-  const [fPreset, setFPreset] = useState<RangePreset>("pm3");
+  const [fPreset, setFPreset] = useState<ForecastRangePreset>("all");
   const [fMonthFrom, setFMonthFrom] = useState("");
   const [fMonthTo, setFMonthTo] = useState("");
   const [fRegion, setFRegion] = useState("");
@@ -131,8 +133,8 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
   const [drill, setDrill] = useState<DrillState>(null);
 
   const fMonthRange = useMemo(
-    () => getForecastMonthRangePreset(fPreset, fMonthFrom, fMonthTo),
-    [fPreset, fMonthFrom, fMonthTo],
+    () => getForecastMonthRangePreset(fPreset, fMonthFrom, fMonthTo, forecasts),
+    [fPreset, fMonthFrom, fMonthTo, forecasts],
   );
   const fFiltered = useMemo(() => {
     const dims = filterForecastByDims(forecasts, {
@@ -242,6 +244,8 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
 
   return (
     <div className="space-y-10">
+      <ForecastExecutiveOverview language={language} forecasts={forecasts} />
+
       {/* Forecast */}
       <section className="app-card p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -269,8 +273,9 @@ export function CockpitVisualizations({ language, forecasts, orderProgress, logi
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
               value={fPreset}
-              onChange={(e) => setFPreset(e.target.value as RangePreset)}
+              onChange={(e) => setFPreset(e.target.value as ForecastRangePreset)}
             >
+              <option value="all">{en ? "All forecast records" : "全部 Forecast 记录"}</option>
               <option value="pm3">{en ? "Current month ±3 months" : "当前月 ±3 个月"}</option>
               <option value="12m">{en ? "Last 12 months" : "近 12 个月"}</option>
               <option value="ytd">{en ? "YTD" : "本年"}</option>
