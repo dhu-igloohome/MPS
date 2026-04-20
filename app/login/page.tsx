@@ -16,6 +16,9 @@ const TEXT = {
     login: "Login",
     toggle: "中文",
     error: "Invalid username or password.",
+    errorServer:
+      "Service temporarily unavailable. Try again later or contact your admin (check database connection).",
+    errorNetwork: "Could not reach the server. Check your network and try again.",
   },
   zh: {
     title: "igloo订单追踪系统",
@@ -25,6 +28,8 @@ const TEXT = {
     login: "登录",
     toggle: "EN",
     error: "用户名或密码错误。",
+    errorServer: "服务暂时不可用，请稍后重试或联系管理员（例如数据库未连接）。",
+    errorNetwork: "无法连接服务器，请检查网络后重试。",
   },
 };
 
@@ -58,17 +63,28 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-    });
+    let response: Response;
+    try {
+      response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+    } catch {
+      setLoading(false);
+      setError(t.errorNetwork);
+      return;
+    }
 
     setLoading(false);
 
     if (!response.ok) {
+      if (response.status >= 500 || response.status === 503) {
+        setError(t.errorServer);
+        return;
+      }
       setError(t.error);
       return;
     }

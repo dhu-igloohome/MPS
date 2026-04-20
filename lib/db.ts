@@ -958,20 +958,42 @@ async function setupSchema() {
 
 async function seedUsers() {
   const db = getSql();
+  const syncSeedPasswords =
+    process.env.SEED_SYNC_PASSWORDS === "1" ||
+    process.env.SEED_SYNC_PASSWORDS === "true";
+
   for (const account of USER_ACCOUNTS) {
-    await db`
-      insert into users (username, password_hash, display_name, role)
-      values (
-        ${account.username},
-        ${hashPassword(account.password)},
-        ${account.displayName},
-        ${account.role}
-      )
-      on conflict (username) do update
-      set
-        display_name = excluded.display_name,
-        role = excluded.role;
-    `;
+    const passwordHash = hashPassword(account.password);
+    if (syncSeedPasswords) {
+      await db`
+        insert into users (username, password_hash, display_name, role)
+        values (
+          ${account.username},
+          ${passwordHash},
+          ${account.displayName},
+          ${account.role}
+        )
+        on conflict (username) do update
+        set
+          password_hash = excluded.password_hash,
+          display_name = excluded.display_name,
+          role = excluded.role;
+      `;
+    } else {
+      await db`
+        insert into users (username, password_hash, display_name, role)
+        values (
+          ${account.username},
+          ${passwordHash},
+          ${account.displayName},
+          ${account.role}
+        )
+        on conflict (username) do update
+        set
+          display_name = excluded.display_name,
+          role = excluded.role;
+      `;
+    }
 
     for (const region of account.regions) {
       await db`

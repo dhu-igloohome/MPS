@@ -29,10 +29,13 @@ Set one connection variable:
 
 Optional:
 - `SESSION_SECRET` for cookie signing
+- `SEED_SYNC_PASSWORDS=true` — **one-time recovery**: on the next DB bootstrap, overwrite `password_hash` for every user listed in `lib/accounts.ts` (`USER_ACCOUNTS`) from the repo defaults. Remove this variable after a successful login so passwords changed in the admin UI are not reset on every cold start.
 
 Use `.env.example` as template.
 
 ### Locked out (cannot reach admin to reset passwords)
+
+**Typical root cause:** `USER_ACCOUNTS` is upserted without updating `password_hash` on conflict, so the database can drift from the documented defaults; a misleading “wrong password” also appears when the API returns 5xx (e.g. DB unreachable) — the login page now distinguishes server errors from bad credentials.
 
 Anyone with database access can set a new password (same SHA256 scheme as the app):
 
