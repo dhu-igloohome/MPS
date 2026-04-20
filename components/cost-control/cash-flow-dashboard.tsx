@@ -9,8 +9,6 @@ import {
   Cell,
   LabelList,
   Legend,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -177,10 +175,6 @@ function labels(language: Language) {
     finMin: en ? "Actual final min" : "实际尾款 ≥",
     finMax: en ? "Actual final max" : "实际尾款 ≤",
     resetFilters: en ? "Reset filters" : "重置筛选",
-    lineTitle: en ? "Order total (by order month) vs cash paid (by payment month)" : "下单额（按下单月）vs 实付发生额（按付款月）",
-    lineHint: en
-      ? "Same calendar window as the chart below (current month ±6). Blue: order totals by order month. Green: advance+final cash by payment month."
-      : "横轴与下图一致（当前月 ±6 个自然月）。蓝线：按下单月汇总订单金额；绿线：按付款月汇总实付（预付+尾款）。",
     barTitle: en ? "Actual advance vs actual final (by payment month)" : "实际预付 vs 实际尾款（按付款月）",
     barHint: en
       ? "Payment months: 6 months before through 6 months after the current month (rolling window)."
@@ -874,7 +868,7 @@ export function CashFlowDashboard({
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
 
-  /** Line + bar charts: fixed rolling month window (current month ±6) on the X-axis; still filtered by order-date range above. */
+  /** Bar chart: fixed rolling month window (current month ±6) on the X-axis; still filtered by order-date range above. */
   const rollingPaymentMonthChartPoints: ChartPoint[] = useMemo(() => {
     const months = paymentMonthWindowAroundToday(6, 6);
     if (months.length === 0) return [];
@@ -1779,49 +1773,6 @@ export function CashFlowDashboard({
       <p className="text-xs text-[#9CA3AF]">{t.clickDrill}</p>
 
       <div className="grid gap-6 xl:grid-cols-1">
-        <div className="app-card p-4">
-          <h5 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{t.lineTitle}</h5>
-          <p className="mb-4 text-xs text-[#9CA3AF]">{t.lineHint}</p>
-          <div className="h-72 w-full">
-            {rollingChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={rollingChartData}
-                  margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
-                  onClick={(state) => {
-                    const k = state && typeof state === "object" && "activeLabel" in state ? String(state.activeLabel ?? "") : "";
-                    if (k) openDrill(k);
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#64748b" />
-                  <YAxis tick={{ fontSize: 11 }} stroke="#64748b" tickFormatter={(v) => formatUsd(Number(v), 0)} />
-                  <Tooltip content={<ChartTooltip language={language} />} />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="orderTotalInPeriod"
-                    name={language === "en" ? "Order total (order month)" : "下单额（下单月）"}
-                    stroke={COLORS.blue}
-                    strokeWidth={2}
-                    dot={{ r: 3, cursor: "pointer" }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="actualPaidInPeriod"
-                    name={language === "en" ? "Paid in month" : "实付发生额（付款月）"}
-                    stroke={COLORS.emerald}
-                    strokeWidth={2}
-                    dot={{ r: 3, cursor: "pointer" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="py-12 text-center text-sm text-slate-400">{t.na}</p>
-            )}
-          </div>
-        </div>
-
         <div className="app-card p-4">
           <h5 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{t.barTitle}</h5>
           <p className="mb-4 text-xs text-[#9CA3AF]">{t.barHint}</p>
