@@ -15,9 +15,11 @@ function tableLabels(language: Language) {
   return {
     title: en ? "Order fulfillments" : "订单履约",
     intro: en
-      ? "Link each fulfillment line to an Order Progress PO, then fill shipping details. PO options come from order lines in your regions."
-      : "将履约行关联至订单进度中的 PO，并补充发运信息。PO 下拉选项来自您有权限区域内的订单行。",
+      ? "Pick a PO line to auto-fill SKU and order qty from Order Progress, then complete shipping fields."
+      : "选择 PO 行后，将自动带出订单进度中该行的 SKU 与订单数量，再补充发运相关字段。",
     poNumber: en ? "PO number" : "PO 号",
+    sku: "SKU",
+    orderQty: en ? "Order qty" : "订单数量",
     salesOrderNumber: en ? "Sales order number" : "销售订单号",
     shipFrom: en ? "Ship from" : "发货地",
     shipTo: en ? "Ship to" : "收货地",
@@ -39,6 +41,9 @@ function tableLabels(language: Language) {
 
 const cellInputClass =
   "w-full min-w-[6.5rem] rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent focus:ring-2";
+
+const readOnlyDerivedClass =
+  "w-full min-w-[5.5rem] rounded-lg border border-app-border/80 bg-app-accent-soft/45 px-2 py-1.5 text-sm text-foreground/90 cursor-default";
 
 export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmentsPanelProps) {
   const t = tableLabels(language);
@@ -65,6 +70,14 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
     return `${po} · ${row.sku}`;
   };
 
+  const selectedLine = useMemo(
+    () => (poLineId ? orderLines.find((r) => r.id === poLineId) : undefined),
+    [orderLines, poLineId],
+  );
+  const derivedSku = selectedLine?.sku ?? "";
+  const derivedOrderQty =
+    selectedLine != null && Number.isFinite(selectedLine.quantity) ? String(selectedLine.quantity) : "";
+
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm sm:p-6">
@@ -72,10 +85,12 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-foreground/70">{t.intro}</p>
 
         <div className="app-table-shell mt-6 overflow-x-auto">
-          <table className="w-full min-w-[1120px] border-collapse text-sm">
+          <table className="w-full min-w-[1240px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-app-border text-left font-semibold text-foreground">
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.poNumber}</th>
+                <th className="border-r border-app-border/80 px-3 py-2.5">{t.sku}</th>
+                <th className="border-r border-app-border/80 px-3 py-2.5">{t.orderQty}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.salesOrderNumber}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.shipFrom}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.shipTo}</th>
@@ -102,6 +117,28 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                       </option>
                     ))}
                   </select>
+                </td>
+                <td className="border-r border-app-border/60 px-2 py-2 align-top">
+                  <input
+                    type="text"
+                    readOnly
+                    value={derivedSku}
+                    placeholder={language === "en" ? "—" : "—"}
+                    title={language === "en" ? "From Order Progress line" : "来自订单进度行"}
+                    aria-label={t.sku}
+                    className={readOnlyDerivedClass}
+                  />
+                </td>
+                <td className="border-r border-app-border/60 px-2 py-2 align-top">
+                  <input
+                    type="text"
+                    readOnly
+                    value={derivedOrderQty}
+                    placeholder={language === "en" ? "—" : "—"}
+                    title={language === "en" ? "From Order Progress line" : "来自订单进度行"}
+                    aria-label={t.orderQty}
+                    className={`${readOnlyDerivedClass} tabular-nums`}
+                  />
                 </td>
                 <td className="border-r border-app-border/60 px-2 py-2 align-top">
                   <input
