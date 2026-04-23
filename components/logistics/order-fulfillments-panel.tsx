@@ -4,47 +4,54 @@ type OrderFulfillmentsPanelProps = {
   language: Language;
 };
 
-const SLOT_COUNT = 6;
+function tableLabels(language: Language) {
+  const en = language === "en";
+  return {
+    title: en ? "Order fulfillments" : "订单履约",
+    intro: en
+      ? "Fulfillment lines will appear here once wired to data. Column headers match your logistics template."
+      : "数据接入后在此展示履约行。表头与物流模板一致，可在后续绑定数据源。",
+    shipFrom: en ? "Ship from" : "发货地",
+    shipTo: en ? "Ship to" : "收货地",
+    etd: en ? "ETD" : "ETD（预计发运）",
+    eta: en ? "ETA" : "ETA（预计到达）",
+    trackingLink: en ? "Tracking link" : "跟踪链接",
+    mpBatch: en ? "MP batch" : "MP 批次",
+    balanceQty: en ? "Balance Qty" : "结余数量",
+    empty: en ? "No rows yet." : "暂无数据。",
+  };
+}
 
 export function OrderFulfillmentsPanel({ language }: OrderFulfillmentsPanelProps) {
-  const en = language === "en";
-  const title = en ? "Order fulfillments" : "订单履约";
-  const intro = en
-    ? "Placeholder layout for fulfillment tracking (lines, dates, carriers, proof of delivery). Replace each slot with real fields when your process is defined."
-    : "以下为订单履约相关信息的占位版面（行项目、日期、承运商、签收凭证等）；流程确定后可替换为实际表单项或列表。";
-  const slotLabel = (i: number) => (en ? `Field slot ${i}` : `字段区域 ${i}`);
-  const slotHint = en ? "Reserved" : "预留";
+  const t = tableLabels(language);
 
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm sm:p-6">
-        <h2 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">{title}</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-foreground/70">{intro}</p>
-        <div
-          className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-          role="list"
-          aria-label={en ? "Reserved fulfillment fields" : "预留履约字段"}
-        >
-          {Array.from({ length: SLOT_COUNT }, (_, idx) => {
-            const n = idx + 1;
-            return (
-              <div
-                key={n}
-                role="listitem"
-                className="flex min-h-[6.5rem] flex-col rounded-xl border border-dashed border-app-border/80 bg-app-accent-soft/25 p-4 transition-colors hover:border-app-border hover:bg-app-accent-soft/40"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-xs font-medium uppercase tracking-wide text-foreground/55">
-                    {slotLabel(n)}
-                  </span>
-                  <span className="shrink-0 rounded-md border border-app-border/60 bg-app-surface px-2 py-0.5 text-[10px] font-medium text-foreground/50">
-                    {slotHint}
-                  </span>
-                </div>
-                <div className="mt-3 flex-1 rounded-lg border border-transparent" />
-              </div>
-            );
-          })}
+        <h2 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">{t.title}</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-foreground/70">{t.intro}</p>
+
+        <div className="app-table-shell mt-6 overflow-x-auto">
+          <table className="w-full min-w-[880px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-app-border text-left font-semibold text-foreground">
+                <th className="border-r border-app-border/80 px-3 py-2.5 last:border-r-0">{t.shipFrom}</th>
+                <th className="border-r border-app-border/80 px-3 py-2.5 last:border-r-0">{t.shipTo}</th>
+                <th className="border-r border-app-border/80 px-3 py-2.5 last:border-r-0">{t.etd}</th>
+                <th className="border-r border-app-border/80 px-3 py-2.5 last:border-r-0">{t.eta}</th>
+                <th className="border-r border-app-border/80 px-3 py-2.5 last:border-r-0">{t.trackingLink}</th>
+                <th className="border-r border-app-border/80 px-3 py-2.5 last:border-r-0">{t.mpBatch}</th>
+                <th className="px-3 py-2.5">{t.balanceQty}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan={7} className="px-3 py-8 text-center text-app-muted">
+                  {t.empty}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
