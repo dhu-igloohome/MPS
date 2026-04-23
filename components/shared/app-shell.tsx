@@ -77,6 +77,10 @@ export async function AppShell({ session, title, description, children }: AppShe
           href: "/logistics-progress/landed-cost-consolidate",
           label: language === "en" ? "Landed cost consolidate" : "到岸成本汇总",
         },
+        {
+          href: "/logistics-progress/order-fulfillments",
+          label: language === "en" ? "Order fulfillments" : "订单履约",
+        },
       ],
     },
     {
