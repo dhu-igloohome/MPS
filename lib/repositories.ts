@@ -689,6 +689,28 @@ export async function findActiveProductByNameAndSku(productName: string, sku: st
   return rows[0] ? mapProduct(rows[0]) : null;
 }
 
+/** Active product by SKU only (first row). Used when external systems match SKU but not product name. */
+export async function findActiveProductBySku(sku: string) {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ProductRow[]>`
+    select
+      id,
+      product_name,
+      sku,
+      variant,
+      unit_cost::text,
+      article_number,
+      is_active,
+      created_at::text
+    from products
+    where is_active = true and sku = ${sku.trim()}
+    order by id asc
+    limit 1;
+  `;
+  return rows[0] ? mapProduct(rows[0]) : null;
+}
+
 export async function getActiveUnitCostByProductNameAndSku(
   productName: string,
   sku: string,

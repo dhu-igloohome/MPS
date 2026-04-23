@@ -156,6 +156,12 @@ export function ForecastForm({
     useExistingPo: language === "en" ? "Use existing forecast number" : "复用已有 forecast number",
     existingPo: language === "en" ? "Existing forecast number" : "已有 forecast number",
     batchImport: language === "en" ? "Batch import (CSV)" : "CSV 批量导入",
+    apiImport:
+      language === "en" ? "API import (SKU Tracker)" : "API 导入（SKU Tracker）",
+    apiImportHint:
+      language === "en"
+        ? "One-click: loads SKU-level monthly sales for the selected Forecast Month from igloohome SKU Tracker (public /api/data). Uses current Region; default destination is Singapore (APAC), Germany (EU), or United States (North America). Quantities map to Build to Order; forecast numbers are auto-generated."
+        : "一键从 igloohome SKU Tracker 拉取所选 Forecast 月份各 SKU 的月度销量（公开 /api/data）。使用当前区域；默认目的国为 APAC→新加坡、EU→德国、北美→美国。数量写入「按单生产」；forecast number 仍由系统生成。",
     downloadTemplate: language === "en" ? "Download CSV template" : "下载 CSV 模板",
     incoterm: language === "en" ? "Incoterm" : "贸易术语 (Incoterm)",
     batchHint:
@@ -286,6 +292,50 @@ export function ForecastForm({
     setBatchErrors(Array.isArray(data.errors) ? data.errors.slice(0, 20) : []);
     router.refresh();
   }
+
+  async function onApiImportFromSkuTracker() {
+    setLoading(true);
+    setMessage("");
+    setBatchSummary(null);
+    setBatchErrors([]);
+    const response = await fetch("/api/forecasts/import-from-igloohome-web", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ month, region }),
+    });
+    const data = (await response.json().catch(() => ({}))) as {
+      message?: string;
+      created?: number;
+      failed?: number;
+      errors?: { sku: string; message: string }[];
+    };
+    setLoading(false);
+    if (!response.ok) {
+      setMessage(data.message || (language === "en" ? "API import failed." : "API 导入失败。"));
+      return;
+    }
+    const created = data.created ?? 0;
+    const failed = data.failed ?? 0;
+    if (data.message && created === 0 && failed === 0) {
+      setMessage(data.message);
+    } else {
+      setMessage("");
+    }
+    setBatchSummary(
+      language === "en"
+        ? `API import: ${created} forecast row(s) created. ${failed} SKU(s) skipped or failed.`
+        : `API 导入：已创建 ${created} 条 forecast；${failed} 个 SKU 跳过或失败。`,
+    );
+    const errs = Array.isArray(data.errors) ? data.errors : [];
+    setBatchErrors(
+      errs.slice(0, 20).map((err, i) => ({
+        row: i + 1,
+        message: `${err.sku}: ${err.message}`,
+      })),
+    );
+    router.refresh();
+  }
+
   function onRegionChange(nextRegion: Region) {
     setRegion(nextRegion);
     if (useExistingPo) {
@@ -552,8 +602,17 @@ export function ForecastForm({
         >
           {t.batchImport}
         </button>
+        <button
+          type="button"
+          disabled={loading || products.length === 0}
+          onClick={onApiImportFromSkuTracker}
+          className="app-button-secondary inline-flex px-3 py-1.5 text-sm disabled:opacity-50"
+        >
+          {t.apiImport}
+        </button>
       </div>
       <p className="mt-2 text-xs text-app-muted">{t.batchHint}</p>
+      <p className="mt-1 text-xs text-app-muted">{t.apiImportHint}</p>
       {batchSummary ? <p className="mt-2 text-sm text-emerald-800">{batchSummary}</p> : null}
       {batchErrors.length > 0 ? (
         <ul className="mt-2 max-h-40 list-inside list-disc overflow-y-auto text-sm text-red-700">

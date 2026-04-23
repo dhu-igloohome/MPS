@@ -173,6 +173,14 @@ function orderTypeLabel(language: Language, o: OrderProgressOrderType) {
   return o === "BTO" ? t.bto : t.bts;
 }
 
+/** Stored value stays `US`; dropdown / tables show North America (EN) or 北美 (ZH), aligned with Forecast. */
+function orderProgressRegionDisplay(region: OrderProgressRegion, language: Language): string {
+  if (region === "US") {
+    return language === "en" ? "North America" : "北美";
+  }
+  return region;
+}
+
 function inferOrderTypeAndQuantityFromForecast(forecast: ForecastEntry): {
   orderType: OrderProgressOrderType;
   quantity: number;
@@ -1013,7 +1021,7 @@ export function OrderProgressPanel({
             >
               {allowedRegions.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {orderProgressRegionDisplay(r, language)}
                 </option>
               ))}
             </select>
@@ -1138,7 +1146,7 @@ export function OrderProgressPanel({
                       })()}
                     </td>
                     <td className="px-2 py-2">{row.factoryName || "—"}</td>
-                    <td className="px-2 py-2">{row.region}</td>
+                    <td className="px-2 py-2">{orderProgressRegionDisplay(row.region, language)}</td>
                     <td className="px-2 py-2">{row.createdBy}</td>
                     <td className="px-2 py-2 text-xs text-app-muted">
                       {(() => {
@@ -1204,7 +1212,7 @@ export function OrderProgressPanel({
                     <td className="px-2 py-2">{row.orderNumber || "—"}</td>
                     <td className="px-2 py-2">{row.forecastNumber || "—"}</td>
                     <td className="px-2 py-2">{row.sku}</td>
-                    <td className="px-2 py-2">{row.region}</td>
+                    <td className="px-2 py-2">{orderProgressRegionDisplay(row.region, language)}</td>
                     <td className="px-2 py-2">{row.reason}</td>
                     <td className="px-2 py-2">{row.deletedBy}</td>
                     <td className="px-2 py-2">{row.deletedAt.slice(0, 19).replace("T", " ")}</td>

@@ -34,6 +34,13 @@ function pathMatches(pathname: string, href: string) {
   return pathname.startsWith(`${href}/`);
 }
 
+/** Among sibling nav children, pick the longest href that matches pathname (exact or prefix). */
+function activeChildHref(pathname: string, children: Array<{ href: string }>): string | null {
+  const hits = children.filter((c) => pathname === c.href || pathname.startsWith(`${c.href}/`));
+  if (hits.length === 0) return null;
+  return hits.reduce((a, b) => (a.href.length >= b.href.length ? a : b)).href;
+}
+
 const ICONS = {
   cockpit: BarChart3,
   forecast: ClipboardList,
@@ -50,7 +57,14 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
   const pathname = usePathname() || "";
   const en = language === "en";
   const onOrderProgressModule =
-    pathname === "/order-progress" || pathname === "/mass-production-kanban";
+    pathname === "/order-progress" ||
+    pathname === "/mass-production-kanban" ||
+    pathname === "/order-progress/production-management";
+
+  const orderProgressNavItem = items.find((i) => i.href === "/order-progress");
+  const orderProgressSubpages = orderProgressNavItem?.children ?? [];
+  const orderProgressActiveChild =
+    orderProgressSubpages.length > 0 ? activeChildHref(pathname, orderProgressSubpages) : null;
 
   const mobilePill =
     "shrink-0 rounded-lg border border-transparent px-3.5 py-2 text-sm font-medium tracking-tight text-[#4B5563] transition-colors duration-150 hover:bg-gray-100";
@@ -83,23 +97,20 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
         })}
       </nav>
 
-      {language && onOrderProgressModule ? (
+      {language && onOrderProgressModule && orderProgressSubpages.length > 0 ? (
         <div
-          className="-mx-1 mb-2 flex flex-wrap gap-2 px-1 md:hidden"
+          className="-mx-1 mb-3 flex flex-wrap gap-2 px-1"
           aria-label={en ? "Order Progress sections" : "订单进度子页面"}
         >
-          <Link
-            href="/order-progress"
-            className={`${mobilePill} ${pathname === "/order-progress" ? mobileActive : ""}`}
-          >
-            {en ? "Order lines" : "订单行"}
-          </Link>
-          <Link
-            href="/mass-production-kanban"
-            className={`${mobilePill} ${pathname === "/mass-production-kanban" ? mobileActive : ""}`}
-          >
-            {en ? "Mass production Kanban" : "量产看板"}
-          </Link>
+          {orderProgressSubpages.map((child) => (
+            <Link
+              key={child.href}
+              href={child.href}
+              className={`${mobilePill} ${orderProgressActiveChild === child.href ? mobileActive : ""}`}
+            >
+              {child.label}
+            </Link>
+          ))}
         </div>
       ) : null}
 
@@ -131,9 +142,9 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
                     </span>
                   </Link>
                   {item.children?.length ? (
-                    <div className="pointer-events-none absolute left-full top-0 z-20 ml-3 w-52 rounded-xl border border-gray-100 bg-white p-2 opacity-0 shadow-[0_8px_24px_rgba(17,24,39,0.08)] transition-all duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
+                    <div className="pointer-events-none absolute left-full top-0 z-20 ml-3 w-56 max-h-[min(70vh,24rem)] overflow-y-auto rounded-xl border border-gray-100 bg-white p-2 opacity-0 shadow-[0_8px_24px_rgba(17,24,39,0.08)] transition-all duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
                       {item.children.map((child) => {
-                        const childOn = pathMatches(pathname, child.href);
+                        const childOn = activeChildHref(pathname, item.children ?? []) === child.href;
                         return (
                           <Link
                             key={child.href}

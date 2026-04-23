@@ -26,6 +26,7 @@ export async function AppShell({ session, title, description, children }: AppShe
     orderProgress: language === "en" ? "Order Progress" : "订单进度",
     orderProgressSubLines: language === "en" ? "Order lines" : "订单行",
     massProductionKanban: language === "en" ? "Mass production Kanban" : "量产看板",
+    productionManagement: language === "en" ? "Production management" : "生产管理",
     supplyChain: language === "en" ? "Supply Chain Management" : "供应链管理",
     logisticsProgress: language === "en" ? "Logistics Progress" : "物流进度",
     npi: language === "en" ? "NPI Management" : "NPI 管理",
@@ -55,6 +56,7 @@ export async function AppShell({ session, title, description, children }: AppShe
       children: [
         { href: "/order-progress", label: navText.orderProgressSubLines },
         { href: "/mass-production-kanban", label: navText.massProductionKanban },
+        { href: "/order-progress/production-management", label: navText.productionManagement },
       ],
     },
     {
