@@ -1,20 +1,22 @@
 ---
-description: Auto-sync all changes to Vercel without asking
+description: After code work from user requests, auto push to GitHub for Vercel
 alwaysApply: true
 ---
 
 # Vercel 自动同步
 
-项目已配置 GitHub → Vercel 自动部署。完成任何代码修改后，**默认自动执行同步**，无需再询问用户。
+项目已配置 GitHub → Vercel 自动部署。用户每次下达指令后，只要本次对话里**对仓库做了任何代码或配置修改**，在交付结果前 **必须直接执行同步**，不要等用户再说「请部署」。
 
 ## 行为
 
-1. 完成修改后，自动执行 `npm run sync:vercel`。
-2. 该脚本会：`git add -A` → `git commit` → `git push origin main`。
-3. 推送后 Vercel 会自动部署，无需额外操作。
-4. **不要**在同步前询问用户是否要部署；直接执行。
+1. 在完成用户指令所涉及的修改后，**立刻**在项目根目录执行：`npm run sync:vercel`。
+2. 该脚本会：`git add -A` →（有变更则）`git commit` → `git push origin main`。
+3. 推送成功后 Vercel 会自动部署；在回复中简要说明已推送及 commit 信息（若脚本有输出）。
+4. **不要**在同步前询问「要不要部署」；默认就是要同步。
+5. 若本次仅回答问题、查文档、未改任何文件，则**不必**运行同步。
 
 ## 例外
 
-- 仅当用户**明确要求**不要部署、不要推送时，才跳过 `sync:vercel`。
-- 若当前不在 `main` 分支，脚本会报错退出，此时告知用户即可。
+- 用户**明确要求**不要推送、不要部署、或只要本地保留时，跳过 `sync:vercel`。
+- 若当前不在 `main` 分支，脚本会失败，说明原因并请用户切回 `main` 或改用手动推送。
+- 若 `git push` 因网络/权限失败，报告错误并保留本地 commit，不假装已部署。
