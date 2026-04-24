@@ -55,7 +55,7 @@ export default async function SupplyChainContractBatchPrintByPoPage({ params }: 
     terms: {
       paymentTerms: first.paymentTerms || "Cash",
       deliveryAddress: first.deliveryAddress || "-",
-      qualityRemarks: first.qualityRemarks || "-",
+      remark: first.remark || "-",
     },
   };
 

@@ -94,7 +94,7 @@ export default async function SupplyChainContractDetailPage({ params }: PageProp
           <div><dt className="text-xs text-app-muted">Payment Terms</dt><dd className="text-sm text-foreground">{contract.paymentTerms || "-"}</dd></div>
           <div><dt className="text-xs text-app-muted">Delivery Date</dt><dd className="text-sm text-foreground">{contract.deliveryDate}</dd></div>
           <div className="md:col-span-2"><dt className="text-xs text-app-muted">Delivery Address</dt><dd className="text-sm text-foreground">{contract.deliveryAddress || "-"}</dd></div>
-          <div className="md:col-span-2"><dt className="text-xs text-app-muted">Quality Remarks</dt><dd className="text-sm text-foreground">{contract.qualityRemarks || "-"}</dd></div>
+          <div className="md:col-span-2"><dt className="text-xs text-app-muted">{language === "en" ? "Remark" : "备注"}</dt><dd className="text-sm text-foreground">{contract.remark || "-"}</dd></div>
           <div><dt className="text-xs text-app-muted">Batch</dt><dd className="text-sm text-foreground">{contract.batch || "-"}</dd></div>
           <div><dt className="text-xs text-app-muted">Serial / Bluetooth</dt><dd className="text-sm text-foreground">{`${contract.serialCode || "-"} / ${contract.bluetoothId || "-"}`}</dd></div>
         </dl>

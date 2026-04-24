@@ -303,7 +303,7 @@ export type ContractEntry = {
   deliveryDate: string;
   currency: string;
   paymentTerms: string;
-  qualityRemarks: string;
+  remark: string;
   deliveryAddress: string;
   serialCode: string;
   bluetoothId: string;

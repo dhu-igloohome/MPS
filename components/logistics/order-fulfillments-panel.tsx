@@ -20,6 +20,7 @@ function tableLabels(language: Language) {
     poNumber: en ? "PO number" : "PO 号",
     sku: "SKU",
     orderQty: en ? "Order qty" : "订单数量",
+    targetCompletion: en ? "Target completion" : "目标完成",
     salesOrderNumber: en ? "Sales order number" : "销售订单号",
     shipFrom: en ? "Ship from" : "发货地",
     shipTo: en ? "Ship to" : "收货地",
@@ -36,6 +37,7 @@ function tableLabels(language: Language) {
     phTracking: en ? "https://…" : "https://…",
     phMpBatch: en ? "Batch code" : "批次编号",
     phBalanceQty: en ? "Qty" : "数量",
+    phTargetCompletion: en ? "e.g. 2026-04-30, Q2…" : "如 2026-04-30、二季度…",
   };
 }
 
@@ -48,6 +50,7 @@ const readOnlyDerivedClass =
 export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmentsPanelProps) {
   const t = tableLabels(language);
   const [poLineId, setPoLineId] = useState("");
+  const [targetCompletion, setTargetCompletion] = useState("");
   const [salesOrderNumber, setSalesOrderNumber] = useState("");
   const [shipFrom, setShipFrom] = useState("");
   const [shipTo, setShipTo] = useState("");
@@ -85,12 +88,13 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-foreground/70">{t.intro}</p>
 
         <div className="app-table-shell mt-6 overflow-x-auto">
-          <table className="w-full min-w-[1240px] border-collapse text-sm">
+          <table className="w-full min-w-[1360px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-app-border text-left font-semibold text-foreground">
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.poNumber}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.sku}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.orderQty}</th>
+                <th className="border-r border-app-border/80 px-3 py-2.5">{t.targetCompletion}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.salesOrderNumber}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.shipFrom}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.shipTo}</th>
@@ -138,6 +142,16 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                     title={language === "en" ? "From Order Progress line" : "来自订单进度行"}
                     aria-label={t.orderQty}
                     className={`${readOnlyDerivedClass} tabular-nums`}
+                  />
+                </td>
+                <td className="border-r border-app-border/60 px-2 py-2 align-top">
+                  <input
+                    type="text"
+                    value={targetCompletion}
+                    onChange={(e) => setTargetCompletion(e.target.value)}
+                    placeholder={t.phTargetCompletion}
+                    aria-label={t.targetCompletion}
+                    className={`${cellInputClass} min-w-[8rem]`}
                   />
                 </td>
                 <td className="border-r border-app-border/60 px-2 py-2 align-top">

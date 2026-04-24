@@ -205,7 +205,7 @@ async function setupSchema() {
       delivery_date date not null,
       currency text not null default 'USD',
       payment_terms text not null default 'Cash',
-      quality_remarks text not null default '',
+      remark text not null default '',
       delivery_address text not null default '',
       serial_code text not null default '',
       bluetooth_id text not null default '',
@@ -227,8 +227,28 @@ async function setupSchema() {
   `;
   await db`alter table contracts add column if not exists currency text not null default 'USD';`;
   await db`alter table contracts add column if not exists payment_terms text not null default 'Cash';`;
-  await db`alter table contracts add column if not exists quality_remarks text not null default '';`;
+  await db`alter table contracts add column if not exists remark text not null default '';`;
   await db`alter table contracts add column if not exists delivery_address text not null default '';`;
+  await db.unsafe(`
+    DO $contracts_remark_migration$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'contracts' AND column_name = 'quality_remarks'
+      ) THEN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'contracts' AND column_name = 'remark'
+        ) THEN
+          UPDATE contracts c
+          SET remark = COALESCE(NULLIF(TRIM(c.remark), ''), c.quality_remarks);
+          ALTER TABLE contracts DROP COLUMN quality_remarks;
+        ELSE
+          ALTER TABLE contracts RENAME COLUMN quality_remarks TO remark;
+        END IF;
+      END IF;
+    END $contracts_remark_migration$;
+  `);
   await db`alter table contracts drop constraint if exists contracts_status_check;`;
   await db`
     alter table contracts

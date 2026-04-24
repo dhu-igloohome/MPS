@@ -52,8 +52,7 @@ function getAvailableActions(
   return [{ key: "sent-to-approved", label: "Reopen to approved", next: "approved" }];
 }
 
-export function ContractManagement({ contracts, orders, suppliers, language: _language, role }: ContractManagementProps) {
-  void _language;
+export function ContractManagement({ contracts, orders, suppliers, language, role }: ContractManagementProps) {
   const router = useRouter();
   const t = {
     createTitle: "Create Contract (from order)",
@@ -63,7 +62,7 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
     currency: "Currency",
     paymentTerms: "Payment terms",
     deliveryAddress: "Delivery address",
-    qualityRemarks: "Quality remarks",
+    remark: language === "en" ? "Remark" : "备注",
     serialCode: "Serial code",
     bluetoothId: "Bluetooth ID",
     create: "Create contract",
@@ -90,7 +89,7 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
   const [currency, setCurrency] = useState("USD");
   const [paymentTerms, setPaymentTerms] = useState("Cash");
   const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [qualityRemarks, setQualityRemarks] = useState("");
+  const [remark, setRemark] = useState("");
   const [serialCode, setSerialCode] = useState("");
   const [bluetoothId, setBluetoothId] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ContractStatus>("all");
@@ -120,7 +119,7 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
         currency,
         paymentTerms,
         deliveryAddress,
-        qualityRemarks,
+        remark,
         serialCode,
         bluetoothId,
       }),
@@ -135,7 +134,7 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
     setCurrency("USD");
     setPaymentTerms("Cash");
     setDeliveryAddress("");
-    setQualityRemarks("");
+    setRemark("");
     setSerialCode("");
     setBluetoothId("");
     setMessage("Contract created in draft. Waiting for super admin approval before print/forward.");
@@ -180,7 +179,16 @@ export function ContractManagement({ contracts, orders, suppliers, language: _la
           <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} required placeholder={t.currency} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} required placeholder={t.paymentTerms} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} required placeholder={t.deliveryAddress} className="rounded-lg border border-app-border px-3 py-2 text-sm md:col-span-2" />
-          <input value={qualityRemarks} onChange={(e) => setQualityRemarks(e.target.value)} placeholder={t.qualityRemarks} className="rounded-lg border border-app-border px-3 py-2 text-sm md:col-span-2" />
+          <label className="block md:col-span-2">
+            <span className="mb-1 block text-sm text-app-muted">{t.remark}</span>
+            <textarea
+              value={remark}
+              onChange={(e) => setRemark(e.target.value)}
+              rows={3}
+              placeholder={t.remark}
+              className="w-full resize-y rounded-lg border border-app-border px-3 py-2 text-sm min-h-[4.5rem]"
+            />
+          </label>
           <input value={serialCode} onChange={(e) => setSerialCode(e.target.value)} placeholder={t.serialCode} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={bluetoothId} onChange={(e) => setBluetoothId(e.target.value)} placeholder={t.bluetoothId} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <div className="md:col-span-2">

@@ -37,7 +37,7 @@ export type PrintablePOData = {
   terms: {
     paymentTerms: string;
     deliveryAddress: string;
-    qualityRemarks: string;
+    remark: string;
   };
 };
 
@@ -130,7 +130,7 @@ export function PrintablePO({ poData }: PrintablePOProps) {
         <p>付款方式 Payment Terms: {poData.terms.paymentTerms || "-"}</p>
         <p className="break-words">收货地址 Delivery Address: {poData.terms.deliveryAddress || "-"}</p>
         <p className="break-words">
-          品质及违约责任说明 Quality Remarks: {poData.terms.qualityRemarks || "-"}
+          备注 Remark: {poData.terms.remark || "-"}
         </p>
       </section>
 

@@ -69,7 +69,7 @@ export default async function SupplyChainContractPrintPage({ params }: PageProps
     terms: {
       paymentTerms: contract.paymentTerms || "Cash",
       deliveryAddress: contract.deliveryAddress || order.factoryName || "-",
-      qualityRemarks: contract.qualityRemarks || "-",
+      remark: contract.remark || "-",
     },
   };
 

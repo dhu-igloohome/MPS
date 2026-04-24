@@ -368,7 +368,7 @@ type ContractRow = {
   delivery_date: string;
   currency: string;
   payment_terms: string;
-  quality_remarks: string;
+  remark: string;
   delivery_address: string;
   serial_code: string;
   bluetooth_id: string;
@@ -3272,7 +3272,7 @@ function mapContract(row: ContractRow): ContractEntry {
     deliveryDate: formatPgDateOnly(row.delivery_date),
     currency: row.currency || "USD",
     paymentTerms: row.payment_terms || "Cash",
-    qualityRemarks: row.quality_remarks || "",
+    remark: row.remark || "",
     deliveryAddress: row.delivery_address || "",
     serialCode: row.serial_code || "",
     bluetoothId: row.bluetooth_id || "",
@@ -4178,7 +4178,7 @@ export async function listContractsBySessionRegions(regions: Region[]): Promise<
       c.delivery_date::text,
       c.currency,
       c.payment_terms,
-      c.quality_remarks,
+      c.remark,
       c.delivery_address,
       c.serial_code,
       c.bluetooth_id,
@@ -4221,7 +4221,7 @@ export async function listContractsByPoNumberInSessionRegions(
       c.delivery_date::text,
       c.currency,
       c.payment_terms,
-      c.quality_remarks,
+      c.remark,
       c.delivery_address,
       c.serial_code,
       c.bluetooth_id,
@@ -4244,7 +4244,7 @@ export async function createContractFromOrder(input: {
   batch: string;
   currency: string;
   paymentTerms: string;
-  qualityRemarks: string;
+  remark: string;
   deliveryAddress: string;
   serialCode: string;
   bluetoothId: string;
@@ -4301,7 +4301,7 @@ export async function createContractFromOrder(input: {
         delivery_date,
         currency,
         payment_terms,
-        quality_remarks,
+        remark,
         delivery_address,
         serial_code,
         bluetooth_id,
@@ -4323,7 +4323,7 @@ export async function createContractFromOrder(input: {
         src.delivery_date,
         ${input.currency.trim()},
         ${input.paymentTerms.trim()},
-        ${input.qualityRemarks.trim()},
+        ${input.remark.trim()},
         ${input.deliveryAddress.trim()},
         ${input.serialCode.trim()},
         ${input.bluetoothId.trim()},
@@ -4361,7 +4361,7 @@ export async function createContractFromOrder(input: {
       delivery_date::text,
       currency,
       payment_terms,
-      quality_remarks,
+      remark,
       delivery_address,
       serial_code,
       bluetooth_id,
@@ -4397,7 +4397,7 @@ export async function getContractById(id: string): Promise<ContractEntry | null>
       delivery_date::text,
       currency,
       payment_terms,
-      quality_remarks,
+      remark,
       delivery_address,
       serial_code,
       bluetooth_id,
@@ -4438,7 +4438,7 @@ export async function updateContractStatusById(
       delivery_date::text,
       currency,
       payment_terms,
-      quality_remarks,
+      remark,
       delivery_address,
       serial_code,
       bluetooth_id,
