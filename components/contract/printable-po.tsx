@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 export type PrintablePOLineItem = {
   index: number;
   materialCode: string;
@@ -53,8 +55,15 @@ export function PrintablePO({ poData }: PrintablePOProps) {
   return (
     <div className="mx-auto w-full max-w-[210mm] bg-white p-6 text-sm text-black shadow print:m-0 print:max-w-none print:bg-white print:p-0 print:shadow-none">
       <header className="mb-4 flex items-start justify-between border-b border-gray-800 pb-3">
-        <div>
-          <p className="text-2xl font-bold">{poData.header.companyName}</p>
+        <div className="flex items-start">
+          <Image
+            src="/igloo-logo-pinge.svg"
+            alt="igloo"
+            width={110}
+            height={32}
+            priority
+            className="h-8 w-auto"
+          />
         </div>
         <div className="text-right">
           <p className="text-xl font-bold">采购订单 Purchase Order</p>
