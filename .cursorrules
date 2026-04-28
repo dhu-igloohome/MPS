@@ -1,0 +1,51 @@
+## Highest priority: Forecast UI/UX system rules (Linear/Vercel-like)
+
+These rules override any other style preferences in this repo.
+
+### Non-negotiables
+- Keep existing stack. **Do not add new heavy UI frameworks** (no shadcn rebuilds, no component libraries, no chart libs for this task).
+- Prefer **Tailwind CSS utilities** and existing project utility classes (`app-card`, `app-panel`, `app-table`, `app-button-*`).
+- Icons: **use `lucide-react` only** when an icon improves scanability; keep icon count minimal.
+- Performance: optimize for **Vercel free tier + fastest FCP**.
+  - Avoid client-only re-layout thrash, large new dependencies, heavy animations, and blocking fonts/scripts.
+  - Prefer CSS-only micro-interactions (`transition`, `transform`) and existing tokens.
+
+### Visual design goals
+- Aesthetic: **modern, minimal, flat, high-quality** (Linear / Vercel Dashboard vibe).
+- Depth: subtle, restrained depth using micro-shadow and refined borders (no skeuomorphism).
+- Whitespace: comfortable spacing; reduce “tall vertical stacking” via responsive grids.
+- Sectioning: create clear hierarchy by using background blocks like `bg-slate-50` to separate:
+  - Nav/header area
+  - Form area
+  - Records table area
+
+### Color tokens (reference palette)
+- **Primary**: `#FF5A5F`
+- **Surface**: `#FFFFFF`
+- **Border**: `#E2E8F0`
+- Use existing CSS variables where possible (`--app-accent`, `--app-surface`, `--app-border`) to stay consistent.
+- If you must introduce a new color, add it as a CSS variable in `app/globals.css` instead of hardcoding many hex values.
+
+### Layout principles (Forecast Input page)
+- Use **card-based layout**: a header card, a form card, and a table card.
+- Convert long single-column forms into **responsive grids**:
+  - Group related inputs side-by-side on `md+` (e.g., SKU + Product Name, BTO + BTS).
+  - Keep accessibility: labels always visible, inputs full-width, `aria-label` when needed.
+- Keep maximum readable widths; avoid extremely wide line-length for explanatory text.
+
+### Interaction rules
+- Buttons:
+  - Add hover affordance with subtle motion: `hover:-translate-y-px`, `active:translate-y-0`
+  - Add transitions: `transition`, `duration-150`, `ease-out`
+  - Disabled states: `disabled:opacity-50` and keep pointer behavior clear.
+- Form focus:
+  - Provide **clear focus state** (`focus-visible` ring or existing global focus styles).
+  - Avoid removing focus outlines unless replaced with an equivalent visible indicator.
+- Tables:
+  - Improve scanability with zebra/hover rows.
+  - Prefer sticky header when horizontally/vertically scrollable and it doesn’t break layout.
+
+### Implementation constraints
+- Prefer refactors that are **localized** to the page/component (`components/forecast/forecast-form.tsx`) and existing tokens.
+- Do not change business logic, API contracts, or data behavior unless required for UI.
+- Keep copy changes minimal (mostly layout/visual polish).

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CloudDownload, Download, Plus, Trash2, Upload } from "lucide-react";
 
 import {
   buildForecastDestinationOptions,
@@ -575,142 +576,190 @@ export function ForecastForm({
   }
 
   return (
-    <section className="app-card p-5">
-      <h2 className="text-lg font-semibold text-foreground">{t.title}</h2>
-      <p className="mt-1 text-sm text-app-muted">
-        {t.subtitle}
-      </p>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <a
-          href="/api/forecasts/csv-template"
-          className="app-button-secondary inline-flex px-3 py-1.5 text-sm"
-        >
-          {t.downloadTemplate}
-        </a>
-        <input
-          ref={batchFileRef}
-          type="file"
-          accept=".csv,text/csv"
-          className="hidden"
-          onChange={onBatchFileChange}
-        />
-        <button
-          type="button"
-          disabled={loading || products.length === 0}
-          onClick={() => batchFileRef.current?.click()}
-          className="app-button-secondary inline-flex px-3 py-1.5 text-sm disabled:opacity-50"
-        >
-          {t.batchImport}
-        </button>
-        <button
-          type="button"
-          disabled={loading || products.length === 0}
-          onClick={onApiImportFromSkuTracker}
-          className="app-button-secondary inline-flex px-3 py-1.5 text-sm disabled:opacity-50"
-        >
-          {t.apiImport}
-        </button>
-      </div>
-      <p className="mt-2 text-xs text-app-muted">{t.batchHint}</p>
-      <p className="mt-1 text-xs text-app-muted">{t.apiImportHint}</p>
-      {batchSummary ? <p className="mt-2 text-sm text-emerald-800">{batchSummary}</p> : null}
-      {batchErrors.length > 0 ? (
-        <ul className="mt-2 max-h-40 list-inside list-disc overflow-y-auto text-sm text-red-700">
-          {batchErrors.map((err) => (
-            <li key={`${err.row}-${err.message}`}>
-              {language === "en" ? "Row" : "第"}
-              {err.row}
-              {language === "en" ? ": " : " 行："}
-              {err.message}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {products.length === 0 ? (
-        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          {t.noProducts}
-        </p>
-      ) : null}
-
-      <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-        <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.forecastMonth}</span>
-          <select
-            value={month}
-            onChange={(event) => setMonth(event.target.value)}
-            required
-            className="w-full px-3 py-2"
-          >
-            {forecastMonthPicker.options.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {language === "en" ? opt.labelEn : opt.labelZh}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
-          <select
-            value={region}
-            onChange={(event) => onRegionChange(event.target.value as Region)}
-            className="w-full px-3 py-2"
-          >
-            {allowedRegions.map((item) => (
-              <option key={item} value={item}>
-                {forecastRegionSelectLabel(item, language)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block md:col-span-2">
-          <span className="mb-1 block text-sm text-foreground/85">{t.useExistingPo}</span>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={useExistingPo}
-              disabled={regionPoOptions.length === 0}
-              onChange={(event) => {
-                const checked = event.target.checked;
-                setUseExistingPo(checked);
-                if (checked) {
-                  setSelectedPoNumber(regionPoOptions[0] || "");
-                }
-              }}
-            />
-            <span className="text-sm text-app-muted">{t.useExistingPo}</span>
-          </div>
-        </label>
-        {useExistingPo ? (
-          <label className="block md:col-span-2">
-            <span className="mb-1 block text-sm text-foreground/85">{t.existingPo}</span>
-            <select
-              value={selectedPoNumber}
-              onChange={(event) => setSelectedPoNumber(event.target.value)}
-              required
-              className="w-full px-3 py-2"
+    <div className="space-y-5">
+      <section className="app-card overflow-hidden">
+        <div className="border-b border-app-border bg-slate-50/70 px-5 py-4 sm:px-6">
+          <h2 className="text-lg font-semibold text-foreground">{t.title}</h2>
+          <p className="mt-1 text-sm text-app-muted">{t.subtitle}</p>
+        </div>
+        <div className="px-5 py-5 sm:px-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href="/api/forecasts/csv-template"
+              className="app-button-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
             >
-              {regionPoOptions.map((po) => (
-                <option key={po} value={po}>
-                  {po}
+              <Download size={16} strokeWidth={1.5} />
+              {t.downloadTemplate}
+            </a>
+            <input
+              ref={batchFileRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={onBatchFileChange}
+            />
+            <button
+              type="button"
+              disabled={loading || products.length === 0}
+              onClick={() => batchFileRef.current?.click()}
+              className="app-button-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+            >
+              <Upload size={16} strokeWidth={1.5} />
+              {t.batchImport}
+            </button>
+            <button
+              type="button"
+              disabled={loading || products.length === 0}
+              onClick={onApiImportFromSkuTracker}
+              className="app-button-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+            >
+              <CloudDownload size={16} strokeWidth={1.5} />
+              {t.apiImport}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-app-muted">{t.batchHint}</p>
+          <p className="mt-1 text-xs text-app-muted">{t.apiImportHint}</p>
+          {batchSummary ? <p className="mt-2 text-sm text-emerald-800">{batchSummary}</p> : null}
+          {batchErrors.length > 0 ? (
+            <ul className="mt-2 max-h-40 list-inside list-disc overflow-y-auto rounded-xl border border-red-200 bg-red-50/60 px-4 py-3 text-sm text-red-800">
+              {batchErrors.map((err) => (
+                <li key={`${err.row}-${err.message}`}>
+                  {language === "en" ? "Row" : "第"}
+                  {err.row}
+                  {language === "en" ? ": " : " 行："}
+                  {err.message}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {products.length === 0 ? (
+            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              {t.noProducts}
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="app-card overflow-hidden">
+        <div className="border-b border-app-border bg-slate-50/70 px-5 py-4 sm:px-6">
+          <h3 className="text-base font-semibold text-foreground">{language === "en" ? "Create forecast" : "新增 Forecast"}</h3>
+          <p className="mt-1 text-xs text-app-muted">
+            {language === "en"
+              ? "Group inputs in columns to reduce scrolling. SKU controls are on the right."
+              : "通过分栏减少滚动；SKU 操作按钮在右侧。"}
+          </p>
+        </div>
+
+        <form className="grid gap-4 px-5 py-5 sm:px-6 md:grid-cols-12" onSubmit={onSubmit}>
+          <label className="block md:col-span-4">
+            <span className="mb-1 block text-sm text-foreground/85">{t.forecastMonth}</span>
+            <select
+              value={month}
+              onChange={(event) => setMonth(event.target.value)}
+              required
+              className="w-full px-3 py-2 text-sm"
+            >
+              {forecastMonthPicker.options.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {language === "en" ? opt.labelEn : opt.labelZh}
                 </option>
               ))}
             </select>
           </label>
-        ) : null}
 
-        <div className="md:col-span-2 space-y-3">
-          {lines.map((line, idx) => (
-            <div key={line.key} className="rounded-lg border border-app-border/80 p-3">
-              <div className="grid gap-3 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
+          <label className="block md:col-span-4">
+            <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
+            <select
+              value={region}
+              onChange={(event) => onRegionChange(event.target.value as Region)}
+              className="w-full px-3 py-2 text-sm"
+            >
+              {allowedRegions.map((item) => (
+                <option key={item} value={item}>
+                  {forecastRegionSelectLabel(item, language)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="md:col-span-4">
+            <span className="mb-1 block text-sm text-foreground/85">{t.useExistingPo}</span>
+            <label className="flex items-center gap-2 rounded-xl border border-app-border bg-white px-3 py-2 text-sm">
+              <input
+                type="checkbox"
+                checked={useExistingPo}
+                disabled={regionPoOptions.length === 0}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setUseExistingPo(checked);
+                  if (checked) {
+                    setSelectedPoNumber(regionPoOptions[0] || "");
+                  }
+                }}
+              />
+              <span className="text-app-muted">{t.useExistingPo}</span>
+            </label>
+          </div>
+
+          {useExistingPo ? (
+            <label className="block md:col-span-12">
+              <span className="mb-1 block text-sm text-foreground/85">{t.existingPo}</span>
+              <select
+                value={selectedPoNumber}
+                onChange={(event) => setSelectedPoNumber(event.target.value)}
+                required
+                className="w-full px-3 py-2 text-sm"
+              >
+                {regionPoOptions.map((po) => (
+                  <option key={po} value={po}>
+                    {po}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          <div className="md:col-span-12 space-y-3">
+            {lines.map((line, idx) => (
+              <div key={line.key} className="rounded-2xl border border-app-border bg-white p-4 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-app-subtle">
+                      {language === "en" ? "Line" : "行"} {idx + 1}
+                    </p>
+                  </div>
                   <div className="flex items-center gap-2">
+                    {idx === lines.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setLines((prev) => [...prev, newDraftForecastLine(products)])}
+                        className="app-button-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
+                      >
+                        <Plus size={16} strokeWidth={1.5} />
+                        {language === "en" ? "Add line" : "新增一行"}
+                      </button>
+                    ) : null}
+                    {lines.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setLines((prev) => prev.filter((x) => x.key !== line.key))}
+                        className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm text-red-700 transition duration-150 ease-out hover:-translate-y-px hover:bg-red-50 active:translate-y-0"
+                      >
+                        <Trash2 size={16} strokeWidth={1.5} />
+                        {t.removeSku}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="mt-3 grid gap-3 md:grid-cols-12">
+                  <label className="block md:col-span-6">
+                    <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
                     <select
                       value={line.sku}
                       onChange={(event) => updateLineSku(line.key, event.target.value)}
                       required
-                      className="w-full px-3 py-2"
+                      className="w-full px-3 py-2 text-sm"
                     >
                       {skuOptions.map((item) => (
                         <option key={item} value={item}>
@@ -718,146 +767,128 @@ export function ForecastForm({
                         </option>
                       ))}
                     </select>
-                    {idx === lines.length - 1 ? (
-                      <button
-                        type="button"
-                        onClick={() => setLines((prev) => [...prev, newDraftForecastLine(products)])}
-                        className="rounded-lg px-3 py-2 text-sm"
-                      >
-                        {t.addSku}
-                      </button>
-                    ) : null}
-                    {lines.length > 1 ? (
-                      <button
-                        type="button"
-                        onClick={() => setLines((prev) => prev.filter((x) => x.key !== line.key))}
-                        className="rounded-lg border border-red-300 px-3 py-2 text-sm text-red-700"
-                      >
-                        {t.removeSku}
-                      </button>
-                    ) : null}
-                  </div>
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
-                  <input
-                    value={line.productName}
-                    readOnly
-                    className="w-full rounded-lg border border-app-border bg-gray-50 px-3 py-2 outline-none"
-                  />
-                </label>
-                <label className="block md:col-span-2">
-                  <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
-                  <select
-                    value={line.destination}
-                    onChange={(event) =>
-                      setLines((prev) =>
-                        prev.map((x) =>
-                          x.key === line.key ? { ...x, destination: event.target.value } : x,
-                        ),
-                      )
-                    }
-                    required
-                    className="w-full px-3 py-2"
-                  >
-                    <option value="" disabled>
-                      {t.destinationPlaceholder}
-                    </option>
-                    {destinationOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {language === "en" ? opt.labelEn : opt.labelZh}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
-                </label>
-                <label className="block md:col-span-2">
-                  <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
-                  <select
-                    value={line.incoterm}
-                    onChange={(event) =>
-                      setLines((prev) =>
-                        prev.map((x) =>
-                          x.key === line.key
-                            ? { ...x, incoterm: event.target.value as ForecastIncoterm }
-                            : x,
-                        ),
-                      )
-                    }
-                    required
-                    className="w-full px-3 py-2"
-                  >
-                    {FORECAST_INCOTERMS.map((code) => (
-                      <option key={code} value={code}>
-                        {code}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-2 text-xs leading-relaxed text-app-muted">
-                    {forecastIncotermHint(line.incoterm, language)}
-                  </p>
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={line.buildToOrder}
-                    onChange={(event) =>
-                      setLines((prev) =>
-                        prev.map((x) =>
-                          x.key === line.key ? { ...x, buildToOrder: event.target.value } : x,
-                        ),
-                      )
-                    }
-                    className="w-full px-3 py-2"
-                  />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-sm text-foreground/85">{t.bts}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={line.buildToStock}
-                    onChange={(event) =>
-                      setLines((prev) =>
-                        prev.map((x) =>
-                          x.key === line.key ? { ...x, buildToStock: event.target.value } : x,
-                        ),
-                      )
-                    }
-                    className="w-full px-3 py-2"
-                  />
-                </label>
-                <label className="block md:col-span-2">
-                  <span className="mb-1 block text-sm text-foreground/85">{t.remark}</span>
-                  <textarea
-                    value={line.remark}
-                    onChange={(event) =>
-                      setLines((prev) =>
-                        prev.map((x) => (x.key === line.key ? { ...x, remark: event.target.value } : x)),
-                      )
-                    }
-                    rows={2}
-                    className="w-full px-3 py-2"
-                  />
-                </label>
-              </div>
-            </div>
-          ))}
-        </div>
+                  </label>
 
-        <div className="md:col-span-2 flex items-center gap-3">
-          <button
-            type="submit"
-            disabled={loading || products.length === 0}
-            className="app-button-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
-          >
-            {loading ? t.saving : t.saveForecast}
-          </button>
-          {message ? <span className="text-sm text-app-muted">{message}</span> : null}
-        </div>
-      </form>
+                  <label className="block md:col-span-6">
+                    <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
+                    <input
+                      value={line.productName}
+                      readOnly
+                      className="w-full rounded-xl border border-app-border bg-slate-50 px-3 py-2 text-sm"
+                    />
+                  </label>
+
+                  <label className="block md:col-span-12">
+                    <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
+                    <select
+                      value={line.destination}
+                      onChange={(event) =>
+                        setLines((prev) =>
+                          prev.map((x) => (x.key === line.key ? { ...x, destination: event.target.value } : x)),
+                        )
+                      }
+                      required
+                      className="w-full px-3 py-2 text-sm"
+                    >
+                      <option value="" disabled>
+                        {t.destinationPlaceholder}
+                      </option>
+                      {destinationOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {language === "en" ? opt.labelEn : opt.labelZh}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
+                  </label>
+
+                  <label className="block md:col-span-12">
+                    <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
+                    <select
+                      value={line.incoterm}
+                      onChange={(event) =>
+                        setLines((prev) =>
+                          prev.map((x) =>
+                            x.key === line.key ? { ...x, incoterm: event.target.value as ForecastIncoterm } : x,
+                          ),
+                        )
+                      }
+                      required
+                      className="w-full px-3 py-2 text-sm"
+                    >
+                      {FORECAST_INCOTERMS.map((code) => (
+                        <option key={code} value={code}>
+                          {code}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-2 text-xs leading-relaxed text-app-muted">
+                      {forecastIncotermHint(line.incoterm, language)}
+                    </p>
+                  </label>
+
+                  <label className="block md:col-span-6">
+                    <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={line.buildToOrder}
+                      onChange={(event) =>
+                        setLines((prev) =>
+                          prev.map((x) => (x.key === line.key ? { ...x, buildToOrder: event.target.value } : x)),
+                        )
+                      }
+                      className="w-full px-3 py-2 text-sm"
+                    />
+                  </label>
+
+                  <label className="block md:col-span-6">
+                    <span className="mb-1 block text-sm text-foreground/85">{t.bts}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={line.buildToStock}
+                      onChange={(event) =>
+                        setLines((prev) =>
+                          prev.map((x) => (x.key === line.key ? { ...x, buildToStock: event.target.value } : x)),
+                        )
+                      }
+                      className="w-full px-3 py-2 text-sm"
+                    />
+                  </label>
+
+                  <label className="block md:col-span-12">
+                    <span className="mb-1 block text-sm text-foreground/85">{t.remark}</span>
+                    <textarea
+                      value={line.remark}
+                      onChange={(event) =>
+                        setLines((prev) =>
+                          prev.map((x) => (x.key === line.key ? { ...x, remark: event.target.value } : x)),
+                        )
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="md:col-span-12 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={loading || products.length === 0}
+                className="app-button-primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-60"
+              >
+                {loading ? t.saving : t.saveForecast}
+              </button>
+              {message ? <span className="text-sm text-app-muted">{message}</span> : null}
+            </div>
+          </div>
+        </form>
+      </section>
 
       {editDraft ? (
         <div
@@ -1020,153 +1051,165 @@ export function ForecastForm({
         </div>
       ) : null}
 
-      <div className="mt-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h3 className="text-base font-semibold text-foreground">{t.allForecasts}</h3>
-            {canDelete ? (
-              <p className="mt-1 max-w-3xl text-xs text-app-muted">{t.actionsRules}</p>
-            ) : (
-              <p className="mt-1 max-w-3xl text-xs text-app-muted">
-                {language === "en"
-                  ? "Actions: Edit to update a saved row (same validation as create)."
-                  : "操作：点「编辑」可修改已保存的记录（校验规则与新建一致）。"}
-              </p>
-            )}
-          </div>
-          {canDelete && entries.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2 sm:pt-0.5">
-              <span className="text-xs tabular-nums text-app-muted">
-                {language === "en" ? `${selectedForecastIds.length} selected` : `已选 ${selectedForecastIds.length} 条`}
-              </span>
-              <button
-                type="button"
-                disabled={batchDeleting || selectedForecastIds.length === 0}
-                onClick={onBatchDeleteForecasts}
-                className="rounded-lg border border-red-300 bg-app-surface px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
-              >
-                {batchDeleting ? (language === "en" ? "Deleting…" : "删除中…") : t.deleteSelected}
-              </button>
-            </div>
-          ) : null}
-        </div>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[1280px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-app-border text-left text-app-muted">
-                {canDelete ? (
-                  <th className="w-10 px-2 py-2">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-app-border"
-                      checked={allForecastRowsSelected}
-                      onChange={toggleSelectAllForecasts}
-                      title={language === "en" ? "Select all rows" : "全选当前列表"}
-                      aria-label={language === "en" ? "Select all rows" : "全选当前列表"}
-                    />
-                  </th>
-                ) : null}
-                <th className="px-2 py-2">{t.forecastMonth}</th>
-                <th className="px-2 py-2">{language === "en" ? "Forecast #" : "Forecast #"}</th>
-                <th className="px-2 py-2">{t.region}</th>
-                <th className="px-2 py-2">{t.destination}</th>
-                <th className="px-2 py-2">{t.incoterm}</th>
-                <th className="px-2 py-2">{t.productName}</th>
-                <th className="px-2 py-2">{t.sku}</th>
-                <th className="px-2 py-2">{t.bto}</th>
-                <th className="px-2 py-2">{t.bts}</th>
-                <th className="px-2 py-2">{t.createdAt}</th>
-                <th className="px-2 py-2">{t.actions}</th>
-                <th className="min-w-[12rem] px-2 py-2">{t.comment}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={canDelete ? 13 : 12}
-                    className="px-2 py-6 text-center text-app-muted"
-                  >
-                    {t.noRecords}
-                  </td>
-                </tr>
+      <section className="app-card overflow-hidden">
+        <div className="border-b border-app-border bg-slate-50/70 px-5 py-4 sm:px-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-foreground">{t.allForecasts}</h3>
+              {canDelete ? (
+                <p className="mt-1 max-w-3xl text-xs text-app-muted">{t.actionsRules}</p>
               ) : (
-                entries.map((item) => (
-                  <tr
-                    key={item.id}
-                    className={
-                      editDraft?.id === item.id
-                        ? "border-b border-app-border/40 bg-app-accent-soft/55"
-                        : "border-b border-app-border/40"
-                    }
-                  >
+                <p className="mt-1 max-w-3xl text-xs text-app-muted">
+                  {language === "en"
+                    ? "Actions: Edit to update a saved row (same validation as create)."
+                    : "操作：点「编辑」可修改已保存的记录（校验规则与新建一致）。"}
+                </p>
+              )}
+            </div>
+            {canDelete && entries.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2 sm:pt-0.5">
+                <span className="text-xs tabular-nums text-app-muted">
+                  {language === "en" ? `${selectedForecastIds.length} selected` : `已选 ${selectedForecastIds.length} 条`}
+                </span>
+                <button
+                  type="button"
+                  disabled={batchDeleting || selectedForecastIds.length === 0}
+                  onClick={onBatchDeleteForecasts}
+                  className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm text-red-700 transition duration-150 ease-out hover:-translate-y-px hover:bg-red-50 active:translate-y-0 disabled:opacity-50"
+                >
+                  <Trash2 size={16} strokeWidth={1.5} />
+                  {batchDeleting ? (language === "en" ? "Deleting…" : "删除中…") : t.deleteSelected}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="px-5 py-5 sm:px-6">
+          <div className="app-table-shell overflow-hidden">
+            <div className="max-h-[65vh] overflow-auto">
+              <table className="app-table min-w-[1280px]">
+                <thead>
+                  <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:bg-slate-50">
                     {canDelete ? (
-                      <td className="px-2 py-2 align-middle">
+                      <th className="w-10">
                         <input
                           type="checkbox"
                           className="h-4 w-4 rounded border-app-border"
-                          checked={selectedForecastIds.includes(item.id)}
-                          onChange={() => toggleForecastSelect(item.id)}
-                          aria-label={language === "en" ? "Select row" : "选择该行"}
+                          checked={allForecastRowsSelected}
+                          onChange={toggleSelectAllForecasts}
+                          title={language === "en" ? "Select all rows" : "全选当前列表"}
+                          aria-label={language === "en" ? "Select all rows" : "全选当前列表"}
                         />
-                      </td>
+                      </th>
                     ) : null}
-                    <td className="px-2 py-2">{formatForecastMonthDisplay(item.month, language)}</td>
-                    <td className="px-2 py-2">{item.poNumber || "—"}</td>
-                    <td className="px-2 py-2">{forecastRegionSelectLabel(item.region, language)}</td>
-                    <td className="px-2 py-2">
-                      {forecastDestinationDisplay(item.destination, language, destinationOptions)}
-                    </td>
-                    <td className="whitespace-nowrap px-2 py-2 font-medium">{item.incoterm}</td>
-                    <td className="px-2 py-2">{item.productName}</td>
-                    <td className="px-2 py-2">{item.sku}</td>
-                    <td className="px-2 py-2 tabular-nums">{item.buildToOrder}</td>
-                    <td className="px-2 py-2 tabular-nums">{item.buildToStock}</td>
-                    <td className="px-2 py-2">{item.createdAt.slice(0, 10)}</td>
-                    <td className="px-2 py-2 align-top">
-                      <div className="flex flex-wrap gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => startEditForecast(item)}
-                          disabled={savingEdit || deletingId === item.id}
-                          className="rounded border border-app-border px-2 py-1 text-foreground/90 hover:bg-app-accent-soft disabled:opacity-50"
-                        >
-                          {t.edit}
-                        </button>
-                        {canDelete ? (
-                          <button
-                            type="button"
-                            onClick={() => onDelete(item.id)}
-                            disabled={deletingId === item.id || savingEdit}
-                            className="rounded border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50 disabled:opacity-50"
-                          >
-                            {t.delete}
-                          </button>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="max-w-[20rem] px-2 py-2 align-top">
-                      <textarea
-                        rows={3}
-                        maxLength={4000}
-                        value={inlineRemarkById[item.id] ?? item.remark}
-                        onChange={(e) =>
-                          setInlineRemarkById((prev) => ({ ...prev, [item.id]: e.target.value }))
-                        }
-                        onBlur={() => void saveInlineRemark(item)}
-                        disabled={savingRemarkId === item.id || savingEdit || deletingId === item.id}
-                        placeholder={language === "en" ? "Add a comment…" : "输入评论…"}
-                        className="w-full min-w-[10rem] rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm text-foreground outline-none ring-app-accent placeholder:text-app-muted focus:ring-2 disabled:opacity-60"
-                        aria-label={language === "en" ? "Comment" : "评论"}
-                      />
-                    </td>
+                    <th>{t.forecastMonth}</th>
+                    <th>{language === "en" ? "Forecast #" : "Forecast #"}</th>
+                    <th>{t.region}</th>
+                    <th>{t.destination}</th>
+                    <th>{t.incoterm}</th>
+                    <th>{t.productName}</th>
+                    <th>{t.sku}</th>
+                    <th>{t.bto}</th>
+                    <th>{t.bts}</th>
+                    <th>{t.createdAt}</th>
+                    <th>{t.actions}</th>
+                    <th className="min-w-[12rem]">{t.comment}</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {entries.length === 0 ? (
+                    <tr>
+                      <td colSpan={canDelete ? 13 : 12} className="py-10 text-center text-app-muted">
+                        {t.noRecords}
+                      </td>
+                    </tr>
+                  ) : (
+                    entries.map((item, rowIdx) => {
+                      const selected = selectedForecastIds.includes(item.id);
+                      const editing = editDraft?.id === item.id;
+                      const base =
+                        rowIdx % 2 === 0
+                          ? "bg-white"
+                          : "bg-slate-50/40";
+                      const rowClass = editing
+                        ? "bg-app-accent-soft/55"
+                        : base;
+                      return (
+                        <tr
+                          key={item.id}
+                          className={`${rowClass} ${selected ? "ring-1 ring-[rgba(238,100,84,0.25)]" : ""}`}
+                        >
+                          {canDelete ? (
+                            <td>
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-app-border"
+                                checked={selected}
+                                onChange={() => toggleForecastSelect(item.id)}
+                                aria-label={language === "en" ? "Select row" : "选择该行"}
+                              />
+                            </td>
+                          ) : null}
+                          <td>{formatForecastMonthDisplay(item.month, language)}</td>
+                          <td className="font-medium">{item.poNumber || "—"}</td>
+                          <td>{forecastRegionSelectLabel(item.region, language)}</td>
+                          <td>{forecastDestinationDisplay(item.destination, language, destinationOptions)}</td>
+                          <td className="whitespace-nowrap font-medium">{item.incoterm}</td>
+                          <td className="max-w-[22rem] truncate" title={item.productName}>
+                            {item.productName}
+                          </td>
+                          <td className="whitespace-nowrap">{item.sku}</td>
+                          <td className="tabular-nums">{item.buildToOrder}</td>
+                          <td className="tabular-nums">{item.buildToStock}</td>
+                          <td className="whitespace-nowrap">{item.createdAt.slice(0, 10)}</td>
+                          <td className="align-top">
+                            <div className="flex flex-wrap gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => startEditForecast(item)}
+                                disabled={savingEdit || deletingId === item.id}
+                                className="app-button-secondary px-2.5 py-1 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+                              >
+                                {t.edit}
+                              </button>
+                              {canDelete ? (
+                                <button
+                                  type="button"
+                                  onClick={() => onDelete(item.id)}
+                                  disabled={deletingId === item.id || savingEdit}
+                                  className="rounded-xl border border-red-200 bg-white px-2.5 py-1 text-sm text-red-700 transition duration-150 ease-out hover:-translate-y-px hover:bg-red-50 active:translate-y-0 disabled:opacity-50"
+                                >
+                                  {t.delete}
+                                </button>
+                              ) : null}
+                            </div>
+                          </td>
+                          <td className="max-w-[20rem] align-top">
+                            <textarea
+                              rows={3}
+                              maxLength={4000}
+                              value={inlineRemarkById[item.id] ?? item.remark}
+                              onChange={(e) =>
+                                setInlineRemarkById((prev) => ({ ...prev, [item.id]: e.target.value }))
+                              }
+                              onBlur={() => void saveInlineRemark(item)}
+                              disabled={savingRemarkId === item.id || savingEdit || deletingId === item.id}
+                              placeholder={language === "en" ? "Add a comment…" : "输入评论…"}
+                              className="w-full min-w-[10rem] rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground placeholder:text-app-muted focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
+                              aria-label={language === "en" ? "Comment" : "评论"}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }
