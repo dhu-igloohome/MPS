@@ -38,6 +38,8 @@ export default async function SupplyChainContractPrintPage({ params }: PageProps
       poNumber: contract.poNumber,
       date: contract.signedDate || contract.createdAt?.slice(0, 10) || "-",
     },
+    serialCode: contract.serialCode,
+    bluetoothId: contract.bluetoothId,
     buyerInfo: {
       name: "IG",
       contact: session.username || "-",

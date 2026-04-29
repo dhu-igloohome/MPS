@@ -20,6 +20,9 @@ export type PrintablePOData = {
     poNumber: string;
     date: string;
   };
+  /** Optional identifiers shown on the printed PO (below totals). */
+  serialCode?: string;
+  bluetoothId?: string;
   buyerInfo: {
     name: string;
     contact: string;
@@ -52,6 +55,9 @@ function money(currency: string, amount: number) {
 }
 
 export function PrintablePO({ poData }: PrintablePOProps) {
+  const serial = (poData.serialCode ?? "").trim();
+  const bluetooth = (poData.bluetoothId ?? "").trim();
+
   return (
     <div className="mx-auto w-full max-w-[210mm] bg-white p-6 text-sm text-black shadow print:m-0 print:max-w-none print:bg-white print:p-0 print:shadow-none">
       <header className="mb-4 flex items-start justify-between border-b border-gray-800 pb-3">
@@ -129,6 +135,18 @@ export function PrintablePO({ poData }: PrintablePOProps) {
                 {money(poData.summary.currency, poData.summary.totalAmount)}
               </td>
               <td className="border border-gray-800 px-1 py-2" colSpan={2} />
+            </tr>
+            <tr>
+              <td className="border border-gray-800 px-2 py-2 align-top" colSpan={4}>
+                <span className="font-semibold">Serial code 序列号</span>
+                <span className="mx-1">:</span>
+                <span className="break-words">{serial || "—"}</span>
+              </td>
+              <td className="border border-gray-800 px-2 py-2 align-top" colSpan={5}>
+                <span className="font-semibold">Bluetooth ID 蓝牙 ID</span>
+                <span className="mx-1">:</span>
+                <span className="break-words">{bluetooth || "—"}</span>
+              </td>
             </tr>
           </tbody>
         </table>

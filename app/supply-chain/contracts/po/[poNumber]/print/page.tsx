@@ -26,6 +26,8 @@ export default async function SupplyChainContractBatchPrintByPoPage({ params }: 
       poNumber: first.poNumber,
       date: first.signedDate || first.createdAt?.slice(0, 10) || "-",
     },
+    serialCode: first.serialCode,
+    bluetoothId: first.bluetoothId,
     buyerInfo: {
       name: "IG",
       contact: session.username || "-",
