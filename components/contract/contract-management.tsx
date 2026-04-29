@@ -60,6 +60,7 @@ export function ContractManagement({ contracts, orders, suppliers, language, rol
     supplier: "Supplier",
     batch: "Batch",
     currency: "Currency",
+    unitPrice: language === "en" ? "Unit price (USD)" : "单价 (USD)",
     paymentTerms: "Payment terms",
     deliveryAddress: "Delivery address",
     remark: language === "en" ? "Remark" : "备注",
@@ -104,6 +105,12 @@ export function ContractManagement({ contracts, orders, suppliers, language, rol
       return true;
     });
   }, [contracts, statusFilter, supplierFilter]);
+
+  const selectedOrder = useMemo(
+    () => orders.find((o) => o.id === orderProgressId) ?? null,
+    [orders, orderProgressId],
+  );
+  const selectedUnitPriceUsd = selectedOrder?.unitCostSnapshot;
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -177,6 +184,20 @@ export function ContractManagement({ contracts, orders, suppliers, language, rol
           </label>
           <input value={batch} onChange={(e) => setBatch(e.target.value)} required placeholder={t.batch} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} required placeholder={t.currency} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <div className="md:col-span-2">
+            <label className="block">
+              <span className="mb-1 block text-sm text-app-muted">{t.unitPrice}</span>
+              <input
+                readOnly
+                value={
+                  selectedUnitPriceUsd != null && Number.isFinite(selectedUnitPriceUsd)
+                    ? selectedUnitPriceUsd.toFixed(2)
+                    : "—"
+                }
+                className="w-full rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
+              />
+            </label>
+          </div>
           <input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} required placeholder={t.paymentTerms} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} required placeholder={t.deliveryAddress} className="rounded-lg border border-app-border px-3 py-2 text-sm md:col-span-2" />
           <label className="block md:col-span-2">

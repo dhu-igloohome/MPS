@@ -4276,10 +4276,22 @@ export async function createContractFromOrder(input: {
         (op.created_at::date + interval '56 days')::date as delivery_date,
         s.id as supplier_id,
         s.name as supplier_name,
-        p.unit_cost::numeric as unit_cost
+        coalesce(
+          op.unit_cost_snapshot::numeric,
+          uc.unit_cost,
+          p.unit_cost::numeric,
+          0
+        ) as unit_cost
       from order_progress op
       join suppliers s on s.id = ${Number(input.supplierId)}
       left join products p on p.product_name = op.product_name and p.sku = op.sku and p.is_active = true
+      left join lateral (
+        select unit_price::numeric as unit_cost
+        from unit_cost_quotes
+        where sku = op.sku and supplier_name = s.name
+        order by quote_date desc, id desc
+        limit 1
+      ) uc on true
       where op.id = ${Number(input.orderProgressId)}
         and coalesce(trim(op.po_number), '') <> ''
       order by p.id asc
