@@ -10,6 +10,7 @@ import type {
   ContractStatus,
   OrderProgressEntry,
   SupplierEntry,
+  UnitCostQuoteEntry,
   UserRole,
 } from "@/lib/types";
 
@@ -17,6 +18,7 @@ type ContractManagementProps = {
   contracts: ContractEntry[];
   orders: OrderProgressEntry[];
   suppliers: SupplierEntry[];
+  unitCostQuotes: UnitCostQuoteEntry[];
   language: Language;
   role: UserRole;
 };
@@ -52,7 +54,14 @@ function getAvailableActions(
   return [{ key: "sent-to-approved", label: "Reopen to approved", next: "approved" }];
 }
 
-export function ContractManagement({ contracts, orders, suppliers, language, role }: ContractManagementProps) {
+export function ContractManagement({
+  contracts,
+  orders,
+  suppliers,
+  unitCostQuotes,
+  language,
+  role,
+}: ContractManagementProps) {
   const router = useRouter();
   const t = {
     createTitle: "Create Contract (from order)",
@@ -106,11 +115,34 @@ export function ContractManagement({ contracts, orders, suppliers, language, rol
     });
   }, [contracts, statusFilter, supplierFilter]);
 
+  const latestUnitCostBySkuSupplier = useMemo(() => {
+    const m = new Map<string, UnitCostQuoteEntry>();
+    // `unitCostQuotes` is already sorted by quoteDate desc (server), keep first hit as "latest".
+    for (const q of unitCostQuotes) {
+      const sku = q.sku.trim();
+      const sup = q.supplierName.trim();
+      if (!sku || !sup) continue;
+      const k = `${sku}::${sup}`;
+      if (!m.has(k)) m.set(k, q);
+    }
+    return m;
+  }, [unitCostQuotes]);
+
   const selectedOrder = useMemo(
     () => orders.find((o) => o.id === orderProgressId) ?? null,
     [orders, orderProgressId],
   );
-  const selectedUnitPriceUsd = selectedOrder?.unitCostSnapshot;
+  const selectedSupplierName =
+    suppliers.find((s) => s.id === supplierId)?.name?.trim() ?? "";
+  const quoteUnitPriceUsd =
+    selectedOrder?.sku && selectedSupplierName
+      ? latestUnitCostBySkuSupplier.get(`${selectedOrder.sku.trim()}::${selectedSupplierName}`)?.unitPrice ?? null
+      : null;
+  const snapshot = selectedOrder?.unitCostSnapshot ?? null;
+  const selectedUnitPriceUsd =
+    snapshot != null && Number.isFinite(snapshot) && snapshot > 0
+      ? snapshot
+      : quoteUnitPriceUsd;
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();

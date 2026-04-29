@@ -9,6 +9,7 @@ import {
   listContractsBySessionRegions,
   listOrderProgressBySessionRegions,
   listSuppliers,
+  listUnitCostQuotes,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
@@ -20,10 +21,11 @@ export default async function SupplyChainContractsPage() {
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const [contracts, orders, suppliers] = await Promise.all([
+  const [contracts, orders, suppliers, unitCostQuotes] = await Promise.all([
     listContractsBySessionRegions(session.regions),
     listOrderProgressBySessionRegions(session.regions),
     listSuppliers(),
+    listUnitCostQuotes(),
   ]);
 
   return (
@@ -37,6 +39,7 @@ export default async function SupplyChainContractsPage() {
         contracts={contracts}
         orders={orders}
         suppliers={suppliers}
+        unitCostQuotes={unitCostQuotes}
         language={language}
         role={session.role}
       />

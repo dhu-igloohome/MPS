@@ -4277,7 +4277,7 @@ export async function createContractFromOrder(input: {
         s.id as supplier_id,
         s.name as supplier_name,
         coalesce(
-          op.unit_cost_snapshot::numeric,
+          nullif(op.unit_cost_snapshot::numeric, 0),
           uc.unit_cost,
           p.unit_cost::numeric,
           0
@@ -4288,7 +4288,7 @@ export async function createContractFromOrder(input: {
       left join lateral (
         select unit_price::numeric as unit_cost
         from unit_cost_quotes
-        where sku = op.sku and supplier_name = s.name
+        where sku = op.sku and trim(supplier_name) = trim(s.name)
         order by quote_date desc, id desc
         limit 1
       ) uc on true
