@@ -11,6 +11,8 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+const DELIVERY_STATUSES = new Set(["Pending trigger SO", "In transit", "Delivered"]);
+
 export async function PATCH(request: Request, context: RouteContext) {
   const session = await getSession();
   if (!session) {
@@ -38,6 +40,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const etdRaw = String(body.etd ?? "").trim();
   const etaRaw = String(body.eta ?? "").trim();
   const trackingLink = String(body.trackingLink ?? "").trim();
+  const deliveryStatus = String(body.deliveryStatus ?? "").trim();
   const mpBatch = String(body.mpBatch ?? "").trim();
   const balanceQty = Number(body.balanceQty ?? 0);
 
@@ -52,6 +55,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!Number.isFinite(balanceQty) || !Number.isInteger(balanceQty) || balanceQty < 0) {
     return NextResponse.json({ message: "Invalid balance qty" }, { status: 400 });
   }
+  if (deliveryStatus && !DELIVERY_STATUSES.has(deliveryStatus)) {
+    return NextResponse.json({ message: "Invalid delivery status" }, { status: 400 });
+  }
 
   const entry = await updateOrderFulfillmentById({
     id,
@@ -62,6 +68,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     etd,
     eta,
     trackingLink,
+    deliveryStatus,
     mpBatch,
     balanceQty,
   });

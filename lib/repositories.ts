@@ -130,6 +130,7 @@ type OrderProgressRow = {
   fulfillment_etd: string | null;
   fulfillment_eta: string | null;
   fulfillment_tracking_link: string;
+  fulfillment_delivery_status: string;
   fulfillment_mp_batch: string;
   fulfillment_balance_qty: number;
 };
@@ -1471,6 +1472,7 @@ function mapOrderProgress(
     fulfillmentEtd: row.fulfillment_etd ? formatPgDateOnly(row.fulfillment_etd) : null,
     fulfillmentEta: row.fulfillment_eta ? formatPgDateOnly(row.fulfillment_eta) : null,
     fulfillmentTrackingLink: row.fulfillment_tracking_link ?? "",
+    fulfillmentDeliveryStatus: row.fulfillment_delivery_status ?? "",
     fulfillmentMpBatch: row.fulfillment_mp_batch ?? "",
     fulfillmentBalanceQty: Number(row.fulfillment_balance_qty ?? 0),
   };
@@ -1661,6 +1663,7 @@ export async function listOrderProgressBySessionRegions(regions: Region[]) {
       fulfillment_etd::text,
       fulfillment_eta::text,
       fulfillment_tracking_link,
+      fulfillment_delivery_status,
       fulfillment_mp_batch,
       fulfillment_balance_qty
     from order_progress
@@ -1711,6 +1714,7 @@ export async function getOrderProgressById(id: string) {
       fulfillment_etd::text,
       fulfillment_eta::text,
       fulfillment_tracking_link,
+      fulfillment_delivery_status,
       fulfillment_mp_batch,
       fulfillment_balance_qty
     from order_progress
@@ -1814,6 +1818,7 @@ export async function createOrderProgress(input: {
       fulfillment_etd::text,
       fulfillment_eta::text,
       fulfillment_tracking_link,
+      fulfillment_delivery_status,
       fulfillment_mp_batch,
       fulfillment_balance_qty;
   `;
@@ -1939,6 +1944,7 @@ export async function updateOrderFulfillmentById(input: {
   etd: string | null;
   eta: string | null;
   trackingLink: string;
+  deliveryStatus: string;
   mpBatch: string;
   balanceQty: number;
 }): Promise<OrderProgressEntry | null> {
@@ -1957,6 +1963,7 @@ export async function updateOrderFulfillmentById(input: {
       fulfillment_etd = ${input.etd ? input.etd.trim() : null},
       fulfillment_eta = ${input.eta ? input.eta.trim() : null},
       fulfillment_tracking_link = ${input.trackingLink.trim().slice(0, 400)},
+      fulfillment_delivery_status = ${input.deliveryStatus.trim().slice(0, 40)},
       fulfillment_mp_batch = ${input.mpBatch.trim().slice(0, 120)},
       fulfillment_balance_qty = ${Math.max(0, Math.trunc(input.balanceQty))},
       updated_at = now()
@@ -1989,6 +1996,7 @@ export async function updateOrderFulfillmentById(input: {
       fulfillment_etd::text,
       fulfillment_eta::text,
       fulfillment_tracking_link,
+      fulfillment_delivery_status,
       fulfillment_mp_batch,
       fulfillment_balance_qty;
   `;

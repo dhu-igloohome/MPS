@@ -392,6 +392,7 @@ export type OrderProgressEntry = {
   fulfillmentEtd?: string | null;
   fulfillmentEta?: string | null;
   fulfillmentTrackingLink?: string;
+  fulfillmentDeliveryStatus?: string;
   fulfillmentMpBatch?: string;
   fulfillmentBalanceQty?: number;
 };

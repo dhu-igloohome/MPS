@@ -29,6 +29,7 @@ function tableLabels(language: Language) {
     etd: en ? "ETD" : "ETD（预计发运）",
     eta: en ? "ETA" : "ETA（预计到达）",
     trackingLink: en ? "Tracking link" : "跟踪链接",
+    deliveryStatus: en ? "Delivery status" : "交付状态",
     mpBatch: en ? "MP batch" : "MP 批次",
     balanceQty: en ? "Balance Qty" : "结余数量",
     selectPo: en ? "Select PO…" : "选择 PO…",
@@ -37,6 +38,7 @@ function tableLabels(language: Language) {
     phShipFrom: en ? "Origin / warehouse" : "发货地/仓库",
     phShipTo: en ? "Destination" : "目的地",
     phTracking: en ? "https://…" : "https://…",
+    phDeliveryStatus: en ? "Select status…" : "选择状态…",
     phMpBatch: en ? "Batch code" : "批次编号",
     phBalanceQty: en ? "Qty" : "数量",
     phTargetCompletion: en ? "e.g. 2026-04-30, Q2…" : "如 2026-04-30、二季度…",
@@ -60,6 +62,7 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
   const [etd, setEtd] = useState("");
   const [eta, setEta] = useState("");
   const [trackingLink, setTrackingLink] = useState("");
+  const [deliveryStatus, setDeliveryStatus] = useState("");
   const [mpBatch, setMpBatch] = useState("");
   const [balanceQty, setBalanceQty] = useState("");
   const [editing, setEditing] = useState(true);
@@ -97,6 +100,7 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
       setEtd("");
       setEta("");
       setTrackingLink("");
+      setDeliveryStatus("");
       setMpBatch("");
       setBalanceQty("");
       setEditing(true);
@@ -109,6 +113,7 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
     setEtd(selectedLine.fulfillmentEtd ?? "");
     setEta(selectedLine.fulfillmentEta ?? "");
     setTrackingLink(selectedLine.fulfillmentTrackingLink ?? "");
+    setDeliveryStatus(selectedLine.fulfillmentDeliveryStatus ?? "");
     setMpBatch(selectedLine.fulfillmentMpBatch ?? "");
     setBalanceQty(
       selectedLine.fulfillmentBalanceQty != null ? String(selectedLine.fulfillmentBalanceQty) : "",
@@ -122,6 +127,7 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
       Boolean((selectedLine.fulfillmentEtd ?? "").trim?.() ?? selectedLine.fulfillmentEtd) ||
       Boolean((selectedLine.fulfillmentEta ?? "").trim?.() ?? selectedLine.fulfillmentEta) ||
       Boolean((selectedLine.fulfillmentTrackingLink ?? "").trim()) ||
+      Boolean((selectedLine.fulfillmentDeliveryStatus ?? "").trim()) ||
       Boolean((selectedLine.fulfillmentMpBatch ?? "").trim()) ||
       Boolean((selectedLine.fulfillmentBalanceQty ?? 0) > 0);
     setEditing(!hasAnySaved);
@@ -145,6 +151,7 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
         etd: etd || null,
         eta: eta || null,
         trackingLink,
+        deliveryStatus,
         mpBatch,
         balanceQty: Number(balanceQty || 0),
       }),
@@ -167,7 +174,7 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-foreground/70">{t.intro}</p>
 
         <div className="app-table-shell mt-6 overflow-x-auto">
-          <table className="w-full min-w-[1360px] border-collapse text-sm">
+          <table className="w-full min-w-[1480px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-app-border text-left font-semibold text-foreground">
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.poNumber}</th>
@@ -180,6 +187,7 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.etd}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.eta}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.trackingLink}</th>
+                <th className="border-r border-app-border/80 px-3 py-2.5">{t.deliveryStatus}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.mpBatch}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.balanceQty}</th>
                 <th className="px-3 py-2.5">{language === "en" ? "Actions" : "操作"}</th>
@@ -298,6 +306,20 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                     placeholder={t.phTracking}
                     className={inputCls(!editing)}
                   />
+                </td>
+                <td className="border-r border-app-border/60 px-2 py-2 align-top">
+                  <select
+                    value={deliveryStatus}
+                    onChange={(e) => setDeliveryStatus(e.target.value)}
+                    disabled={!editing}
+                    aria-label={t.deliveryStatus}
+                    className={`${inputCls(!editing)} min-w-[10.5rem] ${editing ? "" : "pointer-events-none"}`}
+                  >
+                    <option value="">{t.phDeliveryStatus}</option>
+                    <option value="Pending trigger SO">Pending trigger SO</option>
+                    <option value="In transit">In transit</option>
+                    <option value="Delivered">Delivered</option>
+                  </select>
                 </td>
                 <td className="border-r border-app-border/60 px-2 py-2 align-top">
                   <input

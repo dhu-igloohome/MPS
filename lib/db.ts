@@ -165,6 +165,7 @@ async function setupSchema() {
   await db`alter table order_progress add column if not exists fulfillment_etd date;`;
   await db`alter table order_progress add column if not exists fulfillment_eta date;`;
   await db`alter table order_progress add column if not exists fulfillment_tracking_link text not null default '';`;
+  await db`alter table order_progress add column if not exists fulfillment_delivery_status text not null default '';`;
   await db`alter table order_progress add column if not exists fulfillment_mp_batch text not null default '';`;
   await db`alter table order_progress add column if not exists fulfillment_balance_qty integer not null default 0;`;
 
