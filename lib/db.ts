@@ -157,6 +157,17 @@ async function setupSchema() {
   await db`alter table order_progress add column if not exists unit_cost_snapshot numeric(12, 2) not null default 0;`;
   await db`alter table order_progress add column if not exists po_delivery_date date;`;
 
+  // Logistics fulfillments fields (saved per order line).
+  await db`alter table order_progress add column if not exists fulfillment_target_completion text not null default '';`;
+  await db`alter table order_progress add column if not exists fulfillment_sales_order_number text not null default '';`;
+  await db`alter table order_progress add column if not exists fulfillment_ship_from text not null default '';`;
+  await db`alter table order_progress add column if not exists fulfillment_ship_to text not null default '';`;
+  await db`alter table order_progress add column if not exists fulfillment_etd date;`;
+  await db`alter table order_progress add column if not exists fulfillment_eta date;`;
+  await db`alter table order_progress add column if not exists fulfillment_tracking_link text not null default '';`;
+  await db`alter table order_progress add column if not exists fulfillment_mp_batch text not null default '';`;
+  await db`alter table order_progress add column if not exists fulfillment_balance_qty integer not null default 0;`;
+
   await db`drop index if exists idx_order_progress_po_number_unique;`;
   await db`
     create unique index if not exists idx_order_progress_po_sku_unique

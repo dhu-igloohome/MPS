@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Edit3, Save } from "lucide-react";
 
 import type { Language } from "@/lib/i18n";
 import type { OrderProgressEntry } from "@/lib/types";
@@ -49,6 +51,7 @@ const readOnlyDerivedClass =
 
 export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmentsPanelProps) {
   const t = tableLabels(language);
+  const router = useRouter();
   const [poLineId, setPoLineId] = useState("");
   const [targetCompletion, setTargetCompletion] = useState("");
   const [salesOrderNumber, setSalesOrderNumber] = useState("");
@@ -59,6 +62,9 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
   const [trackingLink, setTrackingLink] = useState("");
   const [mpBatch, setMpBatch] = useState("");
   const [balanceQty, setBalanceQty] = useState("");
+  const [editing, setEditing] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
 
   const options = useMemo(
     () =>
@@ -81,6 +87,79 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
   const derivedOrderQty =
     selectedLine != null && Number.isFinite(selectedLine.quantity) ? String(selectedLine.quantity) : "";
 
+  useEffect(() => {
+    setMessage("");
+    if (!selectedLine) {
+      setTargetCompletion("");
+      setSalesOrderNumber("");
+      setShipFrom("");
+      setShipTo("");
+      setEtd("");
+      setEta("");
+      setTrackingLink("");
+      setMpBatch("");
+      setBalanceQty("");
+      setEditing(true);
+      return;
+    }
+    setTargetCompletion(selectedLine.fulfillmentTargetCompletion ?? "");
+    setSalesOrderNumber(selectedLine.fulfillmentSalesOrderNumber ?? "");
+    setShipFrom(selectedLine.fulfillmentShipFrom ?? "");
+    setShipTo(selectedLine.fulfillmentShipTo ?? "");
+    setEtd(selectedLine.fulfillmentEtd ?? "");
+    setEta(selectedLine.fulfillmentEta ?? "");
+    setTrackingLink(selectedLine.fulfillmentTrackingLink ?? "");
+    setMpBatch(selectedLine.fulfillmentMpBatch ?? "");
+    setBalanceQty(
+      selectedLine.fulfillmentBalanceQty != null ? String(selectedLine.fulfillmentBalanceQty) : "",
+    );
+
+    const hasAnySaved =
+      Boolean((selectedLine.fulfillmentTargetCompletion ?? "").trim()) ||
+      Boolean((selectedLine.fulfillmentSalesOrderNumber ?? "").trim()) ||
+      Boolean((selectedLine.fulfillmentShipFrom ?? "").trim()) ||
+      Boolean((selectedLine.fulfillmentShipTo ?? "").trim()) ||
+      Boolean((selectedLine.fulfillmentEtd ?? "").trim?.() ?? selectedLine.fulfillmentEtd) ||
+      Boolean((selectedLine.fulfillmentEta ?? "").trim?.() ?? selectedLine.fulfillmentEta) ||
+      Boolean((selectedLine.fulfillmentTrackingLink ?? "").trim()) ||
+      Boolean((selectedLine.fulfillmentMpBatch ?? "").trim()) ||
+      Boolean((selectedLine.fulfillmentBalanceQty ?? 0) > 0);
+    setEditing(!hasAnySaved);
+  }, [selectedLine]);
+
+  const inputCls = (readonly: boolean) =>
+    readonly ? readOnlyDerivedClass : cellInputClass;
+
+  async function onSave() {
+    if (!selectedLine) return;
+    setSaving(true);
+    setMessage("");
+    const res = await fetch(`/api/logistics-order-fulfillments/${encodeURIComponent(selectedLine.id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        targetCompletion,
+        salesOrderNumber,
+        shipFrom,
+        shipTo,
+        etd: etd || null,
+        eta: eta || null,
+        trackingLink,
+        mpBatch,
+        balanceQty: Number(balanceQty || 0),
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { message?: string };
+    setSaving(false);
+    if (!res.ok) {
+      setMessage(data.message || (language === "en" ? "Save failed." : "保存失败。"));
+      return;
+    }
+    setEditing(false);
+    setMessage(language === "en" ? "Saved." : "已保存。");
+    router.refresh();
+  }
+
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm sm:p-6">
@@ -102,7 +181,8 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.eta}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.trackingLink}</th>
                 <th className="border-r border-app-border/80 px-3 py-2.5">{t.mpBatch}</th>
-                <th className="px-3 py-2.5">{t.balanceQty}</th>
+                <th className="border-r border-app-border/80 px-3 py-2.5">{t.balanceQty}</th>
+                <th className="px-3 py-2.5">{language === "en" ? "Actions" : "操作"}</th>
               </tr>
             </thead>
             <tbody>
@@ -149,9 +229,10 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                     type="text"
                     value={targetCompletion}
                     onChange={(e) => setTargetCompletion(e.target.value)}
+                    readOnly={!editing}
                     placeholder={t.phTargetCompletion}
                     aria-label={t.targetCompletion}
-                    className={`${cellInputClass} min-w-[8rem]`}
+                    className={`${inputCls(!editing)} min-w-[8rem]`}
                   />
                 </td>
                 <td className="border-r border-app-border/60 px-2 py-2 align-top">
@@ -159,8 +240,11 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                     type="text"
                     value={salesOrderNumber}
                     onChange={(e) => setSalesOrderNumber(e.target.value)}
+                    readOnly={!editing}
                     placeholder={language === "en" ? "Optional" : "选填"}
-                    className="w-full min-w-[8rem] max-w-[14rem] rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent focus:ring-2"
+                    className={`w-full min-w-[8rem] max-w-[14rem] rounded-lg border border-app-border px-2 py-1.5 text-sm outline-none ring-app-accent focus:ring-2 ${
+                      editing ? "bg-app-surface" : "cursor-default bg-app-accent-soft/45"
+                    }`}
                   />
                 </td>
                 <td className="border-r border-app-border/60 px-2 py-2 align-top">
@@ -168,8 +252,9 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                     type="text"
                     value={shipFrom}
                     onChange={(e) => setShipFrom(e.target.value)}
+                    readOnly={!editing}
                     placeholder={t.phShipFrom}
-                    className={cellInputClass}
+                    className={inputCls(!editing)}
                   />
                 </td>
                 <td className="border-r border-app-border/60 px-2 py-2 align-top">
@@ -177,8 +262,9 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                     type="text"
                     value={shipTo}
                     onChange={(e) => setShipTo(e.target.value)}
+                    readOnly={!editing}
                     placeholder={t.phShipTo}
-                    className={cellInputClass}
+                    className={inputCls(!editing)}
                   />
                 </td>
                 <td className="border-r border-app-border/60 px-2 py-2 align-top">
@@ -186,9 +272,10 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                     type="date"
                     value={etd}
                     onChange={(e) => setEtd(e.target.value)}
+                    readOnly={!editing}
                     title={t.pickDate}
                     aria-label={t.etd}
-                    className={`${cellInputClass} min-w-[10.5rem]`}
+                    className={`${inputCls(!editing)} min-w-[10.5rem]`}
                   />
                 </td>
                 <td className="border-r border-app-border/60 px-2 py-2 align-top">
@@ -196,9 +283,10 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                     type="date"
                     value={eta}
                     onChange={(e) => setEta(e.target.value)}
+                    readOnly={!editing}
                     title={t.pickDate}
                     aria-label={t.eta}
-                    className={`${cellInputClass} min-w-[10.5rem]`}
+                    className={`${inputCls(!editing)} min-w-[10.5rem]`}
                   />
                 </td>
                 <td className="border-r border-app-border/60 px-2 py-2 align-top">
@@ -206,8 +294,9 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                     type="text"
                     value={trackingLink}
                     onChange={(e) => setTrackingLink(e.target.value)}
+                    readOnly={!editing}
                     placeholder={t.phTracking}
-                    className={cellInputClass}
+                    className={inputCls(!editing)}
                   />
                 </td>
                 <td className="border-r border-app-border/60 px-2 py-2 align-top">
@@ -215,11 +304,12 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                     type="text"
                     value={mpBatch}
                     onChange={(e) => setMpBatch(e.target.value)}
+                    readOnly={!editing}
                     placeholder={t.phMpBatch}
-                    className={cellInputClass}
+                    className={inputCls(!editing)}
                   />
                 </td>
-                <td className="px-2 py-2 align-top">
+                <td className="border-r border-app-border/60 px-2 py-2 align-top">
                   <input
                     type="number"
                     min={0}
@@ -227,9 +317,37 @@ export function OrderFulfillmentsPanel({ language, orderLines }: OrderFulfillmen
                     inputMode="numeric"
                     value={balanceQty}
                     onChange={(e) => setBalanceQty(e.target.value)}
+                    readOnly={!editing}
                     placeholder={t.phBalanceQty}
-                    className={cellInputClass}
+                    className={inputCls(!editing)}
                   />
+                </td>
+                <td className="px-2 py-2 align-top">
+                  <div className="flex min-w-[10.5rem] flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={!selectedLine || saving || !editing}
+                      onClick={() => void onSave()}
+                      className="app-button-primary inline-flex items-center gap-2 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+                    >
+                      <Save size={16} strokeWidth={1.5} />
+                      {language === "en" ? "Save" : "保存"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!selectedLine || saving || editing}
+                      onClick={() => setEditing(true)}
+                      className="app-button-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+                    >
+                      <Edit3 size={16} strokeWidth={1.5} />
+                      {language === "en" ? "Edit" : "编辑"}
+                    </button>
+                  </div>
+                  {message ? (
+                    <p className={`mt-2 text-xs ${message.includes("失败") || message.includes("failed") ? "text-red-700" : "text-emerald-800"}`}>
+                      {message}
+                    </p>
+                  ) : null}
                 </td>
               </tr>
             </tbody>

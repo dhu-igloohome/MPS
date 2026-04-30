@@ -383,6 +383,17 @@ export type OrderProgressEntry = {
   poDeliveryDate?: string | null;
   poSerialCode?: string;
   poBluetoothId?: string;
+
+  /** Logistics — order fulfillments fields (editable on Logistics Progress → Order fulfillments). */
+  fulfillmentTargetCompletion?: string;
+  fulfillmentSalesOrderNumber?: string;
+  fulfillmentShipFrom?: string;
+  fulfillmentShipTo?: string;
+  fulfillmentEtd?: string | null;
+  fulfillmentEta?: string | null;
+  fulfillmentTrackingLink?: string;
+  fulfillmentMpBatch?: string;
+  fulfillmentBalanceQty?: number;
 };
 
 export type OrderProgressDeletionLog = {

@@ -123,6 +123,15 @@ type OrderProgressRow = {
   po_delivery_date: string | null;
   po_serial_code: string;
   po_bluetooth_id: string;
+  fulfillment_target_completion: string;
+  fulfillment_sales_order_number: string;
+  fulfillment_ship_from: string;
+  fulfillment_ship_to: string;
+  fulfillment_etd: string | null;
+  fulfillment_eta: string | null;
+  fulfillment_tracking_link: string;
+  fulfillment_mp_batch: string;
+  fulfillment_balance_qty: number;
 };
 
 type OrderProgressDeliveryPlanRow = {
@@ -1455,6 +1464,15 @@ function mapOrderProgress(
     poDeliveryDate: row.po_delivery_date ? formatPgDateOnly(row.po_delivery_date) : null,
     poSerialCode: row.po_serial_code ?? "",
     poBluetoothId: row.po_bluetooth_id ?? "",
+    fulfillmentTargetCompletion: row.fulfillment_target_completion ?? "",
+    fulfillmentSalesOrderNumber: row.fulfillment_sales_order_number ?? "",
+    fulfillmentShipFrom: row.fulfillment_ship_from ?? "",
+    fulfillmentShipTo: row.fulfillment_ship_to ?? "",
+    fulfillmentEtd: row.fulfillment_etd ? formatPgDateOnly(row.fulfillment_etd) : null,
+    fulfillmentEta: row.fulfillment_eta ? formatPgDateOnly(row.fulfillment_eta) : null,
+    fulfillmentTrackingLink: row.fulfillment_tracking_link ?? "",
+    fulfillmentMpBatch: row.fulfillment_mp_batch ?? "",
+    fulfillmentBalanceQty: Number(row.fulfillment_balance_qty ?? 0),
   };
 }
 
@@ -1635,7 +1653,16 @@ export async function listOrderProgressBySessionRegions(regions: Region[]) {
       unit_cost_snapshot::text,
       po_delivery_date::text,
       po_serial_code,
-      po_bluetooth_id
+      po_bluetooth_id,
+      fulfillment_target_completion,
+      fulfillment_sales_order_number,
+      fulfillment_ship_from,
+      fulfillment_ship_to,
+      fulfillment_etd::text,
+      fulfillment_eta::text,
+      fulfillment_tracking_link,
+      fulfillment_mp_batch,
+      fulfillment_balance_qty
     from order_progress
     where region = any(${allowed})
     order by updated_at desc, id desc
@@ -1676,7 +1703,16 @@ export async function getOrderProgressById(id: string) {
       unit_cost_snapshot::text,
       po_delivery_date::text,
       po_serial_code,
-      po_bluetooth_id
+      po_bluetooth_id,
+      fulfillment_target_completion,
+      fulfillment_sales_order_number,
+      fulfillment_ship_from,
+      fulfillment_ship_to,
+      fulfillment_etd::text,
+      fulfillment_eta::text,
+      fulfillment_tracking_link,
+      fulfillment_mp_batch,
+      fulfillment_balance_qty
     from order_progress
     where id = ${Number(id)}
     limit 1;
@@ -1770,7 +1806,16 @@ export async function createOrderProgress(input: {
       unit_cost_snapshot::text,
       po_delivery_date::text,
       po_serial_code,
-      po_bluetooth_id;
+      po_bluetooth_id,
+      fulfillment_target_completion,
+      fulfillment_sales_order_number,
+      fulfillment_ship_from,
+      fulfillment_ship_to,
+      fulfillment_etd::text,
+      fulfillment_eta::text,
+      fulfillment_tracking_link,
+      fulfillment_mp_batch,
+      fulfillment_balance_qty;
   `;
   const newId = Number(rows[0].id);
   if (plans.length > 0) {
@@ -1883,6 +1928,75 @@ export async function updateOrderProgress(input: {
   const planMap = await loadDeliveryPlansByProgressIds(db, [pid]);
   const stepMap = await loadOrderProductionStepsByIds(db, [pid]);
   return mapOrderProgress(rows[0], planMap.get(pid) ?? [], stepMap.get(pid) ?? []);
+}
+
+export async function updateOrderFulfillmentById(input: {
+  id: string;
+  targetCompletion: string;
+  salesOrderNumber: string;
+  shipFrom: string;
+  shipTo: string;
+  etd: string | null;
+  eta: string | null;
+  trackingLink: string;
+  mpBatch: string;
+  balanceQty: number;
+}): Promise<OrderProgressEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const idNum = Number(input.id);
+  if (!Number.isFinite(idNum) || idNum <= 0) return null;
+
+  const rows = await db<OrderProgressRow[]>`
+    update order_progress
+    set
+      fulfillment_target_completion = ${input.targetCompletion.trim().slice(0, 120)},
+      fulfillment_sales_order_number = ${input.salesOrderNumber.trim().slice(0, 120)},
+      fulfillment_ship_from = ${input.shipFrom.trim().slice(0, 160)},
+      fulfillment_ship_to = ${input.shipTo.trim().slice(0, 160)},
+      fulfillment_etd = ${input.etd ? input.etd.trim() : null},
+      fulfillment_eta = ${input.eta ? input.eta.trim() : null},
+      fulfillment_tracking_link = ${input.trackingLink.trim().slice(0, 400)},
+      fulfillment_mp_batch = ${input.mpBatch.trim().slice(0, 120)},
+      fulfillment_balance_qty = ${Math.max(0, Math.trunc(input.balanceQty))},
+      updated_at = now()
+    where id = ${idNum}
+    returning
+      id,
+      coalesce(order_number, '') as order_number,
+      product_name,
+      sku,
+      quantity,
+      order_date::text,
+      delivery_date::text,
+      order_type,
+      progress,
+      factory_name,
+      region,
+      created_by,
+      created_at::text,
+      updated_at::text,
+      po_number,
+      po_batch,
+      unit_cost_snapshot::text,
+      po_delivery_date::text,
+      po_serial_code,
+      po_bluetooth_id,
+      fulfillment_target_completion,
+      fulfillment_sales_order_number,
+      fulfillment_ship_from,
+      fulfillment_ship_to,
+      fulfillment_etd::text,
+      fulfillment_eta::text,
+      fulfillment_tracking_link,
+      fulfillment_mp_batch,
+      fulfillment_balance_qty;
+  `;
+  if (!rows[0]) return null;
+  const oid = Number(rows[0].id);
+  const planMap = await loadDeliveryPlansByProgressIds(db, [oid]);
+  const stepMap = await ensureOrderProductionStepsLoaded(db, rows);
+  return mapOrderProgress(rows[0], planMap.get(oid) ?? [], stepMap.get(oid) ?? []);
 }
 
 export async function createOrderProgressDeletionLog(input: {
