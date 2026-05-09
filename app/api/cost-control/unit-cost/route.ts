@@ -30,9 +30,14 @@ function parseIncoterm(body: Record<string, unknown>): UnitCostQuoteIncoterm {
     : "EXW";
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const sku = new URL(request.url).searchParams.get("sku")?.trim() ?? "";
+  if (sku) {
+    const exists = await unitCostQuoteSkuExists(sku);
+    return NextResponse.json({ exists });
+  }
   const entries = await listUnitCostQuotes();
   return NextResponse.json({ entries });
 }

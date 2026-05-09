@@ -58,6 +58,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     duplicateSku: en
       ? "This SKU already has a unit cost quote. Add a reason before saving another quote."
       : "该 SKU 已存在 Unit Cost 报价。如需再次创建，请填写原因。",
+    checkingSku: en ? "Checking SKU…" : "正在检查 SKU…",
     duplicateReason: en ? "Reason for creating another unit cost" : "创建重复 SKU 单价的理由",
     duplicateReasonPlaceholder: en
       ? "Example: supplier updated price, new effective date, tax condition changed..."
@@ -97,6 +98,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [quoteDate, setQuoteDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [manufacturerCountry, setManufacturerCountry] = useState("");
   const [creationReason, setCreationReason] = useState("");
+  const [remoteDuplicateSku, setRemoteDuplicateSku] = useState<boolean | null>(null);
+  const [checkingDuplicateSku, setCheckingDuplicateSku] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [filterSku, setFilterSku] = useState("");
@@ -118,11 +121,18 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     return [...set].sort((a, b) => a.localeCompare(b));
   }, [activeSupplierNames, editRow, eSupplierName]);
 
-  const duplicateSku = useMemo(() => {
-    const s = sku.trim().toLowerCase();
-    if (!s) return false;
-    return initialEntries.some((entry) => entry.sku.trim().toLowerCase() === s);
-  }, [initialEntries, sku]);
+  const normalizedSku = sku.trim().toLowerCase();
+  const localDuplicateSku = useMemo(() => {
+    if (!normalizedSku) return false;
+    return initialEntries.some((entry) => entry.sku.trim().toLowerCase() === normalizedSku);
+  }, [initialEntries, normalizedSku]);
+  const duplicateSku = localDuplicateSku || remoteDuplicateSku === true;
+
+  function onSkuChange(value: string) {
+    setSku(value);
+    setRemoteDuplicateSku(null);
+    if (!value.trim()) setCreationReason("");
+  }
 
   function openEdit(row: UnitCostQuoteEntry) {
     setEditRow(row);
@@ -193,6 +203,32 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     return initialEntries.filter((e) => e.sku.trim() === filterSku.trim());
   }, [initialEntries, filterSku]);
 
+  async function checkSkuDuplicate(skuValue = sku.trim()): Promise<boolean> {
+    const value = skuValue.trim();
+    if (!value) {
+      setRemoteDuplicateSku(null);
+      return false;
+    }
+    if (localDuplicateSku) {
+      setRemoteDuplicateSku(true);
+      return true;
+    }
+
+    setCheckingDuplicateSku(true);
+    try {
+      const res = await fetch(`/api/cost-control/unit-cost?sku=${encodeURIComponent(value)}`);
+      const data = (await res.json().catch(() => ({}))) as { exists?: boolean };
+      const exists = res.ok && data.exists === true;
+      setRemoteDuplicateSku(exists);
+      return exists;
+    } catch {
+      setRemoteDuplicateSku(null);
+      return false;
+    } finally {
+      setCheckingDuplicateSku(false);
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -213,7 +249,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
       setLoading(false);
       return;
     }
-    if (duplicateSku && !creationReason.trim()) {
+    const skuExists = duplicateSku || (await checkSkuDuplicate(sku.trim()));
+    if (skuExists && !creationReason.trim()) {
       setMessage(en ? "Reason is required for duplicate SKU." : "SKU 已存在，请填写创建单价的理由。");
       setLoading(false);
       return;
@@ -233,7 +270,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
         seaFreightUnitPrice: null,
         airFreightUnitPrice: null,
         incoterm: "EXW",
-        creationReason: duplicateSku ? creationReason.trim() : "",
+        creationReason: skuExists ? creationReason.trim() : "",
       }),
     });
     const data = (await res.json().catch(() => ({}))) as { message?: string };
@@ -261,9 +298,12 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
             <input
               list="unit-cost-sku-options"
               value={sku}
-              onChange={(e) => setSku(e.target.value)}
+              onChange={(e) => onSkuChange(e.target.value)}
+              onBlur={() => {
+                void checkSkuDuplicate();
+              }}
               required
-              aria-describedby={duplicateSku ? "unit-cost-duplicate-sku-hint" : undefined}
+              aria-describedby={duplicateSku || checkingDuplicateSku ? "unit-cost-duplicate-sku-hint" : undefined}
               className={`w-full rounded-lg border px-3 py-2 text-sm ${
                 duplicateSku ? "border-amber-300 bg-amber-50/60" : "border-app-border"
               }`}
@@ -277,6 +317,10 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
             {duplicateSku ? (
               <p id="unit-cost-duplicate-sku-hint" className="mt-1 text-xs font-medium text-amber-700">
                 {t.duplicateSku}
+              </p>
+            ) : checkingDuplicateSku ? (
+              <p id="unit-cost-duplicate-sku-hint" className="mt-1 text-xs text-app-muted">
+                {t.checkingSku}
               </p>
             ) : null}
           </label>
