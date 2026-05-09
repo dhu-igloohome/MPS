@@ -7,6 +7,7 @@ import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
 import {
   listContractsBySessionRegions,
+  listOrderContractCreateHints,
   listOrderProgressBySessionRegions,
   listSuppliers,
   listUnitCostQuotes,
@@ -27,6 +28,7 @@ export default async function SupplyChainContractsPage() {
     listSuppliers(),
     listUnitCostQuotes(),
   ]);
+  const orderContractHints = await listOrderContractCreateHints(orders, session.regions);
 
   return (
     <AppShell
@@ -38,6 +40,7 @@ export default async function SupplyChainContractsPage() {
       <ContractManagement
         contracts={contracts}
         orders={orders}
+        orderContractHints={orderContractHints}
         suppliers={suppliers}
         unitCostQuotes={unitCostQuotes}
         language={language}

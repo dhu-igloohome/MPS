@@ -397,6 +397,26 @@ export type OrderProgressEntry = {
   fulfillmentBalanceQty?: number;
 };
 
+/**
+ * Resolves supplier + payment terms for creating a contract from an order:
+ * Forecast (PO + SKU) → Forecast cash flow supplier name → Suppliers master.
+ */
+export type OrderContractCreateHint = {
+  /** Supplier name saved on Cost control → Cash flow analysis for this forecast row. */
+  cashFlowSupplierName: string;
+  supplierId: string | null;
+  /** Payment terms from Suppliers master when supplier resolves. */
+  paymentTerms: string;
+  forecastId: string | null;
+  ready: boolean;
+  reasonKey:
+    | "ok"
+    | "missing_po_or_sku"
+    | "forecast_not_found"
+    | "cash_flow_supplier_empty"
+    | "supplier_not_in_master";
+};
+
 export type OrderProgressDeletionLog = {
   id: string;
   orderProgressId: string;

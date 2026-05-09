@@ -17,31 +17,28 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const orderProgressId = String(body.orderProgressId || "").trim();
-  const supplierId = String(body.supplierId || "").trim();
   const batch = String(body.batch || "").trim();
   const currency = String(body.currency || "USD").trim();
-  const paymentTerms = String(body.paymentTerms || "Cash").trim();
   const remark = String(body.remark ?? body.qualityRemarks ?? "").trim();
   const deliveryAddress = String(body.deliveryAddress || "").trim();
   const serialCode = String(body.serialCode || "").trim();
   const bluetoothId = String(body.bluetoothId || "").trim();
 
-  if (!orderProgressId || !supplierId || !batch || !currency || !paymentTerms || !deliveryAddress) {
+  if (!orderProgressId || !batch || !currency || !deliveryAddress) {
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
   }
 
   try {
     const contract = await createContractFromOrder({
       orderProgressId,
-      supplierId,
       batch,
       currency,
-      paymentTerms,
       remark,
       deliveryAddress,
       serialCode,
       bluetoothId,
       createdBy: session.username,
+      sessionRegions: session.regions,
     });
     return NextResponse.json({ ok: true, contract });
   } catch (e) {

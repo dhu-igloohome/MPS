@@ -29,6 +29,7 @@ import {
   OrderProductionStep,
   OrderProgressDeliveryPlan,
   ProductionStepTemplateEntry,
+  OrderContractCreateHint,
   OrderProgressEntry,
   OrderProgressOrderType,
   OrderProgressRegion,
@@ -829,6 +830,139 @@ export async function findLatestForecastByPoAndSku(
     limit 1;
   `;
   return rows[0] ? mapForecast(rows[0]) : null;
+}
+
+function orderContractHintMessage(reasonKey: OrderContractCreateHint["reasonKey"], cashFlowName: string): string {
+  switch (reasonKey) {
+    case "ok":
+      return "";
+    case "missing_po_or_sku":
+      return "This order line needs a PO number and SKU that match a forecast row.";
+    case "forecast_not_found":
+      return "No forecast matches this order's PO and SKU in your regions.";
+    case "cash_flow_supplier_empty":
+      return "Choose a supplier in Supply Chain → Cost control → Cash flow analysis (Forecast cash flow) for this forecast.";
+    case "supplier_not_in_master":
+      return `Cash flow supplier "${cashFlowName}" is not found in Suppliers (or is inactive). Add or activate it under Supply Chain → Suppliers.`;
+    default:
+      return "Cannot resolve supplier for this contract.";
+  }
+}
+
+export async function getOrderContractCreateHint(
+  orderProgressId: string,
+  sessionRegions: Region[],
+): Promise<OrderContractCreateHint> {
+  const emptyName = "";
+  const base = (partial: Omit<OrderContractCreateHint, "reasonKey"> & { reasonKey: OrderContractCreateHint["reasonKey"] }): OrderContractCreateHint => ({
+    cashFlowSupplierName: partial.cashFlowSupplierName,
+    supplierId: partial.supplierId,
+    paymentTerms: partial.paymentTerms,
+    forecastId: partial.forecastId,
+    ready: partial.ready,
+    reasonKey: partial.reasonKey,
+  });
+
+  await ensureDatabase();
+  const db = getSql();
+  const oid = Number(orderProgressId);
+  if (!Number.isFinite(oid) || oid < 1) {
+    return base({
+      cashFlowSupplierName: emptyName,
+      supplierId: null,
+      paymentTerms: "",
+      forecastId: null,
+      ready: false,
+      reasonKey: "missing_po_or_sku",
+    });
+  }
+  const oRows = await db<{ po_number: string | null; sku: string }[]>`
+    select po_number, sku from order_progress where id = ${oid} limit 1;
+  `;
+  const o = oRows[0];
+  if (!o) {
+    return base({
+      cashFlowSupplierName: emptyName,
+      supplierId: null,
+      paymentTerms: "",
+      forecastId: null,
+      ready: false,
+      reasonKey: "missing_po_or_sku",
+    });
+  }
+  const po = String(o.po_number ?? "").trim();
+  const sku = String(o.sku ?? "").trim();
+  if (!po || !sku) {
+    return base({
+      cashFlowSupplierName: emptyName,
+      supplierId: null,
+      paymentTerms: "",
+      forecastId: null,
+      ready: false,
+      reasonKey: "missing_po_or_sku",
+    });
+  }
+  const forecast = await findLatestForecastByPoAndSku(sessionRegions, po, sku);
+  if (!forecast) {
+    return base({
+      cashFlowSupplierName: emptyName,
+      supplierId: null,
+      paymentTerms: "",
+      forecastId: null,
+      ready: false,
+      reasonKey: "forecast_not_found",
+    });
+  }
+  const fid = Number(forecast.id);
+  const sRows = await db<{ supplier_name: string }[]>`
+    select supplier_name from forecast_cash_flow_settings where forecast_id = ${fid} limit 1;
+  `;
+  const cashFlowSupplierName = (sRows[0]?.supplier_name ?? "").trim();
+  if (!cashFlowSupplierName) {
+    return base({
+      cashFlowSupplierName: emptyName,
+      supplierId: null,
+      paymentTerms: "",
+      forecastId: forecast.id,
+      ready: false,
+      reasonKey: "cash_flow_supplier_empty",
+    });
+  }
+  const supRows = await db<{ id: number; payment_terms: string }[]>`
+    select id, payment_terms from suppliers
+    where lower(trim(name)) = lower(trim(${cashFlowSupplierName})) and is_active = true
+    order by id asc
+    limit 1;
+  `;
+  const sup = supRows[0];
+  if (!sup) {
+    return base({
+      cashFlowSupplierName,
+      supplierId: null,
+      paymentTerms: "",
+      forecastId: forecast.id,
+      ready: false,
+      reasonKey: "supplier_not_in_master",
+    });
+  }
+  return base({
+    cashFlowSupplierName,
+    supplierId: String(sup.id),
+    paymentTerms: (sup.payment_terms ?? "").trim(),
+    forecastId: forecast.id,
+    ready: true,
+    reasonKey: "ok",
+  });
+}
+
+export async function listOrderContractCreateHints(
+  orders: OrderProgressEntry[],
+  sessionRegions: Region[],
+): Promise<Record<string, OrderContractCreateHint>> {
+  const entries = await Promise.all(
+    orders.map(async (o) => [o.id, await getOrderContractCreateHint(o.id, sessionRegions)] as const),
+  );
+  return Object.fromEntries(entries);
 }
 
 export async function forecastPoExistsInRegion(region: Region, poNumber: string): Promise<boolean> {
@@ -4362,18 +4496,25 @@ export async function listContractsByPoNumberInSessionRegions(
 
 export async function createContractFromOrder(input: {
   orderProgressId: string;
-  supplierId: string;
   batch: string;
   currency: string;
-  paymentTerms: string;
   remark: string;
   deliveryAddress: string;
   serialCode: string;
   bluetoothId: string;
   createdBy: string;
+  sessionRegions: Region[];
 }): Promise<ContractEntry> {
   await ensureDatabase();
   const db = getSql();
+  const hint = await getOrderContractCreateHint(input.orderProgressId, input.sessionRegions);
+  if (!hint.ready || !hint.supplierId) {
+    throw new Error(orderContractHintMessage(hint.reasonKey, hint.cashFlowSupplierName));
+  }
+  const supplierIdNum = Number(hint.supplierId);
+  if (!Number.isFinite(supplierIdNum) || supplierIdNum < 1) {
+    throw new Error("Invalid supplier resolution");
+  }
   const duplicates = await db<{ id: number; po_number: string; sku: string }[]>`
     select c.id, c.po_number, c.sku
     from contracts c
@@ -4407,7 +4548,7 @@ export async function createContractFromOrder(input: {
           0
         ) as unit_cost
       from order_progress op
-      join suppliers s on s.id = ${Number(input.supplierId)}
+      join suppliers s on s.id = ${supplierIdNum}
       left join products p on p.product_name = op.product_name and p.sku = op.sku and p.is_active = true
       left join lateral (
         select
@@ -4465,7 +4606,7 @@ export async function createContractFromOrder(input: {
         src.unit_cost_quote_id_snapshot,
         src.unit_cost_quote_date_snapshot,
         ${input.currency.trim()},
-        ${input.paymentTerms.trim()},
+        ${hint.paymentTerms.trim()},
         ${input.remark.trim()},
         ${input.deliveryAddress.trim()},
         ${input.serialCode.trim()},

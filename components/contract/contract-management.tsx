@@ -8,6 +8,7 @@ import type { Language } from "@/lib/i18n";
 import type {
   ContractEntry,
   ContractStatus,
+  OrderContractCreateHint,
   OrderProgressEntry,
   SupplierEntry,
   UnitCostQuoteEntry,
@@ -17,11 +18,37 @@ import type {
 type ContractManagementProps = {
   contracts: ContractEntry[];
   orders: OrderProgressEntry[];
+  orderContractHints: Record<string, OrderContractCreateHint>;
   suppliers: SupplierEntry[];
   unitCostQuotes: UnitCostQuoteEntry[];
   language: Language;
   role: UserRole;
 };
+
+function contractHintHelp(language: Language, hint: OrderContractCreateHint | undefined): string {
+  if (!hint || hint.ready) return "";
+  const en = language === "en";
+  switch (hint.reasonKey) {
+    case "missing_po_or_sku":
+      return en
+        ? "This order needs a PO number and SKU that match a forecast line."
+        : "该订单需具备与 Forecast 行一致的 PO 号与 SKU。";
+    case "forecast_not_found":
+      return en
+        ? "No forecast matches this PO and SKU in your regions."
+        : "在您可见区域内，没有与该 PO + SKU 匹配的 Forecast。";
+    case "cash_flow_supplier_empty":
+      return en
+        ? "Open Cost control → Cash flow analysis and pick a supplier for this forecast row."
+        : "请在「成本控制 → 现金流分析」中为该 Forecast 行选择供应商。";
+    case "supplier_not_in_master":
+      return en
+        ? `Cash flow supplier "${hint.cashFlowSupplierName}" is missing in Suppliers (or inactive).`
+        : `现金流中的供应商「${hint.cashFlowSupplierName}」在「供应商」主数据中不存在或未启用。`;
+    default:
+      return "";
+  }
+}
 
 function canTransition(role: UserRole, current: ContractStatus, next: ContractStatus) {
   if (current === next) return true;
@@ -57,20 +84,28 @@ function getAvailableActions(
 export function ContractManagement({
   contracts,
   orders,
+  orderContractHints,
   suppliers,
   unitCostQuotes,
   language,
   role,
 }: ContractManagementProps) {
   const router = useRouter();
+  const en = language === "en";
   const t = {
     createTitle: "Create Contract (from order)",
     orderLine: "Order line",
-    supplier: "Supplier",
+    supplier: en ? "Supplier (from Forecast cash flow)" : "供应商（来自现金流 Forecast）",
+    supplierHint: en
+      ? "Taken from Cost control → Cash flow analysis for the matching forecast (PO + SKU)."
+      : "取自「成本控制 → 现金流分析」中与该订单 PO+SKU 匹配的 Forecast 行。",
     batch: "Batch",
     currency: "Currency",
     unitPrice: language === "en" ? "Unit price (USD)" : "单价 (USD)",
-    paymentTerms: "Payment terms",
+    paymentTerms: en ? "Payment terms" : "付款条款",
+    paymentTermsHint: en
+      ? "From Supply Chain → Suppliers for the resolved supplier."
+      : "取自「供应链 → 供应商」主数据中该供应商的付款条款。",
     deliveryAddress: "Delivery address",
     remark: language === "en" ? "Remark" : "备注",
     serialCode: "Serial code",
@@ -94,10 +129,8 @@ export function ContractManagement({
   };
 
   const [orderProgressId, setOrderProgressId] = useState(orders[0]?.id ?? "");
-  const [supplierId, setSupplierId] = useState(suppliers[0]?.id ?? "");
   const [batch, setBatch] = useState("");
   const [currency, setCurrency] = useState("USD");
-  const [paymentTerms, setPaymentTerms] = useState("Cash");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [remark, setRemark] = useState("");
   const [serialCode, setSerialCode] = useState("");
@@ -132,8 +165,8 @@ export function ContractManagement({
     () => orders.find((o) => o.id === orderProgressId) ?? null,
     [orders, orderProgressId],
   );
-  const selectedSupplierName =
-    suppliers.find((s) => s.id === supplierId)?.name?.trim() ?? "";
+  const orderHint = orderContractHints[orderProgressId];
+  const selectedSupplierName = (orderHint?.cashFlowSupplierName ?? "").trim();
   const quoteUnitPriceUsd =
     selectedOrder?.sku && selectedSupplierName
       ? latestUnitCostBySkuSupplier.get(`${selectedOrder.sku.trim()}::${selectedSupplierName}`)?.unitPrice ?? null
@@ -153,10 +186,8 @@ export function ContractManagement({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         orderProgressId,
-        supplierId,
         batch,
         currency,
-        paymentTerms,
         deliveryAddress,
         remark,
         serialCode,
@@ -171,7 +202,6 @@ export function ContractManagement({
     }
     setBatch("");
     setCurrency("USD");
-    setPaymentTerms("Cash");
     setDeliveryAddress("");
     setRemark("");
     setSerialCode("");
@@ -210,9 +240,15 @@ export function ContractManagement({
           </label>
           <label className="block">
             <span className="mb-1 block text-sm text-app-muted">{t.supplier}</span>
-            <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="w-full rounded-lg border border-app-border px-3 py-2 text-sm">
-              {suppliers.map((s) => <option value={s.id} key={s.id}>{s.name}</option>)}
-            </select>
+            <input
+              readOnly
+              value={orderHint?.cashFlowSupplierName?.trim() ? orderHint.cashFlowSupplierName : "—"}
+              className="w-full rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
+            />
+            <p className="mt-1 text-xs text-app-muted">{t.supplierHint}</p>
+            {orderHint && !orderHint.ready ? (
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{contractHintHelp(language, orderHint)}</p>
+            ) : null}
           </label>
           <input value={batch} onChange={(e) => setBatch(e.target.value)} required placeholder={t.batch} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} required placeholder={t.currency} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
@@ -230,7 +266,17 @@ export function ContractManagement({
               />
             </label>
           </div>
-          <input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} required placeholder={t.paymentTerms} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <div className="md:col-span-2">
+            <label className="block">
+              <span className="mb-1 block text-sm text-app-muted">{t.paymentTerms}</span>
+              <input
+                readOnly
+                value={orderHint?.paymentTerms?.trim() ? orderHint.paymentTerms : "—"}
+                className="w-full rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
+              />
+              <p className="mt-1 text-xs text-app-muted">{t.paymentTermsHint}</p>
+            </label>
+          </div>
           <input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} required placeholder={t.deliveryAddress} className="rounded-lg border border-app-border px-3 py-2 text-sm md:col-span-2" />
           <label className="block md:col-span-2">
             <span className="mb-1 block text-sm text-app-muted">{t.remark}</span>
@@ -245,7 +291,20 @@ export function ContractManagement({
           <input value={serialCode} onChange={(e) => setSerialCode(e.target.value)} placeholder={t.serialCode} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={bluetoothId} onChange={(e) => setBluetoothId(e.target.value)} placeholder={t.bluetoothId} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
           <div className="md:col-span-2">
-            <button type="submit" disabled={loading || !orderProgressId || !supplierId || !batch.trim() || !currency.trim() || !paymentTerms.trim() || !deliveryAddress.trim()} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">{t.create}</button>
+            <button
+              type="submit"
+              disabled={
+                loading ||
+                !orderProgressId ||
+                !orderHint?.ready ||
+                !batch.trim() ||
+                !currency.trim() ||
+                !deliveryAddress.trim()
+              }
+              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
+            >
+              {t.create}
+            </button>
           </div>
         </form>
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
