@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
-import { updateUnitCostQuote } from "@/lib/repositories";
+import { softDeleteUnitCostQuote, updateUnitCostQuote } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import type { UnitCostQuoteIncoterm } from "@/lib/types";
 
@@ -117,6 +117,38 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     return NextResponse.json({ entry });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Update failed";
+    return NextResponse.json({ message: msg }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: Request, ctx: { params: Promise<{ id: string }> }) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+  const { id } = await ctx.params;
+  const idTrim = String(id ?? "").trim();
+  if (!idTrim || !Number.isFinite(Number(idTrim)) || Number(idTrim) <= 0) {
+    return NextResponse.json({ message: "Invalid id" }, { status: 400 });
+  }
+
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  const reason = String(body.reason ?? "").trim();
+  if (!reason) {
+    return NextResponse.json({ message: "Deletion reason is required" }, { status: 400 });
+  }
+
+  try {
+    const ok = await softDeleteUnitCostQuote({
+      id: idTrim,
+      reason,
+      deletedBy: session.username,
+    });
+    if (!ok) {
+      return NextResponse.json({ message: "Quotation not found or already deleted" }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Delete failed";
     return NextResponse.json({ message: msg }, { status: 400 });
   }
 }

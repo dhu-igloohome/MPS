@@ -73,6 +73,13 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     cancel: en ? "Cancel" : "取消",
     saveChanges: en ? "Save changes" : "保存修改",
     savingEdit: en ? "Saving…" : "保存中…",
+    delete: en ? "Delete" : "删除",
+    deleteTitle: en ? "Delete quotation" : "删除报价",
+    deleteReasonLabel: en ? "Deletion reason" : "删除原因",
+    deleteReasonPlaceholder: en ? "Explain why this quotation is being removed…" : "请填写删除原因…",
+    deleteConfirm: en ? "Confirm delete" : "确认删除",
+    deleting: en ? "Deleting…" : "删除中…",
+    deleteReasonRequired: en ? "Deletion reason is required." : "请填写删除原因。",
   };
 
   const skuOptions = useMemo(() => {
@@ -114,6 +121,11 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [editLoading, setEditLoading] = useState(false);
   const [editMessage, setEditMessage] = useState("");
 
+  const [deleteRow, setDeleteRow] = useState<UnitCostQuoteEntry | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState("");
+
   const supplierOptionsForEdit = useMemo(() => {
     const set = new Set(activeSupplierNames);
     if (editRow?.supplierName.trim()) set.add(editRow.supplierName.trim());
@@ -148,6 +160,44 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   function closeEdit() {
     setEditRow(null);
     setEditMessage("");
+  }
+
+  function openDelete(row: UnitCostQuoteEntry) {
+    closeEdit();
+    setDeleteRow(row);
+    setDeleteReason("");
+    setDeleteMessage("");
+  }
+
+  function closeDelete() {
+    setDeleteRow(null);
+    setDeleteReason("");
+    setDeleteMessage("");
+  }
+
+  async function onConfirmDelete(e: React.FormEvent) {
+    e.preventDefault();
+    if (!deleteRow) return;
+    const reason = deleteReason.trim();
+    if (!reason) {
+      setDeleteMessage(t.deleteReasonRequired);
+      return;
+    }
+    setDeleteLoading(true);
+    setDeleteMessage("");
+    const res = await fetch(`/api/cost-control/unit-cost/${deleteRow.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { message?: string };
+    setDeleteLoading(false);
+    if (!res.ok) {
+      setDeleteMessage(data.message || (en ? "Delete failed." : "删除失败。"));
+      return;
+    }
+    closeDelete();
+    router.refresh();
   }
 
   async function onSaveEdit(e: React.FormEvent) {
@@ -536,6 +586,69 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
         </div>
       ) : null}
 
+      {deleteRow ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal
+          aria-labelledby="unit-cost-delete-title"
+          onClick={(ev) => {
+            if (ev.target === ev.currentTarget && !deleteLoading) closeDelete();
+          }}
+        >
+          <div className="w-full max-w-lg rounded-2xl border border-app-border bg-app-surface p-5 shadow-lg">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <h3 id="unit-cost-delete-title" className="text-base font-semibold text-foreground">
+                {t.deleteTitle}
+              </h3>
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={closeDelete}
+                className="rounded-lg border border-app-border px-2.5 py-1 text-sm text-foreground/80 hover:bg-app-accent-soft disabled:opacity-50"
+              >
+                {t.cancel}
+              </button>
+            </div>
+            <p className="mb-3 text-sm text-app-muted">
+              {deleteRow.sku} · {deleteRow.quoteDate} · {deleteRow.supplierName}
+            </p>
+            <form onSubmit={onConfirmDelete} className="space-y-3">
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-foreground/85">{t.deleteReasonLabel}</span>
+                <textarea
+                  value={deleteReason}
+                  onChange={(ev) => setDeleteReason(ev.target.value)}
+                  required
+                  rows={3}
+                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                  placeholder={t.deleteReasonPlaceholder}
+                  autoFocus
+                />
+              </label>
+              {deleteMessage ? <p className="text-sm text-red-600">{deleteMessage}</p> : null}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={deleteLoading}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deleteLoading ? t.deleting : t.deleteConfirm}
+                </button>
+                <button
+                  type="button"
+                  disabled={deleteLoading}
+                  onClick={closeDelete}
+                  className="rounded-lg border border-app-border px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft disabled:opacity-50"
+                >
+                  {t.cancel}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
       <section>
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-base font-semibold text-foreground">{t.history}</h3>
@@ -593,13 +706,22 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                       {row.createdAt.slice(0, 19).replace("T", " ")}
                     </td>
                     <td className="whitespace-nowrap px-2 py-2">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(row)}
-                        className="rounded-md border border-app-border px-2 py-1 text-xs font-medium text-app-accent hover:bg-app-accent-soft"
-                      >
-                        {t.edit}
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(row)}
+                          className="rounded-md border border-app-border px-2 py-1 text-xs font-medium text-app-accent hover:bg-app-accent-soft"
+                        >
+                          {t.edit}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openDelete(row)}
+                          className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70"
+                        >
+                          {t.delete}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

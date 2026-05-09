@@ -515,6 +515,10 @@ async function main() {
   await sql`alter table unit_cost_quotes add column if not exists sea_freight_unit_price numeric(14, 4);`;
   await sql`alter table unit_cost_quotes add column if not exists air_freight_unit_price numeric(14, 4);`;
   await sql`alter table unit_cost_quotes add column if not exists incoterm text not null default 'EXW';`;
+  await sql`alter table unit_cost_quotes add column if not exists creation_reason text not null default '';`;
+  await sql`alter table unit_cost_quotes add column if not exists deleted_at timestamptz;`;
+  await sql`alter table unit_cost_quotes add column if not exists deletion_reason text not null default '';`;
+  await sql`alter table unit_cost_quotes add column if not exists deleted_by text;`;
 
   await sql`
     create table if not exists forecast_cash_flow_settings (

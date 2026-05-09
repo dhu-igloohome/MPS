@@ -4410,7 +4410,7 @@ export async function createContractFromOrder(input: {
       left join lateral (
         select unit_price::numeric as unit_cost
         from unit_cost_quotes
-        where sku = op.sku and trim(supplier_name) = trim(s.name)
+        where sku = op.sku and trim(supplier_name) = trim(s.name) and deleted_at is null
         order by quote_date desc, id desc
         limit 1
       ) uc on true
@@ -5149,7 +5149,7 @@ export async function unitCostQuoteSkuExists(sku: string): Promise<boolean> {
     select exists(
       select 1
       from unit_cost_quotes
-      where lower(trim(sku)) = lower(${sk})
+      where lower(trim(sku)) = lower(${sk}) and deleted_at is null
       limit 1
     ) as exists;
   `;
@@ -5178,6 +5178,7 @@ export async function listUnitCostQuotes(): Promise<UnitCostQuoteEntry[]> {
       created_by,
       created_at::text
     from unit_cost_quotes
+    where deleted_at is null
     order by quote_date desc, id desc
     limit 2000;
   `;
@@ -5291,7 +5292,7 @@ export async function updateUnitCostQuote(input: {
       sea_freight_unit_price = ${input.seaFreightUnitPrice},
       air_freight_unit_price = ${input.airFreightUnitPrice},
       incoterm = ${input.incoterm}
-    where id = ${idNum}
+    where id = ${idNum} and deleted_at is null
     returning
       id,
       sku,
@@ -5356,11 +5357,39 @@ export async function getLatestUnitCostQuoteBySkuSupplier(
       created_by,
       created_at::text
     from unit_cost_quotes
-    where sku = ${sk} and supplier_name = ${sup}
+    where sku = ${sk} and supplier_name = ${sup} and deleted_at is null
     order by quote_date desc, id desc
     limit 1;
   `;
   return rows[0] ? mapUnitCostQuote(rows[0]) : null;
+}
+
+export async function softDeleteUnitCostQuote(input: {
+  id: string;
+  reason: string;
+  deletedBy: string;
+}): Promise<boolean> {
+  await ensureDatabase();
+  const db = getSql();
+  const idNum = Number(input.id);
+  if (!Number.isFinite(idNum) || idNum <= 0) return false;
+  const reason = input.reason.trim();
+  if (!reason) {
+    throw new Error("Deletion reason is required");
+  }
+  const by = input.deletedBy.trim();
+  if (!by) {
+    throw new Error("Deleted-by user is required");
+  }
+  const rows = await db<{ id: number }[]>`
+    update unit_cost_quotes set
+      deleted_at = now(),
+      deletion_reason = ${reason},
+      deleted_by = ${by}
+    where id = ${idNum} and deleted_at is null
+    returning id;
+  `;
+  return rows.length > 0;
 }
 
 /**
