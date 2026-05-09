@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
-import { createUnitCostQuote, listUnitCostQuotes } from "@/lib/repositories";
+import { createUnitCostQuote, listUnitCostQuotes, unitCostQuoteSkuExists } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import type { UnitCostQuoteIncoterm } from "@/lib/types";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const INCOTERMS: UnitCostQuoteIncoterm[] = ["EXW", "FOB", "DAP", "DDP"];
+const CREATION_REASON_MAX_LENGTH = 500;
 
 function optPct(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
   const seaFreightUnitPrice = optFreightUsd(body.seaFreightUnitPrice);
   const airFreightUnitPrice = optFreightUsd(body.airFreightUnitPrice);
   const incoterm = parseIncoterm(body);
+  const creationReason = String(body.creationReason ?? "").trim();
 
   if (!sku) {
     return NextResponse.json({ message: "SKU is required" }, { status: 400 });
@@ -95,6 +97,13 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  if (creationReason.length > CREATION_REASON_MAX_LENGTH) {
+    return NextResponse.json({ message: "Creation reason must be 500 characters or fewer" }, { status: 400 });
+  }
+  const skuExists = await unitCostQuoteSkuExists(sku);
+  if (skuExists && !creationReason) {
+    return NextResponse.json({ message: "Duplicate SKU requires a creation reason" }, { status: 400 });
+  }
 
   try {
     const entry = await createUnitCostQuote({
@@ -110,6 +119,7 @@ export async function POST(request: Request) {
       seaFreightUnitPrice,
       airFreightUnitPrice,
       incoterm,
+      creationReason,
       createdBy: session.username,
     });
     return NextResponse.json({ entry });

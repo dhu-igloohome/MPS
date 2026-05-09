@@ -5103,6 +5103,7 @@ type UnitCostQuoteRow = {
   sea_freight_unit_price: string | number | null;
   air_freight_unit_price: string | number | null;
   incoterm: string | null;
+  creation_reason: string | null;
   created_by: string;
   created_at: string;
 };
@@ -5133,9 +5134,26 @@ function mapUnitCostQuote(row: UnitCostQuoteRow): UnitCostQuoteEntry {
     seaFreightUnitPrice: quoteNullableNum(row.sea_freight_unit_price),
     airFreightUnitPrice: quoteNullableNum(row.air_freight_unit_price),
     incoterm: normalizeUnitCostIncoterm(row.incoterm),
+    creationReason: row.creation_reason ?? "",
     createdBy: row.created_by,
     createdAt: row.created_at,
   };
+}
+
+export async function unitCostQuoteSkuExists(sku: string): Promise<boolean> {
+  const sk = sku.trim();
+  if (!sk) return false;
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ exists: boolean }[]>`
+    select exists(
+      select 1
+      from unit_cost_quotes
+      where lower(trim(sku)) = lower(${sk})
+      limit 1
+    ) as exists;
+  `;
+  return Boolean(rows[0]?.exists);
 }
 
 export async function listUnitCostQuotes(): Promise<UnitCostQuoteEntry[]> {
@@ -5156,6 +5174,7 @@ export async function listUnitCostQuotes(): Promise<UnitCostQuoteEntry[]> {
       sea_freight_unit_price::text,
       air_freight_unit_price::text,
       incoterm,
+      creation_reason,
       created_by,
       created_at::text
     from unit_cost_quotes
@@ -5178,6 +5197,7 @@ export async function createUnitCostQuote(input: {
   seaFreightUnitPrice: number | null;
   airFreightUnitPrice: number | null;
   incoterm: UnitCostQuoteIncoterm;
+  creationReason?: string;
   createdBy: string;
 }): Promise<UnitCostQuoteEntry> {
   await ensureDatabase();
@@ -5196,6 +5216,7 @@ export async function createUnitCostQuote(input: {
       sea_freight_unit_price,
       air_freight_unit_price,
       incoterm,
+      creation_reason,
       created_by
     )
     values (
@@ -5211,6 +5232,7 @@ export async function createUnitCostQuote(input: {
       ${input.seaFreightUnitPrice},
       ${input.airFreightUnitPrice},
       ${input.incoterm},
+      ${(input.creationReason ?? "").trim()},
       ${input.createdBy}
     )
     returning
@@ -5227,6 +5249,7 @@ export async function createUnitCostQuote(input: {
       sea_freight_unit_price::text,
       air_freight_unit_price::text,
       incoterm,
+      creation_reason,
       created_by,
       created_at::text;
   `;
@@ -5283,6 +5306,7 @@ export async function updateUnitCostQuote(input: {
       sea_freight_unit_price::text,
       air_freight_unit_price::text,
       incoterm,
+      creation_reason,
       created_by,
       created_at::text;
   `;
@@ -5328,6 +5352,7 @@ export async function getLatestUnitCostQuoteBySkuSupplier(
       sea_freight_unit_price::text,
       air_freight_unit_price::text,
       incoterm,
+      creation_reason,
       created_by,
       created_at::text
     from unit_cost_quotes

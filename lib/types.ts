@@ -635,6 +635,8 @@ export type UnitCostQuoteEntry = {
   /** 空运运费单价 (USD)，未填为 null */
   airFreightUnitPrice: number | null;
   incoterm: UnitCostQuoteIncoterm;
+  /** 重复 SKU 新建报价时填写的创建理由 */
+  creationReason: string;
   createdBy: string;
   createdAt: string;
 };

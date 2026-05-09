@@ -611,6 +611,7 @@ async function setupSchema() {
   await db`alter table unit_cost_quotes add column if not exists sea_freight_unit_price numeric(14, 4);`;
   await db`alter table unit_cost_quotes add column if not exists air_freight_unit_price numeric(14, 4);`;
   await db`alter table unit_cost_quotes add column if not exists incoterm text not null default 'EXW';`;
+  await db`alter table unit_cost_quotes add column if not exists creation_reason text not null default '';`;
 
   await db`
     create table if not exists forecast_cash_flow_settings (

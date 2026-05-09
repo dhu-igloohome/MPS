@@ -54,6 +54,14 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     no: en ? "No" : "否",
     by: en ? "By" : "录入人",
     at: en ? "Recorded at" : "录入时间",
+    reason: en ? "Reason" : "理由",
+    duplicateSku: en
+      ? "This SKU already has a unit cost quote. Add a reason before saving another quote."
+      : "该 SKU 已存在 Unit Cost 报价。如需再次创建，请填写原因。",
+    duplicateReason: en ? "Reason for creating another unit cost" : "创建重复 SKU 单价的理由",
+    duplicateReasonPlaceholder: en
+      ? "Example: supplier updated price, new effective date, tax condition changed..."
+      : "例如：供应商调价、新生效日期、税费条件变化等",
     manufacturerCountry: en ? "Manufacturer country" : "生产商国家",
     selectMfrCountry: en ? "Select country…" : "选择国家…",
     hint: en
@@ -88,6 +96,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [supplierName, setSupplierName] = useState("");
   const [quoteDate, setQuoteDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [manufacturerCountry, setManufacturerCountry] = useState("");
+  const [creationReason, setCreationReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [filterSku, setFilterSku] = useState("");
@@ -108,6 +117,12 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     if (eSupplierName.trim()) set.add(eSupplierName.trim());
     return [...set].sort((a, b) => a.localeCompare(b));
   }, [activeSupplierNames, editRow, eSupplierName]);
+
+  const duplicateSku = useMemo(() => {
+    const s = sku.trim().toLowerCase();
+    if (!s) return false;
+    return initialEntries.some((entry) => entry.sku.trim().toLowerCase() === s);
+  }, [initialEntries, sku]);
 
   function openEdit(row: UnitCostQuoteEntry) {
     setEditRow(row);
@@ -198,6 +213,11 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
       setLoading(false);
       return;
     }
+    if (duplicateSku && !creationReason.trim()) {
+      setMessage(en ? "Reason is required for duplicate SKU." : "SKU 已存在，请填写创建单价的理由。");
+      setLoading(false);
+      return;
+    }
     const res = await fetch("/api/cost-control/unit-cost", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -213,6 +233,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
         seaFreightUnitPrice: null,
         airFreightUnitPrice: null,
         incoterm: "EXW",
+        creationReason: duplicateSku ? creationReason.trim() : "",
       }),
     });
     const data = (await res.json().catch(() => ({}))) as { message?: string };
@@ -224,6 +245,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     setMessage(en ? "Saved." : "已保存。");
     setUnitPrice("");
     setManufacturerCountry("");
+    setCreationReason("");
     router.refresh();
   }
 
@@ -241,7 +263,10 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               value={sku}
               onChange={(e) => setSku(e.target.value)}
               required
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+              aria-describedby={duplicateSku ? "unit-cost-duplicate-sku-hint" : undefined}
+              className={`w-full rounded-lg border px-3 py-2 text-sm ${
+                duplicateSku ? "border-amber-300 bg-amber-50/60" : "border-app-border"
+              }`}
               placeholder={en ? "e.g. IGB4E" : "例如 IGB4E"}
             />
             <datalist id="unit-cost-sku-options">
@@ -249,7 +274,26 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                 <option key={s} value={s} />
               ))}
             </datalist>
+            {duplicateSku ? (
+              <p id="unit-cost-duplicate-sku-hint" className="mt-1 text-xs font-medium text-amber-700">
+                {t.duplicateSku}
+              </p>
+            ) : null}
           </label>
+          {duplicateSku ? (
+            <label className="block md:col-span-2 xl:col-span-3">
+              <span className="mb-1 block text-sm text-foreground/85">{t.duplicateReason}</span>
+              <textarea
+                value={creationReason}
+                onChange={(e) => setCreationReason(e.target.value)}
+                required={duplicateSku}
+                maxLength={500}
+                rows={3}
+                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                placeholder={t.duplicateReasonPlaceholder}
+              />
+            </label>
+          ) : null}
           <label className="block">
             <span className="mb-1 block text-sm text-foreground/85">{t.unitPrice}</span>
             <input
@@ -468,7 +512,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
           </label>
         </div>
         <div className="app-table-shell overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
+          <table className="w-full min-w-[840px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-app-border text-left text-app-muted">
                 <th className="whitespace-nowrap px-2 py-2">{t.quoteDate}</th>
@@ -477,6 +521,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                 <th className="whitespace-nowrap px-2 py-2">{t.taxIncluded}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.supplier}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.manufacturerCountry}</th>
+                <th className="whitespace-nowrap px-2 py-2">{t.reason}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.by}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.at}</th>
                 <th className="whitespace-nowrap px-2 py-2">{t.edit}</th>
@@ -485,7 +530,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
             <tbody>
               {filteredHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-2 py-6 text-center text-app-muted">
+                  <td colSpan={10} className="px-2 py-6 text-center text-app-muted">
                     {t.empty}
                   </td>
                 </tr>
@@ -498,6 +543,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                     <td className="whitespace-nowrap px-2 py-2">{row.taxIncluded ? t.yes : t.no}</td>
                     <td className="max-w-[10rem] truncate px-2 py-2">{row.supplierName}</td>
                     <td className="max-w-[8rem] truncate px-2 py-2">{row.manufacturerCountry || "—"}</td>
+                    <td className="max-w-[14rem] truncate px-2 py-2 text-app-muted">{row.creationReason || "—"}</td>
                     <td className="whitespace-nowrap px-2 py-2">{row.createdBy}</td>
                     <td className="whitespace-nowrap px-2 py-2 tabular-nums text-app-muted">
                       {row.createdAt.slice(0, 19).replace("T", " ")}
