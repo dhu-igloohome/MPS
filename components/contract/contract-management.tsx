@@ -45,6 +45,10 @@ function contractHintHelp(language: Language, hint: OrderContractCreateHint | un
       return en
         ? `Cash flow supplier "${hint.cashFlowSupplierName}" is missing in Suppliers (or inactive).`
         : `现金流中的供应商「${hint.cashFlowSupplierName}」在「供应商」主数据中不存在或未启用。`;
+    case "resolution_error":
+      return en
+        ? "Could not load supplier link (temporary error). Refresh the page or try again."
+        : "暂时无法加载供应商关联，请刷新页面或稍后重试。";
     default:
       return "";
   }
@@ -139,6 +143,8 @@ export function ContractManagement({
   const [supplierFilter, setSupplierFilter] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  /** Create form only: green on success, red on error (avoid showing success in red). */
+  const [createFeedback, setCreateFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
   const filteredContracts = useMemo(() => {
     return contracts.filter((c) => {
@@ -181,6 +187,7 @@ export function ContractManagement({
     e.preventDefault();
     setLoading(true);
     setMessage("");
+    setCreateFeedback(null);
     const res = await fetch("/api/contracts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -197,7 +204,8 @@ export function ContractManagement({
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     setLoading(false);
     if (!res.ok) {
-      setMessage(data.message || "Request failed");
+      const err = data.message || "Request failed";
+      setCreateFeedback({ ok: false, text: err });
       return;
     }
     setBatch("");
@@ -206,7 +214,10 @@ export function ContractManagement({
     setRemark("");
     setSerialCode("");
     setBluetoothId("");
-    setMessage("Contract created in draft. Waiting for super admin approval before print/forward.");
+    setCreateFeedback({
+      ok: true,
+      text: "Contract created in draft. Waiting for super admin approval before print/forward.",
+    });
     router.refresh();
   }
 
@@ -307,7 +318,11 @@ export function ContractManagement({
             </button>
           </div>
         </form>
-        {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
+        {createFeedback ? (
+          <p className={`mt-2 text-sm ${createFeedback.ok ? "text-emerald-700 dark:text-emerald-400" : "text-red-600"}`}>
+            {createFeedback.text}
+          </p>
+        ) : null}
       </section>
 
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">

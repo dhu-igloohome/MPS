@@ -414,7 +414,9 @@ export type OrderContractCreateHint = {
     | "missing_po_or_sku"
     | "forecast_not_found"
     | "cash_flow_supplier_empty"
-    | "supplier_not_in_master";
+    | "supplier_not_in_master"
+    /** Unexpected DB/runtime failure while resolving hint (page still loads). */
+    | "resolution_error";
 };
 
 export type OrderProgressDeletionLog = {
