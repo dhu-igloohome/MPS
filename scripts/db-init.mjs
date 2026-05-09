@@ -256,6 +256,8 @@ async function main() {
       unit_cost numeric(12, 2) not null default 0,
       total_amount numeric(14, 2) not null default 0,
       delivery_date date not null,
+      unit_cost_quote_id_snapshot bigint,
+      unit_cost_quote_date_snapshot date,
       currency text not null default 'USD',
       payment_terms text not null default 'Cash',
       remark text not null default '',
@@ -282,6 +284,8 @@ async function main() {
   await sql`alter table contracts add column if not exists payment_terms text not null default 'Cash';`;
   await sql`alter table contracts add column if not exists remark text not null default '';`;
   await sql`alter table contracts add column if not exists delivery_address text not null default '';`;
+  await sql`alter table contracts add column if not exists unit_cost_quote_id_snapshot bigint;`;
+  await sql`alter table contracts add column if not exists unit_cost_quote_date_snapshot date;`;
   await sql.unsafe(`
     DO $contracts_remark_migration$
     BEGIN

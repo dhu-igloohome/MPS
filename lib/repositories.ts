@@ -4398,6 +4398,8 @@ export async function createContractFromOrder(input: {
         (op.created_at::date + interval '56 days')::date as delivery_date,
         s.id as supplier_id,
         s.name as supplier_name,
+        uc.unit_cost_quote_id_snapshot,
+        uc.unit_cost_quote_date_snapshot,
         coalesce(
           nullif(op.unit_cost_snapshot::numeric, 0),
           uc.unit_cost,
@@ -4408,7 +4410,10 @@ export async function createContractFromOrder(input: {
       join suppliers s on s.id = ${Number(input.supplierId)}
       left join products p on p.product_name = op.product_name and p.sku = op.sku and p.is_active = true
       left join lateral (
-        select unit_price::numeric as unit_cost
+        select
+          id as unit_cost_quote_id_snapshot,
+          quote_date::date as unit_cost_quote_date_snapshot,
+          unit_price::numeric as unit_cost
         from unit_cost_quotes
         where sku = op.sku and trim(supplier_name) = trim(s.name) and deleted_at is null
         order by quote_date desc, id desc
@@ -4433,6 +4438,8 @@ export async function createContractFromOrder(input: {
         unit_cost,
         total_amount,
         delivery_date,
+        unit_cost_quote_id_snapshot,
+        unit_cost_quote_date_snapshot,
         currency,
         payment_terms,
         remark,
@@ -4455,6 +4462,8 @@ export async function createContractFromOrder(input: {
         coalesce(src.unit_cost, 0),
         src.quantity * coalesce(src.unit_cost, 0),
         src.delivery_date,
+        src.unit_cost_quote_id_snapshot,
+        src.unit_cost_quote_date_snapshot,
         ${input.currency.trim()},
         ${input.paymentTerms.trim()},
         ${input.remark.trim()},
