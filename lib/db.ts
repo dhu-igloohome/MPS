@@ -630,6 +630,7 @@ async function setupSchema() {
   await db`alter table forecast_cash_flow_settings add column if not exists freight_usd_per_unit double precision;`;
   await db`alter table forecast_cash_flow_settings add column if not exists cash_flow_incoterm text;`;
   await db`alter table forecast_cash_flow_settings add column if not exists landed_cost_cash_flow_published_at timestamptz;`;
+  await db`alter table forecast_cash_flow_settings add column if not exists unit_price_usd_snapshot numeric(14, 4);`;
 
   await db`
     create table if not exists app_schema_migrations (
@@ -637,6 +638,33 @@ async function setupSchema() {
       applied_at timestamptz not null default now()
     );
   `;
+  const fcUnitPriceSnapshotDone = await db<{ id: string }[]>`
+    select id from app_schema_migrations where id = 'backfill_fc_unit_price_usd_snapshot_v1' limit 1
+  `;
+  if (fcUnitPriceSnapshotDone.length === 0) {
+    await db`
+      update forecast_cash_flow_settings s
+      set unit_price_usd_snapshot = q.unit_price
+      from forecasts f
+      left join lateral (
+        select unit_price::numeric as unit_price
+        from unit_cost_quotes
+        where
+          deleted_at is null
+          and sku = f.sku
+          and trim(supplier_name) = trim(s.supplier_name)
+          and coalesce(trim(s.supplier_name), '') <> ''
+        order by quote_date desc, id desc
+        limit 1
+      ) q on true
+      where
+        s.forecast_id = f.id
+        and s.unit_price_usd_snapshot is null
+        and coalesce(trim(s.supplier_name), '') <> ''
+        and q.unit_price is not null
+    `;
+    await db`insert into app_schema_migrations (id) values ('backfill_fc_unit_price_usd_snapshot_v1')`;
+  }
   const lccClearDone = await db<{ id: string }[]>`
     select id from app_schema_migrations where id = 'clear_lcc_for_publish_flow' limit 1
   `;

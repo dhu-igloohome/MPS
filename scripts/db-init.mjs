@@ -531,6 +531,7 @@ async function main() {
   await sql`alter table forecast_cash_flow_settings add column if not exists po_issue_date date;`;
   await sql`alter table forecast_cash_flow_settings add column if not exists shipping_mode text not null default 'ocean';`;
   await sql`alter table forecast_cash_flow_settings add column if not exists landed_cost_cash_flow_published_at timestamptz;`;
+  await sql`alter table forecast_cash_flow_settings add column if not exists unit_price_usd_snapshot numeric(14, 4);`;
 
   await sql`
     create table if not exists logistics_landed_cost_consolidate (

@@ -5490,6 +5490,7 @@ export async function enrichForecastRecordsForCashFlow(
       freight_usd_per_unit: string | number | null;
       cash_flow_incoterm: string | null;
       landed_cost_cash_flow_published_at: string | null;
+      unit_price_usd_snapshot: string | number | null;
     }[]
   >`
     select
@@ -5500,7 +5501,8 @@ export async function enrichForecastRecordsForCashFlow(
       destination_tariff_pct::text,
       freight_usd_per_unit::text,
       cash_flow_incoterm,
-      landed_cost_cash_flow_published_at::text as landed_cost_cash_flow_published_at
+      landed_cost_cash_flow_published_at::text as landed_cost_cash_flow_published_at,
+      unit_price_usd_snapshot::text as unit_price_usd_snapshot
     from forecast_cash_flow_settings
     where forecast_id = any(${ids});
   `;
@@ -5519,6 +5521,7 @@ export async function enrichForecastRecordsForCashFlow(
       freightUsdPerUnit: number | null;
       cashFlowIncoterm: ForecastIncoterm | null;
       landedCostCashFlowPublishedAt: string | null;
+      unitPriceUsdSnapshot: number | null;
     }
   >();
   for (const r of settingsRows) {
@@ -5537,6 +5540,7 @@ export async function enrichForecastRecordsForCashFlow(
       freightUsdPerUnit: lccNum(r.freight_usd_per_unit),
       cashFlowIncoterm: r.cash_flow_incoterm ? parseForecastIncoterm(r.cash_flow_incoterm) : null,
       landedCostCashFlowPublishedAt,
+      unitPriceUsdSnapshot: lccNum(r.unit_price_usd_snapshot),
     });
   }
   const quotes = await listUnitCostQuotes();
@@ -5551,11 +5555,13 @@ export async function enrichForecastRecordsForCashFlow(
       freightUsdPerUnit: null as number | null,
       cashFlowIncoterm: null as ForecastIncoterm | null,
       landedCostCashFlowPublishedAt: null as string | null,
+      unitPriceUsdSnapshot: null as number | null,
     };
     const supplier = s.supplier;
     const key = `${f.sku.trim()}::${supplier}`;
     const latestUnitCostQuote = supplier ? (latestQuoteMap.get(key) ?? null) : null;
-    const unitPriceUsd = latestUnitCostQuote != null ? latestUnitCostQuote.unitPrice : null;
+    const unitPriceUsd =
+      s.unitPriceUsdSnapshot != null ? s.unitPriceUsdSnapshot : latestUnitCostQuote != null ? latestUnitCostQuote.unitPrice : null;
     return {
       ...f,
       cashFlowSupplierName: supplier,
@@ -5639,11 +5645,13 @@ export async function patchForecastCashFlowSettings(input: {
       freight_usd_per_unit: string | null;
       cash_flow_incoterm: string | null;
       landed_cost_cash_flow_published_at: string | null;
+      unit_price_usd_snapshot: string | null;
     }[]
   >`
     select supplier_name, po_issue_date::text as po_issue_date, shipping_mode,
       destination_tariff_pct::text, freight_usd_per_unit::text, cash_flow_incoterm,
-      landed_cost_cash_flow_published_at::text as landed_cost_cash_flow_published_at
+      landed_cost_cash_flow_published_at::text as landed_cost_cash_flow_published_at,
+      unit_price_usd_snapshot::text as unit_price_usd_snapshot
     from forecast_cash_flow_settings
     where forecast_id = ${fid}
     limit 1;
@@ -5671,6 +5679,12 @@ export async function patchForecastCashFlowSettings(input: {
     const v = curRow?.landed_cost_cash_flow_published_at;
     if (v == null || String(v).trim() === "") return null;
     return String(v).trim();
+  };
+  const readUnitPriceSnapshot = (): number | null => {
+    const v = curRow?.unit_price_usd_snapshot;
+    if (v == null || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
   };
 
   const supplier = hasSupplier ? String(input.supplierName ?? "").trim() : (curRow?.supplier_name ?? "").trim();
@@ -5767,6 +5781,17 @@ export async function patchForecastCashFlowSettings(input: {
     landedCostCashFlowPublishedAtOut = readPublish();
   }
 
+  const sku = (row.sku || "").trim();
+  const latestUnitCostQuote = supplier ? await getLatestUnitCostQuoteBySkuSupplier(sku, supplier) : null;
+  const unitPriceUsdSnapshot =
+    hasSupplier
+      ? supplier
+        ? latestUnitCostQuote != null
+          ? latestUnitCostQuote.unitPrice
+          : null
+        : null
+      : readUnitPriceSnapshot();
+
   await db`
     insert into forecast_cash_flow_settings (
       forecast_id,
@@ -5777,6 +5802,7 @@ export async function patchForecastCashFlowSettings(input: {
       freight_usd_per_unit,
       cash_flow_incoterm,
       landed_cost_cash_flow_published_at,
+      unit_price_usd_snapshot,
       updated_by
     )
     values (
@@ -5788,6 +5814,7 @@ export async function patchForecastCashFlowSettings(input: {
       ${freightUsdPerUnit},
       ${cashFlowIncotermOut},
       ${landedCostCashFlowPublishedAtOut},
+      ${unitPriceUsdSnapshot},
       ${input.updatedBy}
     )
     on conflict (forecast_id) do update
@@ -5799,13 +5826,13 @@ export async function patchForecastCashFlowSettings(input: {
       freight_usd_per_unit = excluded.freight_usd_per_unit,
       cash_flow_incoterm = excluded.cash_flow_incoterm,
       landed_cost_cash_flow_published_at = excluded.landed_cost_cash_flow_published_at,
+      unit_price_usd_snapshot = excluded.unit_price_usd_snapshot,
       updated_by = excluded.updated_by,
       updated_at = now();
   `;
 
-  const sku = (row.sku || "").trim();
-  const latestUnitCostQuote = await getLatestUnitCostQuoteBySkuSupplier(sku, supplier);
-  const unitPriceUsd = latestUnitCostQuote != null ? latestUnitCostQuote.unitPrice : null;
+  const unitPriceUsd =
+    unitPriceUsdSnapshot != null ? unitPriceUsdSnapshot : latestUnitCostQuote != null ? latestUnitCostQuote.unitPrice : null;
   return {
     supplierName: supplier,
     unitPriceUsd,
