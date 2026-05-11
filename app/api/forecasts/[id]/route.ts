@@ -18,6 +18,19 @@ function isRegion(value: string): value is Region {
   return value === "APAC" || value === "EU" || value === "USA";
 }
 
+const FORECAST_OPS_ACTION_OPTIONS = [
+  "",
+  "Ok to issue PO",
+  "Not build new lot because of MOQ",
+  "Consider stock transfer from other region",
+] as const;
+
+function parseForecastOpsAction(input: unknown): string | null {
+  if (input == null) return null;
+  const v = String(input).trim();
+  return (FORECAST_OPS_ACTION_OPTIONS as readonly string[]).includes(v) ? v : null;
+}
+
 const MONTH_RE = /^\d{4}-\d{2}$/;
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -44,6 +57,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   const sku = String(body.sku || "");
   const destination = String(body.destination || "").trim();
   const remark = String(body.remark || "");
+  const rawOpsAction = (body as Record<string, unknown>).opsAction;
+  let opsAction = parseForecastOpsAction(rawOpsAction);
   const buildToOrder = Number(body.buildToOrder ?? 0);
   const buildToStock = Number(body.buildToStock ?? 0);
   let incoterm = parseForecastIncoterm(body.incoterm);
@@ -55,6 +70,21 @@ export async function PATCH(request: Request, context: RouteContext) {
       String(body.incoterm).trim() === "")
   ) {
     incoterm = existing.incoterm;
+  }
+  if (rawOpsAction != null && String(rawOpsAction).trim() !== "" && opsAction === null) {
+    return NextResponse.json(
+      { message: "Ops action must be one of the allowed options" },
+      { status: 400 },
+    );
+  }
+  if (
+    opsAction === null &&
+    (!("opsAction" in (body as Record<string, unknown>)) ||
+      (body as Record<string, unknown>).opsAction === undefined ||
+      (body as Record<string, unknown>).opsAction === null ||
+      String((body as Record<string, unknown>).opsAction).trim() === "")
+  ) {
+    opsAction = existing.opsAction;
   }
 
   if (!isRegion(region)) {
@@ -93,6 +123,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     productName: productName.trim(),
     sku: sku.trim(),
     remark: remark.trim(),
+    opsAction: opsAction ?? "",
     buildToOrder,
     buildToStock,
   });

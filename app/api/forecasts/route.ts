@@ -14,6 +14,18 @@ function isRegion(value: string): value is Region {
   return value === "APAC" || value === "EU" || value === "USA";
 }
 
+const FORECAST_OPS_ACTION_OPTIONS = [
+  "",
+  "Ok to issue PO",
+  "Not build new lot because of MOQ",
+  "Consider stock transfer from other region",
+] as const;
+
+function parseForecastOpsAction(input: unknown): string {
+  const v = String(input ?? "").trim();
+  return (FORECAST_OPS_ACTION_OPTIONS as readonly string[]).includes(v) ? v : "";
+}
+
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) {
@@ -37,6 +49,8 @@ export async function POST(request: Request) {
   const destination = String(body.destination || "").trim();
   const poNumber = String(body.poNumber || "").trim();
   const remark = String(body.remark || "");
+  const rawOpsAction = (body as Record<string, unknown>).opsAction;
+  const opsAction = parseForecastOpsAction(rawOpsAction);
   const buildToOrder = Number(body.buildToOrder || 0);
   const buildToStock = Number(body.buildToStock || 0);
   const incoterm = parseForecastIncoterm(body.incoterm);
@@ -62,6 +76,12 @@ export async function POST(request: Request) {
   if (buildToOrder < 0 || buildToStock < 0) {
     return NextResponse.json({ message: "Quantity cannot be negative" }, { status: 400 });
   }
+  if (rawOpsAction != null && String(rawOpsAction).trim() !== "" && opsAction === "") {
+    return NextResponse.json(
+      { message: "Ops action must be one of the allowed options" },
+      { status: 400 },
+    );
+  }
 
   if (poNumber && !(await forecastPoExistsInRegion(region, poNumber))) {
     return NextResponse.json(
@@ -79,6 +99,7 @@ export async function POST(request: Request) {
     productName,
     sku,
     remark,
+    opsAction,
     buildToOrder,
     buildToStock,
     createdBy: session.username,

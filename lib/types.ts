@@ -52,6 +52,7 @@ export type ForecastEntry = {
   productName: string;
   sku: string;
   remark: string;
+  opsAction: string;
   buildToOrder: number;
   buildToStock: number;
   createdBy: string;

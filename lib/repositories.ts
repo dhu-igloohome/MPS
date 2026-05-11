@@ -468,6 +468,7 @@ export async function createForecast(input: {
   productName: string;
   sku: string;
   remark: string;
+  opsAction?: string;
   buildToOrder: number;
   buildToStock: number;
   createdBy: string;
@@ -475,6 +476,7 @@ export async function createForecast(input: {
   await ensureDatabase();
   const db = getSql();
   const manualPo = String(input.poNumber || "").trim();
+  const opsAction = String(input.opsAction || "").trim();
   if (manualPo) {
     const rows = await db<
       {
@@ -487,6 +489,7 @@ export async function createForecast(input: {
         product_name: string;
         sku: string;
         remark: string;
+        ops_action: string;
         build_to_order: number;
         build_to_stock: number;
         created_by: string;
@@ -502,6 +505,7 @@ export async function createForecast(input: {
         product_name,
         sku,
         remark,
+        ops_action,
         build_to_order,
         build_to_stock,
         created_by
@@ -515,6 +519,7 @@ export async function createForecast(input: {
         ${input.productName.trim()},
         ${input.sku.trim()},
         ${input.remark.trim()},
+        ${opsAction},
         ${input.buildToOrder},
         ${input.buildToStock},
         ${input.createdBy}
@@ -529,6 +534,7 @@ export async function createForecast(input: {
         product_name,
         sku,
         remark,
+        ops_action,
         build_to_order,
         build_to_stock,
         created_by,
@@ -550,6 +556,7 @@ export async function createForecast(input: {
       product_name: string;
       sku: string;
       remark: string;
+      ops_action: string;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -572,6 +579,7 @@ export async function createForecast(input: {
       product_name,
       sku,
       remark,
+      ops_action,
       build_to_order,
       build_to_stock,
       created_by
@@ -585,6 +593,7 @@ export async function createForecast(input: {
       ${input.productName.trim()},
       ${input.sku.trim()},
       ${input.remark.trim()},
+      ${opsAction},
       ${input.buildToOrder},
       ${input.buildToStock},
       ${input.createdBy}
@@ -599,6 +608,7 @@ export async function createForecast(input: {
       product_name,
       sku,
       remark,
+      ops_action,
       build_to_order,
       build_to_stock,
       created_by,
@@ -754,6 +764,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       product_name: string;
       sku: string;
       remark: string;
+      ops_action: string;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -770,6 +781,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       product_name,
       sku,
       remark,
+      ops_action,
       build_to_order,
       build_to_stock,
       created_by,
@@ -804,6 +816,7 @@ export async function findLatestForecastByPoAndSku(
       product_name: string;
       sku: string;
       remark: string;
+      ops_action: string;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -820,6 +833,7 @@ export async function findLatestForecastByPoAndSku(
       product_name,
       sku,
       remark,
+      ops_action,
       build_to_order,
       build_to_stock,
       created_by,
@@ -1076,6 +1090,7 @@ export async function getForecastById(id: string): Promise<ForecastEntry | null>
       product_name: string;
       sku: string;
       remark: string;
+      ops_action: string;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -1092,6 +1107,7 @@ export async function getForecastById(id: string): Promise<ForecastEntry | null>
       product_name,
       sku,
       remark,
+      ops_action,
       build_to_order,
       build_to_stock,
       created_by,
@@ -1112,12 +1128,14 @@ export async function updateForecast(input: {
   productName: string;
   sku: string;
   remark: string;
+  opsAction?: string;
   buildToOrder: number;
   buildToStock: number;
 }): Promise<ForecastEntry | null> {
   await ensureDatabase();
   const db = getSql();
   const pid = Number(input.id);
+  const opsAction = String(input.opsAction || "").trim();
   const rows = await db<
     {
       id: number;
@@ -1129,6 +1147,7 @@ export async function updateForecast(input: {
       product_name: string;
       sku: string;
       remark: string;
+      ops_action: string;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -1144,6 +1163,7 @@ export async function updateForecast(input: {
       product_name = ${input.productName.trim()},
       sku = ${input.sku.trim()},
       remark = ${input.remark.trim()},
+      ops_action = ${opsAction},
       build_to_order = ${input.buildToOrder},
       build_to_stock = ${input.buildToStock}
     where id = ${pid}
@@ -1157,6 +1177,7 @@ export async function updateForecast(input: {
       product_name,
       sku,
       remark,
+      ops_action,
       build_to_order,
       build_to_stock,
       created_by,
@@ -1355,6 +1376,7 @@ function mapForecast(row: {
   product_name: string;
   sku: string;
   remark: string;
+  ops_action: string;
   build_to_order: number;
   build_to_stock: number;
   created_by: string;
@@ -1370,6 +1392,7 @@ function mapForecast(row: {
     productName: row.product_name,
     sku: row.sku,
     remark: row.remark || "",
+    opsAction: row.ops_action || "",
     buildToOrder: Number(row.build_to_order || 0),
     buildToStock: Number(row.build_to_stock || 0),
     createdBy: row.created_by,

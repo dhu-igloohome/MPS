@@ -45,10 +45,18 @@ type ForecastEditDraft = {
   sku: string;
   productName: string;
   remark: string;
+  opsAction: string;
   buildToOrder: string;
   buildToStock: string;
   poNumber: string;
 };
+
+const FORECAST_OPS_ACTION_OPTIONS = [
+  "",
+  "Ok to issue PO",
+  "Not build new lot because of MOQ",
+  "Consider stock transfer from other region",
+] as const;
 
 /** Stored value stays `USA`; dropdown / table show North America (EN) or 北美 (ZH). */
 function forecastRegionSelectLabel(region: Region, language: Language): string {
@@ -234,6 +242,8 @@ export function ForecastForm({
   /** Inline comment drafts in the records table (keyed by forecast id); cleared after successful save. */
   const [inlineRemarkById, setInlineRemarkById] = useState<Record<string, string>>({});
   const [savingRemarkId, setSavingRemarkId] = useState<string | null>(null);
+  const [inlineOpsActionById, setInlineOpsActionById] = useState<Record<string, string>>({});
+  const [savingOpsActionId, setSavingOpsActionId] = useState<string | null>(null);
   const destinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
   const editDestinationOptions = useMemo(() => {
     if (!editDraft) return destinationOptions;
@@ -457,6 +467,7 @@ export function ForecastForm({
       sku: item.sku,
       productName: item.productName,
       remark: inlineRemarkById[item.id] ?? item.remark,
+      opsAction: inlineOpsActionById[item.id] ?? item.opsAction,
       buildToOrder: String(item.buildToOrder),
       buildToStock: String(item.buildToStock),
       poNumber: item.poNumber || "",
@@ -556,6 +567,7 @@ export function ForecastForm({
         productName: item.productName,
         sku: item.sku,
         remark: draft,
+        opsAction: item.opsAction,
         buildToOrder: item.buildToOrder,
         buildToStock: item.buildToStock,
       }),
@@ -572,6 +584,42 @@ export function ForecastForm({
       return next;
     });
     setMessage(t.commentSaved);
+    router.refresh();
+  }
+
+  async function saveInlineOpsAction(item: ForecastEntry) {
+    const draft = (inlineOpsActionById[item.id] ?? item.opsAction).trim();
+    if (draft === (item.opsAction || "").trim()) return;
+    setSavingOpsActionId(item.id);
+    setMessage("");
+    const response = await fetch(`/api/forecasts/${encodeURIComponent(item.id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        month: item.month,
+        region: item.region,
+        destination: item.destination.trim(),
+        incoterm: item.incoterm,
+        productName: item.productName,
+        sku: item.sku,
+        remark: item.remark,
+        opsAction: draft,
+        buildToOrder: item.buildToOrder,
+        buildToStock: item.buildToStock,
+      }),
+    });
+    const data = (await response.json().catch(() => ({}))) as { message?: string };
+    setSavingOpsActionId(null);
+    if (!response.ok) {
+      setMessage(data.message || (language === "en" ? "Could not save ops action." : "Ops action 保存失败。"));
+      return;
+    }
+    setInlineOpsActionById((prev) => {
+      const next = { ...prev };
+      delete next[item.id];
+      return next;
+    });
+    setMessage(language === "en" ? "Ops action saved." : "Ops action 已保存。");
     router.refresh();
   }
 
@@ -1115,12 +1163,13 @@ export function ForecastForm({
                     <th>{t.createdAt}</th>
                     <th>{t.actions}</th>
                     <th className="min-w-[12rem]">{t.comment}</th>
+                    <th className="min-w-[14rem]">Ops action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {entries.length === 0 ? (
                     <tr>
-                      <td colSpan={canDelete ? 13 : 12} className="py-10 text-center text-app-muted">
+                      <td colSpan={canDelete ? 14 : 13} className="py-10 text-center text-app-muted">
                         {t.noRecords}
                       </td>
                     </tr>
@@ -1199,6 +1248,29 @@ export function ForecastForm({
                               className="w-full min-w-[10rem] rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground placeholder:text-app-muted focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
                               aria-label={language === "en" ? "Comment" : "评论"}
                             />
+                          </td>
+                          <td className="align-top">
+                            <select
+                              value={inlineOpsActionById[item.id] ?? item.opsAction}
+                              onChange={(e) =>
+                                setInlineOpsActionById((prev) => ({ ...prev, [item.id]: e.target.value }))
+                              }
+                              onBlur={() => void saveInlineOpsAction(item)}
+                              disabled={
+                                savingOpsActionId === item.id ||
+                                savingEdit ||
+                                deletingId === item.id
+                              }
+                              className="w-full min-w-[12rem] rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
+                              aria-label="Ops action"
+                            >
+                              <option value="">{language === "en" ? "—" : "—"}</option>
+                              {FORECAST_OPS_ACTION_OPTIONS.filter((x) => x !== "").map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
                           </td>
                         </tr>
                       );

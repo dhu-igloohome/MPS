@@ -130,6 +130,7 @@ async function main() {
       product_name text not null,
       sku text not null,
       remark text not null default '',
+      ops_action text not null default '',
       build_to_order integer not null default 0,
       build_to_stock integer not null default 0,
       created_by text not null references users(username),
@@ -140,6 +141,7 @@ async function main() {
   await sql`alter table forecasts add column if not exists destination text not null default '';`;
   await sql`alter table forecasts add column if not exists po_number text not null default '';`;
   await sql`alter table forecasts add column if not exists incoterm text not null default 'EXW';`;
+  await sql`alter table forecasts add column if not exists ops_action text not null default '';`;
   await sql`alter table forecasts drop column if exists office;`;
 
   await sql`
