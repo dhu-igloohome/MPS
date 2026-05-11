@@ -32,9 +32,9 @@ export default async function UnitCostPage() {
           ? "Unit cost quotations: SKU, price, tax flag, supplier, quote date — full history below."
           : "单位成本报价：SKU、单价、是否含税、供应商、报价日期；下方保留完整历史记录。"
       }
+      moduleTabs={<SupplyChainSubnav language={language} />}
     >
-      <SupplyChainSubnav language={language} />
-      <div className="mt-4 space-y-4">
+      <div className="mt-4 space-y-3">
         <CostControlSubnav language={language} active="unit" />
         <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
           <h2 className="mb-1 text-lg font-semibold text-foreground">

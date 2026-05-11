@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { cookies } from "next/headers";
+import type { ReactNode } from "react";
 
 import { AppShellNav, type ShellNavItem } from "@/components/shared/app-shell-nav";
 import { LanguageToggle } from "@/components/shared/language-toggle";
@@ -13,10 +14,12 @@ type AppShellProps = {
   session: SessionPayload;
   title: string;
   description: string;
-  children: React.ReactNode;
+  /** Renders inside the title card (e.g. module-level tabs) to avoid stacked floating panels. */
+  moduleTabs?: ReactNode;
+  children: ReactNode;
 };
 
-export async function AppShell({ session, title, description, children }: AppShellProps) {
+export async function AppShell({ session, title, description, moduleTabs, children }: AppShellProps) {
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
@@ -140,9 +143,18 @@ export async function AppShell({ session, title, description, children }: AppShe
 
       <div className="mx-auto w-full px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10 2xl:px-12">
         <AppShellNav items={navItems} language={language}>
-          <div className="app-panel p-5 sm:p-6">
-            <h2 className="text-xl font-semibold tracking-tight text-[#111827] sm:text-2xl">{title}</h2>
-            <p className="mt-1.5 text-sm text-[#4B5563]">{description}</p>
+          <div className="app-panel overflow-hidden shadow-[0_1px_0_rgba(15,23,42,0.04)] ring-1 ring-black/[0.04]">
+            <div
+              className={`px-5 pt-5 sm:px-6 sm:pt-6 ${moduleTabs ? "pb-1" : "pb-5 sm:pb-6"}`}
+            >
+              <h2 className="text-xl font-semibold tracking-tight text-[#111827] sm:text-2xl">{title}</h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-[#4B5563]">{description}</p>
+            </div>
+            {moduleTabs ? (
+              <div className="border-t border-app-border/80 bg-zinc-50/95 px-2 py-2.5 sm:px-3 sm:py-3">
+                {moduleTabs}
+              </div>
+            ) : null}
           </div>
           {children}
         </AppShellNav>

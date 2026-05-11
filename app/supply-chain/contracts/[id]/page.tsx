@@ -44,8 +44,8 @@ export default async function SupplyChainContractDetailPage({ params }: PageProp
       session={session}
       title={language === "en" ? "Supply Chain Management" : "供应链管理"}
       description={language === "en" ? "Suppliers, contracts and cost control in one module." : "将供应商、合同、成本控制整合到同一模块。"}
+      moduleTabs={<SupplyChainSubnav language={language} />}
     >
-      <SupplyChainSubnav language={language} />
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-lg font-semibold text-foreground">Contract Detail</h3>

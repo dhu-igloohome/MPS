@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BarChart3, Coins, Landmark } from "lucide-react";
 
 import type { Language } from "@/lib/i18n";
 
@@ -26,34 +27,37 @@ type Props = {
 
 export function CostControlSubnav({ language, active }: Props) {
   const t = COPY[language];
-  const tabBtn =
-    "rounded-lg border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:ring-2 focus-visible:ring-app-accent/40";
-  const inactive = "border-app-border bg-app-surface text-foreground/90 hover:bg-app-accent-soft";
-  const activeCls = "border-app-accent/40 bg-app-accent-soft text-app-accent shadow-sm";
+  const tabs = [
+    { key: "unit" as const, href: "/supply-chain/cost-control/unit-cost", label: t.unitCost, Icon: Coins },
+    { key: "cashflow" as const, href: "/supply-chain/cost-control?tab=cashflow", label: t.cashFlow, Icon: Landmark },
+    { key: "cost" as const, href: "/supply-chain/cost-control", label: t.costAnalysis, Icon: BarChart3 },
+  ];
 
   return (
-    <div className="flex flex-wrap gap-2" role="tablist" aria-label={language === "en" ? "Cost control sections" : "成本控制板块"}>
-      <Link
-        href="/supply-chain/cost-control/unit-cost"
-        className={`${tabBtn} ${active === "unit" ? activeCls : inactive}`}
-        aria-current={active === "unit" ? "page" : undefined}
-      >
-        {t.unitCost}
-      </Link>
-      <Link
-        href="/supply-chain/cost-control?tab=cashflow"
-        className={`${tabBtn} ${active === "cashflow" ? activeCls : inactive}`}
-        aria-current={active === "cashflow" ? "page" : undefined}
-      >
-        {t.cashFlow}
-      </Link>
-      <Link
-        href="/supply-chain/cost-control"
-        className={`${tabBtn} ${active === "cost" ? activeCls : inactive}`}
-        aria-current={active === "cost" ? "page" : undefined}
-      >
-        {t.costAnalysis}
-      </Link>
-    </div>
+    <nav
+      className="rounded-xl border border-app-border/60 bg-zinc-100/50 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]"
+      aria-label={language === "en" ? "Cost control sections" : "成本控制板块"}
+    >
+      <div className="flex flex-wrap gap-1 sm:flex-nowrap">
+        {tabs.map(({ key, href, label, Icon }) => {
+          const on = active === key;
+          return (
+            <Link
+              key={key}
+              href={href}
+              aria-current={on ? "page" : undefined}
+              className={`inline-flex min-h-[2.25rem] flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 sm:px-3 sm:text-sm ${
+                on
+                  ? "bg-white text-app-accent shadow-sm ring-1 ring-black/[0.05]"
+                  : "text-foreground/75 hover:bg-white/80 hover:text-foreground"
+              } `}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0 opacity-90 sm:h-4 sm:w-4" strokeWidth={1.75} aria-hidden />
+              <span className="truncate whitespace-nowrap">{label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
   );
 }

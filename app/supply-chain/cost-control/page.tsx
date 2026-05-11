@@ -43,8 +43,8 @@ export default async function SupplyChainCostControlPage() {
       session={session}
       title={language === "en" ? "Supply Chain Management" : "供应链管理"}
       description={language === "en" ? "Suppliers, contracts and cost control in one module." : "将供应商、合同、成本控制整合到同一模块。"}
+      moduleTabs={<SupplyChainSubnav language={language} />}
     >
-      <SupplyChainSubnav language={language} />
       <Suspense
         fallback={
           <div className="mt-4 h-40 animate-pulse rounded-2xl border border-app-border/80 bg-app-surface/80" />
