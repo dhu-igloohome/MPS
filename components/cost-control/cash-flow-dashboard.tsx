@@ -189,8 +189,8 @@ function labels(language: Language) {
     dashDepositDue: en ? "Deposits due (Σ)" : "订金应付 (Σ)",
     dashBalanceDue: en ? "Balances due (Σ)" : "尾款应付 (Σ)",
     fcNoRows: en
-      ? "No forecast cash flow rows (Comment must be Ok on the Forecast page)."
-      : "暂无 Forecast 现金流数据（请在 Forecast 页将评论设为 Ok）。",
+      ? 'No forecast cash flow rows (set Ops action = "Ok to issue PO" on the Forecast page).'
+      : '暂无 Forecast 现金流数据（请在 Forecast 页将 Ops action 设为「Ok to issue PO」）。',
     fcBarTitle: en ? "Scheduled payments by due month" : "按应付月份的订金与尾款",
     fcBarHint: en
       ? "Uses deposit/balance due dates from the table above, grouped by calendar month. Bars stack by supplier (left stack = deposits, right = balances). Window: 6 months before through 6 months after this month."
@@ -199,12 +199,12 @@ function labels(language: Language) {
     fcBarBalance: en ? "Balance due" : "尾款应付",
     fcBarNoData: en ? "No payments fall in this 13-month window." : "该 13 个月内无应付金额。",
     fcBarHintDash: en
-      ? "Same schedule logic as Cost control → Cash flow analysis (Comment = Ok, supplier, unit cost, PO date). Stacked by supplier; 13‑month rolling window."
-      : "与供应链成本控制中「现金流分析」相同逻辑（Comment=Ok、供应商、单价、PO 日）。按供应商堆叠；13 个月滚动窗口。",
+      ? 'Same schedule logic as Cost control → Cash flow analysis (Ops action = "Ok to issue PO", supplier, unit cost, PO date). Stacked by supplier; 13‑month rolling window.'
+      : '与供应链成本控制中「现金流分析」相同逻辑（Ops action="Ok to issue PO"、供应商、单价、PO 日）。按供应商堆叠；13 个月滚动窗口。',
     lcTitle: en ? "Landed cost cash flow" : "Landed cost 现金流",
     lcHint: en
-      ? "Same rows as the forecast table above (Comment = Ok), but only lines you have published from Logistics → Landed cost consolidate (Save next to Landed cost (USD)) appear here. Amounts and payment timing follow the Logistics table (tariff on line total + per-unit freight × qty; departure from PO issue + manufacturer country + shipping mode; payment due = departure + 30 days)."
-      : "与上方 Forecast 表相同（评论为 Ok），但仅显示您在「物流进度 → 到岸成本汇总」中对「到岸成本 (USD)」点击「保存」后发布的行。金额与付款节奏与物流页一致（关税按行总金额、单位运费×数量；发货日由订单下达日+生产商国家+运输方式推算；付款到期=发货日+30 天）。",
+      ? 'Same rows as the forecast table above (Ops action = "Ok to issue PO"), but only lines you have published from Logistics → Landed cost consolidate (Save next to Landed cost (USD)) appear here. Amounts and payment timing follow the Logistics table (tariff on line total + per-unit freight × qty; departure from PO issue + manufacturer country + shipping mode; payment due = departure + 30 days).'
+      : '与上方 Forecast 表相同（Ops action="Ok to issue PO"），但仅显示您在「物流进度 → 到岸成本汇总」中对「到岸成本 (USD)」点击「保存」后发布的行。金额与付款节奏与物流页一致（关税按行总金额、单位运费×数量；发货日由订单下达日+生产商国家+运输方式推算；付款到期=发货日+30 天）。',
     lcEmptyUntilLogistics: en
       ? "No published landed cost rows yet. Open Logistics → Landed cost consolidate, fill tariff / freight / mode where applicable, then click Save to the right of Landed cost (USD) for each line you want in this section."
       : "暂无已发布的到岸成本行。请打开「物流进度 → 到岸成本汇总」，在适用情况下填写关税/运费/运输方式，并在「到岸成本 (USD)」右侧点击「保存」以将各行发布到本段。",

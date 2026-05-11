@@ -5731,12 +5731,12 @@ export async function syncLandedConsolidateSnapshotToUnitCostQuotes(input: {
 export async function enrichForecastRecordsForCashFlow(
   forecasts: ForecastEntry[],
 ): Promise<ForecastCashFlowRow[]> {
-  /** Forecast page "Comment" column is stored as `remark`; cash flow table only lists approved rows. */
-  const okOnly = forecasts.filter((f) => f.remark.trim().toLowerCase() === "ok");
-  if (okOnly.length === 0) return [];
+  /** Cash flow table only lists approved rows. */
+  const approved = forecasts.filter((f) => f.opsAction.trim().toLowerCase() === "ok to issue po");
+  if (approved.length === 0) return [];
   await ensureDatabase();
   const db = getSql();
-  const ids = okOnly.map((f) => Number(f.id));
+  const ids = approved.map((f) => Number(f.id));
   const settingsRows = await db<
     {
       forecast_id: number;
@@ -5803,7 +5803,7 @@ export async function enrichForecastRecordsForCashFlow(
   const quotes = await listUnitCostQuotes();
   const latestQuoteMap = buildSkuSupplierToLatestQuote(quotes);
 
-  return okOnly.map((f) => {
+  return approved.map((f) => {
     const s = settings.get(f.id) ?? {
       supplier: "",
       poIssueDate: null,
