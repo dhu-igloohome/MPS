@@ -646,23 +646,26 @@ async function setupSchema() {
     select id from app_schema_migrations where id = 'backfill_fc_unit_price_usd_snapshot_v1' limit 1
   `;
   if (fcUnitPriceSnapshotDone.length === 0) {
+    // LATERAL may not reference the UPDATE target alias `s`; use `s2` in FROM so
+    // the subquery correlates only to tables listed before the LATERAL (PG 42P10).
     await db`
       update forecast_cash_flow_settings s
       set unit_price_usd_snapshot = q.unit_price
-      from forecasts f
+      from forecast_cash_flow_settings s2
+      join forecasts f on f.id = s2.forecast_id
       left join lateral (
         select unit_price::numeric as unit_price
         from unit_cost_quotes
         where
           deleted_at is null
           and sku = f.sku
-          and trim(supplier_name) = trim(s.supplier_name)
-          and coalesce(trim(s.supplier_name), '') <> ''
+          and trim(supplier_name) = trim(s2.supplier_name)
+          and coalesce(trim(s2.supplier_name), '') <> ''
         order by quote_date desc, id desc
         limit 1
       ) q on true
       where
-        s.forecast_id = f.id
+        s.forecast_id = s2.forecast_id
         and s.unit_price_usd_snapshot is null
         and coalesce(trim(s.supplier_name), '') <> ''
         and q.unit_price is not null
