@@ -182,31 +182,31 @@ export function BomManagement({ entries, language }: BomManagementProps) {
         <p className="mt-1 text-sm text-app-muted">{t.subtitle}</p>
         {editing ? <p className="mt-2 text-xs text-app-muted">Editing: {editing.sku} · {editing.componentCode}</p> : null}
 
-        <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4" onSubmit={onSubmit}>
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.projectName} onChange={(e) => setForm((f) => ({ ...f, projectName: e.target.value }))} placeholder="Project name" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value.toUpperCase() }))} placeholder="SKU *" required />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.bomVersion} onChange={(e) => setForm((f) => ({ ...f, bomVersion: e.target.value }))} placeholder="BOM version" />
-          <select className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as BomStatus }))}>
+        <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" onSubmit={onSubmit}>
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.projectName} onChange={(e) => setForm((f) => ({ ...f, projectName: e.target.value }))} placeholder="Project name" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value.toUpperCase() }))} placeholder="SKU *" required />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.bomVersion} onChange={(e) => setForm((f) => ({ ...f, bomVersion: e.target.value }))} placeholder="BOM version" />
+          <select className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as BomStatus }))}>
             <option value="draft">draft</option>
             <option value="released">released</option>
             <option value="obsolete">obsolete</option>
           </select>
-          <input type="date" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.effectiveDate} onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))} />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.componentCode} onChange={(e) => setForm((f) => ({ ...f, componentCode: e.target.value.toUpperCase() }))} placeholder="Component code *" required />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.componentName} onChange={(e) => setForm((f) => ({ ...f, componentName: e.target.value }))} placeholder="Component name *" required />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.specification} onChange={(e) => setForm((f) => ({ ...f, specification: e.target.value }))} placeholder="Specification" />
-          <input type="number" min={0} step="0.0001" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.quantityPer} onChange={(e) => setForm((f) => ({ ...f, quantityPer: e.target.value }))} placeholder="Qty per (default 0)" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.uom} onChange={(e) => setForm((f) => ({ ...f, uom: e.target.value.toUpperCase() }))} placeholder="UOM" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} placeholder="Supplier name" />
-          <input type="number" min={0} step="0.0001" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.unitCost} onChange={(e) => setForm((f) => ({ ...f, unitCost: e.target.value }))} placeholder="Unit cost (optional)" />
-          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.moq} onChange={(e) => setForm((f) => ({ ...f, moq: e.target.value }))} placeholder="MOQ (0 = no MOQ)" />
-          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.leadTimeDays} onChange={(e) => setForm((f) => ({ ...f, leadTimeDays: e.target.value }))} placeholder="Lead time days (0 = unknown)" />
-          <label className="flex items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
+          <input type="date" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.effectiveDate} onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))} />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.componentCode} onChange={(e) => setForm((f) => ({ ...f, componentCode: e.target.value.toUpperCase() }))} placeholder="Component code *" required />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.componentName} onChange={(e) => setForm((f) => ({ ...f, componentName: e.target.value }))} placeholder="Component name *" required />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.specification} onChange={(e) => setForm((f) => ({ ...f, specification: e.target.value }))} placeholder="Specification" />
+          <input type="number" min={0} step="0.0001" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.quantityPer} onChange={(e) => setForm((f) => ({ ...f, quantityPer: e.target.value }))} placeholder="Qty per (default 0)" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.uom} onChange={(e) => setForm((f) => ({ ...f, uom: e.target.value.toUpperCase() }))} placeholder="UOM" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} placeholder="Supplier name" />
+          <input type="number" min={0} step="0.0001" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.unitCost} onChange={(e) => setForm((f) => ({ ...f, unitCost: e.target.value }))} placeholder="Unit cost (optional)" />
+          <input type="number" min={0} step={1} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.moq} onChange={(e) => setForm((f) => ({ ...f, moq: e.target.value }))} placeholder="MOQ (0 = no MOQ)" />
+          <input type="number" min={0} step={1} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.leadTimeDays} onChange={(e) => setForm((f) => ({ ...f, leadTimeDays: e.target.value }))} placeholder="Lead time days (0 = unknown)" />
+          <label className="flex min-w-0 items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
             <input type="checkbox" checked={form.isCritical} onChange={(e) => setForm((f) => ({ ...f, isCritical: e.target.checked }))} />
             Critical part
           </label>
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-4" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} placeholder="Remarks" />
-          <div className="lg:col-span-4 flex gap-2">
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 md:col-span-3 lg:col-span-4" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} placeholder="Remarks" />
+          <div className="flex min-w-0 gap-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
             <button type="submit" disabled={loading} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">
               {editingId ? t.save : t.create}
             </button>
@@ -217,9 +217,9 @@ export function BomManagement({ entries, language }: BomManagementProps) {
       </section>
 
       <section className="app-card p-5">
-        <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           <input
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
             placeholder={language === "en" ? "Quick search: SKU / component / supplier" : "快速搜索：SKU/料号/供应商"}
             value={query}
             onChange={(e) => {
@@ -228,7 +228,7 @@ export function BomManagement({ entries, language }: BomManagementProps) {
             }}
           />
           <select
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value as "all" | BomStatus);
@@ -241,7 +241,7 @@ export function BomManagement({ entries, language }: BomManagementProps) {
             <option value="obsolete">obsolete</option>
           </select>
           <select
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
             value={criticalFilter}
             onChange={(e) => {
               setCriticalFilter(e.target.value as "all" | "critical" | "non_critical");

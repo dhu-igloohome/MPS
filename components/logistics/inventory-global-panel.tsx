@@ -406,7 +406,7 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
     <input
       type="number"
       min={0}
-      className="rounded-lg px-3 py-2 text-sm"
+      className="min-w-0 rounded-lg px-3 py-2 text-sm"
       placeholder={placeholder}
       value={form[key]}
       onChange={(e) => setField(key, e.target.value)}
@@ -418,7 +418,7 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
       type="number"
       min={0}
       step="0.01"
-      className="rounded-lg px-3 py-2 text-sm"
+      className="min-w-0 rounded-lg px-3 py-2 text-sm"
       placeholder={placeholder}
       value={form[key]}
       onChange={(e) => setField(key, e.target.value)}
@@ -466,9 +466,9 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
             />
           </div>
         </div>
-        <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4" onSubmit={onSubmit}>
+        <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" onSubmit={onSubmit}>
           <select
-            className="rounded-lg px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg px-3 py-2 text-sm"
             value={form.mainSku}
             onChange={(e) => setField("mainSku", e.target.value)}
             required
@@ -480,32 +480,32 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
             ))}
           </select>
           <input
-            className="rounded-lg px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg px-3 py-2 text-sm"
             placeholder="Variant SKU"
             value={form.variantSku}
             onChange={(e) => setField("variantSku", e.target.value)}
           />
           <input
-            className="rounded-lg px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg px-3 py-2 text-sm"
             placeholder="Batch"
             value={form.batch}
             onChange={(e) => setField("batch", e.target.value)}
           />
           <input
-            className="rounded-lg px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg px-3 py-2 text-sm"
             placeholder="Batch No. (S/N)"
             value={form.batchNoSn}
             onChange={(e) => setField("batchNoSn", e.target.value)}
           />
           {intInput("goodToReleaseShipmentFromCm", "Good to Release Shipment from CM")}
           <input
-            className="rounded-lg px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg px-3 py-2 text-sm"
             placeholder="Status"
             value={form.status}
             onChange={(e) => setField("status", e.target.value)}
           />
           <input
-            className="rounded-lg px-3 py-2 text-sm lg:col-span-2"
+            className="min-w-0 rounded-lg px-3 py-2 text-sm sm:col-span-2 lg:col-span-2"
             placeholder="Description"
             value={form.description}
             onChange={(e) => setField("description", e.target.value)}
@@ -540,7 +540,7 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
           {intInput("inTransitStock", "In Transit Stock")}
           <input
             type="date"
-            className="rounded-lg px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg px-3 py-2 text-sm"
             value={form.inventoryReceivedDate}
             onChange={(e) => setField("inventoryReceivedDate", e.target.value)}
           />
@@ -558,7 +558,7 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
           {moneyInput("usAmazonFba", "US Amazon FBA")}
           {moneyInput("europeJdmInventoryCostUsd", "Europe JDM Inv. Cost (USD)")}
           {moneyInput("inTransitInventoryCostUsd", "In Transit Inv. Cost (USD)")}
-          <div className="lg:col-span-4 flex gap-2">
+          <div className="flex min-w-0 gap-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
             <button
               type="submit"
               disabled={loading}

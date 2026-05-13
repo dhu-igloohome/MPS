@@ -236,8 +236,8 @@ export function MassProductionKanbanSection({
           : "按产品/SKU 与区域维护量产节点（MP、各工序日期、ORT 等）。"}
       </p>
 
-      <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3" onSubmit={onSubmit}>
-        <label className="block md:col-span-2 lg:col-span-3">
+      <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" onSubmit={onSubmit}>
+        <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
           <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
           <select
             value={resolvedProductId}
@@ -255,7 +255,7 @@ export function MassProductionKanbanSection({
           <span className="mt-1 block text-xs text-app-muted">{t.skuHint}</span>
         </label>
 
-        <label className="block">
+        <label className="block min-w-0">
           <span className="mb-1 block text-sm text-foreground/85">{t.quantity}</span>
           <input
             type="number"
@@ -268,7 +268,7 @@ export function MassProductionKanbanSection({
           />
         </label>
 
-        <label className="block md:col-span-2 lg:col-span-2">
+        <label className="block min-w-0 sm:col-span-2 lg:col-span-2">
           <span className="mb-1 block text-sm text-foreground/85">{t.mp}</span>
           <input
             value={mp}
@@ -290,7 +290,7 @@ export function MassProductionKanbanSection({
             ["deliver", t.deliver],
           ] as const
         ).map(([key, label]) => (
-          <label key={key} className="block">
+          <label key={key} className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{label}</span>
             <input
               type="date"
@@ -301,7 +301,7 @@ export function MassProductionKanbanSection({
           </label>
         ))}
 
-        <label className="block">
+        <label className="block min-w-0">
           <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
           <select
             value={resolvedRegion}
@@ -316,9 +316,9 @@ export function MassProductionKanbanSection({
           </select>
         </label>
 
-        <p className="md:col-span-2 lg:col-span-3 text-xs text-app-muted">{t.dateHint}</p>
+        <p className="min-w-0 text-xs text-app-muted sm:col-span-2 lg:col-span-3 xl:col-span-4">{t.dateHint}</p>
 
-        <div className="flex flex-wrap items-end gap-2 md:col-span-2 lg:col-span-3">
+        <div className="flex min-w-0 flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-3 xl:col-span-4">
           <button
             type="submit"
             disabled={loading || products.length === 0}

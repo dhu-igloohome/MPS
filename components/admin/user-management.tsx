@@ -265,23 +265,23 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
             ))}
           </ul>
         ) : null}
-        <form className="mt-3 grid gap-3 md:grid-cols-2" onSubmit={createUser}>
+        <form className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" onSubmit={createUser}>
           <input
-            className="rounded-lg px-3 py-2"
+            className="min-w-0 rounded-lg px-3 py-2"
             placeholder={t.username}
             value={username}
             onChange={(event) => setUsername(event.target.value)}
             required
           />
           <input
-            className="rounded-lg px-3 py-2"
+            className="min-w-0 rounded-lg px-3 py-2"
             placeholder={t.displayName}
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             required
           />
           <input
-            className="rounded-lg px-3 py-2"
+            className="min-w-0 rounded-lg px-3 py-2"
             placeholder={t.initialPassword}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -289,7 +289,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
             minLength={6}
           />
           <select
-            className="rounded-lg px-3 py-2"
+            className="min-w-0 rounded-lg px-3 py-2"
             value={role}
             onChange={(event) => setRole(event.target.value as UserRole)}
           >
@@ -297,11 +297,11 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
             <option value="super_admin">super_admin</option>
           </select>
 
-          <div className="md:col-span-2 flex flex-wrap gap-2">
+          <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             {ALL_REGIONS.map((region) => (
               <label
                 key={region}
-                className="inline-flex items-center gap-2 rounded-lg border border-app-border bg-white px-3 py-1.5 text-sm"
+                className="inline-flex min-w-0 items-center gap-2 rounded-lg border border-app-border bg-white px-3 py-1.5 text-sm"
               >
                 <input
                   type="checkbox"
@@ -313,7 +313,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
             ))}
           </div>
 
-          <div className="md:col-span-2">
+          <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <button
               type="submit"
               disabled={loading}

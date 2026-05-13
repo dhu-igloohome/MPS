@@ -93,24 +93,24 @@ export function EcnManagement({ entries, language }: Props) {
       <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.title}</h3>
         {editing ? <p className="mt-1 text-xs text-app-muted">Editing: {editing.ecnNo}</p> : null}
-        <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4" onSubmit={onSubmit}>
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.ecnNo} onChange={(e) => setForm((f) => ({ ...f, ecnNo: e.target.value.toUpperCase() }))} placeholder="ECN no *" required />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Title *" required />
-          <select className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as EcnStatus }))}>
+        <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" onSubmit={onSubmit}>
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.ecnNo} onChange={(e) => setForm((f) => ({ ...f, ecnNo: e.target.value.toUpperCase() }))} placeholder="ECN no *" required />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Title *" required />
+          <select className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as EcnStatus }))}>
             <option value="draft">draft</option><option value="under_review">under_review</option><option value="approved">approved</option><option value="implemented">implemented</option><option value="rejected">rejected</option>
           </select>
-          <select className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value as EcnPriority }))}>
+          <select className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value as EcnPriority }))}>
             <option value="low">low</option><option value="medium">medium</option><option value="high">high</option>
           </select>
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.requester} onChange={(e) => setForm((f) => ({ ...f, requester: e.target.value }))} placeholder="Requester" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.owner} onChange={(e) => setForm((f) => ({ ...f, owner: e.target.value }))} placeholder="Owner" />
-          <input type="date" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.targetEffectiveDate} onChange={(e) => setForm((f) => ({ ...f, targetEffectiveDate: e.target.value }))} />
-          <input type="date" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.actualEffectiveDate} onChange={(e) => setForm((f) => ({ ...f, actualEffectiveDate: e.target.value }))} />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-2" value={form.affectedSkus} onChange={(e) => setForm((f) => ({ ...f, affectedSkus: e.target.value }))} placeholder="Affected SKUs (comma-separated)" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-2" value={form.impactSummary} onChange={(e) => setForm((f) => ({ ...f, impactSummary: e.target.value }))} placeholder="Impact summary" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-4" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} placeholder="Reason" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-4" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} placeholder="Remarks" />
-          <div className="lg:col-span-4 flex gap-2">
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.requester} onChange={(e) => setForm((f) => ({ ...f, requester: e.target.value }))} placeholder="Requester" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.owner} onChange={(e) => setForm((f) => ({ ...f, owner: e.target.value }))} placeholder="Owner" />
+          <input type="date" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.targetEffectiveDate} onChange={(e) => setForm((f) => ({ ...f, targetEffectiveDate: e.target.value }))} />
+          <input type="date" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.actualEffectiveDate} onChange={(e) => setForm((f) => ({ ...f, actualEffectiveDate: e.target.value }))} />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 lg:col-span-2" value={form.affectedSkus} onChange={(e) => setForm((f) => ({ ...f, affectedSkus: e.target.value }))} placeholder="Affected SKUs (comma-separated)" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 lg:col-span-2" value={form.impactSummary} onChange={(e) => setForm((f) => ({ ...f, impactSummary: e.target.value }))} placeholder="Impact summary" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 md:col-span-3 lg:col-span-4" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} placeholder="Reason" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 md:col-span-3 lg:col-span-4" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} placeholder="Remarks" />
+          <div className="flex min-w-0 gap-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
             <button type="submit" disabled={loading} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">{editingId ? t.save : t.create}</button>
             {editingId ? <button type="button" className="rounded-lg border border-app-border px-4 py-2 text-sm" onClick={reset}>{t.cancel}</button> : null}
           </div>
@@ -118,9 +118,9 @@ export function EcnManagement({ entries, language }: Props) {
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
       <section className="app-card p-5">
-        <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           <input
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
             placeholder={language === "en" ? "Quick search: ECN / title / SKU" : "快速搜索：ECN/标题/SKU"}
             value={query}
             onChange={(e) => {
@@ -129,7 +129,7 @@ export function EcnManagement({ entries, language }: Props) {
             }}
           />
           <select
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value as "all" | EcnStatus);
@@ -144,7 +144,7 @@ export function EcnManagement({ entries, language }: Props) {
             <option value="rejected">rejected</option>
           </select>
           <input
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
             placeholder={language === "en" ? "Owner filter" : "负责人筛选"}
             value={ownerFilter}
             onChange={(e) => {

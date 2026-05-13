@@ -136,22 +136,22 @@ export function SopManagement({ entries, language }: Props) {
 
   return (
     <div className="space-y-4">
-      <section className="grid gap-4 md:grid-cols-4">
-        <div className="app-card p-5">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="app-card min-w-0 p-5">
           <p className="text-sm text-app-muted">{language === "en" ? "Released SOP" : "已发布 SOP"}</p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{releasedCount}</p>
         </div>
-        <div className="app-card p-5">
+        <div className="app-card min-w-0 p-5">
           <p className="text-sm text-app-muted">{language === "en" ? "In Review SOP" : "审核中 SOP"}</p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{inReviewCount}</p>
         </div>
-        <div className="app-card p-5">
+        <div className="app-card min-w-0 p-5">
           <p className="text-sm text-app-muted">
             {language === "en" ? "Training Required SOP" : "需培训 SOP"}
           </p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{trainingRequiredCount}</p>
         </div>
-        <div className="app-card p-5">
+        <div className="app-card min-w-0 p-5">
           <p className="text-sm text-app-muted">
             {language === "en" ? "30-Day Effective Warning" : "30 天生效预警"}
           </p>
@@ -162,34 +162,34 @@ export function SopManagement({ entries, language }: Props) {
         <h3 className="text-lg font-semibold text-foreground">
           {language === "en" ? "SOP Management" : "SOP 管理"}
         </h3>
-        <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4" onSubmit={onSubmit}>
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.sopNo} onChange={(e) => setForm((f) => ({ ...f, sopNo: e.target.value.toUpperCase() }))} placeholder="SOP No *" required />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Title *" required />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.productLine} onChange={(e) => setForm((f) => ({ ...f, productLine: e.target.value }))} placeholder="Product line" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value.toUpperCase() }))} placeholder="SKU *" required />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.processStep} onChange={(e) => setForm((f) => ({ ...f, processStep: e.target.value }))} placeholder="Process step" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.workstation} onChange={(e) => setForm((f) => ({ ...f, workstation: e.target.value }))} placeholder="Workstation" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.owner} onChange={(e) => setForm((f) => ({ ...f, owner: e.target.value }))} placeholder="Owner" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.reviewer} onChange={(e) => setForm((f) => ({ ...f, reviewer: e.target.value }))} placeholder="Reviewer" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.approver} onChange={(e) => setForm((f) => ({ ...f, approver: e.target.value }))} placeholder="Approver" />
-          <select className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as SopStatus }))}>
+        <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" onSubmit={onSubmit}>
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.sopNo} onChange={(e) => setForm((f) => ({ ...f, sopNo: e.target.value.toUpperCase() }))} placeholder="SOP No *" required />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Title *" required />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.productLine} onChange={(e) => setForm((f) => ({ ...f, productLine: e.target.value }))} placeholder="Product line" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value.toUpperCase() }))} placeholder="SKU *" required />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.processStep} onChange={(e) => setForm((f) => ({ ...f, processStep: e.target.value }))} placeholder="Process step" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.workstation} onChange={(e) => setForm((f) => ({ ...f, workstation: e.target.value }))} placeholder="Workstation" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.owner} onChange={(e) => setForm((f) => ({ ...f, owner: e.target.value }))} placeholder="Owner" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.reviewer} onChange={(e) => setForm((f) => ({ ...f, reviewer: e.target.value }))} placeholder="Reviewer" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.approver} onChange={(e) => setForm((f) => ({ ...f, approver: e.target.value }))} placeholder="Approver" />
+          <select className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as SopStatus }))}>
             <option value="draft">draft</option>
             <option value="in_review">in_review</option>
             <option value="released">released</option>
             <option value="obsolete">obsolete</option>
           </select>
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.version} onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))} placeholder="Version" />
-          <input type="date" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.effectiveDate ?? ""} onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value || null }))} />
-          <label className="flex items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.version} onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))} placeholder="Version" />
+          <input type="date" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.effectiveDate ?? ""} onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value || null }))} />
+          <label className="flex min-w-0 items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
             <input type="checkbox" checked={form.trainingRequired} onChange={(e) => setForm((f) => ({ ...f, trainingRequired: e.target.checked }))} />
             Training required
           </label>
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-2" value={form.keyCtq} onChange={(e) => setForm((f) => ({ ...f, keyCtq: e.target.value }))} placeholder="Key CTQ" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-2" value={form.controlMethod} onChange={(e) => setForm((f) => ({ ...f, controlMethod: e.target.value }))} placeholder="Control method" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-2" value={form.safetyNotes} onChange={(e) => setForm((f) => ({ ...f, safetyNotes: e.target.value }))} placeholder="Safety notes" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-2" value={form.attachmentUrl} onChange={(e) => setForm((f) => ({ ...f, attachmentUrl: e.target.value }))} placeholder="Attachment URL" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-4" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} placeholder="Remarks" />
-          <div className="lg:col-span-4 flex gap-2">
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 lg:col-span-2" value={form.keyCtq} onChange={(e) => setForm((f) => ({ ...f, keyCtq: e.target.value }))} placeholder="Key CTQ" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 lg:col-span-2" value={form.controlMethod} onChange={(e) => setForm((f) => ({ ...f, controlMethod: e.target.value }))} placeholder="Control method" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 lg:col-span-2" value={form.safetyNotes} onChange={(e) => setForm((f) => ({ ...f, safetyNotes: e.target.value }))} placeholder="Safety notes" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 lg:col-span-2" value={form.attachmentUrl} onChange={(e) => setForm((f) => ({ ...f, attachmentUrl: e.target.value }))} placeholder="Attachment URL" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 md:col-span-3 lg:col-span-4" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} placeholder="Remarks" />
+          <div className="flex min-w-0 gap-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
             <button type="submit" disabled={loading} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">
               {editingId ? (language === "en" ? "Save" : "保存") : language === "en" ? "Create SOP" : "新增 SOP"}
             </button>
@@ -200,16 +200,16 @@ export function SopManagement({ entries, language }: Props) {
       </section>
 
       <section className="app-card p-5">
-        <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder={language === "en" ? "Quick search: SOP / title / SKU" : "快速搜索：SOP/标题/SKU"} value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} />
-          <select className="rounded-lg border border-app-border px-3 py-2 text-sm" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as "all" | SopStatus); setPage(1); }}>
+        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" placeholder={language === "en" ? "Quick search: SOP / title / SKU" : "快速搜索：SOP/标题/SKU"} value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} />
+          <select className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as "all" | SopStatus); setPage(1); }}>
             <option value="all">All status</option>
             <option value="draft">draft</option>
             <option value="in_review">in_review</option>
             <option value="released">released</option>
             <option value="obsolete">obsolete</option>
           </select>
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" placeholder={language === "en" ? "Owner filter" : "负责人筛选"} value={ownerFilter} onChange={(e) => { setOwnerFilter(e.target.value); setPage(1); }} />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" placeholder={language === "en" ? "Owner filter" : "负责人筛选"} value={ownerFilter} onChange={(e) => { setOwnerFilter(e.target.value); setPage(1); }} />
           <div className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-muted">{filteredEntries.length} {language === "en" ? "records" : "条记录"}</div>
         </div>
         <div className="overflow-x-auto">

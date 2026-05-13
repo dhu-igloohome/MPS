@@ -104,29 +104,29 @@ export function ToolingManagement({ entries, language }: Props) {
       <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.title}</h3>
         {editing ? <p className="mt-1 text-xs text-app-muted">Editing: {editing.toolingCode}</p> : null}
-        <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4" onSubmit={onSubmit}>
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.toolingCode} onChange={(e) => setForm((f) => ({ ...f, toolingCode: e.target.value.toUpperCase() }))} placeholder="Tooling code *" required />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.toolingName} onChange={(e) => setForm((f) => ({ ...f, toolingName: e.target.value }))} placeholder="Tooling name *" required />
-          <select className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.toolingType} onChange={(e) => setForm((f) => ({ ...f, toolingType: e.target.value as ToolingType }))}>
+        <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" onSubmit={onSubmit}>
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.toolingCode} onChange={(e) => setForm((f) => ({ ...f, toolingCode: e.target.value.toUpperCase() }))} placeholder="Tooling code *" required />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.toolingName} onChange={(e) => setForm((f) => ({ ...f, toolingName: e.target.value }))} placeholder="Tooling name *" required />
+          <select className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.toolingType} onChange={(e) => setForm((f) => ({ ...f, toolingType: e.target.value as ToolingType }))}>
             <option value="mold">mold</option><option value="fixture">fixture</option><option value="gauge">gauge</option><option value="tester">tester</option>
           </select>
-          <select className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as ToolingStatus }))}>
+          <select className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as ToolingStatus }))}>
             <option value="design">design</option><option value="in_use">in_use</option><option value="maintenance">maintenance</option><option value="scrapped">scrapped</option>
           </select>
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.relatedSku} onChange={(e) => setForm((f) => ({ ...f, relatedSku: e.target.value.toUpperCase() }))} placeholder="Related SKU" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cmName} onChange={(e) => setForm((f) => ({ ...f, cmName: e.target.value }))} placeholder="CM / Factory" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="Location" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.owner} onChange={(e) => setForm((f) => ({ ...f, owner: e.target.value }))} placeholder="Owner" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.manufacturer} onChange={(e) => setForm((f) => ({ ...f, manufacturer: e.target.value }))} placeholder="Manufacturer" />
-          <input type="date" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.startUseDate} onChange={(e) => setForm((f) => ({ ...f, startUseDate: e.target.value }))} />
-          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cycleCount} onChange={(e) => setForm((f) => ({ ...f, cycleCount: e.target.value }))} placeholder="Cycle count (0 = not tracked)" />
-          <input type="number" min={0} step={1} className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cycleLimit} onChange={(e) => setForm((f) => ({ ...f, cycleLimit: e.target.value }))} placeholder="Cycle limit (0 = no limit)" />
-          <input type="date" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.lastMaintenanceDate} onChange={(e) => setForm((f) => ({ ...f, lastMaintenanceDate: e.target.value }))} />
-          <input type="date" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.nextMaintenanceDue} onChange={(e) => setForm((f) => ({ ...f, nextMaintenanceDue: e.target.value }))} />
-          <input type="number" min={0} step="0.01" className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cost} onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))} placeholder="Cost (optional)" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm" value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))} placeholder="Currency" />
-          <input className="rounded-lg border border-app-border px-3 py-2 text-sm lg:col-span-4" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} placeholder="Remarks" />
-          <div className="lg:col-span-4 flex gap-2">
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.relatedSku} onChange={(e) => setForm((f) => ({ ...f, relatedSku: e.target.value.toUpperCase() }))} placeholder="Related SKU" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cmName} onChange={(e) => setForm((f) => ({ ...f, cmName: e.target.value }))} placeholder="CM / Factory" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="Location" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.owner} onChange={(e) => setForm((f) => ({ ...f, owner: e.target.value }))} placeholder="Owner" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.manufacturer} onChange={(e) => setForm((f) => ({ ...f, manufacturer: e.target.value }))} placeholder="Manufacturer" />
+          <input type="date" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.startUseDate} onChange={(e) => setForm((f) => ({ ...f, startUseDate: e.target.value }))} />
+          <input type="number" min={0} step={1} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cycleCount} onChange={(e) => setForm((f) => ({ ...f, cycleCount: e.target.value }))} placeholder="Cycle count (0 = not tracked)" />
+          <input type="number" min={0} step={1} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cycleLimit} onChange={(e) => setForm((f) => ({ ...f, cycleLimit: e.target.value }))} placeholder="Cycle limit (0 = no limit)" />
+          <input type="date" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.lastMaintenanceDate} onChange={(e) => setForm((f) => ({ ...f, lastMaintenanceDate: e.target.value }))} />
+          <input type="date" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.nextMaintenanceDue} onChange={(e) => setForm((f) => ({ ...f, nextMaintenanceDue: e.target.value }))} />
+          <input type="number" min={0} step="0.01" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.cost} onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))} placeholder="Cost (optional)" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))} placeholder="Currency" />
+          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 md:col-span-3 lg:col-span-4" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} placeholder="Remarks" />
+          <div className="flex min-w-0 gap-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
             <button type="submit" disabled={loading} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">{editingId ? t.save : t.create}</button>
             {editingId ? <button type="button" className="rounded-lg border border-app-border px-4 py-2 text-sm" onClick={reset}>{t.cancel}</button> : null}
           </div>
@@ -134,9 +134,9 @@ export function ToolingManagement({ entries, language }: Props) {
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
       <section className="app-card p-5">
-        <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           <input
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
             placeholder={language === "en" ? "Quick search: code / name / SKU / CM" : "快速搜索：编码/名称/SKU/CM"}
             value={query}
             onChange={(e) => {
@@ -145,7 +145,7 @@ export function ToolingManagement({ entries, language }: Props) {
             }}
           />
           <select
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value as "all" | ToolingStatus);
@@ -159,7 +159,7 @@ export function ToolingManagement({ entries, language }: Props) {
             <option value="scrapped">scrapped</option>
           </select>
           <input
-            className="rounded-lg border border-app-border px-3 py-2 text-sm"
+            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
             placeholder={language === "en" ? "Owner filter" : "负责人筛选"}
             value={ownerFilter}
             onChange={(e) => {
