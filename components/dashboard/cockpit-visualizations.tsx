@@ -262,8 +262,8 @@ export function CockpitVisualizations({
           </Link>
         </div>
 
-        <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <label className="text-xs font-medium text-[#4B5563]">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {en ? "Range" : "区间"}
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
@@ -278,7 +278,7 @@ export function CockpitVisualizations({
           </label>
           {oPreset === "custom" ? (
             <>
-              <label className="text-xs font-medium text-[#4B5563]">
+              <label className="min-w-0 text-xs font-medium text-[#4B5563]">
                 {en ? "From" : "从"}
                 <input
                   type="date"
@@ -287,7 +287,7 @@ export function CockpitVisualizations({
                   onChange={(e) => setOFrom(e.target.value)}
                 />
               </label>
-              <label className="text-xs font-medium text-[#4B5563]">
+              <label className="min-w-0 text-xs font-medium text-[#4B5563]">
                 {en ? "To" : "至"}
                 <input
                   type="date"
@@ -298,11 +298,11 @@ export function CockpitVisualizations({
               </label>
             </>
           ) : (
-            <p className="text-xs text-slate-500 md:col-span-2 dark:text-slate-400">
+            <p className="text-xs text-slate-500 sm:col-span-2 md:col-span-3 xl:col-span-2 dark:text-slate-400">
               {oDateRange.from} → {oDateRange.to}
             </p>
           )}
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {en ? "Granularity" : "粒度"}
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
@@ -313,7 +313,7 @@ export function CockpitVisualizations({
               <option value="quarter">{en ? "Quarter" : "季"}</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {en ? "Region" : "区域"}
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
@@ -328,7 +328,7 @@ export function CockpitVisualizations({
               ))}
             </select>
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {en ? "Factory" : "工厂"}
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
@@ -343,7 +343,7 @@ export function CockpitVisualizations({
               ))}
             </select>
           </label>
-          <label className="text-xs font-medium text-[#4B5563] xl:col-span-2">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {en ? "Progress" : "进度"}
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
@@ -446,8 +446,8 @@ export function CockpitVisualizations({
           </Link>
         </div>
 
-        <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <label className="text-xs font-medium text-[#4B5563]">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {en ? "Range" : "区间"}
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
@@ -462,7 +462,7 @@ export function CockpitVisualizations({
           </label>
           {lPreset === "custom" ? (
             <>
-              <label className="text-xs font-medium text-[#4B5563]">
+              <label className="min-w-0 text-xs font-medium text-[#4B5563]">
                 {en ? "From" : "从"}
                 <input
                   type="date"
@@ -471,7 +471,7 @@ export function CockpitVisualizations({
                   onChange={(e) => setLFrom(e.target.value)}
                 />
               </label>
-              <label className="text-xs font-medium text-[#4B5563]">
+              <label className="min-w-0 text-xs font-medium text-[#4B5563]">
                 {en ? "To" : "至"}
                 <input
                   type="date"
@@ -482,11 +482,11 @@ export function CockpitVisualizations({
               </label>
             </>
           ) : (
-            <p className="text-xs text-slate-500 md:col-span-2 dark:text-slate-400">
+            <p className="text-xs text-slate-500 sm:col-span-2 md:col-span-3 xl:col-span-2 dark:text-slate-400">
               {lDateRange.from} → {lDateRange.to}
             </p>
           )}
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {en ? "Granularity" : "粒度"}
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
@@ -497,7 +497,7 @@ export function CockpitVisualizations({
               <option value="quarter">{en ? "Quarter" : "季"}</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {en ? "Status" : "状态"}
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
@@ -511,7 +511,7 @@ export function CockpitVisualizations({
               <option value="cancelled">cancelled</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {en ? "Movement" : "类型"}
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
@@ -523,7 +523,7 @@ export function CockpitVisualizations({
               <option value="transfer">transfer</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             From
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
@@ -538,7 +538,7 @@ export function CockpitVisualizations({
               ))}
             </select>
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             To
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
