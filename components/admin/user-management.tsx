@@ -4,10 +4,19 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { REGIONS } from "@/lib/accounts";
+import { isAdminProtectedUsername } from "@/lib/admin-protected-usernames";
+import { toast } from "@/lib/app-toast";
 import { Language } from "@/lib/i18n";
 import { AdminAuditLog, AdminUser, Region, UserRole } from "@/lib/types";
 
-const ALL_REGIONS: Region[] = ["APAC", "EU", "USA"];
+function formatAuditLogTime(iso: string, language: Language): string {
+  return new Date(iso).toLocaleString(language === "en" ? "en-US" : "zh-CN", {
+    dateStyle: "short",
+    timeStyle: "short",
+    hour12: language === "en",
+  });
+}
 
 type UserManagementProps = {
   users: AdminUser[];
@@ -51,24 +60,42 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
         ? "Create failed. Check username uniqueness and input fields."
         : "创建失败，请检查用户名唯一性和输入字段。",
     userCreated: language === "en" ? "User created." : "用户已创建。",
-    resetPrompt:
-      language === "en"
-        ? "Reset password for {username} (leave blank to skip):"
-        : "重置 {username} 的密码（留空则跳过）：",
     updateFailed: language === "en" ? "Update failed." : "更新失败。",
     updated: language === "en" ? "Updated {username}." : "已更新 {username}。",
-    deleteConfirm: language === "en" ? "Delete user {username}?" : "确认删除用户 {username}？",
     deleteFailed: language === "en" ? "Delete failed." : "删除失败。",
     deleted: language === "en" ? "Deleted {username}." : "已删除 {username}。",
+    batchFailed: language === "en" ? "Batch import failed" : "批量导入失败",
+    batchOk: language === "en" ? "Batch import finished" : "批量导入完成",
+    saveModalTitle: language === "en" ? "Save account changes" : "保存账号变更",
+    saveModalHint:
+      language === "en"
+        ? "Applies role and regions for this row. Optionally set a new password (min 6 characters); leave blank to keep the current password."
+        : "保存本行的角色与区域。可选填写新密码（至少 6 位）；留空则不修改密码。",
+    newPasswordOptional: language === "en" ? "New password (optional)" : "新密码（可选）",
+    cancel: language === "en" ? "Cancel" : "取消",
+    save: language === "en" ? "Save" : "保存",
+    saving: language === "en" ? "Saving…" : "保存中…",
+    deleteModalTitle: language === "en" ? "Delete account" : "删除账号",
+    deleteModalBody:
+      language === "en"
+        ? "This will permanently remove {username}. This cannot be undone."
+        : "将永久删除用户 {username}，且无法恢复。",
+    confirmDelete: language === "en" ? "Delete account" : "确认删除",
+    deleting: language === "en" ? "Deleting…" : "删除中…",
   };
+
   const [editableUsers, setEditableUsers] = useState<AdminUser[]>(users);
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("regional_admin");
-  const [regions, setRegions] = useState<Region[]>(["APAC"]);
-  const [message, setMessage] = useState("");
+  const [regions, setRegions] = useState<Region[]>([REGIONS[0]]);
   const [loading, setLoading] = useState(false);
+  const [savingUsername, setSavingUsername] = useState<string | null>(null);
+  const [deletingUsername, setDeletingUsername] = useState<string | null>(null);
+  const [saveModalUser, setSaveModalUser] = useState<AdminUser | null>(null);
+  const [saveModalPassword, setSaveModalPassword] = useState("");
+  const [deleteModalUsername, setDeleteModalUsername] = useState<string | null>(null);
   const [batchSummary, setBatchSummary] = useState<string | null>(null);
   const [batchErrors, setBatchErrors] = useState<{ row: number; message: string }[]>([]);
   const batchFileRef = useRef<HTMLInputElement>(null);
@@ -76,6 +103,19 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
   useEffect(() => {
     setEditableUsers(users);
   }, [users]);
+
+  useEffect(() => {
+    if (!saveModalUser && !deleteModalUsername) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (savingUsername || deletingUsername) return;
+      setSaveModalUser(null);
+      setSaveModalPassword("");
+      setDeleteModalUsername(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [saveModalUser, deleteModalUsername, savingUsername, deletingUsername]);
 
   function toggleRegion(region: Region) {
     setRegions((prev) => {
@@ -91,7 +131,6 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
     event.target.value = "";
     if (!file) return;
     setLoading(true);
-    setMessage("");
     setBatchSummary(null);
     setBatchErrors([]);
     const formData = new FormData();
@@ -108,7 +147,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
     };
     setLoading(false);
     if (!response.ok) {
-      setMessage(data.message || "Batch import failed");
+      toast.error(data.message || t.batchFailed);
       return;
     }
     const created = data.created ?? 0;
@@ -119,13 +158,13 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
         : `已创建 ${created} 个用户；${failed} 行跳过或失败。`,
     );
     setBatchErrors(Array.isArray(data.errors) ? data.errors.slice(0, 30) : []);
+    toast.success(t.batchOk);
     router.refresh();
   }
 
   async function createUser(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
-    setMessage("");
     setBatchSummary(null);
     setBatchErrors([]);
 
@@ -144,58 +183,75 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
     setLoading(false);
 
     if (!response.ok) {
-      setMessage(t.createFailed);
+      toast.error(t.createFailed);
       return;
     }
 
-    setMessage(t.userCreated);
+    toast.success(t.userCreated);
     setUsername("");
     setDisplayName("");
     setPassword("");
     setRole("regional_admin");
-    setRegions(["APAC"]);
+    setRegions([REGIONS[0]]);
     router.refresh();
   }
 
-  async function updateUser(user: AdminUser) {
-    const newPassword = window.prompt(
-      t.resetPrompt.replace("{username}", user.username),
-      "",
-    );
-    const response = await fetch(`/api/admin/users/${encodeURIComponent(user.username)}`, {
+  function openSaveModal(user: AdminUser) {
+    setSaveModalPassword("");
+    setSaveModalUser(user);
+  }
+
+  async function commitSaveModal() {
+    if (!saveModalUser) return;
+    const pw = saveModalPassword.trim();
+    if (pw && pw.length < 6) {
+      toast.error(language === "en" ? "Password must be at least 6 characters." : "密码至少 6 位。");
+      return;
+    }
+    setSavingUsername(saveModalUser.username);
+    const response = await fetch(`/api/admin/users/${encodeURIComponent(saveModalUser.username)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        role: user.role,
-        regions: user.regions,
-        password: newPassword || undefined,
+        role: saveModalUser.role,
+        regions: saveModalUser.regions,
+        password: pw || undefined,
       }),
     });
+    setSavingUsername(null);
 
     if (!response.ok) {
-      setMessage(t.updateFailed);
+      toast.error(t.updateFailed);
       return;
     }
 
-    setMessage(t.updated.replace("{username}", user.username));
+    const savedName = saveModalUser.username;
+    setSaveModalUser(null);
+    setSaveModalPassword("");
+    toast.success(t.updated.replace("{username}", savedName));
     router.refresh();
   }
 
-  async function deleteUser(usernameToDelete: string) {
-    if (!window.confirm(t.deleteConfirm.replace("{username}", usernameToDelete))) {
-      return;
-    }
+  function openDeleteModal(usernameToDelete: string) {
+    setDeleteModalUsername(usernameToDelete);
+  }
 
-    const response = await fetch(`/api/admin/users/${encodeURIComponent(usernameToDelete)}`, {
+  async function commitDeleteModal() {
+    if (!deleteModalUsername) return;
+    setDeletingUsername(deleteModalUsername);
+    const response = await fetch(`/api/admin/users/${encodeURIComponent(deleteModalUsername)}`, {
       method: "DELETE",
     });
+    setDeletingUsername(null);
 
     if (!response.ok) {
-      setMessage(t.deleteFailed);
+      toast.error(t.deleteFailed);
       return;
     }
 
-    setMessage(t.deleted.replace("{username}", usernameToDelete));
+    const u = deleteModalUsername;
+    setDeleteModalUsername(null);
+    toast.success(t.deleted.replace("{username}", u));
     router.refresh();
   }
 
@@ -218,6 +274,8 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
     });
     setEditableUsers(nextUsers);
   }
+
+  const modalBusy = Boolean(savingUsername || deletingUsername);
 
   return (
     <div className="space-y-4">
@@ -291,6 +349,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
           <select
             className="min-w-0 rounded-lg px-3 py-2"
             value={role}
+            aria-label={t.role}
             onChange={(event) => setRole(event.target.value as UserRole)}
           >
             <option value="regional_admin">regional_admin</option>
@@ -298,7 +357,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
           </select>
 
           <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            {ALL_REGIONS.map((region) => (
+            {REGIONS.map((region) => (
               <label
                 key={region}
                 className="inline-flex min-w-0 items-center gap-2 rounded-lg border border-app-border bg-white px-3 py-1.5 text-sm"
@@ -339,59 +398,65 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
               </tr>
             </thead>
             <tbody>
-              {editableUsers.map((user) => (
-                <tr key={user.username}>
-                  <td>{user.username}</td>
-                  <td>{user.displayName}</td>
-                  <td>
-                    <select
-                      value={user.role}
-                      disabled={user.username === "david"}
-                      onChange={(event) =>
-                        updateDraftRole(user.username, event.target.value as UserRole)
-                      }
-                      className="rounded-lg px-2 py-1"
-                    >
-                      <option value="regional_admin">regional_admin</option>
-                      <option value="super_admin">super_admin</option>
-                    </select>
-                  </td>
-                  <td>
-                    <div className="flex flex-wrap gap-2">
-                      {ALL_REGIONS.map((region) => (
-                        <label key={`${user.username}-${region}`} className="inline-flex items-center gap-1">
-                          <input
-                            type="checkbox"
-                            checked={user.regions.includes(region)}
-                            disabled={user.username === "david"}
-                            onChange={() => updateDraftRegions(user.username, region)}
-                          />
-                          {region}
-                        </label>
-                      ))}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => updateUser(user)}
-                        className="app-button-secondary px-2 py-1 text-sm"
+              {editableUsers.map((user) => {
+                const rowBusy = savingUsername === user.username || deletingUsername === user.username;
+                const protectedUser = isAdminProtectedUsername(user.username);
+                return (
+                  <tr key={user.username}>
+                    <td>{user.username}</td>
+                    <td>{user.displayName}</td>
+                    <td>
+                      <select
+                        value={user.role}
+                        aria-label={`${t.role} · ${user.username}`}
+                        disabled={protectedUser || rowBusy}
+                        onChange={(event) =>
+                          updateDraftRole(user.username, event.target.value as UserRole)
+                        }
+                        className="rounded-lg px-2 py-1"
                       >
-                        {t.saveResetPw}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={user.username === "david"}
-                        onClick={() => deleteUser(user.username)}
-                        className="rounded-lg border border-red-200 px-2 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-                      >
-                        {t.delete}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <option value="regional_admin">regional_admin</option>
+                        <option value="super_admin">super_admin</option>
+                      </select>
+                    </td>
+                    <td>
+                      <div className="flex flex-wrap gap-2">
+                        {REGIONS.map((region) => (
+                          <label key={`${user.username}-${region}`} className="inline-flex items-center gap-1">
+                            <input
+                              type="checkbox"
+                              checked={user.regions.includes(region)}
+                              disabled={protectedUser || rowBusy}
+                              onChange={() => updateDraftRegions(user.username, region)}
+                            />
+                            {region}
+                          </label>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={rowBusy}
+                          onClick={() => openSaveModal(user)}
+                          className="app-button-secondary px-2 py-1 text-sm disabled:opacity-60"
+                        >
+                          {t.saveResetPw}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={protectedUser || rowBusy}
+                          onClick={() => openDeleteModal(user.username)}
+                          className="rounded-lg border border-red-200 px-2 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {t.delete}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -399,9 +464,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
 
       <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.operationLogs}</h3>
-        <p className="mt-1 text-sm text-[#4B5563]">
-          {t.operationLogsDesc}
-        </p>
+        <p className="mt-1 text-sm text-[#4B5563]">{t.operationLogsDesc}</p>
         <div className="app-table-shell mt-3 overflow-x-auto">
           <table className="app-table min-w-[860px]">
             <thead>
@@ -423,9 +486,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
               ) : (
                 auditLogs.map((log) => (
                   <tr key={log.id}>
-                    <td>
-                      {new Date(log.createdAt).toLocaleString("en-US", { hour12: false })}
-                    </td>
+                    <td className="whitespace-nowrap tabular-nums">{formatAuditLogTime(log.createdAt, language)}</td>
                     <td>{log.actorUsername}</td>
                     <td>{log.action}</td>
                     <td>{log.targetUsername}</td>
@@ -438,10 +499,111 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
         </div>
       </section>
 
-      {message ? (
-        <p className="rounded-lg border border-app-border/90 bg-white px-4 py-2 text-sm text-foreground/85">
-          {message}
-        </p>
+      {saveModalUser ? (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/45 p-4 pt-16 sm:pt-24"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="save-user-modal-title"
+        >
+          <div
+            className="absolute inset-0"
+            aria-hidden
+            onClick={() => {
+              if (!modalBusy) {
+                setSaveModalUser(null);
+                setSaveModalPassword("");
+              }
+            }}
+          />
+          <div className="relative w-full max-w-md rounded-xl border border-app-border bg-white p-5 shadow-[0_16px_48px_rgba(17,24,39,0.12)]">
+            <h4 id="save-user-modal-title" className="text-base font-semibold text-[#111827]">
+              {t.saveModalTitle}
+            </h4>
+            <p className="mt-1 text-sm text-[#4B5563]">
+              <span className="font-medium text-[#111827]">{saveModalUser.username}</span>
+              {" · "}
+              {saveModalUser.displayName}
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-[#6B7280]">{t.saveModalHint}</p>
+            <label className="mt-4 block">
+              <span className="mb-1 block text-xs font-medium text-[#4B5563]">{t.newPasswordOptional}</span>
+              <input
+                type="password"
+                autoComplete="new-password"
+                aria-label={t.newPasswordOptional}
+                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                value={saveModalPassword}
+                onChange={(e) => setSaveModalPassword(e.target.value)}
+                placeholder="······"
+              />
+            </label>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                disabled={modalBusy}
+                className="app-button-secondary px-3 py-2 text-sm disabled:opacity-60"
+                onClick={() => {
+                  setSaveModalUser(null);
+                  setSaveModalPassword("");
+                }}
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                disabled={modalBusy}
+                className="app-button-primary px-3 py-2 text-sm disabled:opacity-60"
+                onClick={() => void commitSaveModal()}
+              >
+                {savingUsername ? t.saving : t.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteModalUsername ? (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/45 p-4 pt-16 sm:pt-24"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-user-modal-title"
+        >
+          <div
+            className="absolute inset-0"
+            aria-hidden
+            onClick={() => {
+              if (!modalBusy) setDeleteModalUsername(null);
+            }}
+          />
+          <div className="relative w-full max-w-md rounded-xl border border-app-border bg-white p-5 shadow-[0_16px_48px_rgba(17,24,39,0.12)]">
+            <h4 id="delete-user-modal-title" className="text-base font-semibold text-red-800">
+              {t.deleteModalTitle}
+            </h4>
+            <p className="mt-3 text-sm text-[#374151]">
+              {t.deleteModalBody.replace("{username}", deleteModalUsername)}
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                disabled={modalBusy}
+                className="app-button-secondary px-3 py-2 text-sm disabled:opacity-60"
+                onClick={() => setDeleteModalUsername(null)}
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                disabled={modalBusy}
+                className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-100 disabled:opacity-60"
+                onClick={() => void commitDeleteModal()}
+              >
+                {deletingUsername ? t.deleting : t.confirmDelete}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

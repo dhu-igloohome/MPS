@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { REGIONS } from "@/lib/accounts";
+import { isAdminProtectedUsername } from "@/lib/admin-protected-usernames";
 import {
   createAdminAuditLog,
   deleteUserAccount,
@@ -16,10 +17,6 @@ function isRegion(value: string): value is Region {
 
 function isRole(value: string): value is UserRole {
   return value === "super_admin" || value === "regional_admin";
-}
-
-function isProtectedUser(username: string) {
-  return username === "david";
 }
 
 type RouteContext = {
@@ -44,8 +41,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     : [];
   const password = body.password ? String(body.password) : "";
 
-  if (isProtectedUser(username) && role !== "super_admin") {
-    return NextResponse.json({ message: "Cannot downgrade david" }, { status: 400 });
+  if (isAdminProtectedUsername(username) && role !== "super_admin") {
+    return NextResponse.json({ message: "Cannot downgrade protected admin" }, { status: 400 });
   }
 
   if (regions.length > 0) {
@@ -83,7 +80,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   const { username } = await context.params;
-  if (!username || isProtectedUser(username)) {
+  if (!username || isAdminProtectedUsername(username)) {
     return NextResponse.json({ message: "Cannot delete this user" }, { status: 400 });
   }
 
