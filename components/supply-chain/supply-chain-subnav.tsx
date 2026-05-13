@@ -29,40 +29,38 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab");
-  const items: SupplyChainSubnavItem[] = [
-    {
-      href: "/supply-chain/cost-control",
-      label: language === "en" ? "Cost Control" : "成本控制",
-      Icon: Calculator,
-      children: [
-        {
-          href: "/supply-chain/cost-control",
-          label: language === "en" ? "Cost analysis" : "成本分析",
-          Icon: BarChart3,
-        },
-        {
-          href: "/supply-chain/cost-control?tab=cashflow",
-          label: language === "en" ? "Cash flow analysis" : "现金流分析",
-          Icon: Landmark,
-        },
-        {
-          href: "/supply-chain/cost-control/unit-cost",
-          label: language === "en" ? "Unit cost" : "单位成本",
-          Icon: Coins,
-        },
-      ],
-    },
-    {
-      href: "/supply-chain/contracts",
-      label: language === "en" ? "Contracts" : "合同管理",
-      Icon: FileText,
-    },
-    {
-      href: "/supply-chain/suppliers",
-      label: language === "en" ? "Suppliers" : "供应商管理",
-      Icon: Building2,
-    },
-  ];
+  const costControlItem: SupplyChainSubnavItem = {
+    href: "/supply-chain/cost-control",
+    label: language === "en" ? "Cost Control" : "成本控制",
+    Icon: Calculator,
+    children: [
+      {
+        href: "/supply-chain/cost-control",
+        label: language === "en" ? "Cost analysis" : "成本分析",
+        Icon: BarChart3,
+      },
+      {
+        href: "/supply-chain/cost-control?tab=cashflow",
+        label: language === "en" ? "Cash flow analysis" : "现金流分析",
+        Icon: Landmark,
+      },
+      {
+        href: "/supply-chain/cost-control/unit-cost",
+        label: language === "en" ? "Unit cost" : "单位成本",
+        Icon: Coins,
+      },
+    ],
+  };
+  const contractsItem: SupplyChainSubnavItem = {
+    href: "/supply-chain/contracts",
+    label: language === "en" ? "Contracts" : "合同管理",
+    Icon: FileText,
+  };
+  const suppliersItem: SupplyChainSubnavItem = {
+    href: "/supply-chain/suppliers",
+    label: language === "en" ? "Suppliers" : "供应商管理",
+    Icon: Building2,
+  };
 
   const isOn = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const isCostControlChildOn = (href: string) => {
@@ -74,122 +72,115 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
     }
     return isOn(href);
   };
-  const [opened, setOpened] = useState<Set<string>>(() => new Set());
+  const [costExpanded, setCostExpanded] = useState(false);
 
   useEffect(() => {
-    // Keep active branch expanded when navigating.
-    const next = new Set<string>();
-    for (const item of items) {
-      if (item.children?.length && isOn(item.href)) next.add(item.href);
-    }
-    setOpened((prev) => {
-      const merged = new Set(prev);
-      for (const href of next) merged.add(href);
-      return merged;
-    });
+    // Keep Cost Control expanded while user is on any cost-control route.
+    if (isOn(costControlItem.href)) setCostExpanded(true);
   }, [pathname]);
+
+  const onCost = isOn(costControlItem.href);
+  const onContracts = isOn(contractsItem.href);
+  const onSuppliers = isOn(suppliersItem.href);
+  const subListId = "supply-sub-cost-control";
 
   return (
     <nav
       className="w-full rounded-xl bg-zinc-200/60 p-1"
       aria-label={language === "en" ? "Supply chain sections" : "供应链分区"}
     >
-      {items.map(({ href, label, Icon, children }) => {
-        const on = isOn(href);
-        const hasChildren = Boolean(children?.length);
-        const childItems = children ?? [];
-        const expanded = hasChildren && opened.has(href);
-        const subListId = `supply-sub-${href.slice(1).replace(/\//g, "-")}`;
+      <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
+        <div
+          className={`flex min-h-[2.75rem] min-w-0 items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium transition-all ${
+            onCost
+              ? "bg-white text-[#111827] shadow-sm ring-1 ring-black/[0.06]"
+              : "text-[#4B5563] hover:bg-white/70 hover:text-[#111827] sm:hover:bg-white/50"
+          }`}
+        >
+          <button
+            type="button"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#6B7280] hover:bg-black/[0.04] hover:text-[#111827]"
+            aria-controls={subListId}
+            aria-label={
+              costExpanded
+                ? language === "en"
+                  ? `Collapse ${costControlItem.label}`
+                  : `收起${costControlItem.label}`
+                : language === "en"
+                  ? `Expand ${costControlItem.label}`
+                  : `展开${costControlItem.label}`
+            }
+            onClick={() => setCostExpanded((v) => !v)}
+          >
+            <ChevronRight
+              className={`h-4 w-4 transition-transform ${costExpanded ? "rotate-90" : ""}`}
+              strokeWidth={1.75}
+              aria-hidden
+            />
+          </button>
+          <Link
+            href={costControlItem.href}
+            aria-current={onCost ? "page" : undefined}
+            className="flex min-w-0 flex-1 items-center gap-2 py-1.5 pr-1"
+          >
+            <costControlItem.Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={1.75} aria-hidden />
+            <span className="truncate whitespace-nowrap">{costControlItem.label}</span>
+          </Link>
+        </div>
 
-        if (!hasChildren) {
+        <Link
+          href={contractsItem.href}
+          aria-current={onContracts ? "page" : undefined}
+          className={`flex min-h-[2.75rem] min-w-0 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+            onContracts
+              ? "bg-white text-[#111827] shadow-sm ring-1 ring-black/[0.06]"
+              : "text-[#4B5563] hover:bg-white/70 hover:text-[#111827] sm:hover:bg-white/50"
+          } `}
+        >
+          <contractsItem.Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={1.75} aria-hidden />
+          <span className="truncate whitespace-nowrap">{contractsItem.label}</span>
+        </Link>
+
+        <Link
+          href={suppliersItem.href}
+          aria-current={onSuppliers ? "page" : undefined}
+          className={`flex min-h-[2.75rem] min-w-0 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+            onSuppliers
+              ? "bg-white text-[#111827] shadow-sm ring-1 ring-black/[0.06]"
+              : "text-[#4B5563] hover:bg-white/70 hover:text-[#111827] sm:hover:bg-white/50"
+          } `}
+        >
+          <suppliersItem.Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={1.75} aria-hidden />
+          <span className="truncate whitespace-nowrap">{suppliersItem.label}</span>
+        </Link>
+      </div>
+
+      <ul
+        id={subListId}
+        hidden={!costExpanded}
+        className="mt-1 grid grid-cols-1 gap-1 border-t border-zinc-300/70 pt-1 sm:grid-cols-3"
+      >
+        {costControlItem.children?.map((child) => {
+          const ChildIcon = child.Icon;
+          const childOn = isCostControlChildOn(child.href);
           return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={on ? "page" : undefined}
-              className={`mb-1 flex min-h-[2.75rem] min-w-0 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all last:mb-0 ${
-                on
-                  ? "bg-white text-[#111827] shadow-sm ring-1 ring-black/[0.06]"
-                  : "text-[#4B5563] hover:bg-white/70 hover:text-[#111827] sm:hover:bg-white/50"
-              } `}
-            >
-              <Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={1.75} aria-hidden />
-              <span className="truncate whitespace-nowrap">{label}</span>
-            </Link>
-          );
-        }
-
-        return (
-          <div key={href} className="mb-1 last:mb-0">
-            <div
-              className={`flex min-h-[2.75rem] min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium transition-all ${
-                on
-                  ? "bg-white text-[#111827] shadow-sm ring-1 ring-black/[0.06]"
-                  : "text-[#4B5563] hover:bg-white/70 hover:text-[#111827] sm:hover:bg-white/50"
-              }`}
-            >
-              <button
-                type="button"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#6B7280] hover:bg-black/[0.04] hover:text-[#111827]"
-                aria-controls={subListId}
-                aria-label={
-                  expanded
-                    ? language === "en"
-                      ? `Collapse ${label}`
-                      : `收起${label}`
-                    : language === "en"
-                      ? `Expand ${label}`
-                      : `展开${label}`
-                }
-                onClick={() =>
-                  setOpened((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(href)) next.delete(href);
-                    else next.add(href);
-                    return next;
-                  })
-                }
-              >
-                <ChevronRight
-                  className={`h-4 w-4 transition-transform ${expanded ? "rotate-90" : ""}`}
-                  strokeWidth={1.75}
-                  aria-hidden
-                />
-              </button>
+            <li key={child.href}>
               <Link
-                href={href}
-                aria-current={on ? "page" : undefined}
-                className="flex min-w-0 flex-1 items-center gap-2 py-1.5 pr-1"
+                href={child.href}
+                aria-current={childOn ? "page" : undefined}
+                className={`flex min-h-[2.25rem] items-center justify-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+                  childOn
+                    ? "bg-white text-[var(--app-accent)] shadow-sm ring-1 ring-black/[0.05]"
+                    : "text-[#4B5563] hover:bg-white/70 hover:text-[#111827]"
+                }`}
               >
-                <Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={1.75} aria-hidden />
-                <span className="truncate whitespace-nowrap">{label}</span>
+                <ChildIcon className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={1.8} aria-hidden />
+                <span className="truncate">{child.label}</span>
               </Link>
-            </div>
-            <ul id={subListId} hidden={!expanded} className="mt-1 space-y-1 border-l border-zinc-300/80 pl-4">
-              {childItems.map((child) => {
-                const ChildIcon = child.Icon;
-                const childOn = isCostControlChildOn(child.href);
-                return (
-                  <li key={child.href}>
-                    <Link
-                      href={child.href}
-                      aria-current={childOn ? "page" : undefined}
-                      className={`flex min-h-[2.25rem] items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
-                        childOn
-                          ? "bg-white text-[var(--app-accent)] shadow-sm ring-1 ring-black/[0.05]"
-                          : "text-[#4B5563] hover:bg-white/70 hover:text-[#111827]"
-                      }`}
-                    >
-                      <ChildIcon className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={1.8} aria-hidden />
-                      <span className="truncate">{child.label}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        );
-      })}
+            </li>
+          );
+        })}
+      </ul>
     </nav>
   );
 }
