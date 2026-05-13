@@ -33,6 +33,8 @@ const PIE_COLORS = ["#ee6454", "#2563eb", "#059669", "#d97706", "#7c3aed", "#e11
 type Props = {
   language: Language;
   forecasts: ForecastEntry[];
+  /** When set, shows next to “Open Forecast” in the section toolbar (e.g. CSV export). */
+  forecastExport?: { href: string; label: string };
 };
 
 function formatNum(n: number) {
@@ -59,7 +61,7 @@ function PieTooltip({
   );
 }
 
-export function ForecastExecutiveOverview({ language, forecasts }: Props) {
+export function ForecastExecutiveOverview({ language, forecasts, forecastExport }: Props) {
   const en = language === "en";
 
   const availableForecastMonths = useMemo(
@@ -131,94 +133,120 @@ export function ForecastExecutiveOverview({ language, forecasts }: Props) {
     fcMonthNone: en ? "No months match." : "没有符合条件的月份。",
     chartZoneTotal: en ? "Total volume (chart scope)" : "合计数量（图表区）",
     chartZoneTotalHint: en ? "Sum of BTO + BTS for the selected Forecast Months — same as Total volume KPI." : "与上方 KPI「合计数量」一致：所选 Forecast 月份内 BTO + BTS 之和。",
+    dataContext: en
+      ? "Scope: forecast rows in your assigned regions only (same as list permissions)."
+      : "范围：仅包含您有权限区域内的 Forecast 记录（与列表权限一致）。",
   };
+
+  const toolbar = (
+    <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+      {forecastExport ? (
+        <a
+          href={forecastExport.href}
+          className="app-button-secondary inline-flex items-center justify-center px-3 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
+        >
+          {forecastExport.label}
+        </a>
+      ) : null}
+      <Link
+        href="/forecast"
+        className="app-button-primary inline-flex items-center justify-center px-3 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
+      >
+        {t.openForecast}
+      </Link>
+    </div>
+  );
 
   if (forecasts.length === 0) {
     return (
-      <section className="app-card p-6">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
+      <section className="app-card overflow-hidden p-6 shadow-sm">
+        <div className="mb-6 flex min-w-0 flex-col gap-4 border-b border-app-border/60 pb-6 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
-            <p className="mt-1 text-sm text-[#4B5563]">{t.subtitle}</p>
+            <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
           </div>
-          <Link href="/forecast" className="app-button-secondary shrink-0 px-3 py-2 text-sm font-medium">
-            {t.openForecast}
-          </Link>
+          {toolbar}
         </div>
-        <p className="mt-6 text-center text-sm text-[#9CA3AF]">{t.empty}</p>
+        <p className="text-center text-sm text-[#9CA3AF]">{t.empty}</p>
       </section>
     );
   }
 
+  const allMonthsActive = selectedForecastMonths === undefined;
+
   return (
-    <section className="app-card overflow-hidden p-6">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
+    <section className="app-card overflow-hidden p-6 shadow-sm">
+      <div className="mb-6 flex min-w-0 flex-col gap-4 border-b border-app-border/60 pb-6 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
-          <p className="mt-1 text-sm text-[#4B5563]">{t.subtitle}</p>
+          <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
+          <p className="mt-2 text-xs text-[#9CA3AF]">{t.dataContext}</p>
         </div>
-        <Link href="/forecast" className="app-button-secondary shrink-0 px-3 py-2 text-sm font-medium">
-          {t.openForecast}
-        </Link>
+        {toolbar}
       </div>
 
-      <div className="mb-6 rounded-xl border border-app-border/90 bg-[#fafafa] p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+      <div className="mb-6 min-w-0 rounded-xl border border-app-border/80 bg-gradient-to-br from-[#fafafa] to-white p-4 shadow-sm sm:p-5">
+        <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.fcMonthFilter}</p>
-            <p className="mt-1 max-w-3xl text-xs text-[#6B7280]">{t.fcMonthHint}</p>
+            <p className="mt-1 max-w-prose text-xs leading-relaxed text-[#6B7280]">{t.fcMonthHint}</p>
           </div>
           <button
             type="button"
-            className="app-button-secondary shrink-0 px-3 py-1.5 text-xs font-medium"
+            className={`shrink-0 rounded-lg border px-3 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 ${
+              allMonthsActive
+                ? "border-app-accent/50 bg-app-accent-soft text-[#111827] shadow-sm"
+                : "border-app-border bg-white text-foreground/85 hover:border-app-accent/35 hover:bg-app-accent-soft"
+            }`}
             onClick={() => setSelectedForecastMonths(undefined)}
           >
             {t.fcMonthReset}
           </button>
         </div>
         {availableForecastMonths.length === 0 ? (
-          <p className="mt-3 text-sm text-[#9CA3AF]">{t.fcMonthNone}</p>
+          <p className="mt-4 text-sm text-[#9CA3AF]">{t.fcMonthNone}</p>
         ) : (
-          <>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
-              {availableForecastMonths.map((mk) => {
-                const explicit = selectedForecastMonths;
-                const checked =
-                  explicit === undefined ? true : explicit.includes(mk);
-                return (
-                  <label
-                    key={mk}
-                    className="inline-flex cursor-pointer items-center gap-2 text-sm text-[#374151]"
-                  >
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-app-border text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
-                      checked={checked}
-                      onChange={() => {
-                        if (explicit === undefined) {
-                          setSelectedForecastMonths(availableForecastMonths.filter((m) => m !== mk));
-                          return;
-                        }
-                        const next = checked
-                          ? explicit.filter((m) => m !== mk)
-                          : [...explicit, mk].sort();
-                        if (next.length === 0) {
-                          setSelectedForecastMonths([]);
-                          return;
-                        }
-                        if (next.length === availableForecastMonths.length) {
-                          setSelectedForecastMonths(undefined);
-                          return;
-                        }
-                        setSelectedForecastMonths(next);
-                      }}
-                    />
-                    <span className="tabular-nums">{mk}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </>
+          <div className="mt-4 flex min-w-0 flex-wrap gap-2">
+            {availableForecastMonths.map((mk) => {
+              const explicit = selectedForecastMonths;
+              const checked = explicit === undefined ? true : explicit.includes(mk);
+              return (
+                <label
+                  key={mk}
+                  className={`inline-flex min-w-0 cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm tabular-nums transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 ${
+                    checked
+                      ? "border-app-accent/50 bg-app-accent-soft text-[#111827] shadow-sm"
+                      : "border-app-border/90 bg-white text-[#374151] hover:border-app-accent/35 hover:bg-app-accent-soft/60"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="h-3.5 w-3.5 shrink-0 rounded border-app-border text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
+                    checked={checked}
+                    onChange={() => {
+                      if (explicit === undefined) {
+                        setSelectedForecastMonths(availableForecastMonths.filter((m) => m !== mk));
+                        return;
+                      }
+                      const next = checked
+                        ? explicit.filter((m) => m !== mk)
+                        : [...explicit, mk].sort();
+                      if (next.length === 0) {
+                        setSelectedForecastMonths([]);
+                        return;
+                      }
+                      if (next.length === availableForecastMonths.length) {
+                        setSelectedForecastMonths(undefined);
+                        return;
+                      }
+                      setSelectedForecastMonths(next);
+                    }}
+                  />
+                  <span>{mk}</span>
+                </label>
+              );
+            })}
+          </div>
         )}
       </div>
 

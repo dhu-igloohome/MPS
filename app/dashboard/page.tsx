@@ -45,15 +45,6 @@ export default async function DashboardPage() {
 
   return (
     <AppShell session={session} title={t.title} description={t.description}>
-      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-        <a
-          href="/api/dashboard/export-csv"
-          className="inline-flex items-center rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm text-foreground/85 hover:border-app-accent/35 hover:bg-app-accent-soft hover:text-foreground"
-        >
-          {t.exportCsv}
-        </a>
-      </div>
-
       <CockpitVisualizations
         language={language}
         forecasts={entries}
@@ -62,6 +53,7 @@ export default async function DashboardPage() {
         forecastCashFlowRows={forecastCashFlowRows}
         fcSuppliers={suppliers}
         unitCostQuotes={unitCostQuotes}
+        forecastExport={{ href: "/api/dashboard/export-csv", label: t.exportCsv }}
       />
     </AppShell>
   );

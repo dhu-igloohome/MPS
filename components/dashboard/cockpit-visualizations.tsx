@@ -63,6 +63,7 @@ type Props = {
   forecastCashFlowRows: ForecastCashFlowRow[];
   fcSuppliers: SupplierEntry[];
   unitCostQuotes: UnitCostQuoteEntry[];
+  forecastExport?: { href: string; label: string };
 };
 
 function formatNum(n: number) {
@@ -106,6 +107,7 @@ export function CockpitVisualizations({
   forecastCashFlowRows,
   fcSuppliers,
   unitCostQuotes,
+  forecastExport,
 }: Props) {
   const en = language === "en";
 
@@ -206,7 +208,11 @@ export function CockpitVisualizations({
 
   return (
     <div className="space-y-10">
-      <ForecastExecutiveOverview language={language} forecasts={forecasts} />
+      <ForecastExecutiveOverview
+        language={language}
+        forecasts={forecasts}
+        forecastExport={forecastExport}
+      />
 
       {/* Forecast cash flow analysis (scheduled payment chart; full module under Supply Chain → Cost control) */}
       <section className="app-card p-5">
