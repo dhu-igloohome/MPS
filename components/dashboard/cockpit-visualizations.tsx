@@ -358,27 +358,27 @@ export function CockpitVisualizations({
           </label>
         </div>
 
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="app-card p-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <article className="app-card min-w-0 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Orders" : "订单行数"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.total)}</p>
           </article>
-          <article className="app-card p-4">
+          <article className="app-card min-w-0 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Qty" : "数量"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.qty)}</p>
           </article>
-          <article className="app-card p-4">
+          <article className="app-card min-w-0 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "In production" : "生产中"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.in_production)}</p>
           </article>
-          <article className="app-card p-4">
+          <article className="app-card min-w-0 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Ready to ship" : "待发货"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.ready_to_ship)}</p>
           </article>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="app-card h-72 p-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="app-card min-w-0 h-72 p-2">
             {chartDataO.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -399,7 +399,7 @@ export function CockpitVisualizations({
               <p className="flex h-full items-center justify-center text-sm text-[#9CA3AF]">—</p>
             )}
           </div>
-          <div className="app-card h-72 p-2">
+          <div className="app-card min-w-0 h-72 p-2">
             {chartDataO.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -555,27 +555,27 @@ export function CockpitVisualizations({
           </label>
         </div>
 
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="app-card p-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <article className="app-card min-w-0 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Shipments" : "运单数"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.total)}</p>
           </article>
-          <article className="app-card p-4">
+          <article className="app-card min-w-0 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Qty" : "件数"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.qty)}</p>
           </article>
-          <article className="app-card p-4">
+          <article className="app-card min-w-0 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "In transit" : "运输中"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.in_transit)}</p>
           </article>
-          <article className="app-card p-4">
+          <article className="app-card min-w-0 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Delivered" : "已送达"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.delivered)}</p>
           </article>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="app-card h-72 p-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="app-card min-w-0 h-72 p-2">
             {chartDataL.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -596,7 +596,7 @@ export function CockpitVisualizations({
               <p className="flex h-full items-center justify-center text-sm text-[#9CA3AF]">—</p>
             )}
           </div>
-          <div className="app-card h-72 p-2">
+          <div className="app-card min-w-0 h-72 p-2">
             {chartDataL.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart

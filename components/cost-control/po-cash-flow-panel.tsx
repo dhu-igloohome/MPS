@@ -272,10 +272,10 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
   }
 
   const inputBase =
-    "mt-1 w-full rounded-lg border border-app-border px-2 py-1.5 text-sm text-foreground";
+    "mt-1 min-w-0 w-full rounded-lg border border-app-border px-2 py-1.5 text-sm text-foreground";
   const readOnlyMuted = `${inputBase} cursor-not-allowed bg-app-muted/25`;
   const moneyInputBase =
-    "w-full rounded-lg border border-app-border py-1.5 pr-2 pl-6 text-sm text-foreground";
+    "min-w-0 w-full rounded-lg border border-app-border py-1.5 pr-2 pl-6 text-sm text-foreground";
 
   return (
     <div className="mt-10 space-y-4 border-t border-app-border/80 pt-8">
@@ -376,8 +376,8 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
           <p className="text-sm text-red-600">{t.orphanEdit}</p>
         ) : null}
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <label className="text-sm sm:col-span-2 lg:col-span-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <label className="min-w-0 text-sm sm:col-span-2 lg:col-span-2">
             {t.pickCostLine}
             <select
               className={inputBase}
@@ -416,15 +416,15 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               ))}
             </select>
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.orderNo}
             <input className={readOnlyMuted} value={form.orderNumber} readOnly tabIndex={-1} />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.sku}
             <input className={readOnlyMuted} value={form.sku} readOnly tabIndex={-1} />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.orderDate}
             <input
               type="date"
@@ -434,7 +434,7 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               required
             />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             <span className="flex flex-wrap items-center gap-1">
               {t.qty}
               <span className="text-xs font-normal text-app-muted">({t.qtyHint})</span>
@@ -450,7 +450,7 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               title={t.qtyHint}
             />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             <span className="flex flex-wrap items-center gap-1">
               {t.unitPrice}
               <span className="text-xs font-normal text-app-muted">({t.unitPriceHint})</span>
@@ -464,7 +464,7 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               title={t.unitPriceReadOnly}
             />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.total}
             <input
               type="text"
@@ -474,7 +474,7 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               tabIndex={-1}
             />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.advPct}
             <input
               type="number"
@@ -494,7 +494,7 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               required
             />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.termDays}
             <input
               type="number"
@@ -506,7 +506,7 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               required
             />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.finPct}
             <input
               type="number"
@@ -526,7 +526,7 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               required
             />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.actAdvDate}
             <input
               type="text"
@@ -536,7 +536,7 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               value={derivedActuals.actualAdvanceDate}
             />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.actAdvAmt}
             <div className="relative mt-1">
               <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">
@@ -557,7 +557,7 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               />
             </div>
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.actFinDate}
             <input
               type="text"
@@ -567,7 +567,7 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               value={derivedActuals.actualFinalDate}
             />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.actFinAmt}
             <div className="relative mt-1">
               <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">
@@ -582,7 +582,7 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               />
             </div>
           </label>
-          <label className="text-sm sm:col-span-2">
+          <label className="min-w-0 text-sm sm:col-span-2 lg:col-span-3 xl:col-span-4">
             {t.remark}
             <input
               className={inputBase}
