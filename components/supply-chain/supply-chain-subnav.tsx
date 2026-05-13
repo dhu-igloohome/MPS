@@ -6,16 +6,30 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { BarChart3, Building2, Calculator, ChevronRight, Coins, FileText, Landmark } from "lucide-react";
 
 import type { Language } from "@/lib/i18n";
+import type { LucideIcon } from "lucide-react";
 
 type SupplyChainSubnavProps = {
   language: Language;
+};
+
+type SupplyChainSubnavChild = {
+  href: string;
+  label: string;
+  Icon: LucideIcon;
+};
+
+type SupplyChainSubnavItem = {
+  href: string;
+  label: string;
+  Icon: LucideIcon;
+  children?: SupplyChainSubnavChild[];
 };
 
 export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab");
-  const items = [
+  const items: SupplyChainSubnavItem[] = [
     {
       href: "/supply-chain/cost-control",
       label: language === "en" ? "Cost Control" : "成本控制",
@@ -48,7 +62,7 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
       label: language === "en" ? "Suppliers" : "供应商管理",
       Icon: Building2,
     },
-  ] as const;
+  ];
 
   const isOn = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const isCostControlChildOn = (href: string) => {
@@ -83,6 +97,7 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
       {items.map(({ href, label, Icon, children }) => {
         const on = isOn(href);
         const hasChildren = Boolean(children?.length);
+        const childItems = children ?? [];
         const expanded = hasChildren && opened.has(href);
         const subListId = `supply-sub-${href.slice(1).replace(/\//g, "-")}`;
 
@@ -151,7 +166,7 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
               </Link>
             </div>
             <ul id={subListId} hidden={!expanded} className="mt-1 space-y-1 border-l border-zinc-300/80 pl-4">
-              {children.map((child) => {
+              {childItems.map((child) => {
                 const ChildIcon = child.Icon;
                 const childOn = isCostControlChildOn(child.href);
                 return (
