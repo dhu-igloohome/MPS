@@ -34,7 +34,8 @@ export default async function DashboardPage() {
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const dataSnapshotDisplay = formatDataSnapshot(new Date().toISOString(), language);
+  const dataSnapshotAt = new Date().toISOString();
+  const dataSnapshotDisplay = formatDataSnapshot(dataSnapshotAt, language);
 
   const t = {
     title: language === "en" ? "Dashboard" : "仪表盘",
@@ -61,6 +62,7 @@ export default async function DashboardPage() {
       </p>
       <CockpitVisualizations
         language={language}
+        dataSnapshotAt={dataSnapshotAt}
         forecasts={entries}
         orderProgress={orderProgressRows}
         logistics={logisticsRows}

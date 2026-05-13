@@ -35,6 +35,7 @@ import {
   orderKpis,
 } from "@/lib/cockpit-dashboard-agg";
 import { getDateRangePreset, monthKeysBetween, type RangePreset } from "@/lib/cash-flow-dashboard-agg";
+import { formatDataSnapshot } from "@/lib/format-data-snapshot";
 import type { Language } from "@/lib/i18n";
 import type {
   ForecastCashFlowRow,
@@ -57,6 +58,8 @@ const COLORS = {
 
 type Props = {
   language: Language;
+  /** ISO instant from the server; must match the dashboard header “as of” line. */
+  dataSnapshotAt?: string;
   forecasts: ForecastEntry[];
   orderProgress: OrderProgressEntry[];
   logistics: LogisticsShipmentEntry[];
@@ -101,6 +104,7 @@ type DrillState =
 
 export function CockpitVisualizations({
   language,
+  dataSnapshotAt,
   forecasts,
   orderProgress,
   logistics,
@@ -110,6 +114,14 @@ export function CockpitVisualizations({
   forecastExport,
 }: Props) {
   const en = language === "en";
+
+  const sameSnapshotCrossRef = useMemo(() => {
+    if (!dataSnapshotAt) return null;
+    const when = formatDataSnapshot(dataSnapshotAt, language);
+    return en
+      ? `Same page snapshot as the header (${when}). Filters below only reshape this load — they do not fetch new data.`
+      : `与页首快照一致（${when}）。以下筛选项仅在本页已加载数据上变换视图，不会重新请求。`;
+  }, [dataSnapshotAt, language, en]);
 
   const [oPreset, setOPreset] = useState<RangePreset>("pm3");
   const [oFrom, setOFrom] = useState("");
@@ -226,6 +238,9 @@ export function CockpitVisualizations({
                 ? "Scheduled deposit & balance payments by due month (same logic as Supply Chain → Cost control). Landed-cost sections are available in that module."
                 : "按应付月的订金与尾款（与「供应链管理 → 成本控制 → 现金流分析」一致）。到岸成本相关图表请在成本控制中查看。"}
             </p>
+            {sameSnapshotCrossRef ? (
+              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-[#9CA3AF]">{sameSnapshotCrossRef}</p>
+            ) : null}
           </div>
           <Link
             href="/supply-chain/cost-control?tab=cashflow"
@@ -259,6 +274,9 @@ export function CockpitVisualizations({
                 ? "By order date — default range is current month ±3 months; click chart to drill down."
                 : "按下单日 — 默认区间为当前月前后各 3 个自然月；点击图表下钻。"}
             </p>
+            {sameSnapshotCrossRef ? (
+              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-[#9CA3AF]">{sameSnapshotCrossRef}</p>
+            ) : null}
           </div>
           <Link
             href="/order-progress"
@@ -443,6 +461,9 @@ export function CockpitVisualizations({
                 ? "By shipment create date — default range is current month ±3 months; click chart to drill down."
                 : "按物流记录创建时间 — 默认区间为当前月前后各 3 个自然月；点击图表下钻。"}
             </p>
+            {sameSnapshotCrossRef ? (
+              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-[#9CA3AF]">{sameSnapshotCrossRef}</p>
+            ) : null}
           </div>
           <Link
             href="/logistics-progress"
