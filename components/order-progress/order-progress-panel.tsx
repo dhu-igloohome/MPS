@@ -741,8 +741,11 @@ export function OrderProgressPanel({
           </p>
         ) : null}
 
-        <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={onSubmit}>
-          <label className="block md:col-span-2">
+        <form
+          className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          onSubmit={onSubmit}
+        >
+          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <span className="mb-1 block text-sm text-foreground/85">{t.orderNumber}</span>
             <input
               value={orderNumber}
@@ -751,7 +754,7 @@ export function OrderProgressPanel({
               className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm"
             />
           </label>
-          <label className="block md:col-span-2">
+          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <span className="mb-1 block text-sm text-foreground/85">{t.poNumber}</span>
             <select
               value={resolvedPoNumber}
@@ -767,7 +770,7 @@ export function OrderProgressPanel({
             </select>
             <span className="mt-1 block text-xs text-app-muted">{t.poHint}</span>
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
             <input
               value={resolvedProductName}
@@ -776,7 +779,7 @@ export function OrderProgressPanel({
             />
           </label>
 
-          <div className="block">
+          <div className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
             {editingId ? (
               <select
@@ -807,7 +810,7 @@ export function OrderProgressPanel({
             ) : (
               <div className="space-y-1 rounded-lg px-3 py-2">
                 {skuOptions.map((p) => (
-                  <label key={p.sku} className="flex items-center gap-2 text-sm">
+                  <label key={p.sku} className="flex min-w-0 items-center gap-2 text-sm">
                     <input
                       type="checkbox"
                       checked={selectedSkus.includes(p.sku)}
@@ -832,7 +835,7 @@ export function OrderProgressPanel({
                         }
                       }}
                     />
-                    <span>{p.sku}</span>
+                    <span className="min-w-0 truncate">{p.sku}</span>
                   </label>
                 ))}
               </div>
@@ -840,7 +843,7 @@ export function OrderProgressPanel({
             <span className="mt-1 block text-xs text-app-muted">{t.skuMultiHint}</span>
           </div>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.quantity}</span>
             <input
               type="number"
@@ -853,7 +856,7 @@ export function OrderProgressPanel({
             />
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.orderDate}</span>
             <input
               type="date"
@@ -865,7 +868,7 @@ export function OrderProgressPanel({
             <span className="mt-1 block text-xs text-app-muted">{t.dateHint}</span>
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.expectedDeliveryDate}</span>
             <input
               type="date"
@@ -877,7 +880,7 @@ export function OrderProgressPanel({
             <span className="mt-1 block text-xs text-app-muted">{t.dateHint}</span>
           </label>
 
-          <div className="md:col-span-2 rounded-xl border border-app-border/90 bg-app-accent-soft/50 p-4">
+          <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4 rounded-xl border border-app-border/90 bg-app-accent-soft/50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm font-medium text-foreground/90">{t.deliveryBatches}</span>
               <button
@@ -894,7 +897,7 @@ export function OrderProgressPanel({
                 {planRows.map((row, index) => (
                   <div
                     key={row.key}
-                    className="grid gap-2 rounded-lg border border-app-border/90 bg-app-surface p-3 sm:grid-cols-[1fr_7rem_1fr_auto] sm:items-end"
+                    className="grid gap-2 rounded-lg border border-app-border/90 bg-app-surface p-3 sm:grid-cols-[minmax(0,1fr)_7rem_minmax(0,1fr)_auto] sm:items-end"
                   >
                     <label className="block min-w-0">
                       <span className="mb-1 block text-xs text-app-muted">{t.batchDate}</span>
@@ -960,7 +963,7 @@ export function OrderProgressPanel({
             ) : null}
           </div>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.orderType}</span>
             <select
               value={orderType}
@@ -975,7 +978,7 @@ export function OrderProgressPanel({
             </select>
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.progress}</span>
             <select
               value={progress}
@@ -990,7 +993,7 @@ export function OrderProgressPanel({
             </select>
           </label>
 
-          <label className="block md:col-span-2">
+          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <span className="mb-1 block text-sm text-foreground/85">{t.factoryName}</span>
             <select
               value={factoryNameTrimmed}
@@ -1012,7 +1015,7 @@ export function OrderProgressPanel({
             <span className="mt-1 block text-xs text-app-muted">{t.factoryNameHint}</span>
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
             <select
               value={resolvedRegion}
@@ -1027,7 +1030,7 @@ export function OrderProgressPanel({
             </select>
           </label>
 
-          <div className="flex flex-wrap items-end gap-2 md:col-span-2">
+          <div className="flex min-w-0 flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <button
               type="submit"
               disabled={loading || products.length === 0}
@@ -1047,7 +1050,7 @@ export function OrderProgressPanel({
           </div>
 
           {editingId ? (
-            <div className="md:col-span-2 rounded-xl border border-app-border/90 bg-app-accent-soft/50 p-4">
+            <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4 rounded-xl border border-app-border/90 bg-app-accent-soft/50 p-4">
               <p className="text-sm font-medium text-foreground/90">{t.productionTitle}</p>
               {renderProductionChecklist(
                 editingId,

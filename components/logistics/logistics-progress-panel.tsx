@@ -316,8 +316,11 @@ export function LogisticsProgressPanel({
           </p>
         ) : null}
 
-        <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={onSubmit}>
-          <label className="block md:col-span-2">
+        <form
+          className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          onSubmit={onSubmit}
+        >
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.movementType}</span>
             <select
               value={movementType}
@@ -333,7 +336,7 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.from}</span>
             <select
               value={fromLocation}
@@ -349,7 +352,7 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.to}</span>
             <select
               value={toLocation}
@@ -365,7 +368,7 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
             <select
               value={resolvedProductName}
@@ -382,7 +385,7 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
             <select
               value={resolvedSku}
@@ -405,7 +408,7 @@ export function LogisticsProgressPanel({
               ))}
             </select>
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.poNumber}</span>
             <select
               value={resolvedPoNumber}
@@ -422,7 +425,7 @@ export function LogisticsProgressPanel({
             <span className="mt-1 block text-xs text-app-muted">{t.poHint}</span>
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.quantity}</span>
             <input
               type="number"
@@ -435,7 +438,7 @@ export function LogisticsProgressPanel({
             />
           </label>
 
-          <label className="block md:col-span-2">
+          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <span className="mb-1 block text-sm text-foreground/85">{t.orderLine}</span>
             <select
               value={orderProgressId}
@@ -451,7 +454,7 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.trackingNumber}</span>
             <input
               value={trackingNumber}
@@ -461,7 +464,7 @@ export function LogisticsProgressPanel({
             />
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.carrier}</span>
             <input
               value={carrier}
@@ -471,7 +474,7 @@ export function LogisticsProgressPanel({
             />
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.status}</span>
             <select
               value={status}
@@ -486,7 +489,7 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block md:col-span-2">
+          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <span className="mb-1 block text-sm text-foreground/85">{t.notes}</span>
             <textarea
               value={notes}
@@ -497,7 +500,7 @@ export function LogisticsProgressPanel({
             />
           </label>
 
-          <div className="flex flex-wrap items-end gap-2 md:col-span-2">
+          <div className="flex min-w-0 flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <button
               type="submit"
               disabled={loading || products.length === 0}
