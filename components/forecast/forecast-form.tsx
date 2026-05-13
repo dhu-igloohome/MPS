@@ -750,7 +750,7 @@ export function ForecastForm({
           </div>
 
           {useExistingPo ? (
-            <label className="block md:col-span-12">
+            <label className="block md:col-span-6 lg:col-span-4">
               <span className="mb-1 block text-sm text-foreground/85">{t.existingPo}</span>
               <select
                 value={selectedPoNumber}
@@ -826,7 +826,7 @@ export function ForecastForm({
                     />
                   </label>
 
-                  <label className="block md:col-span-12">
+                  <label className="block md:col-span-6">
                     <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
                     <select
                       value={line.destination}
@@ -850,7 +850,7 @@ export function ForecastForm({
                     <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
                   </label>
 
-                  <label className="block md:col-span-12">
+                  <label className="block md:col-span-6">
                     <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
                     <select
                       value={line.incoterm}
@@ -946,7 +946,7 @@ export function ForecastForm({
           <h3 className="text-base font-semibold text-foreground">{t.editPanelTitle}</h3>
           <p className="mt-1 text-xs text-app-muted">{t.editHint}</p>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <label className="block md:col-span-2">
+            <label className="block">
               <span className="mb-1 block text-sm text-foreground/85">{t.forecastNumberLabel}</span>
               <input
                 value={editDraft.poNumber || "—"}
@@ -984,7 +984,7 @@ export function ForecastForm({
                 ))}
               </select>
             </label>
-            <label className="block md:col-span-2">
+            <label className="block">
               <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
               <select
                 value={editDraft.destination}
