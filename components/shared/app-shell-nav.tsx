@@ -145,30 +145,6 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
 
   return (
     <>
-      <nav
-        className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-2 md:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        aria-label="Main navigation"
-      >
-        {items.map((item) => {
-          const on =
-            pathMatches(pathname, item.href) ||
-            Boolean(item.children?.some((child) => pathMatches(pathname, child.href)));
-          const Icon = item.icon ? ICONS[item.icon] : null;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`${mobilePill} ${on ? mobileActive : ""}`}
-            >
-              <span className="inline-flex items-center gap-2">
-                {Icon ? <Icon size={16} strokeWidth={1.5} /> : null}
-                <span>{item.label}</span>
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
-
       {language && onOrderProgressModule && orderProgressSubpages.length > 0 ? (
         <div
           className="-mx-1 mb-3 flex flex-wrap gap-2 px-1"
@@ -188,10 +164,10 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
 
       <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8 lg:gap-10">
         <nav
-          className="hidden w-56 shrink-0 md:block lg:w-60"
+          className="w-full shrink-0 md:w-56 lg:w-60"
           aria-label="Main navigation"
         >
-          <ul className="max-h-[min(100dvh-9rem,calc(100vh-9rem))] space-y-1 overflow-y-auto overscroll-contain rounded-2xl bg-[#F3F4F6]/80 p-3 [scrollbar-width:thin]">
+          <ul className="max-h-[min(70dvh,calc(100dvh-12rem))] space-y-1 overflow-y-auto overscroll-contain rounded-2xl bg-[#F3F4F6]/80 p-3 [scrollbar-width:thin] md:max-h-[min(100dvh-9rem,calc(100vh-9rem))]">
             {items.map((item) => {
               const on = isInNavBranch(pathname, item);
               const Icon = item.icon ? ICONS[item.icon] : null;
