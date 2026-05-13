@@ -18,7 +18,15 @@ export async function GET() {
   const quarterly = await getSummaryByQuarterAndRegion(session.regions);
   const entries = await getForecastsByRegions(session.regions);
 
+  const generatedAt = new Date().toISOString();
+  const scopeRegions = session.regions.join(", ");
+
   const lines: string[] = [];
+
+  lines.push("Dashboard export metadata");
+  lines.push(toCsvLine(["generated_at_iso", generatedAt]));
+  lines.push(toCsvLine(["scope_regions", scopeRegions]));
+  lines.push("");
 
   lines.push("Monthly Summary by Region");
   lines.push(toCsvLine(["Month", "Region", "Build to Order", "Build to Stock", "Total"]));
@@ -95,7 +103,10 @@ export async function GET() {
   }
 
   const csv = lines.join("\n");
-  const filename = `cockpit-export-${new Date().toISOString().slice(0, 10)}.csv`;
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})/.exec(generatedAt);
+  const filename = m
+    ? `cockpit-export-${m[1]}_${m[2]}${m[3]}${m[4]}Z.csv`
+    : `cockpit-export-${generatedAt.slice(0, 10)}.csv`;
 
   return new NextResponse(csv, {
     status: 200,
@@ -103,6 +114,7 @@ export async function GET() {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="${filename}"`,
       "Cache-Control": "no-store",
+      "X-Export-Generated-At": generatedAt,
     },
   });
 }
