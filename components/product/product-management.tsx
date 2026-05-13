@@ -288,23 +288,23 @@ export function ProductManagement({ products, language }: ProductManagementProps
     <div className="space-y-4">
       <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.createProduct}</h3>
-        <form className="mt-3 grid gap-3 md:grid-cols-2" onSubmit={createItem}>
+        <form className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" onSubmit={createItem}>
           <input
-            className="rounded-lg px-3 py-2"
+            className="min-w-0 rounded-lg px-3 py-2"
             placeholder={t.productName}
             value={productName}
             onChange={(event) => setProductName(event.target.value)}
             required
           />
           <input
-            className="rounded-lg px-3 py-2"
+            className="min-w-0 rounded-lg px-3 py-2"
             placeholder={t.sku}
             value={sku}
             onChange={(event) => setSku(event.target.value.toUpperCase())}
             required
           />
           <input
-            className="rounded-lg px-3 py-2"
+            className="min-w-0 rounded-lg px-3 py-2"
             placeholder={t.variant}
             value={variant}
             onChange={(event) => setVariant(event.target.value.toUpperCase())}
@@ -314,18 +314,18 @@ export function ProductManagement({ products, language }: ProductManagementProps
             type="number"
             step="0.01"
             min={0}
-            className="rounded-lg px-3 py-2"
+            className="min-w-0 rounded-lg px-3 py-2"
             placeholder={t.unitCost}
             value={unitCost}
             onChange={(event) => setUnitCost(event.target.value)}
           />
           <input
-            className="rounded-lg px-3 py-2 md:col-span-2"
+            className="min-w-0 rounded-lg px-3 py-2 sm:col-span-2 lg:col-span-3 xl:col-span-4"
             placeholder={t.articleNumber}
             value={articleNumber}
             onChange={(event) => setArticleNumber(event.target.value)}
           />
-          <div className="md:col-span-2">
+          <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <button className="app-button-primary px-4 py-2 text-sm">
               {t.create}
             </button>

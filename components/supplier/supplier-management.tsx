@@ -141,14 +141,14 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-foreground">{t.title}</h3>
         {editingRow ? <p className="mt-2 text-sm text-app-muted">Editing: {editingRow.name}</p> : null}
-        <form className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3" onSubmit={onSubmit}>
-          <input value={name} onChange={(e) => setName(e.target.value)} required placeholder={t.name} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t.contactName} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder={t.contactPhone} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t.address} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.email} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} placeholder={t.paymentTerms} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <label className="text-sm text-app-muted">
+        <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" onSubmit={onSubmit}>
+          <input value={name} onChange={(e) => setName(e.target.value)} required placeholder={t.name} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t.contactName} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder={t.contactPhone} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t.address} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.email} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} placeholder={t.paymentTerms} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <label className="min-w-0 text-sm text-app-muted">
             <span className="mb-1 block">{t.leadTimeDays}</span>
             <input
               type="number"
@@ -159,7 +159,7 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
               className="w-full rounded-lg border border-app-border px-3 py-2 text-sm text-foreground"
             />
           </label>
-          <label className="text-sm text-app-muted">
+          <label className="min-w-0 text-sm text-app-muted">
             <span className="mb-1 block">{t.moq}</span>
             <input
               type="number"
@@ -170,12 +170,12 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
               className="w-full rounded-lg border border-app-border px-3 py-2 text-sm text-foreground"
             />
           </label>
-          <input value={incoterm} onChange={(e) => setIncoterm(e.target.value)} placeholder={t.incoterm} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <label className="flex items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
+          <input value={incoterm} onChange={(e) => setIncoterm(e.target.value)} placeholder={t.incoterm} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <label className="flex min-w-0 items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
             <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
             {t.active}
           </label>
-          <div className="md:col-span-2 lg:col-span-3 flex gap-2">
+          <div className="flex min-w-0 gap-2 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <button type="submit" disabled={loading || !name.trim()} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">{editingId ? t.save : t.create}</button>
             {editingId ? <button type="button" onClick={resetForm} className="rounded-lg border border-app-border px-4 py-2 text-sm">{t.cancel}</button> : null}
           </div>
