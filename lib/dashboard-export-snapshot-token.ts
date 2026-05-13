@@ -3,8 +3,26 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { getSessionSecret } from "@/lib/session";
 import type { Region } from "@/lib/types";
 
-/** Link export to a dashboard render; reject tokens older than this. */
-const MAX_TOKEN_AGE_MS = 48 * 60 * 60 * 1000;
+const DEFAULT_MAX_TOKEN_AGE_MS = 48 * 60 * 60 * 1000;
+
+/**
+ * Max age of signed export `t` (ms). Override with env `DASHBOARD_EXPORT_SNAPSHOT_MAX_AGE_MS`
+ * (integer, minimum 60000). Invalid or empty → 48h.
+ */
+function getMaxTokenAgeMs(): number {
+  const raw = process.env.DASHBOARD_EXPORT_SNAPSHOT_MAX_AGE_MS;
+  if (raw === undefined || raw === "") return DEFAULT_MAX_TOKEN_AGE_MS;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 60_000) return DEFAULT_MAX_TOKEN_AGE_MS;
+  return n;
+}
+
+/** UTC fragment safe for filenames, e.g. `2026-05-13_103045Z`. */
+export function dashboardExportFilenameUtcFragment(iso: string): string | null {
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})/.exec(iso);
+  if (!m) return null;
+  return `${m[1]}_${m[2]}${m[3]}${m[4]}Z`;
+}
 
 export type DashboardExportSnapshotPayload = {
   /** ISO instant shown as dashboard “as of”. */
@@ -55,7 +73,7 @@ export function verifyDashboardExportSnapshot(
 
   const t = new Date(snapshotAt).getTime();
   if (Number.isNaN(t)) return null;
-  if (Date.now() - t > MAX_TOKEN_AGE_MS) return null;
+  if (Date.now() - t > getMaxTokenAgeMs()) return null;
 
   return { snapshotAt };
 }

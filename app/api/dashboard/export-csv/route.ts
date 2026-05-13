@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { verifyDashboardExportSnapshot } from "@/lib/dashboard-export-snapshot-token";
+import { dashboardExportFilenameUtcFragment, verifyDashboardExportSnapshot } from "@/lib/dashboard-export-snapshot-token";
 import { toCsvLine } from "@/lib/csv";
 import {
   getForecastsByRegions,
@@ -118,10 +118,13 @@ export async function GET(request: Request) {
   }
 
   const csv = lines.join("\n");
-  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})/.exec(generatedAt);
-  const filename = m
-    ? `cockpit-export-${m[1]}_${m[2]}${m[3]}${m[4]}Z.csv`
-    : `cockpit-export-${generatedAt.slice(0, 10)}.csv`;
+  const genSeg = dashboardExportFilenameUtcFragment(generatedAt) ?? generatedAt.slice(0, 10);
+  const pageSeg =
+    pageSnapshot ? dashboardExportFilenameUtcFragment(pageSnapshot.snapshotAt) : null;
+  const filename =
+    pageSnapshot && pageSeg
+      ? `cockpit-export-page-${pageSeg}_gen-${genSeg}.csv`
+      : `cockpit-export-${genSeg}.csv`;
 
   return new NextResponse(csv, {
     status: 200,
