@@ -242,14 +242,14 @@ export function ContractManagement({
     <div className="space-y-4">
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-foreground">{t.createTitle}</h3>
-        <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={onCreate}>
-          <label className="block">
+        <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" onSubmit={onCreate}>
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-app-muted">{t.orderLine}</span>
             <select value={orderProgressId} onChange={(e) => setOrderProgressId(e.target.value)} className="w-full rounded-lg border border-app-border px-3 py-2 text-sm">
               {orders.map((o) => <option value={o.id} key={o.id}>{`${o.orderNumber || "-"} | ${o.productName} | ${o.sku}`}</option>)}
             </select>
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-app-muted">{t.supplier}</span>
             <input
               readOnly
@@ -261,10 +261,10 @@ export function ContractManagement({
               <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{contractHintHelp(language, orderHint)}</p>
             ) : null}
           </label>
-          <input value={batch} onChange={(e) => setBatch(e.target.value)} required placeholder={t.batch} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} required placeholder={t.currency} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <div className="md:col-span-2">
-            <label className="block">
+          <input value={batch} onChange={(e) => setBatch(e.target.value)} required placeholder={t.batch} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} required placeholder={t.currency} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
+            <label className="block min-w-0">
               <span className="mb-1 block text-sm text-app-muted">{t.unitPrice}</span>
               <input
                 readOnly
@@ -277,8 +277,8 @@ export function ContractManagement({
               />
             </label>
           </div>
-          <div className="md:col-span-2">
-            <label className="block">
+          <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
+            <label className="block min-w-0">
               <span className="mb-1 block text-sm text-app-muted">{t.paymentTerms}</span>
               <input
                 readOnly
@@ -288,8 +288,8 @@ export function ContractManagement({
               <p className="mt-1 text-xs text-app-muted">{t.paymentTermsHint}</p>
             </label>
           </div>
-          <input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} required placeholder={t.deliveryAddress} className="rounded-lg border border-app-border px-3 py-2 text-sm md:col-span-2" />
-          <label className="block md:col-span-2">
+          <input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} required placeholder={t.deliveryAddress} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 lg:col-span-3 xl:col-span-4" />
+          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <span className="mb-1 block text-sm text-app-muted">{t.remark}</span>
             <textarea
               value={remark}
@@ -299,9 +299,9 @@ export function ContractManagement({
               className="w-full resize-y rounded-lg border border-app-border px-3 py-2 text-sm min-h-[4.5rem]"
             />
           </label>
-          <input value={serialCode} onChange={(e) => setSerialCode(e.target.value)} placeholder={t.serialCode} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input value={bluetoothId} onChange={(e) => setBluetoothId(e.target.value)} placeholder={t.bluetoothId} className="rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <div className="md:col-span-2">
+          <input value={serialCode} onChange={(e) => setSerialCode(e.target.value)} placeholder={t.serialCode} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <input value={bluetoothId} onChange={(e) => setBluetoothId(e.target.value)} placeholder={t.bluetoothId} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <button
               type="submit"
               disabled={
@@ -328,8 +328,8 @@ export function ContractManagement({
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-foreground">{t.listTitle}</h3>
         <p className="mt-1 text-xs text-app-muted">{t.approvalHint}</p>
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <label className="text-sm text-app-muted">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+          <label className="min-w-0 text-sm text-app-muted">
             {t.filterStatus}
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as "all" | ContractStatus)} className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm text-foreground">
               <option value="all">{t.all}</option>
@@ -338,7 +338,7 @@ export function ContractManagement({
               <option value="sent">{t.sent}</option>
             </select>
           </label>
-          <label className="text-sm text-app-muted">
+          <label className="min-w-0 text-sm text-app-muted">
             {t.filterSupplier}
             <select value={supplierFilter} onChange={(e) => setSupplierFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm text-foreground">
               <option value="all">{t.all}</option>

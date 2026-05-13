@@ -273,9 +273,9 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
   }
 
   const inputBase =
-    "mt-1 w-full rounded-lg border border-app-border px-2 py-1.5 text-sm text-foreground";
+    "mt-1 min-w-0 w-full rounded-lg border border-app-border px-2 py-1.5 text-sm text-foreground";
   const moneyInputBase =
-    "w-full rounded-lg border border-app-border py-1.5 pr-2 pl-6 text-sm text-foreground";
+    "min-w-0 w-full rounded-lg border border-app-border py-1.5 pr-2 pl-6 text-sm text-foreground";
 
   return (
     <div className="space-y-4">
@@ -370,31 +370,31 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
         </datalist>
 
         <p className="mb-2 text-xs font-medium text-app-muted">{t.computed}</p>
-        <div className="mb-4 grid gap-3 rounded-lg border border-dashed border-app-border/80 bg-app-surface/80 p-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="text-sm">
+        <div className="mb-4 grid grid-cols-1 gap-3 rounded-lg border border-dashed border-app-border/80 bg-app-surface/80 p-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="min-w-0 text-sm">
             <span className="text-app-muted">{t.baseUnit}: </span>
             <span className="font-medium tabular-nums">{formatUsd(derived.baseUnitCostUsd, 4)}</span>
           </div>
-          <div className="text-sm">
+          <div className="min-w-0 text-sm">
             <span className="text-app-muted">{t.ucWoTariff}: </span>
             <span className="font-medium tabular-nums">{formatUsd(derived.unitCostWithoutTariff, 4)}</span>
           </div>
-          <div className="text-sm">
+          <div className="min-w-0 text-sm">
             <span className="text-app-muted">{t.ucWithTariff}: </span>
             <span className="font-medium tabular-nums">{formatUsd(derived.unitCostWithTariff, 4)}</span>
           </div>
-          <div className="text-sm">
+          <div className="min-w-0 text-sm">
             <span className="text-app-muted">{t.totalWoTariff}: </span>
             <span className="font-medium tabular-nums">{formatUsd(derived.orderTotalWithoutTariff, 2)}</span>
           </div>
-          <div className="text-sm">
+          <div className="min-w-0 text-sm">
             <span className="text-app-muted">{t.totalWithTariff}: </span>
             <span className="font-medium tabular-nums">{formatUsd(derived.orderTotalWithTariff, 2)}</span>
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <label className="text-sm">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <label className="min-w-0 text-sm">
             {t.cmRegion}
             <input
               className={inputBase}
@@ -404,23 +404,23 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               autoComplete="off"
             />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.supplier}
             <input className={inputBase} list="supplier-suggestions-cost" value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.sku}
             <input className={inputBase} value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))} required />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.qty}
             <input type="number" min={0} step={1} className={inputBase} value={form.quantity || ""} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) || 0 }))} required />
           </label>
-          <label className="text-sm sm:col-span-2">
+          <label className="min-w-0 text-sm sm:col-span-2 lg:col-span-3 xl:col-span-4">
             {t.orderNo}
             <input className={inputBase} value={form.orderNumber} onChange={(e) => setForm((f) => ({ ...f, orderNumber: e.target.value }))} required />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.ee}
             <div className="relative mt-1">
               <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
@@ -434,7 +434,7 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               />
             </div>
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.me}
             <div className="relative mt-1">
               <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
@@ -448,7 +448,7 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               />
             </div>
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.assembly}
             <div className="relative mt-1">
               <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
@@ -462,11 +462,11 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               />
             </div>
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.tariff}
             <input type="number" min={0} max={100} step="0.1" className={inputBase} value={form.tariffPct || ""} onChange={(e) => setForm((f) => ({ ...f, tariffPct: Number(e.target.value) || 0 }))} />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.airFreight}
             <div className="relative mt-1">
               <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
@@ -480,7 +480,7 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               />
             </div>
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.seaFreight}
             <div className="relative mt-1">
               <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
@@ -494,7 +494,7 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               />
             </div>
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.freight}
             <select
               className={inputBase}
@@ -505,7 +505,7 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               <option value="sea">{language === "en" ? "Sea" : "海运"}</option>
             </select>
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.chinaVat}
             <select
               className={inputBase}
@@ -516,7 +516,7 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               <option value="yes">{t.yes}</option>
             </select>
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {t.dest}
             <select
               className={inputBase}
@@ -530,7 +530,7 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               ))}
             </select>
           </label>
-          <label className="text-sm sm:col-span-2">
+          <label className="min-w-0 text-sm sm:col-span-2 lg:col-span-3 xl:col-span-4">
             {t.remark}
             <input className={inputBase} value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} />
           </label>
