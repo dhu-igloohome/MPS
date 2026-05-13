@@ -25,6 +25,7 @@ import {
   forecastKpis,
   monthKeysForForecastRange,
 } from "@/lib/cockpit-dashboard-agg";
+import { formatDataSnapshot } from "@/lib/format-data-snapshot";
 import type { Language } from "@/lib/i18n";
 import type { ForecastEntry } from "@/lib/types";
 
@@ -68,6 +69,16 @@ export function ForecastExecutiveOverview({ language, forecasts, forecastExport 
     () => [...new Set(forecasts.map((e) => e.month))].sort(),
     [forecasts],
   );
+
+  const latestRowIso = useMemo(() => {
+    if (forecasts.length === 0) return null;
+    let max = -Infinity;
+    for (const e of forecasts) {
+      const n = new Date(e.createdAt).getTime();
+      if (!Number.isNaN(n) && n > max) max = n;
+    }
+    return max === -Infinity ? null : new Date(max).toISOString();
+  }, [forecasts]);
 
   /** Explicit month selection; `undefined` means “all months in data”. */
   const [selectedForecastMonths, setSelectedForecastMonths] = useState<string[] | undefined>(undefined);
@@ -136,7 +147,58 @@ export function ForecastExecutiveOverview({ language, forecasts, forecastExport 
     dataContext: en
       ? "Scope: forecast rows in your assigned regions only (same as list permissions)."
       : "范围：仅包含您有权限区域内的 Forecast 记录（与列表权限一致）。",
+    latestRowLabel: en ? "Latest row (by created time)" : "最新填报（按创建时间）",
+    evidenceHeading: en ? "Three anchors" : "三条读数依据",
+    e1Title: en ? "Unified filter" : "统一筛选",
+    e1Body: en
+      ? "KPIs, region split, product Top, and the trend chart all read from the same Forecast Month selection."
+      : "KPI、区域占比、产品 Top、走势均来自同一组 Forecast 月份筛选后的数据集。",
+    e2Title: en ? "Same scope as the list" : "与列表同源",
+    e2Body: en
+      ? "Rows are limited to your assigned regions — the same permission mask as the Forecast table."
+      : "行级权限与 Forecast 列表一致，仅展示您被分配区域内的记录。",
+    e3Title: en ? "One total definition" : "合计口径",
+    e3Body: en
+      ? "Every “total volume” in this section is BTO + BTS for the selected months, including the large chart figure."
+      : "本节所有「合计数量」均为所选月份内 BTO + BTS，含图表区大号数字。",
   };
+
+  const latestRowDisplay = latestRowIso ? formatDataSnapshot(latestRowIso, language) : null;
+
+  const trustBlock = (
+    <div className="mt-2 space-y-2">
+      <p className="text-xs text-[#9CA3AF]">{t.dataContext}</p>
+      {latestRowDisplay ? (
+        <p className="text-xs text-[#9CA3AF]">
+          <span className="font-medium text-[#6B7280]">{t.latestRowLabel}</span>
+          {": "}
+          <span className="tabular-nums text-[#6B7280]">{latestRowDisplay}</span>
+        </p>
+      ) : null}
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.evidenceHeading}</p>
+        <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
+          {(
+            [
+              [t.e1Title, t.e1Body],
+              [t.e2Title, t.e2Body],
+              [t.e3Title, t.e3Body],
+            ] as const
+          ).map(([title, body], i) => (
+            <div
+              key={i}
+              className="min-w-0 rounded-lg border border-app-border/70 bg-white/80 px-3 py-2.5 shadow-sm"
+            >
+              <p className="text-xs font-semibold text-[#374151]">
+                {i + 1}. {title}
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-[#6B7280]">{body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   const toolbar = (
     <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
@@ -164,6 +226,7 @@ export function ForecastExecutiveOverview({ language, forecasts, forecastExport 
           <div className="min-w-0">
             <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
             <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
+            {trustBlock}
           </div>
           {toolbar}
         </div>
@@ -180,7 +243,7 @@ export function ForecastExecutiveOverview({ language, forecasts, forecastExport 
         <div className="min-w-0">
           <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
           <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
-          <p className="mt-2 text-xs text-[#9CA3AF]">{t.dataContext}</p>
+          {trustBlock}
         </div>
         {toolbar}
       </div>
