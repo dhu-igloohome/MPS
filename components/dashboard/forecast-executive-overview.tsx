@@ -163,6 +163,9 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     e3Body: en
       ? "Every “total volume” in this section is BTO + BTS for the selected months, including the large chart figure."
       : "本节所有「合计数量」均为所选月份内 BTO + BTS，含图表区大号数字。",
+    exportSnapshotHint: en
+      ? "This export carries the same dashboard “as of” instant in CSV metadata. Tabular sections are re-read from the database when you download."
+      : "此导出会在 CSV 元数据中写入与本页「数据截至」一致的快照时间；表格区在您点击下载时会再次从数据库读取。",
   };
 
   const latestRowDisplay = latestRowIso ? formatDataSnapshot(latestRowIso, language) : null;
@@ -238,13 +241,18 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
   if (forecasts.length === 0) {
     return (
       <section className="app-card overflow-hidden p-6 shadow-sm">
-        <div className="mb-6 flex min-w-0 flex-col gap-4 border-b border-app-border/60 pb-6 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
-            <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
-            {trustBlock}
+        <div className="mb-6 min-w-0 border-b border-app-border/60 pb-6">
+          <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
+              <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
+              {trustBlock}
+            </div>
+            {toolbar}
           </div>
-          {toolbar}
+          {forecastExport?.snapshotToken ? (
+            <p className="mt-3 max-w-prose text-[11px] leading-relaxed text-[#9CA3AF]">{t.exportSnapshotHint}</p>
+          ) : null}
         </div>
         <p className="text-center text-sm text-[#9CA3AF]">{t.empty}</p>
       </section>
@@ -255,13 +263,18 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
 
   return (
     <section className="app-card overflow-hidden p-6 shadow-sm">
-      <div className="mb-6 flex min-w-0 flex-col gap-4 border-b border-app-border/60 pb-6 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
-          <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
-          {trustBlock}
+      <div className="mb-6 min-w-0 border-b border-app-border/60 pb-6">
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
+            <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
+            {trustBlock}
+          </div>
+          {toolbar}
         </div>
-        {toolbar}
+        {forecastExport?.snapshotToken ? (
+          <p className="mt-3 max-w-prose text-[11px] leading-relaxed text-[#9CA3AF]">{t.exportSnapshotHint}</p>
+        ) : null}
       </div>
 
       <div className="mb-6 min-w-0 rounded-xl border border-app-border/80 bg-gradient-to-br from-[#fafafa] to-white p-4 shadow-sm sm:p-5">

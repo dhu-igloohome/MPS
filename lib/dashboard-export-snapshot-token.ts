@@ -1,9 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import { getSessionSecret } from "@/lib/session";
 import type { Region } from "@/lib/types";
-
-const SESSION_SECRET =
-  process.env.SESSION_SECRET || "mps-dev-secret-change-in-production";
 
 /** Link export to a dashboard render; reject tokens older than this. */
 const MAX_TOKEN_AGE_MS = 48 * 60 * 60 * 1000;
@@ -24,7 +22,7 @@ export function signDashboardExportSnapshot(payload: DashboardExportSnapshotPayl
   const rk = regionsKey(payload.regions);
   const body = `${payload.snapshotAt}|${payload.username}|${rk}`;
   const bodyB64 = Buffer.from(body, "utf8").toString("base64url");
-  const sig = createHmac("sha256", SESSION_SECRET).update(body).digest("base64url");
+  const sig = createHmac("sha256", getSessionSecret()).update(body).digest("base64url");
   return `${bodyB64}.${sig}`;
 }
 
@@ -50,7 +48,7 @@ export function verifyDashboardExportSnapshot(
   if (username !== session.username) return null;
   if (rk !== regionsKey(session.regions)) return null;
 
-  const expectedSig = createHmac("sha256", SESSION_SECRET).update(body).digest("base64url");
+  const expectedSig = createHmac("sha256", getSessionSecret()).update(body).digest("base64url");
   const a = Buffer.from(sig);
   const b = Buffer.from(expectedSig);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;

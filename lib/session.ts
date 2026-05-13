@@ -5,8 +5,12 @@ import { SessionPayload } from "@/lib/types";
 
 export const SESSION_COOKIE_NAME = "mps_session";
 
-const SESSION_SECRET =
-  process.env.SESSION_SECRET || "mps-dev-secret-change-in-production";
+/** Shared with signed dashboard export tokens; keep in sync with any HMAC that gates session-bound APIs. */
+export function getSessionSecret(): string {
+  return process.env.SESSION_SECRET || "mps-dev-secret-change-in-production";
+}
+
+const SESSION_SECRET = getSessionSecret();
 
 function sign(input: string) {
   return createHmac("sha256", SESSION_SECRET).update(input).digest("hex");
