@@ -35,7 +35,7 @@ import {
   orderKpis,
 } from "@/lib/cockpit-dashboard-agg";
 import { getDateRangePreset, monthKeysBetween, type RangePreset } from "@/lib/cash-flow-dashboard-agg";
-import { formatDataSnapshot } from "@/lib/format-data-snapshot";
+import { formatSamePageSnapshotCrossRef } from "@/lib/format-data-snapshot";
 import type { Language } from "@/lib/i18n";
 import type {
   ForecastCashFlowRow,
@@ -117,11 +117,8 @@ export function CockpitVisualizations({
 
   const sameSnapshotCrossRef = useMemo(() => {
     if (!dataSnapshotAt) return null;
-    const when = formatDataSnapshot(dataSnapshotAt, language);
-    return en
-      ? `Same page snapshot as the header (${when}). Filters below only reshape this load — they do not fetch new data.`
-      : `与页首快照一致（${when}）。以下筛选项仅在本页已加载数据上变换视图，不会重新请求。`;
-  }, [dataSnapshotAt, language, en]);
+    return formatSamePageSnapshotCrossRef(dataSnapshotAt, language);
+  }, [dataSnapshotAt, language]);
 
   const [oPreset, setOPreset] = useState<RangePreset>("pm3");
   const [oFrom, setOFrom] = useState("");
@@ -222,6 +219,7 @@ export function CockpitVisualizations({
     <div className="space-y-10">
       <ForecastExecutiveOverview
         language={language}
+        dataSnapshotAt={dataSnapshotAt}
         forecasts={forecasts}
         forecastExport={forecastExport}
       />

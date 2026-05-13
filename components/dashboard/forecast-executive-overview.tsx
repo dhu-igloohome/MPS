@@ -25,7 +25,7 @@ import {
   forecastKpis,
   monthKeysForForecastRange,
 } from "@/lib/cockpit-dashboard-agg";
-import { formatDataSnapshot } from "@/lib/format-data-snapshot";
+import { formatDataSnapshot, formatSamePageSnapshotCrossRef } from "@/lib/format-data-snapshot";
 import type { Language } from "@/lib/i18n";
 import type { ForecastEntry } from "@/lib/types";
 
@@ -33,6 +33,8 @@ const PIE_COLORS = ["#ee6454", "#2563eb", "#059669", "#d97706", "#7c3aed", "#e11
 
 type Props = {
   language: Language;
+  /** ISO instant from the server; same as dashboard header (cross-ref under title). */
+  dataSnapshotAt?: string;
   forecasts: ForecastEntry[];
   /** When set, shows next to “Open Forecast” in the section toolbar (e.g. CSV export). */
   forecastExport?: { href: string; label: string };
@@ -62,7 +64,7 @@ function PieTooltip({
   );
 }
 
-export function ForecastExecutiveOverview({ language, forecasts, forecastExport }: Props) {
+export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts, forecastExport }: Props) {
   const en = language === "en";
 
   const availableForecastMonths = useMemo(
@@ -165,8 +167,16 @@ export function ForecastExecutiveOverview({ language, forecasts, forecastExport 
 
   const latestRowDisplay = latestRowIso ? formatDataSnapshot(latestRowIso, language) : null;
 
+  const pageSnapshotCrossRef = useMemo(
+    () => (dataSnapshotAt ? formatSamePageSnapshotCrossRef(dataSnapshotAt, language) : null),
+    [dataSnapshotAt, language],
+  );
+
   const trustBlock = (
     <div className="mt-2 space-y-2">
+      {pageSnapshotCrossRef ? (
+        <p className="max-w-prose text-xs leading-relaxed text-[#9CA3AF]">{pageSnapshotCrossRef}</p>
+      ) : null}
       <p className="text-xs text-[#9CA3AF]">{t.dataContext}</p>
       {latestRowDisplay ? (
         <p className="text-xs text-[#9CA3AF]">

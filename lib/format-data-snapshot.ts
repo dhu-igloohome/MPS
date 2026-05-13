@@ -12,3 +12,12 @@ export function formatDataSnapshot(iso: string, language: Language): string {
     hour12: en,
   }).format(d);
 }
+
+/** Cross-reference copy under section headers: same instant as dashboard “as of”, client-side filters only. */
+export function formatSamePageSnapshotCrossRef(iso: string, language: Language): string {
+  const en = language === "en";
+  const when = formatDataSnapshot(iso, language);
+  return en
+    ? `Same page snapshot as the header (${when}). Filters below only reshape this load — they do not fetch new data.`
+    : `与页首快照一致（${when}）。以下筛选项仅在本页已加载数据上变换视图，不会重新请求。`;
+}
