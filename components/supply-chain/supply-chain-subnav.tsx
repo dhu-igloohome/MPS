@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Building2, Calculator, ChevronRight, Coins, FileText } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { BarChart3, Building2, Calculator, ChevronRight, Coins, FileText, Landmark } from "lucide-react";
 
 import type { Language } from "@/lib/i18n";
 
@@ -13,12 +13,24 @@ type SupplyChainSubnavProps = {
 
 export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
   const pathname = usePathname() || "";
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab");
   const items = [
     {
       href: "/supply-chain/cost-control",
       label: language === "en" ? "Cost Control" : "成本控制",
       Icon: Calculator,
       children: [
+        {
+          href: "/supply-chain/cost-control",
+          label: language === "en" ? "Cost analysis" : "成本分析",
+          Icon: BarChart3,
+        },
+        {
+          href: "/supply-chain/cost-control?tab=cashflow",
+          label: language === "en" ? "Cash flow analysis" : "现金流分析",
+          Icon: Landmark,
+        },
         {
           href: "/supply-chain/cost-control/unit-cost",
           label: language === "en" ? "Unit cost" : "单位成本",
@@ -39,6 +51,15 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
   ] as const;
 
   const isOn = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isCostControlChildOn = (href: string) => {
+    if (href.includes("?tab=cashflow")) {
+      return pathname === "/supply-chain/cost-control" && activeTab === "cashflow";
+    }
+    if (href === "/supply-chain/cost-control") {
+      return pathname === "/supply-chain/cost-control" && activeTab !== "cashflow";
+    }
+    return isOn(href);
+  };
   const [opened, setOpened] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
@@ -132,7 +153,7 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
             <ul id={subListId} hidden={!expanded} className="mt-1 space-y-1 border-l border-zinc-300/80 pl-4">
               {children.map((child) => {
                 const ChildIcon = child.Icon;
-                const childOn = isOn(child.href);
+                const childOn = isCostControlChildOn(child.href);
                 return (
                   <li key={child.href}>
                     <Link
