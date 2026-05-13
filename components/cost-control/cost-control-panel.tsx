@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { CashFlowPanel } from "@/components/cost-control/cash-flow-panel";
 import { CostAnalysisPanel } from "@/components/cost-control/cost-analysis-panel";
 import { PoCashFlowPanel } from "@/components/cost-control/po-cash-flow-panel";
-import { CostControlSubnav } from "@/components/cost-control/cost-control-subnav";
 import type { Language } from "@/lib/i18n";
 import type {
   CashFlowEntry,
@@ -55,8 +54,6 @@ export function CostControlPanel({
 
   return (
     <div className="mt-4 space-y-3">
-      <CostControlSubnav language={language} active={section} />
-
       <section
         className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm"
         role="tabpanel"

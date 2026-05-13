@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { CostControlSubnav } from "@/components/cost-control/cost-control-subnav";
 import { UnitCostPanel } from "@/components/cost-control/unit-cost-panel";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
@@ -35,7 +34,6 @@ export default async function UnitCostPage() {
       moduleTabs={<SupplyChainSubnav language={language} />}
     >
       <div className="mt-4 space-y-3">
-        <CostControlSubnav language={language} active="unit" />
         <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
           <h2 className="mb-1 text-lg font-semibold text-foreground">
             {language === "en" ? "Unit cost" : "单位成本"}
