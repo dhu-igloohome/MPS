@@ -49,3 +49,15 @@ These rules override any other style preferences in this repo.
 - Prefer refactors that are **localized** to the page/component (`components/forecast/forecast-form.tsx`) and existing tokens.
 - Do not change business logic, API contracts, or data behavior unless required for UI.
 - Keep copy changes minimal (mostly layout/visual polish).
+
+### Responsive grids (project-wide)
+
+When **creating or adjusting** Tailwind CSS grids for forms, filters, KPI rows, or dense toolbars:
+
+- **Prefer fields on one row when width allows**: use a breakpoint ladder (e.g. `grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4` or `md:grid-cols-12` with column spans) so related controls sit side‑by‑side on larger screens instead of stacking unnecessarily.
+- **Always set an explicit mobile column base**: start with `grid-cols-1` (or an intentional single column) before `sm:` / `md:` / `lg:` / `xl:` column counts so layout is predictable below the first breakpoint.
+- **Prevent grid blowout from content**: put `min-w-0` on grid children that wrap inputs, selects, labels, or long text; keep inputs `w-full` inside those cells. For money inputs with leading `$`, keep the inner wrapper `min-w-0` as well.
+- **Full-width rows**: use responsive `col-span` chains that match the max column count (e.g. `sm:col-span-2 lg:col-span-3 xl:col-span-4` on a 4‑column grid, or `md:col-span-12` on a 12‑column form) so remarks/actions span the full row without stretching sibling columns.
+- **Long identifiers**: add `truncate` or `break-words` / `break-all` only where the design calls for a single-line chip or wrapped copy; do not remove existing table horizontal scroll when the table is intentionally wide.
+
+These rules are **layout-only** unless a change is explicitly required for behavior or accessibility.
