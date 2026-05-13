@@ -897,7 +897,7 @@ export function OrderProgressPanel({
                 {planRows.map((row, index) => (
                   <div
                     key={row.key}
-                    className="grid gap-2 rounded-lg border border-app-border/90 bg-app-surface p-3 sm:grid-cols-[minmax(0,1fr)_7rem_minmax(0,1fr)_auto] sm:items-end"
+                    className="grid min-w-0 grid-cols-1 gap-2 rounded-lg border border-app-border/90 bg-app-surface p-3 sm:grid-cols-[minmax(0,1fr)_7rem_minmax(0,1fr)_auto] sm:items-end"
                   >
                     <label className="block min-w-0">
                       <span className="mb-1 block text-xs text-app-muted">{t.batchDate}</span>

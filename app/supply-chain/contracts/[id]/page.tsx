@@ -73,9 +73,9 @@ export default async function SupplyChainContractDetailPage({ params }: PageProp
             )}
           </div>
         </div>
-        <dl className="mt-4 grid gap-3 md:grid-cols-2">
-          <div><dt className="text-xs text-app-muted">PO Number</dt><dd className="text-sm text-foreground">{contract.poNumber}</dd></div>
-          <div>
+        <dl className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="min-w-0"><dt className="text-xs text-app-muted">PO Number</dt><dd className="text-sm text-foreground">{contract.poNumber}</dd></div>
+          <div className="min-w-0">
             <dt className="text-xs text-app-muted">Status</dt>
             <dd className="text-sm text-foreground">
               <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ring-1 ${statusBadgeClass(contract.status)}`}>
@@ -83,20 +83,20 @@ export default async function SupplyChainContractDetailPage({ params }: PageProp
               </span>
             </dd>
           </div>
-          <div><dt className="text-xs text-app-muted">Supplier</dt><dd className="text-sm text-foreground">{contract.supplierName}</dd></div>
-          <div><dt className="text-xs text-app-muted">Order Number</dt><dd className="text-sm text-foreground">{order.orderNumber || "-"}</dd></div>
-          <div><dt className="text-xs text-app-muted">Product</dt><dd className="text-sm text-foreground">{contract.productName}</dd></div>
-          <div><dt className="text-xs text-app-muted">SKU</dt><dd className="text-sm text-foreground">{contract.sku}</dd></div>
-          <div><dt className="text-xs text-app-muted">Quantity</dt><dd className="text-sm text-foreground">{contract.quantity}</dd></div>
-          <div><dt className="text-xs text-app-muted">Unit Cost</dt><dd className="text-sm text-foreground">{contract.unitCost.toFixed(2)}</dd></div>
-          <div><dt className="text-xs text-app-muted">Total</dt><dd className="text-sm text-foreground">{contract.totalAmount.toFixed(2)}</dd></div>
-          <div><dt className="text-xs text-app-muted">Currency</dt><dd className="text-sm text-foreground">{contract.currency || "-"}</dd></div>
-          <div><dt className="text-xs text-app-muted">Payment Terms</dt><dd className="text-sm text-foreground">{contract.paymentTerms || "-"}</dd></div>
-          <div><dt className="text-xs text-app-muted">Delivery Date</dt><dd className="text-sm text-foreground">{contract.deliveryDate}</dd></div>
-          <div className="md:col-span-2"><dt className="text-xs text-app-muted">Delivery Address</dt><dd className="text-sm text-foreground">{contract.deliveryAddress || "-"}</dd></div>
-          <div className="md:col-span-2"><dt className="text-xs text-app-muted">{language === "en" ? "Remark" : "备注"}</dt><dd className="text-sm text-foreground">{contract.remark || "-"}</dd></div>
-          <div><dt className="text-xs text-app-muted">Batch</dt><dd className="text-sm text-foreground">{contract.batch || "-"}</dd></div>
-          <div><dt className="text-xs text-app-muted">Serial / Bluetooth</dt><dd className="text-sm text-foreground">{`${contract.serialCode || "-"} / ${contract.bluetoothId || "-"}`}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Supplier</dt><dd className="text-sm text-foreground">{contract.supplierName}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Order Number</dt><dd className="text-sm text-foreground">{order.orderNumber || "-"}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Product</dt><dd className="text-sm text-foreground">{contract.productName}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">SKU</dt><dd className="text-sm text-foreground">{contract.sku}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Quantity</dt><dd className="text-sm text-foreground">{contract.quantity}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Unit Cost</dt><dd className="text-sm text-foreground">{contract.unitCost.toFixed(2)}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Total</dt><dd className="text-sm text-foreground">{contract.totalAmount.toFixed(2)}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Currency</dt><dd className="text-sm text-foreground">{contract.currency || "-"}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Payment Terms</dt><dd className="text-sm text-foreground">{contract.paymentTerms || "-"}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Delivery Date</dt><dd className="text-sm text-foreground">{contract.deliveryDate}</dd></div>
+          <div className="min-w-0 md:col-span-2"><dt className="text-xs text-app-muted">Delivery Address</dt><dd className="text-sm text-foreground">{contract.deliveryAddress || "-"}</dd></div>
+          <div className="min-w-0 md:col-span-2"><dt className="text-xs text-app-muted">{language === "en" ? "Remark" : "备注"}</dt><dd className="text-sm text-foreground">{contract.remark || "-"}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Batch</dt><dd className="text-sm text-foreground">{contract.batch || "-"}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Serial / Bluetooth</dt><dd className="text-sm text-foreground">{`${contract.serialCode || "-"} / ${contract.bluetoothId || "-"}`}</dd></div>
         </dl>
       </section>
     </AppShell>

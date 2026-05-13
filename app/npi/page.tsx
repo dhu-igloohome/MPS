@@ -59,16 +59,16 @@ export default async function NpiPage() {
       title={language === "en" ? "NPI Management" : "NPI 管理"}
       description={language === "en" ? "New Product Introduction management workbench." : "新产品导入管理工作台。"}
     >
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="app-card p-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+        <div className="app-card min-w-0 p-5">
           <p className="text-sm text-app-muted">{language === "en" ? "Open ECN" : "未关闭 ECN"}</p>
           <p className="mt-2 text-3xl font-semibold tracking-tight text-[#111827]">{openEcnCount}</p>
         </div>
-        <div className="app-card p-5">
+        <div className="app-card min-w-0 p-5">
           <p className="text-sm text-app-muted">{language === "en" ? "Tooling Due Maintenance" : "到期保养工装"}</p>
           <p className="mt-2 text-3xl font-semibold tracking-tight text-[#111827]">{toolingDueCount}</p>
         </div>
-        <div className="app-card p-5">
+        <div className="app-card min-w-0 p-5">
           <p className="text-sm text-app-muted">{language === "en" ? "Critical BOM Items" : "关键 BOM 项"}</p>
           <p className="mt-2 text-3xl font-semibold tracking-tight text-[#111827]">{criticalBomCount}</p>
         </div>
