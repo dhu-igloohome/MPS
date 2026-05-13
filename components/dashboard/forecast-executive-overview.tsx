@@ -140,12 +140,14 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     openForecast: en ? "Open Forecast" : "打开 Forecast 填报",
     fcMonthFilter: en ? "Forecast Month" : "Forecast 月份",
     fcMonthHint: en
-      ? "Multi-select months to filter KPIs and charts. The large figure in the chart section is BTO + BTS for the selection."
-      : "多选月份可筛选本节 KPI 与图表；图表区大号数字为所选月份的 BTO + BTS 合计。",
+      ? "Choose months to filter KPIs and charts in this section."
+      : "选择月份以筛选本节 KPI 与图表。",
     fcMonthReset: en ? "All months" : "全部月份",
     fcMonthNone: en ? "No months match." : "没有符合条件的月份。",
     chartZoneTotal: en ? "Total volume (chart scope)" : "合计数量（图表区）",
-    chartZoneTotalHint: en ? "Sum of BTO + BTS for the selected Forecast Months — same as Total volume KPI." : "与上方 KPI「合计数量」一致：所选 Forecast 月份内 BTO + BTS 之和。",
+    chartZoneTotalHint: en
+      ? "Same as Total volume KPI — BTO + BTS for the selected months."
+      : "与上方「合计数量」一致：所选月份 BTO + BTS。",
     dataContext: en
       ? "Scope: forecast rows in your assigned regions only (same as list permissions)."
       : "范围：仅包含您有权限区域内的 Forecast 记录（与列表权限一致）。",
@@ -166,6 +168,7 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     exportSnapshotHint: en
       ? "This export carries the same dashboard “as of” instant in CSV metadata. Tabular sections are re-read from the database when you download."
       : "此导出会在 CSV 元数据中写入与本页「数据截至」一致的快照时间；表格区在您点击下载时会再次从数据库读取。",
+    readingNotesSummary: en ? "Reading notes (snapshot & export)" : "读数说明（快照与导出）",
   };
 
   const latestRowDisplay = latestRowIso ? formatDataSnapshot(latestRowIso, language) : null;
@@ -181,42 +184,48 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     return `${forecastExport.href}${sep}t=${encodeURIComponent(forecastExport.snapshotToken)}`;
   }, [forecastExport]);
 
-  const trustBlock = (
-    <div className="mt-2 space-y-2">
-      {pageSnapshotCrossRef ? (
-        <p className="max-w-prose text-xs leading-relaxed text-[#9CA3AF]">{pageSnapshotCrossRef}</p>
-      ) : null}
-      <p className="text-xs text-[#9CA3AF]">{t.dataContext}</p>
+  const readingNotesDetails = (
+    <div className="space-y-2 border-l border-app-border/60 pl-3 pt-1 text-xs leading-relaxed text-[#6B7280]">
+      {pageSnapshotCrossRef ? <p>{pageSnapshotCrossRef}</p> : null}
+      <p>{t.dataContext}</p>
       {latestRowDisplay ? (
-        <p className="text-xs text-[#9CA3AF]">
-          <span className="font-medium text-[#6B7280]">{t.latestRowLabel}</span>
+        <p>
+          <span className="font-medium text-[#374151]">{t.latestRowLabel}</span>
           {": "}
-          <span className="tabular-nums text-[#6B7280]">{latestRowDisplay}</span>
+          <span className="tabular-nums text-[#374151]">{latestRowDisplay}</span>
         </p>
       ) : null}
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.evidenceHeading}</p>
-        <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
-          {(
-            [
-              [t.e1Title, t.e1Body],
-              [t.e2Title, t.e2Body],
-              [t.e3Title, t.e3Body],
-            ] as const
-          ).map(([title, body], i) => (
-            <div
-              key={i}
-              className="min-w-0 rounded-lg border border-app-border/70 bg-white/80 px-3 py-2.5 shadow-sm"
-            >
-              <p className="text-xs font-semibold text-[#374151]">
-                {i + 1}. {title}
-              </p>
-              <p className="mt-1 text-[11px] leading-relaxed text-[#6B7280]">{body}</p>
-            </div>
-          ))}
-        </div>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.evidenceHeading}</p>
+      <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
+        {(
+          [
+            [t.e1Title, t.e1Body],
+            [t.e2Title, t.e2Body],
+            [t.e3Title, t.e3Body],
+          ] as const
+        ).map(([title, body], i) => (
+          <div
+            key={i}
+            className="min-w-0 rounded-lg border border-app-border/70 bg-white/80 px-3 py-2 shadow-sm"
+          >
+            <p className="text-xs font-semibold text-[#374151]">
+              {i + 1}. {title}
+            </p>
+            <p className="mt-1 text-[11px] leading-relaxed text-[#6B7280]">{body}</p>
+          </div>
+        ))}
       </div>
+      {forecastExport?.snapshotToken ? <p className="text-[11px] text-[#6B7280]">{t.exportSnapshotHint}</p> : null}
     </div>
+  );
+
+  const readingNotes = (
+    <details className="mt-2 max-w-prose text-xs">
+      <summary className="cursor-pointer select-none font-medium text-[#6B7280] hover:text-[#111827]">
+        {t.readingNotesSummary}
+      </summary>
+      {readingNotesDetails}
+    </details>
   );
 
   const toolbar = (
@@ -246,13 +255,10 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
             <div className="min-w-0">
               <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
               <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
-              {trustBlock}
+              {readingNotes}
             </div>
             {toolbar}
           </div>
-          {forecastExport?.snapshotToken ? (
-            <p className="mt-3 max-w-prose text-[11px] leading-relaxed text-[#9CA3AF]">{t.exportSnapshotHint}</p>
-          ) : null}
         </div>
         <p className="text-center text-sm text-[#9CA3AF]">{t.empty}</p>
       </section>
@@ -268,13 +274,10 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
           <div className="min-w-0">
             <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
             <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
-            {trustBlock}
+            {readingNotes}
           </div>
           {toolbar}
         </div>
-        {forecastExport?.snapshotToken ? (
-          <p className="mt-3 max-w-prose text-[11px] leading-relaxed text-[#9CA3AF]">{t.exportSnapshotHint}</p>
-        ) : null}
       </div>
 
       <div className="mb-6 min-w-0 rounded-xl border border-app-border/80 bg-gradient-to-br from-[#fafafa] to-white p-4 shadow-sm sm:p-5">

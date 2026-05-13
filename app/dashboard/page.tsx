@@ -47,24 +47,29 @@ export default async function DashboardPage() {
     title: language === "en" ? "Dashboard" : "仪表盘",
     description:
       language === "en"
-        ? "Forecast overview, Forecast Cash flow analysis chart (Supply Chain cost control logic), then order & logistics analytics."
-        : "顶部 Forecast 全景，其次为与成本控制一致的 Forecast 现金流（订金/尾款应付）图表，再为订单与物流分析。",
+        ? "Forecast, cash-flow chart, orders, logistics — one screen."
+        : "Forecast、现金流图、订单与物流 — 单页总览。",
     exportCsv: language === "en" ? "Export forecast CSV" : "导出 Forecast CSV",
     globalAsOfLead:
       language === "en" ? "Data snapshot for this page" : "本页数据截至",
-    globalAsOfTrail:
+    /** Full sentence for hover tooltip — kept off the main line to reduce noise. */
+    globalAsOfTooltip:
       language === "en"
-        ? "All sections below use the same request-time snapshot."
-        : "以下各区块均为本次请求时刻的同一份快照。",
+        ? "All sections on this page use the same server request snapshot. Filters only reshape this load; they do not fetch new data until you refresh."
+        : "本页各区块均为本次请求的同一份快照。筛选项仅在本页已加载数据上变换视图，刷新页面后才会重新请求。",
   };
 
   return (
     <AppShell session={session} title={t.title} description={t.description}>
-      <p className="mb-4 text-xs leading-relaxed text-[#9CA3AF]">
+      <p
+        className="mb-3 text-xs text-[#9CA3AF]"
+        title={t.globalAsOfTooltip}
+      >
         <span className="font-medium text-[#6B7280]">{t.globalAsOfLead}</span>
         {": "}
-        <span className="tabular-nums text-[#6B7280]">{dataSnapshotDisplay}</span>
-        <span className="text-[#9CA3AF]"> — {t.globalAsOfTrail}</span>
+        <span className="cursor-help tabular-nums border-b border-dotted border-[#9CA3AF] text-[#6B7280]">
+          {dataSnapshotDisplay}
+        </span>
       </p>
       <CockpitVisualizations
         language={language}
