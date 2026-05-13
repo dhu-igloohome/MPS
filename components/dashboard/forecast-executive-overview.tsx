@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -62,24 +62,51 @@ function PieTooltip({
 export function ForecastExecutiveOverview({ language, forecasts }: Props) {
   const en = language === "en";
 
-  const kpi = useMemo(() => forecastKpis(forecasts), [forecasts]);
-  const byRegion = useMemo(() => aggregateForecastByRegion(forecasts), [forecasts]);
-  const topProducts = useMemo(() => aggregateForecastTopProducts(forecasts, 10), [forecasts]);
+  const availableForecastMonths = useMemo(
+    () => [...new Set(forecasts.map((e) => e.month))].sort(),
+    [forecasts],
+  );
+
+  /** Explicit month selection; `undefined` means “all months in data”. */
+  const [selectedForecastMonths, setSelectedForecastMonths] = useState<string[] | undefined>(undefined);
+
+  useEffect(() => {
+    setSelectedForecastMonths(undefined);
+  }, [forecasts]);
+
+  const filteredForecasts = useMemo(() => {
+    if (selectedForecastMonths !== undefined && selectedForecastMonths.length === 0) {
+      return [];
+    }
+    const monthKeys = selectedForecastMonths ?? availableForecastMonths;
+    if (monthKeys.length === 0) return [];
+    const allow = new Set(monthKeys);
+    return forecasts.filter((e) => allow.has(e.month));
+  }, [forecasts, selectedForecastMonths, availableForecastMonths]);
+
+  const kpi = useMemo(() => forecastKpis(filteredForecasts), [filteredForecasts]);
+  const byRegion = useMemo(() => aggregateForecastByRegion(filteredForecasts), [filteredForecasts]);
+  const topProducts = useMemo(() => aggregateForecastTopProducts(filteredForecasts, 10), [filteredForecasts]);
 
   const trendData = useMemo(() => {
-    if (forecasts.length === 0) return [];
-    let min = forecasts[0].month;
-    let max = forecasts[0].month;
-    for (const e of forecasts) {
-      if (e.month < min) min = e.month;
-      if (e.month > max) max = e.month;
-    }
-    const keys = monthKeysForForecastRange(min, max);
-    return buildForecastMonthlySeries(forecasts, keys).map((p) => ({
+    if (filteredForecasts.length === 0) return [];
+    const keys =
+      selectedForecastMonths && selectedForecastMonths.length > 0
+        ? [...selectedForecastMonths].sort()
+        : (() => {
+            let min = filteredForecasts[0].month;
+            let max = filteredForecasts[0].month;
+            for (const e of filteredForecasts) {
+              if (e.month < min) min = e.month;
+              if (e.month > max) max = e.month;
+            }
+            return monthKeysForForecastRange(min, max);
+          })();
+    return buildForecastMonthlySeries(filteredForecasts, keys).map((p) => ({
       ...p,
       name: p.label,
     }));
-  }, [forecasts]);
+  }, [filteredForecasts, selectedForecastMonths]);
 
   const t = {
     title: en ? "Forecast at a glance" : "Forecast 全景",
@@ -96,6 +123,14 @@ export function ForecastExecutiveOverview({ language, forecasts }: Props) {
     trend: en ? "Monthly trend (BTO vs BTS)" : "月度走势（BTO / BTS）",
     empty: en ? "No forecast data yet." : "暂无 Forecast 数据。",
     openForecast: en ? "Open Forecast" : "打开 Forecast 填报",
+    fcMonthFilter: en ? "Forecast Month" : "Forecast 月份",
+    fcMonthHint: en
+      ? "Multi-select months to filter KPIs and charts. The large figure in the chart section is BTO + BTS for the selection."
+      : "多选月份可筛选本节 KPI 与图表；图表区大号数字为所选月份的 BTO + BTS 合计。",
+    fcMonthReset: en ? "All months" : "全部月份",
+    fcMonthNone: en ? "No months match." : "没有符合条件的月份。",
+    chartZoneTotal: en ? "Total volume (chart scope)" : "合计数量（图表区）",
+    chartZoneTotalHint: en ? "Sum of BTO + BTS for the selected Forecast Months — same as Total volume KPI." : "与上方 KPI「合计数量」一致：所选 Forecast 月份内 BTO + BTS 之和。",
   };
 
   if (forecasts.length === 0) {
@@ -127,6 +162,66 @@ export function ForecastExecutiveOverview({ language, forecasts }: Props) {
         </Link>
       </div>
 
+      <div className="mb-6 rounded-xl border border-app-border/90 bg-[#fafafa] p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.fcMonthFilter}</p>
+            <p className="mt-1 max-w-3xl text-xs text-[#6B7280]">{t.fcMonthHint}</p>
+          </div>
+          <button
+            type="button"
+            className="app-button-secondary shrink-0 px-3 py-1.5 text-xs font-medium"
+            onClick={() => setSelectedForecastMonths(undefined)}
+          >
+            {t.fcMonthReset}
+          </button>
+        </div>
+        {availableForecastMonths.length === 0 ? (
+          <p className="mt-3 text-sm text-[#9CA3AF]">{t.fcMonthNone}</p>
+        ) : (
+          <>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+              {availableForecastMonths.map((mk) => {
+                const explicit = selectedForecastMonths;
+                const checked =
+                  explicit === undefined ? true : explicit.includes(mk);
+                return (
+                  <label
+                    key={mk}
+                    className="inline-flex cursor-pointer items-center gap-2 text-sm text-[#374151]"
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-app-border text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
+                      checked={checked}
+                      onChange={() => {
+                        if (explicit === undefined) {
+                          setSelectedForecastMonths(availableForecastMonths.filter((m) => m !== mk));
+                          return;
+                        }
+                        const next = checked
+                          ? explicit.filter((m) => m !== mk)
+                          : [...explicit, mk].sort();
+                        if (next.length === 0) {
+                          setSelectedForecastMonths([]);
+                          return;
+                        }
+                        if (next.length === availableForecastMonths.length) {
+                          setSelectedForecastMonths(undefined);
+                          return;
+                        }
+                        setSelectedForecastMonths(next);
+                      }}
+                    />
+                    <span className="tabular-nums">{mk}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <article className="rounded-xl border border-app-border/90 bg-gradient-to-br from-white to-[#fff4f1]/80 p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bto}</p>
@@ -148,6 +243,14 @@ export function ForecastExecutiveOverview({ language, forecasts }: Props) {
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.sku}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.skuCount)}</p>
         </article>
+      </div>
+
+      <div className="mb-6 rounded-2xl border border-app-border/90 bg-gradient-to-br from-white via-white to-[#fff4f1]/70 px-5 py-6 sm:px-8 sm:py-7">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.chartZoneTotal}</p>
+        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-[#6B7280]">{t.chartZoneTotalHint}</p>
+        <p className="mt-4 text-4xl font-semibold tracking-tight tabular-nums text-[#111827] sm:text-5xl">
+          {formatNum(kpi.total)}
+        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
