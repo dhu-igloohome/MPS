@@ -222,24 +222,24 @@ export function ForecastExecutiveOverview({ language, forecasts }: Props) {
         )}
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <article className="rounded-xl border border-app-border/90 bg-gradient-to-br from-white to-[#fff4f1]/80 p-4">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <article className="min-w-0 rounded-xl border border-app-border/90 bg-gradient-to-br from-white to-[#fff4f1]/80 p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bto}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.bto)}</p>
         </article>
-        <article className="rounded-xl border border-app-border/90 bg-gradient-to-br from-white to-emerald-50/60 p-4">
+        <article className="min-w-0 rounded-xl border border-app-border/90 bg-gradient-to-br from-white to-emerald-50/60 p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bts}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.bts)}</p>
         </article>
-        <article className="rounded-xl border border-app-border/90 bg-white p-4">
+        <article className="min-w-0 rounded-xl border border-app-border/90 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.total}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.total)}</p>
         </article>
-        <article className="rounded-xl border border-app-border/90 bg-white p-4">
+        <article className="min-w-0 rounded-xl border border-app-border/90 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.rows}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.rowCount)}</p>
         </article>
-        <article className="rounded-xl border border-app-border/90 bg-white p-4">
+        <article className="min-w-0 rounded-xl border border-app-border/90 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.sku}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.skuCount)}</p>
         </article>
@@ -253,8 +253,8 @@ export function ForecastExecutiveOverview({ language, forecasts }: Props) {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="min-w-0">
           <h3 className="mb-2 text-sm font-semibold text-[#111827]">{t.byRegion}</h3>
           <div className="app-panel h-[280px] p-2">
             <ResponsiveContainer width="100%" height="100%">
@@ -281,7 +281,7 @@ export function ForecastExecutiveOverview({ language, forecasts }: Props) {
           </div>
         </div>
 
-        <div>
+        <div className="min-w-0">
           <h3 className="mb-2 text-sm font-semibold text-[#111827]">{t.topProducts}</h3>
           <div className="app-panel h-[280px] p-2">
             <ResponsiveContainer width="100%" height="100%">

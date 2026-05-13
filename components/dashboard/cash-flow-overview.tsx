@@ -90,7 +90,7 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
     <section className="app-card">
       <div className="border-b border-app-border/60 bg-white px-5 py-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
+          <div className="min-w-0">
             <h3 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h3>
             <p className="mt-1 max-w-3xl text-sm text-[#4B5563]">{t.subtitle}</p>
           </div>
@@ -136,11 +136,11 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
           </p>
         ) : (
           <>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {data.topSkus.slice(0, 4).map((row, i) => (
                 <article
                   key={row.sku}
-                  className="app-card relative overflow-hidden p-4"
+                  className="app-card relative min-w-0 overflow-hidden p-4"
                 >
                   <div
                     className={`absolute right-0 top-0 h-16 w-16 -translate-y-4 translate-x-4 rounded-full opacity-20 ${
@@ -167,7 +167,7 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
               <h4 className="mb-3 text-sm font-semibold text-[#111827]">{t.byRegion}</h4>
               <div className="space-y-3">
                 {data.periods.map((row) => (
-                  <div key={row.period} className="app-card p-3">
+                  <div key={row.period} className="app-card min-w-0 p-3">
                     <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                       <span className="font-mono text-sm font-semibold text-[#111827]">{row.period}</span>
                       <span className="text-sm tabular-nums text-[#111827]">

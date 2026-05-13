@@ -698,8 +698,8 @@ export function ForecastForm({
           </p>
         </div>
 
-        <form className="grid gap-4 px-5 py-5 sm:px-6 md:grid-cols-12" onSubmit={onSubmit}>
-          <label className="block md:col-span-4">
+        <form className="grid grid-cols-1 gap-4 px-5 py-5 sm:px-6 md:grid-cols-12" onSubmit={onSubmit}>
+          <label className="block min-w-0 md:col-span-4">
             <span className="mb-1 block text-sm text-foreground/85">{t.forecastMonth}</span>
             <select
               value={month}
@@ -715,7 +715,7 @@ export function ForecastForm({
             </select>
           </label>
 
-          <label className="block md:col-span-4">
+          <label className="block min-w-0 md:col-span-4">
             <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
             <select
               value={region}
@@ -730,9 +730,9 @@ export function ForecastForm({
             </select>
           </label>
 
-          <div className="md:col-span-4">
+          <div className="min-w-0 md:col-span-4">
             <span className="mb-1 block text-sm text-foreground/85">{t.useExistingPo}</span>
-            <label className="flex items-center gap-2 rounded-xl border border-app-border bg-white px-3 py-2 text-sm">
+            <label className="flex min-w-0 items-center gap-2 rounded-xl border border-app-border bg-white px-3 py-2 text-sm">
               <input
                 type="checkbox"
                 checked={useExistingPo}
@@ -750,7 +750,7 @@ export function ForecastForm({
           </div>
 
           {useExistingPo ? (
-            <label className="block md:col-span-6 lg:col-span-4">
+            <label className="block min-w-0 md:col-span-6 lg:col-span-4">
               <span className="mb-1 block text-sm text-foreground/85">{t.existingPo}</span>
               <select
                 value={selectedPoNumber}
@@ -767,9 +767,9 @@ export function ForecastForm({
             </label>
           ) : null}
 
-          <div className="md:col-span-12 space-y-3">
+          <div className="min-w-0 md:col-span-12 space-y-3">
             {lines.map((line, idx) => (
-              <div key={line.key} className="rounded-2xl border border-app-border bg-white p-4 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
+              <div key={line.key} className="min-w-0 rounded-2xl border border-app-border bg-white p-4 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-app-subtle">
@@ -800,8 +800,8 @@ export function ForecastForm({
                   </div>
                 </div>
 
-                <div className="mt-3 grid gap-3 md:grid-cols-12">
-                  <label className="block md:col-span-6">
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-12">
+                  <label className="block min-w-0 md:col-span-6">
                     <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
                     <select
                       value={line.sku}
@@ -817,7 +817,7 @@ export function ForecastForm({
                     </select>
                   </label>
 
-                  <label className="block md:col-span-6">
+                  <label className="block min-w-0 md:col-span-6">
                     <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
                     <input
                       value={line.productName}
@@ -826,7 +826,7 @@ export function ForecastForm({
                     />
                   </label>
 
-                  <label className="block md:col-span-6">
+                  <label className="block min-w-0 md:col-span-6">
                     <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
                     <select
                       value={line.destination}
@@ -850,7 +850,7 @@ export function ForecastForm({
                     <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
                   </label>
 
-                  <label className="block md:col-span-6">
+                  <label className="block min-w-0 md:col-span-6">
                     <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
                     <select
                       value={line.incoterm}
@@ -875,7 +875,7 @@ export function ForecastForm({
                     </p>
                   </label>
 
-                  <label className="block md:col-span-6">
+                  <label className="block min-w-0 md:col-span-6">
                     <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
                     <input
                       type="number"
@@ -890,7 +890,7 @@ export function ForecastForm({
                     />
                   </label>
 
-                  <label className="block md:col-span-6">
+                  <label className="block min-w-0 md:col-span-6">
                     <span className="mb-1 block text-sm text-foreground/85">{t.bts}</span>
                     <input
                       type="number"
@@ -905,7 +905,7 @@ export function ForecastForm({
                     />
                   </label>
 
-                  <label className="block md:col-span-12">
+                  <label className="block min-w-0 md:col-span-12">
                     <span className="mb-1 block text-sm text-foreground/85">{t.remark}</span>
                     <textarea
                       value={line.remark}
@@ -923,7 +923,7 @@ export function ForecastForm({
             ))}
           </div>
 
-          <div className="md:col-span-12 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 md:col-span-12">
             <div className="flex items-center gap-3">
               <button
                 type="submit"
@@ -945,8 +945,8 @@ export function ForecastForm({
         >
           <h3 className="text-base font-semibold text-foreground">{t.editPanelTitle}</h3>
           <p className="mt-1 text-xs text-app-muted">{t.editHint}</p>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <label className="block">
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <label className="block min-w-0">
               <span className="mb-1 block text-sm text-foreground/85">{t.forecastNumberLabel}</span>
               <input
                 value={editDraft.poNumber || "—"}
@@ -954,7 +954,7 @@ export function ForecastForm({
                 className="w-full rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm"
               />
             </label>
-            <label className="block">
+            <label className="block min-w-0">
               <span className="mb-1 block text-sm text-foreground/85">{t.forecastMonth}</span>
               <select
                 value={editDraft.month}
@@ -968,7 +968,7 @@ export function ForecastForm({
                 ))}
               </select>
             </label>
-            <label className="block">
+            <label className="block min-w-0">
               <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
               <select
                 value={editDraft.region}
@@ -984,7 +984,7 @@ export function ForecastForm({
                 ))}
               </select>
             </label>
-            <label className="block">
+            <label className="block min-w-0">
               <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
               <select
                 value={editDraft.destination}
@@ -1000,7 +1000,7 @@ export function ForecastForm({
               </select>
               <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
             </label>
-            <label className="block md:col-span-2">
+            <label className="block min-w-0 md:col-span-2">
               <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
               <select
                 value={editDraft.incoterm}
@@ -1022,7 +1022,7 @@ export function ForecastForm({
                 {forecastIncotermHint(editDraft.incoterm, language)}
               </p>
             </label>
-            <label className="block">
+            <label className="block min-w-0">
               <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
               <select
                 value={editDraft.sku}
@@ -1036,7 +1036,7 @@ export function ForecastForm({
                 ))}
               </select>
             </label>
-            <label className="block">
+            <label className="block min-w-0">
               <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
               <input
                 value={editDraft.productName}
@@ -1044,7 +1044,7 @@ export function ForecastForm({
                 className="w-full rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm"
               />
             </label>
-            <label className="block">
+            <label className="block min-w-0">
               <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
               <input
                 type="number"
@@ -1056,7 +1056,7 @@ export function ForecastForm({
                 className="w-full px-3 py-2 text-sm"
               />
             </label>
-            <label className="block">
+            <label className="block min-w-0">
               <span className="mb-1 block text-sm text-foreground/85">{t.bts}</span>
               <input
                 type="number"
@@ -1068,7 +1068,7 @@ export function ForecastForm({
                 className="w-full px-3 py-2 text-sm"
               />
             </label>
-            <label className="block md:col-span-2">
+            <label className="block min-w-0 md:col-span-2">
               <span className="mb-1 block text-sm text-foreground/85">{t.remark}</span>
               <textarea
                 value={editDraft.remark}
