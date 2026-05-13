@@ -37,7 +37,7 @@ type Props = {
   dataSnapshotAt?: string;
   forecasts: ForecastEntry[];
   /** When set, shows next to “Open Forecast” in the section toolbar (e.g. CSV export). */
-  forecastExport?: { href: string; label: string };
+  forecastExport?: { href: string; label: string; snapshotToken?: string };
 };
 
 function formatNum(n: number) {
@@ -172,6 +172,12 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     [dataSnapshotAt, language],
   );
 
+  const exportCsvHref = useMemo(() => {
+    if (!forecastExport?.snapshotToken) return forecastExport?.href ?? "";
+    const sep = forecastExport.href.includes("?") ? "&" : "?";
+    return `${forecastExport.href}${sep}t=${encodeURIComponent(forecastExport.snapshotToken)}`;
+  }, [forecastExport]);
+
   const trustBlock = (
     <div className="mt-2 space-y-2">
       {pageSnapshotCrossRef ? (
@@ -214,7 +220,7 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
       {forecastExport ? (
         <a
-          href={forecastExport.href}
+          href={exportCsvHref || forecastExport.href}
           className="app-button-secondary inline-flex items-center justify-center px-3 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
         >
           {forecastExport.label}

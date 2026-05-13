@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { verifyDashboardExportSnapshot } from "@/lib/dashboard-export-snapshot-token";
 import { toCsvLine } from "@/lib/csv";
 import {
   getForecastsByRegions,
@@ -8,11 +9,14 @@ import {
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
+
+  const token = new URL(request.url).searchParams.get("t");
+  const pageSnapshot = verifyDashboardExportSnapshot(token, session);
 
   const monthly = await getSummaryByMonthAndRegion(session.regions);
   const quarterly = await getSummaryByQuarterAndRegion(session.regions);
@@ -25,7 +29,18 @@ export async function GET() {
 
   lines.push("Dashboard export metadata");
   lines.push(toCsvLine(["generated_at_iso", generatedAt]));
+  if (pageSnapshot) {
+    lines.push(toCsvLine(["dashboard_page_snapshot_at_iso", pageSnapshot.snapshotAt]));
+  }
   lines.push(toCsvLine(["scope_regions", scopeRegions]));
+  lines.push(
+    toCsvLine([
+      "data_reconciliation_note",
+      pageSnapshot
+        ? "Tabular sections were read again from the database at export time. Compare dashboard_page_snapshot_at_iso with generated_at_iso if you need to reconcile with the on-screen dashboard."
+        : "Tabular sections were read at export time. No valid dashboard render token was provided (export link without t=, expired, or regions changed).",
+    ]),
+  );
   lines.push("");
 
   lines.push("Monthly Summary by Region");
@@ -115,6 +130,7 @@ export async function GET() {
       "Content-Disposition": `attachment; filename="${filename}"`,
       "Cache-Control": "no-store",
       "X-Export-Generated-At": generatedAt,
+      ...(pageSnapshot ? { "X-Dashboard-Page-Snapshot-At": pageSnapshot.snapshotAt } : {}),
     },
   });
 }

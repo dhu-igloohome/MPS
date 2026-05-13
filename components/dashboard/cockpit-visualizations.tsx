@@ -66,7 +66,7 @@ type Props = {
   forecastCashFlowRows: ForecastCashFlowRow[];
   fcSuppliers: SupplierEntry[];
   unitCostQuotes: UnitCostQuoteEntry[];
-  forecastExport?: { href: string; label: string };
+  forecastExport?: { href: string; label: string; snapshotToken?: string };
 };
 
 function formatNum(n: number) {

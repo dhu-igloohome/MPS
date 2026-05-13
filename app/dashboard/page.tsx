@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { CockpitVisualizations } from "@/components/dashboard/cockpit-visualizations";
 import { AppShell } from "@/components/shared/app-shell";
+import { signDashboardExportSnapshot } from "@/lib/dashboard-export-snapshot-token";
 import { formatDataSnapshot } from "@/lib/format-data-snapshot";
 import { normalizeLanguage } from "@/lib/i18n";
 import {
@@ -36,6 +37,11 @@ export default async function DashboardPage() {
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   const dataSnapshotAt = new Date().toISOString();
   const dataSnapshotDisplay = formatDataSnapshot(dataSnapshotAt, language);
+  const dashboardExportSnapshotToken = signDashboardExportSnapshot({
+    snapshotAt: dataSnapshotAt,
+    username: session.username,
+    regions: session.regions,
+  });
 
   const t = {
     title: language === "en" ? "Dashboard" : "仪表盘",
@@ -69,7 +75,11 @@ export default async function DashboardPage() {
         forecastCashFlowRows={forecastCashFlowRows}
         fcSuppliers={suppliers}
         unitCostQuotes={unitCostQuotes}
-        forecastExport={{ href: "/api/dashboard/export-csv", label: t.exportCsv }}
+        forecastExport={{
+          href: "/api/dashboard/export-csv",
+          label: t.exportCsv,
+          snapshotToken: dashboardExportSnapshotToken,
+        }}
       />
     </AppShell>
   );
