@@ -919,20 +919,20 @@ export function CashFlowDashboard({
     return (
       <div className={dashboardChartsOnly ? "space-y-6" : "app-card p-4"}>
         {dashboardChartsOnly ? (
-          <div className="grid gap-3 sm:grid-cols-3">
-            <article className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <article className="min-w-0 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
               <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.dashForecastTotal}</p>
               <p className="mt-2 text-xl font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
                 {fcSumComputable > 0 ? formatUsd(fcSumComputable, 2) : t.na}
               </p>
             </article>
-            <article className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+            <article className="min-w-0 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
               <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.dashDepositDue}</p>
               <p className="mt-2 text-xl font-semibold tabular-nums text-slate-800 dark:text-slate-100">
                 {fcSumDeposits > 0 ? formatUsd(fcSumDeposits, 2) : t.na}
               </p>
             </article>
-            <article className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+            <article className="min-w-0 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
               <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.dashBalanceDue}</p>
               <p className="mt-2 text-xl font-semibold tabular-nums text-slate-800 dark:text-slate-100">
                 {fcSumBalances > 0 ? formatUsd(fcSumBalances, 2) : t.na}
@@ -1531,8 +1531,8 @@ export function CashFlowDashboard({
       </div>
 
       <div className="app-card p-4">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
-          <label className="text-xs font-medium text-[#4B5563]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 xl:items-end">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {t.range}
             <select
               className="mt-1 w-full bg-white px-3 py-2 text-sm"
@@ -1546,7 +1546,7 @@ export function CashFlowDashboard({
           </label>
           {rangePreset === "custom" ? (
             <>
-              <label className="text-xs font-medium text-[#4B5563]">
+              <label className="min-w-0 text-xs font-medium text-[#4B5563]">
                 {t.from}
                 <input
                   type="date"
@@ -1555,7 +1555,7 @@ export function CashFlowDashboard({
                   onChange={(e) => setCustomFrom(e.target.value)}
                 />
               </label>
-              <label className="text-xs font-medium text-[#4B5563]">
+              <label className="min-w-0 text-xs font-medium text-[#4B5563]">
                 {t.to}
                 <input
                   type="date"
@@ -1566,14 +1566,14 @@ export function CashFlowDashboard({
               </label>
             </>
           ) : (
-            <div className="md:col-span-2 text-xs text-[#9CA3AF]">
+            <div className="min-w-0 sm:col-span-2 md:col-span-2 xl:col-span-2 text-xs text-[#9CA3AF]">
               {dateRange.from} → {dateRange.to}
             </div>
           )}
         </div>
 
-        <div className="mt-4 grid gap-3 border-t border-slate-200/80 pt-4 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <label className="text-xs font-medium text-[#4B5563]">
+        <div className="mt-4 grid grid-cols-1 gap-3 border-t border-slate-200/80 pt-4 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {t.supplier}
             <select
               className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
@@ -1588,7 +1588,7 @@ export function CashFlowDashboard({
               ))}
             </select>
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {t.qtyMin}
             <input
               type="number"
@@ -1598,7 +1598,7 @@ export function CashFlowDashboard({
               onChange={(e) => setQtyMin(e.target.value)}
             />
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {t.qtyMax}
             <input
               type="number"
@@ -1608,7 +1608,7 @@ export function CashFlowDashboard({
               onChange={(e) => setQtyMax(e.target.value)}
             />
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {t.totalMin}
             <input
               type="number"
@@ -1619,7 +1619,7 @@ export function CashFlowDashboard({
               onChange={(e) => setTotalMin(e.target.value)}
             />
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {t.totalMax}
             <input
               type="number"
@@ -1630,7 +1630,7 @@ export function CashFlowDashboard({
               onChange={(e) => setTotalMax(e.target.value)}
             />
           </label>
-          <div className="flex items-end">
+          <div className="flex min-w-0 items-end">
             <button
               type="button"
               onClick={resetFilters}
@@ -1639,7 +1639,7 @@ export function CashFlowDashboard({
               {t.resetFilters}
             </button>
           </div>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {t.advMin}
             <input
               type="number"
@@ -1650,7 +1650,7 @@ export function CashFlowDashboard({
               onChange={(e) => setAdvMin(e.target.value)}
             />
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {t.advMax}
             <input
               type="number"
@@ -1661,7 +1661,7 @@ export function CashFlowDashboard({
               onChange={(e) => setAdvMax(e.target.value)}
             />
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {t.finMin}
             <input
               type="number"
@@ -1672,7 +1672,7 @@ export function CashFlowDashboard({
               onChange={(e) => setFinMin(e.target.value)}
             />
           </label>
-          <label className="text-xs font-medium text-[#4B5563]">
+          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {t.finMax}
             <input
               type="number"
@@ -1686,27 +1686,27 @@ export function CashFlowDashboard({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <article className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF] dark:text-slate-400">{t.kpiOrderTotal}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
             {formatUsd(kpis.orderTotal, 2)}
           </p>
         </article>
-        <article className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+        <article className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF] dark:text-slate-400">{t.kpiActualPaid}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">
             {formatUsd(kpis.actualPaid, 2)}
           </p>
         </article>
-        <article className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+        <article className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF] dark:text-slate-400">{t.kpiUnpaid}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">
             {formatUsd(kpis.unpaid, 2)}
           </p>
           <p className="mt-1 text-xs text-slate-400">{t.kpiHintUnpaid}</p>
         </article>
-        <article className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+        <article className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF] dark:text-slate-400">{t.kpiAvgDays}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">
             {kpis.avgPayDays != null ? kpis.avgPayDays.toFixed(1) : t.na}

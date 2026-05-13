@@ -342,8 +342,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
 
       <section>
         <h3 className="mb-3 text-base font-semibold text-foreground">{t.title}</h3>
-        <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <label className="block md:col-span-1">
+        <form onSubmit={onSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
             <input
               list="unit-cost-sku-options"
@@ -375,7 +375,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
             ) : null}
           </label>
           {duplicateSku ? (
-            <label className="block md:col-span-2 xl:col-span-3">
+            <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
               <span className="mb-1 block text-sm text-foreground/85">{t.duplicateReason}</span>
               <textarea
                 value={creationReason}
@@ -388,7 +388,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               />
             </label>
           ) : null}
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.unitPrice}</span>
             <input
               type="number"
@@ -400,7 +400,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
             />
           </label>
-          <label className="flex items-end gap-2 pb-0.5">
+          <label className="flex min-w-0 items-end gap-2 pb-0.5">
             <input
               type="checkbox"
               checked={taxIncluded}
@@ -409,7 +409,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
             />
             <span className="text-sm text-foreground/85">{t.taxIncluded}</span>
           </label>
-          <label className="block md:col-span-2 xl:col-span-1">
+          <label className="block min-w-0 sm:col-span-2 lg:col-span-2 xl:col-span-2">
             <span className="mb-1 block text-sm text-foreground/85">{t.supplier}</span>
             <select
               value={supplierName}
@@ -425,7 +425,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               ))}
             </select>
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.quoteDate}</span>
             <input
               type="date"
@@ -435,7 +435,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
             />
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1 block text-sm text-foreground/85">{t.manufacturerCountry}</span>
             <select
               value={manufacturerCountry}
@@ -450,7 +450,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               ))}
             </select>
           </label>
-          <div className="flex items-end xl:col-span-1">
+          <div className="flex min-w-0 items-end xl:col-span-1">
             <button
               type="submit"
               disabled={loading}
@@ -486,8 +486,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                 {t.cancel}
               </button>
             </div>
-            <form onSubmit={onSaveEdit} className="grid gap-3 sm:grid-cols-2">
-              <label className="block sm:col-span-1">
+            <form onSubmit={onSaveEdit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="block min-w-0 sm:col-span-1">
                 <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
                 <input
                   list="unit-cost-sku-options-edit"
@@ -502,7 +502,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   ))}
                 </datalist>
               </label>
-              <label className="block">
+              <label className="block min-w-0">
                 <span className="mb-1 block text-sm text-foreground/85">{t.unitPrice}</span>
                 <input
                   type="number"
@@ -514,7 +514,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
                 />
               </label>
-              <label className="flex items-center gap-2 sm:col-span-2">
+              <label className="flex min-w-0 items-center gap-2 sm:col-span-2">
                 <input
                   type="checkbox"
                   checked={eTaxIncluded}
@@ -523,7 +523,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                 />
                 <span className="text-sm text-foreground/85">{t.taxIncluded}</span>
               </label>
-              <label className="block sm:col-span-2">
+              <label className="block min-w-0 sm:col-span-2">
                 <span className="mb-1 block text-sm text-foreground/85">{t.supplier}</span>
                 <select
                   value={eSupplierName}
@@ -539,7 +539,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   ))}
                 </select>
               </label>
-              <label className="block">
+              <label className="block min-w-0">
                 <span className="mb-1 block text-sm text-foreground/85">{t.quoteDate}</span>
                 <input
                   type="date"
@@ -549,7 +549,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
                 />
               </label>
-              <label className="block">
+              <label className="block min-w-0">
                 <span className="mb-1 block text-sm text-foreground/85">{t.manufacturerCountry}</span>
                 <select
                   value={eManufacturerCountry}
@@ -564,8 +564,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   ))}
                 </select>
               </label>
-              {editMessage ? <p className="text-sm text-red-600 sm:col-span-2">{editMessage}</p> : null}
-              <div className="flex flex-wrap gap-2 sm:col-span-2">
+              {editMessage ? <p className="min-w-0 text-sm text-red-600 sm:col-span-2">{editMessage}</p> : null}
+              <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2">
                 <button
                   type="submit"
                   disabled={editLoading}
