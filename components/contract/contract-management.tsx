@@ -110,6 +110,9 @@ export function ContractManagement({
     paymentTermsHint: en
       ? "From Supply Chain → Suppliers for the resolved supplier."
       : "取自「供应链 → 供应商」主数据中该供应商的付款条款。",
+    fieldHintsSummary: en ? "How fields are filled" : "字段说明",
+    openCashFlow: en ? "Open cash flow analysis" : "打开现金流分析",
+    cannotCreateYet: en ? "Cannot create contract yet" : "暂无法创建合同",
     deliveryAddress: "Delivery address",
     remark: language === "en" ? "Remark" : "备注",
     serialCode: "Serial code",
@@ -183,6 +186,19 @@ export function ContractManagement({
       ? snapshot
       : quoteUnitPriceUsd;
 
+  const orderOptionLabel = (o: OrderProgressEntry) => {
+    const po = (o.orderNumber || "").trim() || "—";
+    const sku = (o.sku || "").trim() || "—";
+    return `${po} · ${sku}`;
+  };
+
+  const orderBlockerText =
+    orderHint && !orderHint.ready ? contractHintHelp(language, orderHint) : "";
+  const orderBlockerShowCashFlowLink =
+    orderHint &&
+    !orderHint.ready &&
+    (orderHint.reasonKey === "cash_flow_supplier_empty" || orderHint.reasonKey === "forecast_not_found");
+
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -239,30 +255,110 @@ export function ContractManagement({
   }
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+    <div className="min-w-0 space-y-4">
+      <section className="min-w-0 overflow-hidden rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-foreground">{t.createTitle}</h3>
-        <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" onSubmit={onCreate}>
+        <form
+          className="mt-4 grid min-w-0 grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          onSubmit={onCreate}
+        >
+          <details className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
+            <summary className="cursor-pointer select-none text-xs text-app-muted hover:text-foreground/80">
+              {t.fieldHintsSummary}
+            </summary>
+            <div className="mt-2 space-y-1.5 border-l-2 border-app-border/70 pl-3 text-xs leading-relaxed text-app-muted">
+              <p>
+                <span className="font-medium text-foreground/80">{t.supplier}</span>
+                {" — "}
+                {t.supplierHint}
+              </p>
+              <p>
+                <span className="font-medium text-foreground/80">{t.paymentTerms}</span>
+                {" — "}
+                {t.paymentTermsHint}
+              </p>
+            </div>
+          </details>
+
+          {orderBlockerText ? (
+            <div
+              className="flex min-w-0 flex-col gap-2 rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between lg:col-span-3 xl:col-span-4 dark:border-amber-700/50 dark:bg-amber-950/40"
+              role="status"
+            >
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">{t.cannotCreateYet}</p>
+                <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-100/90">{orderBlockerText}</p>
+              </div>
+              {orderBlockerShowCashFlowLink ? (
+                <Link
+                  href="/supply-chain/cost-control?tab=cashflow"
+                  className="shrink-0 rounded-md border border-amber-300/80 bg-white px-2.5 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100/80 dark:border-amber-600 dark:bg-amber-950/60 dark:text-amber-100 dark:hover:bg-amber-900/50"
+                >
+                  {t.openCashFlow}
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+
           <label className="block min-w-0">
             <span className="mb-1 block text-sm text-app-muted">{t.orderLine}</span>
-            <select value={orderProgressId} onChange={(e) => setOrderProgressId(e.target.value)} className="w-full rounded-lg border border-app-border px-3 py-2 text-sm">
-              {orders.map((o) => <option value={o.id} key={o.id}>{`${o.orderNumber || "-"} | ${o.productName} | ${o.sku}`}</option>)}
+            <select
+              value={orderProgressId}
+              title={
+                selectedOrder
+                  ? `${selectedOrder.orderNumber || "—"} | ${selectedOrder.productName} | ${selectedOrder.sku}`
+                  : undefined
+              }
+              onChange={(e) => setOrderProgressId(e.target.value)}
+              className="w-full min-w-0 max-w-full truncate rounded-lg border border-app-border px-3 py-2 text-sm"
+            >
+              {orders.map((o) => (
+                <option
+                  value={o.id}
+                  key={o.id}
+                  title={`${o.orderNumber || "—"} | ${o.productName} | ${o.sku}`}
+                >
+                  {orderOptionLabel(o)}
+                </option>
+              ))}
             </select>
+            {selectedOrder ? (
+              <p
+                className="mt-1 truncate text-xs text-app-muted"
+                title={selectedOrder.productName}
+              >
+                {selectedOrder.productName}
+              </p>
+            ) : null}
           </label>
           <label className="block min-w-0">
             <span className="mb-1 block text-sm text-app-muted">{t.supplier}</span>
             <input
               readOnly
               value={orderHint?.cashFlowSupplierName?.trim() ? orderHint.cashFlowSupplierName : "—"}
-              className="w-full rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
+              className="w-full min-w-0 rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
             />
-            <p className="mt-1 text-xs text-app-muted">{t.supplierHint}</p>
-            {orderHint && !orderHint.ready ? (
-              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{contractHintHelp(language, orderHint)}</p>
-            ) : null}
           </label>
-          <input value={batch} onChange={(e) => setBatch(e.target.value)} required placeholder={t.batch} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} required placeholder={t.currency} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <label className="block min-w-0">
+            <span className="mb-1 block text-sm text-app-muted">{t.batch}</span>
+            <input
+              value={batch}
+              onChange={(e) => setBatch(e.target.value)}
+              required
+              autoComplete="off"
+              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block min-w-0">
+            <span className="mb-1 block text-sm text-app-muted">{t.currency}</span>
+            <input
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+              required
+              autoComplete="off"
+              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+            />
+          </label>
           <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <label className="block min-w-0">
               <span className="mb-1 block text-sm text-app-muted">{t.unitPrice}</span>
@@ -273,7 +369,7 @@ export function ContractManagement({
                     ? selectedUnitPriceUsd.toFixed(2)
                     : "—"
                 }
-                className="w-full rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
+                className="w-full min-w-0 rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
               />
             </label>
           </div>
@@ -283,12 +379,21 @@ export function ContractManagement({
               <input
                 readOnly
                 value={orderHint?.paymentTerms?.trim() ? orderHint.paymentTerms : "—"}
-                className="w-full rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
+                className="w-full min-w-0 rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
               />
-              <p className="mt-1 text-xs text-app-muted">{t.paymentTermsHint}</p>
             </label>
           </div>
-          <input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} required placeholder={t.deliveryAddress} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 lg:col-span-3 xl:col-span-4" />
+          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
+            <span className="mb-1 block text-sm text-app-muted">{t.deliveryAddress}</span>
+            <input
+              value={deliveryAddress}
+              onChange={(e) => setDeliveryAddress(e.target.value)}
+              required
+              autoComplete="street-address"
+              placeholder={t.deliveryAddress}
+              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+            />
+          </label>
           <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <span className="mb-1 block text-sm text-app-muted">{t.remark}</span>
             <textarea
@@ -299,8 +404,24 @@ export function ContractManagement({
               className="w-full resize-y rounded-lg border border-app-border px-3 py-2 text-sm min-h-[4.5rem]"
             />
           </label>
-          <input value={serialCode} onChange={(e) => setSerialCode(e.target.value)} placeholder={t.serialCode} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input value={bluetoothId} onChange={(e) => setBluetoothId(e.target.value)} placeholder={t.bluetoothId} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <label className="block min-w-0">
+            <span className="mb-1 block text-sm text-app-muted">{t.serialCode}</span>
+            <input
+              value={serialCode}
+              onChange={(e) => setSerialCode(e.target.value)}
+              autoComplete="off"
+              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block min-w-0">
+            <span className="mb-1 block text-sm text-app-muted">{t.bluetoothId}</span>
+            <input
+              value={bluetoothId}
+              onChange={(e) => setBluetoothId(e.target.value)}
+              autoComplete="off"
+              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+            />
+          </label>
           <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <button
               type="submit"
@@ -325,7 +446,7 @@ export function ContractManagement({
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
+      <section className="min-w-0 overflow-hidden rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-foreground">{t.listTitle}</h3>
         <p className="mt-1 text-xs text-app-muted">{t.approvalHint}</p>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
