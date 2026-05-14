@@ -37,6 +37,72 @@ function formatForecastMonthCell(ym: string, language: Language): string {
   return `${y}年${mo}月`;
 }
 
+function csvEscape(cell: string): string {
+  const s = String(cell ?? "");
+  if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function exportForecastCashFlowReport(rows: ForecastCashFlowRow[], language: Language, t: (typeof LABELS)["en"]) {
+  const sep = ",";
+  const header = [
+    t.fcMonth,
+    t.fcForecastNo,
+    t.fcRegion,
+    t.fcDestination,
+    t.fcProductName,
+    t.sku,
+    t.fcSupplierName,
+    t.fcUnitPriceUsd,
+    t.fcBto,
+    t.fcBts,
+    t.fcCreatedAt,
+    t.fcOpsActionCol,
+    t.fcComment,
+  ];
+  const lines = [header.map(csvEscape).join(sep)];
+  for (const row of rows) {
+    const monthCell = formatForecastMonthCell(row.month, language);
+    const unitUsd =
+      !row.cashFlowSupplierName.trim()
+        ? ""
+        : row.unitPriceUsd != null
+          ? String(row.unitPriceUsd)
+          : t.fcNoUnitCostQuote;
+    lines.push(
+      [
+        monthCell,
+        row.poNumber || "—",
+        row.region,
+        row.destination || "—",
+        row.productName,
+        row.sku,
+        row.cashFlowSupplierName.trim(),
+        unitUsd,
+        String(row.buildToOrder),
+        String(row.buildToStock),
+        row.createdAt.slice(0, 10),
+        row.opsAction || "—",
+        row.remark?.trim() ? row.remark : "—",
+      ]
+        .map((c) => csvEscape(String(c)))
+        .join(sep),
+    );
+  }
+  const body = `\uFEFF${lines.join("\r\n")}`;
+  const stamp = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([body], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `forecast-cash-flow-${stamp}.csv`;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 const LABELS = {
   en: {
     fcTitle: "Forecast cash flow",
@@ -60,6 +126,9 @@ const LABELS = {
     fcComment: "Comment",
     fcOpenForecast: "Open Forecast",
     fcEmpty: "No forecast records in your regions.",
+    fcExportReport: "Export Forecast cash flow report",
+    fcExportEmpty: "No rows to export",
+    fcOpsActionCol: "Ops action",
   },
   zh: {
     fcTitle: "Forecast 现金流",
@@ -83,6 +152,9 @@ const LABELS = {
     fcComment: "评论",
     fcOpenForecast: "打开 Forecast",
     fcEmpty: "当前区域暂无 forecast 记录。",
+    fcExportReport: "导出 Forecast 现金流报表",
+    fcExportEmpty: "没有可导出的行",
+    fcOpsActionCol: "运营操作",
   },
 };
 
@@ -160,7 +232,18 @@ export function CashFlowPanel({
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-app-border/80 bg-app-surface/70 p-4 shadow-sm">
-        <h4 className="text-base font-semibold text-foreground">{t.fcTitle}</h4>
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <h4 className="min-w-0 text-base font-semibold text-foreground">{t.fcTitle}</h4>
+          <button
+            type="button"
+            disabled={fcRows.length === 0}
+            title={fcRows.length === 0 ? t.fcExportEmpty : t.fcExportReport}
+            onClick={() => exportForecastCashFlowReport(fcRows, language, t)}
+            className="app-button-primary inline-flex shrink-0 items-center justify-center px-4 py-2.5 text-sm font-semibold shadow-md ring-1 ring-[var(--app-accent)]/25 transition hover:shadow-lg disabled:pointer-events-none disabled:opacity-45"
+          >
+            {t.fcExportReport}
+          </button>
+        </div>
         <p className="mt-1 text-xs text-app-muted">{t.fcHint}</p>
         <div className="app-table-shell mt-3 overflow-x-auto">
           <table className="w-full min-w-[1280px] border-collapse text-xs sm:text-sm">
