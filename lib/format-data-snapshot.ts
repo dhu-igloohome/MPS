@@ -13,6 +13,17 @@ export function formatDataSnapshot(iso: string, language: Language): string {
   }).format(d);
 }
 
+/** Date only (no time) for compact header chips; full instant still in tooltips. */
+export function formatDataSnapshotDateOnly(iso: string, language: Language): string {
+  const en = language === "en";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
+  return new Intl.DateTimeFormat(en ? "en-US" : "zh-CN", {
+    dateStyle: "medium",
+    timeZone: en ? "UTC" : "Asia/Shanghai",
+  }).format(d);
+}
+
 /** Cross-reference copy under section headers: same instant as dashboard “as of”, client-side filters only. */
 export function formatSamePageSnapshotCrossRef(iso: string, language: Language): string {
   const en = language === "en";

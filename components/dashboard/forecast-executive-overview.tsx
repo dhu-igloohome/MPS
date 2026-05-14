@@ -125,9 +125,6 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
 
   const t = {
     title: en ? "Forecast at a glance" : "Forecast 全景",
-    subtitle: en
-      ? "Your regions · BTO/BTS by month, region mix, and top SKUs."
-      : "权限内区域 · 按月的 BTO/BTS、区域结构与产品 Top。",
     bto: en ? "Build to order" : "按单 (BTO)",
     bts: en ? "Build to stock" : "备货 (BTS)",
     total: en ? "Total volume" : "合计数量",
@@ -168,7 +165,7 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     exportSnapshotHint: en
       ? "This export carries the same dashboard “as of” instant in CSV metadata. Tabular sections are re-read from the database when you download."
       : "此导出会在 CSV 元数据中写入与本页「数据截至」一致的快照时间；表格区在您点击下载时会再次从数据库读取。",
-    readingNotesSummary: en ? "How to read this block" : "本节读数说明",
+    readingNotesSummary: en ? "Notes" : "说明",
   };
 
   const latestRowDisplay = latestRowIso ? formatDataSnapshot(latestRowIso, language) : null;
@@ -229,7 +226,7 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
   );
 
   const toolbar = (
-    <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+    <div className="flex w-full min-w-0 shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
       {forecastExport ? (
         <a
           href={exportCsvHref || forecastExport.href}
@@ -251,11 +248,8 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     return (
       <section className="app-card overflow-hidden p-6 shadow-sm">
         <div className="mb-6 min-w-0 border-b border-app-border/60 pb-6">
-          <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
-              <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
-            </div>
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <h2 className="min-w-0 flex-1 break-words text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
             {toolbar}
           </div>
           {readingNotes}
@@ -270,11 +264,8 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
   return (
     <section className="app-card overflow-hidden p-6 shadow-sm">
       <div className="mb-6 min-w-0 border-b border-app-border/60 pb-6">
-        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
-            <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
-          </div>
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <h2 className="min-w-0 flex-1 break-words text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
           {toolbar}
         </div>
       </div>
@@ -299,76 +290,78 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
         {availableForecastMonths.length === 0 ? (
           <p className="mt-4 text-sm text-[#9CA3AF]">{t.fcMonthNone}</p>
         ) : (
-          <div className="mt-4 flex min-w-0 flex-wrap gap-2">
-            {availableForecastMonths.map((mk) => {
+          <div className="mt-4 min-w-0 overflow-x-auto overscroll-x-contain pb-0.5 [-webkit-overflow-scrolling:touch]">
+            <div className="flex w-max max-w-none flex-nowrap gap-2 sm:w-auto sm:flex-wrap sm:pr-0">
+              {availableForecastMonths.map((mk) => {
               const explicit = selectedForecastMonths;
               const checked = explicit === undefined ? true : explicit.includes(mk);
-              return (
-                <label
-                  key={mk}
-                  className={`inline-flex min-w-0 cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm tabular-nums transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 ${
+                return (
+                  <label
+                    key={mk}
+                    className={`inline-flex min-w-0 cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm tabular-nums transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 ${
                     checked
                       ? "border-app-accent/50 bg-app-accent-soft text-[#111827] shadow-sm"
                       : "border-app-border/90 bg-white text-[#374151] hover:border-app-accent/35 hover:bg-app-accent-soft/60"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    className="h-3.5 w-3.5 shrink-0 rounded border-app-border text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
-                    checked={checked}
-                    onChange={() => {
-                      if (explicit === undefined) {
-                        setSelectedForecastMonths(availableForecastMonths.filter((m) => m !== mk));
-                        return;
-                      }
-                      const next = checked
-                        ? explicit.filter((m) => m !== mk)
-                        : [...explicit, mk].sort();
-                      if (next.length === 0) {
-                        setSelectedForecastMonths([]);
-                        return;
-                      }
-                      if (next.length === availableForecastMonths.length) {
-                        setSelectedForecastMonths(undefined);
-                        return;
-                      }
-                      setSelectedForecastMonths(next);
-                    }}
-                  />
-                  <span>{mk}</span>
-                </label>
-              );
-            })}
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5 shrink-0 rounded border-app-border text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
+                      checked={checked}
+                      onChange={() => {
+                        if (explicit === undefined) {
+                          setSelectedForecastMonths(availableForecastMonths.filter((m) => m !== mk));
+                          return;
+                        }
+                        const next = checked
+                          ? explicit.filter((m) => m !== mk)
+                          : [...explicit, mk].sort();
+                        if (next.length === 0) {
+                          setSelectedForecastMonths([]);
+                          return;
+                        }
+                        if (next.length === availableForecastMonths.length) {
+                          setSelectedForecastMonths(undefined);
+                          return;
+                        }
+                        setSelectedForecastMonths(next);
+                      }}
+                    />
+                    <span>{mk}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
         )}
         {readingNotes}
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <article className="min-w-0 rounded-xl border border-app-border/90 bg-gradient-to-br from-white to-[#fff4f1]/80 p-4">
+      <div className="mb-6 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <article className="min-w-0 overflow-hidden rounded-xl border border-app-border/90 bg-gradient-to-br from-white to-[#fff4f1]/80 p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bto}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.bto)}</p>
         </article>
-        <article className="min-w-0 rounded-xl border border-app-border/90 bg-gradient-to-br from-white to-emerald-50/60 p-4">
+        <article className="min-w-0 overflow-hidden rounded-xl border border-app-border/90 bg-gradient-to-br from-white to-emerald-50/60 p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bts}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.bts)}</p>
         </article>
-        <article className="min-w-0 rounded-xl border border-app-border/90 bg-white p-4">
+        <article className="min-w-0 overflow-hidden rounded-xl border border-app-border/90 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.total}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.total)}</p>
         </article>
-        <article className="min-w-0 rounded-xl border border-app-border/90 bg-white p-4">
+        <article className="min-w-0 overflow-hidden rounded-xl border border-app-border/90 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.rows}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.rowCount)}</p>
         </article>
-        <article className="min-w-0 rounded-xl border border-app-border/90 bg-white p-4">
+        <article className="min-w-0 overflow-hidden rounded-xl border border-app-border/90 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.sku}</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.skuCount)}</p>
         </article>
       </div>
 
       <div
-        className="mb-6 rounded-2xl border border-app-border/90 bg-gradient-to-br from-white via-white to-[#fff4f1]/70 px-5 py-6 sm:px-8 sm:py-7"
+        className="mb-6 min-w-0 overflow-hidden rounded-2xl border border-app-border/90 bg-gradient-to-br from-white via-white to-[#fff4f1]/70 px-5 py-6 sm:px-8 sm:py-7"
         title={`${t.chartZoneTotal} — ${t.chartZoneTotalHint}`}
       >
         <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.chartZoneTotal}</p>
@@ -377,9 +370,11 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="min-w-0">
-          <h3 className="mb-2 text-sm font-semibold text-[#111827]">{t.byRegion}</h3>
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="min-w-0 overflow-hidden">
+          <h3 className="mb-2 truncate text-sm font-semibold text-[#111827]" title={t.byRegion}>
+            {t.byRegion}
+          </h3>
           <div className="app-panel h-[280px] p-2">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -405,8 +400,10 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
           </div>
         </div>
 
-        <div className="min-w-0">
-          <h3 className="mb-2 text-sm font-semibold text-[#111827]">{t.topProducts}</h3>
+        <div className="min-w-0 overflow-hidden">
+          <h3 className="mb-2 truncate text-sm font-semibold text-[#111827]" title={t.topProducts}>
+            {t.topProducts}
+          </h3>
           <div className="app-panel h-[280px] p-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart layout="vertical" data={topProducts} margin={{ left: 8, right: 16 }}>
@@ -434,8 +431,10 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
         </div>
       </div>
 
-      <div className="mt-6">
-        <h3 className="mb-2 text-sm font-semibold text-[#111827]">{t.trend}</h3>
+      <div className="mt-6 min-w-0 overflow-hidden">
+        <h3 className="mb-2 truncate text-sm font-semibold text-[#111827]" title={t.trend}>
+          {t.trend}
+        </h3>
         <div className="app-panel h-[320px] p-3">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>

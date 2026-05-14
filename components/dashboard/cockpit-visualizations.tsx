@@ -210,7 +210,7 @@ export function CockpitVisualizations({
   };
 
   return (
-    <div className="space-y-10">
+    <div className="min-w-0 space-y-10">
       <ForecastExecutiveOverview
         language={language}
         dataSnapshotAt={dataSnapshotAt}
@@ -219,11 +219,11 @@ export function CockpitVisualizations({
       />
 
       {/* Forecast cash flow analysis (scheduled payment chart; full module under Supply Chain → Cost control) */}
-      <section className="app-card p-5">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
+      <section className="app-card min-w-0 overflow-hidden p-5">
+        <div className="mb-4 flex min-w-0 flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <h3
-              className="text-base font-semibold tracking-tight text-[#111827]"
+              className="truncate text-base font-semibold tracking-tight text-[#111827]"
               title={
                 en
                   ? "Scheduled deposit & balance payments by due month (same logic as Supply Chain → Cost control). Landed-cost sections are available in that module."
@@ -254,11 +254,11 @@ export function CockpitVisualizations({
       </section>
 
       {/* Order progress */}
-      <section className="app-card p-5">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
+      <section className="app-card min-w-0 overflow-hidden p-5">
+        <div className="mb-4 flex min-w-0 flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <h3
-              className="text-base font-semibold tracking-tight text-[#111827]"
+              className="truncate text-base font-semibold tracking-tight text-[#111827]"
               title={
                 en
                   ? "By order date — default range is current month ±3 months; click chart to drill down."
@@ -270,13 +270,13 @@ export function CockpitVisualizations({
           </div>
           <Link
             href="/order-progress"
-            className="app-button-secondary px-3 py-2 text-sm font-medium"
+            className="app-button-secondary shrink-0 px-3 py-2 text-sm font-medium"
           >
             {en ? "Open module" : "进入模块"}
           </Link>
         </div>
 
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+        <div className="mb-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
           <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {en ? "Range" : "区间"}
             <select
@@ -372,26 +372,26 @@ export function CockpitVisualizations({
           </label>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="app-card min-w-0 p-4">
+        <div className="mb-6 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <article className="app-card min-w-0 overflow-hidden p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Orders" : "订单行数"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.total)}</p>
           </article>
-          <article className="app-card min-w-0 p-4">
+          <article className="app-card min-w-0 overflow-hidden p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Qty" : "数量"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.qty)}</p>
           </article>
-          <article className="app-card min-w-0 p-4">
+          <article className="app-card min-w-0 overflow-hidden p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "In production" : "生产中"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.in_production)}</p>
           </article>
-          <article className="app-card min-w-0 p-4">
+          <article className="app-card min-w-0 overflow-hidden p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Ready to ship" : "待发货"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(oKpi.ready_to_ship)}</p>
           </article>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="app-card min-w-0 h-72 p-2">
             {chartDataO.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -440,11 +440,11 @@ export function CockpitVisualizations({
       </section>
 
       {/* Logistics */}
-      <section className="app-card p-5">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
+      <section className="app-card min-w-0 overflow-hidden p-5">
+        <div className="mb-4 flex min-w-0 flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <h3
-              className="text-base font-semibold tracking-tight text-[#111827]"
+              className="truncate text-base font-semibold tracking-tight text-[#111827]"
               title={
                 en
                   ? "By shipment create date — default range is current month ±3 months; click chart to drill down."
@@ -456,13 +456,13 @@ export function CockpitVisualizations({
           </div>
           <Link
             href="/logistics-progress"
-            className="app-button-secondary px-3 py-2 text-sm font-medium"
+            className="app-button-secondary shrink-0 px-3 py-2 text-sm font-medium"
           >
             {en ? "Open module" : "进入模块"}
           </Link>
         </div>
 
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+        <div className="mb-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
           <label className="min-w-0 text-xs font-medium text-[#4B5563]">
             {en ? "Range" : "区间"}
             <select
@@ -571,26 +571,26 @@ export function CockpitVisualizations({
           </label>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="app-card min-w-0 p-4">
+        <div className="mb-6 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <article className="app-card min-w-0 overflow-hidden p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Shipments" : "运单数"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.total)}</p>
           </article>
-          <article className="app-card min-w-0 p-4">
+          <article className="app-card min-w-0 overflow-hidden p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Qty" : "件数"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.qty)}</p>
           </article>
-          <article className="app-card min-w-0 p-4">
+          <article className="app-card min-w-0 overflow-hidden p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "In transit" : "运输中"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.in_transit)}</p>
           </article>
-          <article className="app-card min-w-0 p-4">
+          <article className="app-card min-w-0 overflow-hidden p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{en ? "Delivered" : "已送达"}</p>
             <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(lKpi.delivered)}</p>
           </article>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="app-card min-w-0 h-72 p-2">
             {chartDataL.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">

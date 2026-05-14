@@ -151,9 +151,13 @@ export async function AppShell({ session, title, description, headerMeta, module
               className={`px-5 pt-5 sm:px-6 sm:pt-6 ${moduleTabs ? "pb-1" : "pb-5 sm:pb-6"}`}
             >
               <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                <h2 className="min-w-0 text-xl font-semibold tracking-tight text-[#111827] sm:text-2xl">{title}</h2>
+                <h2 className="min-w-0 flex-1 break-words text-xl font-semibold tracking-tight text-[#111827] sm:text-2xl">
+                  {title}
+                </h2>
                 {headerMeta ? (
-                  <div className="shrink-0 text-xs text-[#9CA3AF] sm:pt-1">{headerMeta}</div>
+                  <div className="min-w-0 max-w-full shrink-0 text-xs text-[#9CA3AF] sm:max-w-[min(100%,22rem)] sm:pt-0.5 sm:text-right">
+                    <span className="inline-block max-w-full align-top sm:text-right">{headerMeta}</span>
+                  </div>
                 ) : null}
               </div>
               {description?.trim() ? (

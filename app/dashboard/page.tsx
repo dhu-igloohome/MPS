@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { CockpitVisualizations } from "@/components/dashboard/cockpit-visualizations";
 import { AppShell } from "@/components/shared/app-shell";
 import { signDashboardExportSnapshot } from "@/lib/dashboard-export-snapshot-token";
-import { formatDataSnapshot } from "@/lib/format-data-snapshot";
+import { formatDataSnapshot, formatDataSnapshotDateOnly } from "@/lib/format-data-snapshot";
 import { normalizeLanguage } from "@/lib/i18n";
 import {
   enrichForecastRecordsForCashFlow,
@@ -37,6 +37,7 @@ export default async function DashboardPage() {
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   const dataSnapshotAt = new Date().toISOString();
   const dataSnapshotDisplay = formatDataSnapshot(dataSnapshotAt, language);
+  const dataSnapshotDateOnly = formatDataSnapshotDateOnly(dataSnapshotAt, language);
   const dashboardExportSnapshotToken = signDashboardExportSnapshot({
     snapshotAt: dataSnapshotAt,
     username: session.username,
@@ -55,12 +56,14 @@ export default async function DashboardPage() {
         : "本页各区块均为本次请求的同一份快照。筛选项仅在本页已加载数据上变换视图，刷新页面后才会重新请求。",
   };
 
+  const snapshotTooltip = `${dataSnapshotDisplay}\n\n${t.globalAsOfTooltip}`;
+
   const snapshotMeta = (
-    <span title={t.globalAsOfTooltip}>
+    <span title={snapshotTooltip}>
       <span className="font-medium text-[#6B7280]">{t.globalAsOfLead}</span>
       {": "}
       <span className="cursor-help tabular-nums border-b border-dotted border-[#9CA3AF] text-[#6B7280]">
-        {dataSnapshotDisplay}
+        {dataSnapshotDateOnly}
       </span>
     </span>
   );
