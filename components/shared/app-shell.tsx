@@ -13,13 +13,16 @@ import { AutoHideHeader } from "@/components/shared/auto-hide-header";
 type AppShellProps = {
   session: SessionPayload;
   title: string;
-  description: string;
+  /** Page subtitle under the title; omit or pass empty to hide (e.g. dense dashboards). */
+  description?: string;
+  /** Renders on the same row as the title (e.g. compact metadata); keep minimal. */
+  headerMeta?: ReactNode;
   /** Renders inside the title card (e.g. module-level tabs) to avoid stacked floating panels. */
   moduleTabs?: ReactNode;
   children: ReactNode;
 };
 
-export async function AppShell({ session, title, description, moduleTabs, children }: AppShellProps) {
+export async function AppShell({ session, title, description, headerMeta, moduleTabs, children }: AppShellProps) {
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
@@ -147,8 +150,15 @@ export async function AppShell({ session, title, description, moduleTabs, childr
             <div
               className={`px-5 pt-5 sm:px-6 sm:pt-6 ${moduleTabs ? "pb-1" : "pb-5 sm:pb-6"}`}
             >
-              <h2 className="text-xl font-semibold tracking-tight text-[#111827] sm:text-2xl">{title}</h2>
-              <p className="mt-1.5 text-sm leading-relaxed text-[#4B5563]">{description}</p>
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                <h2 className="min-w-0 text-xl font-semibold tracking-tight text-[#111827] sm:text-2xl">{title}</h2>
+                {headerMeta ? (
+                  <div className="shrink-0 text-xs text-[#9CA3AF] sm:pt-1">{headerMeta}</div>
+                ) : null}
+              </div>
+              {description?.trim() ? (
+                <p className="mt-1.5 text-sm leading-relaxed text-[#4B5563]">{description}</p>
+              ) : null}
             </div>
             {moduleTabs ? (
               <div className="border-t border-app-border/80 bg-zinc-50/95 px-2 py-2.5 sm:px-3 sm:py-3">

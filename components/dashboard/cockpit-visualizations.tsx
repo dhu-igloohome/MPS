@@ -222,14 +222,16 @@ export function CockpitVisualizations({
       <section className="app-card p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold tracking-tight text-[#111827]">
+            <h3
+              className="text-base font-semibold tracking-tight text-[#111827]"
+              title={
+                en
+                  ? "Scheduled deposit & balance payments by due month (same logic as Supply Chain → Cost control). Landed-cost sections are available in that module."
+                  : "按应付月的订金与尾款（与「供应链管理 → 成本控制 → 现金流分析」一致）。到岸成本相关图表请在成本控制中查看。"
+              }
+            >
               {en ? "Forecast Cash flow analysis" : "Forecast 现金流分析"}
             </h3>
-            <p className="mt-1 max-w-3xl text-sm text-[#4B5563]">
-              {en
-                ? "Scheduled deposit & balance payments by due month (same logic as Supply Chain → Cost control). Landed-cost sections are available in that module."
-                : "按应付月的订金与尾款（与「供应链管理 → 成本控制 → 现金流分析」一致）。到岸成本相关图表请在成本控制中查看。"}
-            </p>
           </div>
           <Link
             href="/supply-chain/cost-control?tab=cashflow"
@@ -255,14 +257,16 @@ export function CockpitVisualizations({
       <section className="app-card p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold tracking-tight text-[#111827]">
+            <h3
+              className="text-base font-semibold tracking-tight text-[#111827]"
+              title={
+                en
+                  ? "By order date — default range is current month ±3 months; click chart to drill down."
+                  : "按下单日 — 默认区间为当前月前后各 3 个自然月；点击图表下钻。"
+              }
+            >
               {en ? "Order progress" : "订单进度"}
             </h3>
-            <p className="mt-1 text-sm text-[#4B5563]">
-              {en
-                ? "By order date — default range is current month ±3 months; click chart to drill down."
-                : "按下单日 — 默认区间为当前月前后各 3 个自然月；点击图表下钻。"}
-            </p>
           </div>
           <Link
             href="/order-progress"
@@ -439,14 +443,16 @@ export function CockpitVisualizations({
       <section className="app-card p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold tracking-tight text-[#111827]">
+            <h3
+              className="text-base font-semibold tracking-tight text-[#111827]"
+              title={
+                en
+                  ? "By shipment create date — default range is current month ±3 months; click chart to drill down."
+                  : "按物流记录创建时间 — 默认区间为当前月前后各 3 个自然月；点击图表下钻。"
+              }
+            >
               {en ? "Logistics progress" : "物流进度"}
             </h3>
-            <p className="mt-1 text-sm text-[#4B5563]">
-              {en
-                ? "By shipment create date — default range is current month ±3 months; click chart to drill down."
-                : "按物流记录创建时间 — 默认区间为当前月前后各 3 个自然月；点击图表下钻。"}
-            </p>
           </div>
           <Link
             href="/logistics-progress"

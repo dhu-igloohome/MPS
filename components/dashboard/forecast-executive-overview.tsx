@@ -126,8 +126,8 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
   const t = {
     title: en ? "Forecast at a glance" : "Forecast 全景",
     subtitle: en
-      ? "All forecast records in your scope — volume by region, top products, and monthly BTO vs BTS."
-      : "当前权限内全部 Forecast 记录 — 区域占比、产品 Top、月度 BTO/BTS 走势。",
+      ? "Your regions · BTO/BTS by month, region mix, and top SKUs."
+      : "权限内区域 · 按月的 BTO/BTS、区域结构与产品 Top。",
     bto: en ? "Build to order" : "按单 (BTO)",
     bts: en ? "Build to stock" : "备货 (BTS)",
     total: en ? "Total volume" : "合计数量",
@@ -168,7 +168,7 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     exportSnapshotHint: en
       ? "This export carries the same dashboard “as of” instant in CSV metadata. Tabular sections are re-read from the database when you download."
       : "此导出会在 CSV 元数据中写入与本页「数据截至」一致的快照时间；表格区在您点击下载时会再次从数据库读取。",
-    readingNotesSummary: en ? "Reading notes (snapshot & export)" : "读数说明（快照与导出）",
+    readingNotesSummary: en ? "How to read this block" : "本节读数说明",
   };
 
   const latestRowDisplay = latestRowIso ? formatDataSnapshot(latestRowIso, language) : null;
@@ -220,8 +220,8 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
   );
 
   const readingNotes = (
-    <details className="mt-2 max-w-prose text-xs">
-      <summary className="cursor-pointer select-none font-medium text-[#6B7280] hover:text-[#111827]">
+    <details className="mt-3 text-xs">
+      <summary className="cursor-pointer select-none text-[#9CA3AF] hover:text-[#6B7280]">
         {t.readingNotesSummary}
       </summary>
       {readingNotesDetails}
@@ -255,10 +255,10 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
             <div className="min-w-0">
               <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
               <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
-              {readingNotes}
             </div>
             {toolbar}
           </div>
+          {readingNotes}
         </div>
         <p className="text-center text-sm text-[#9CA3AF]">{t.empty}</p>
       </section>
@@ -274,7 +274,6 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
           <div className="min-w-0">
             <h2 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h2>
             <p className="mt-1 max-w-prose text-sm text-[#4B5563]">{t.subtitle}</p>
-            {readingNotes}
           </div>
           {toolbar}
         </div>
@@ -282,9 +281,8 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
 
       <div className="mb-6 min-w-0 rounded-xl border border-app-border/80 bg-gradient-to-br from-[#fafafa] to-white p-4 shadow-sm sm:p-5">
         <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <div className="min-w-0">
+          <div className="min-w-0" title={t.fcMonthHint}>
             <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.fcMonthFilter}</p>
-            <p className="mt-1 max-w-prose text-xs leading-relaxed text-[#6B7280]">{t.fcMonthHint}</p>
           </div>
           <button
             type="button"
@@ -343,6 +341,7 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
             })}
           </div>
         )}
+        {readingNotes}
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -368,9 +367,11 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
         </article>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-app-border/90 bg-gradient-to-br from-white via-white to-[#fff4f1]/70 px-5 py-6 sm:px-8 sm:py-7">
+      <div
+        className="mb-6 rounded-2xl border border-app-border/90 bg-gradient-to-br from-white via-white to-[#fff4f1]/70 px-5 py-6 sm:px-8 sm:py-7"
+        title={`${t.chartZoneTotal} — ${t.chartZoneTotalHint}`}
+      >
         <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.chartZoneTotal}</p>
-        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-[#6B7280]">{t.chartZoneTotalHint}</p>
         <p className="mt-4 text-4xl font-semibold tracking-tight tabular-nums text-[#111827] sm:text-5xl">
           {formatNum(kpi.total)}
         </p>
