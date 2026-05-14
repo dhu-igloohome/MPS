@@ -1,4 +1,5 @@
 import { ensureDatabase, getSql } from "@/lib/db";
+import { DOMESTIC_CONTRACT_USD_TO_CNY, DOMESTIC_CONTRACT_VAT_MULTIPLIER } from "@/lib/contract-domestic-pricing";
 import { normalizeForecastIncotermStored, parseForecastIncoterm } from "@/lib/forecast-incoterm";
 import { forecastPoPrefixForRegion, singaporeYmdCompact } from "@/lib/forecast-po";
 import type { ParsedOrderProgressDeliveryPlan } from "@/lib/order-progress-delivery-plans";
@@ -179,6 +180,7 @@ type SupplierRow = {
   lead_time_days: number;
   moq: number;
   incoterm: string;
+  is_domestic_contract: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -876,6 +878,7 @@ type ContractHintBatchRow = {
   fc_supplier: string | null;
   supplier_id: number | null;
   payment_terms: string | null;
+  supplier_is_domestic_contract: boolean | null;
 };
 
 function mapBatchRowToHint(row: ContractHintBatchRow): OrderContractCreateHint {
@@ -888,6 +891,7 @@ function mapBatchRowToHint(row: ContractHintBatchRow): OrderContractCreateHint {
       supplierId: null,
       paymentTerms: "",
       forecastId: null,
+      domesticContractBilling: false,
       ready: false,
       reasonKey: "missing_po_or_sku",
     };
@@ -898,6 +902,7 @@ function mapBatchRowToHint(row: ContractHintBatchRow): OrderContractCreateHint {
       supplierId: null,
       paymentTerms: "",
       forecastId: null,
+      domesticContractBilling: false,
       ready: false,
       reasonKey: "forecast_not_found",
     };
@@ -909,6 +914,7 @@ function mapBatchRowToHint(row: ContractHintBatchRow): OrderContractCreateHint {
       supplierId: null,
       paymentTerms: "",
       forecastId: fid,
+      domesticContractBilling: false,
       ready: false,
       reasonKey: "cash_flow_supplier_empty",
     };
@@ -919,16 +925,19 @@ function mapBatchRowToHint(row: ContractHintBatchRow): OrderContractCreateHint {
       supplierId: null,
       paymentTerms: "",
       forecastId: fid,
+      domesticContractBilling: false,
       ready: false,
       reasonKey: "supplier_not_in_master",
     };
   }
   const pt = (row.payment_terms ?? "").trim();
+  const domestic = Boolean(row.supplier_is_domestic_contract);
   return {
     cashFlowSupplierName: fcName,
     supplierId: String(row.supplier_id),
     paymentTerms: pt || "Cash",
     forecastId: fid,
+    domesticContractBilling: domestic,
     ready: true,
     reasonKey: "ok",
   };
@@ -956,7 +965,8 @@ export async function listOrderContractCreateHintsFromOrderIds(
       fr.id as forecast_id,
       nullif(trim(fc.supplier_name), '') as fc_supplier,
       sup.id as supplier_id,
-      sup.payment_terms
+      sup.payment_terms,
+      sup.is_domestic_contract as supplier_is_domestic_contract
     from order_progress op
     left join lateral (
       select f.id
@@ -970,7 +980,7 @@ export async function listOrderContractCreateHintsFromOrderIds(
     ) fr on true
     left join forecast_cash_flow_settings fc on fc.forecast_id = fr.id
     left join lateral (
-      select s.id, s.payment_terms
+      select s.id, s.payment_terms, coalesce(s.is_domestic_contract, false) as is_domestic_contract
       from suppliers s
       where
         s.is_active = true
@@ -996,6 +1006,7 @@ export async function listOrderContractCreateHintsFromOrderIds(
         supplierId: null,
         paymentTerms: "",
         forecastId: null,
+        domesticContractBilling: false,
         ready: false,
         reasonKey: "resolution_error",
       };
@@ -1018,6 +1029,7 @@ export async function getOrderContractCreateHint(
         supplierId: null,
         paymentTerms: "",
         forecastId: null,
+        domesticContractBilling: false,
         ready: false,
         reasonKey: "resolution_error",
       }
@@ -1029,6 +1041,7 @@ export async function getOrderContractCreateHint(
       supplierId: null,
       paymentTerms: "",
       forecastId: null,
+      domesticContractBilling: false,
       ready: false,
       reasonKey: "resolution_error",
     };
@@ -1054,6 +1067,7 @@ export async function listOrderContractCreateHints(
         supplierId: null,
         paymentTerms: "",
         forecastId: null,
+        domesticContractBilling: false,
         ready: false,
         reasonKey: "resolution_error",
       };
@@ -3416,6 +3430,7 @@ function mapSupplier(row: SupplierRow): SupplierEntry {
     leadTimeDays: Number(row.lead_time_days ?? 0),
     moq: Number(row.moq ?? 0),
     incoterm: row.incoterm || "",
+    isDomesticContract: Boolean(row.is_domestic_contract),
     isActive: Boolean(row.is_active),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -4418,6 +4433,7 @@ export async function listSuppliers(): Promise<SupplierEntry[]> {
       lead_time_days,
       moq,
       incoterm,
+      is_domestic_contract,
       is_active,
       created_at::text,
       updated_at::text
@@ -4437,6 +4453,7 @@ export async function createSupplier(input: {
   leadTimeDays: number;
   moq: number;
   incoterm: string;
+  isDomesticContract: boolean;
   isActive: boolean;
 }): Promise<SupplierEntry> {
   await ensureDatabase();
@@ -4452,6 +4469,7 @@ export async function createSupplier(input: {
       lead_time_days,
       moq,
       incoterm,
+      is_domestic_contract,
       is_active,
       updated_at
     )
@@ -4465,11 +4483,12 @@ export async function createSupplier(input: {
       ${Math.max(0, Math.trunc(input.leadTimeDays))},
       ${Math.max(0, Math.trunc(input.moq))},
       ${input.incoterm.trim()},
+      ${input.isDomesticContract},
       ${input.isActive},
       now()
     )
     returning
-      id, name, address, contact_name, contact_phone, email, payment_terms, lead_time_days, moq, incoterm, is_active,
+      id, name, address, contact_name, contact_phone, email, payment_terms, lead_time_days, moq, incoterm, is_domestic_contract, is_active,
       created_at::text, updated_at::text;
   `;
   return mapSupplier(rows[0]);
@@ -4486,6 +4505,7 @@ export async function updateSupplier(input: {
   leadTimeDays: number;
   moq: number;
   incoterm: string;
+  isDomesticContract: boolean;
   isActive: boolean;
 }): Promise<SupplierEntry | null> {
   await ensureDatabase();
@@ -4502,11 +4522,12 @@ export async function updateSupplier(input: {
       lead_time_days = ${Math.max(0, Math.trunc(input.leadTimeDays))},
       moq = ${Math.max(0, Math.trunc(input.moq))},
       incoterm = ${input.incoterm.trim()},
+      is_domestic_contract = ${input.isDomesticContract},
       is_active = ${input.isActive},
       updated_at = now()
     where id = ${Number(input.id)}
     returning
-      id, name, address, contact_name, contact_phone, email, payment_terms, lead_time_days, moq, incoterm, is_active,
+      id, name, address, contact_name, contact_phone, email, payment_terms, lead_time_days, moq, incoterm, is_domestic_contract, is_active,
       created_at::text, updated_at::text;
   `;
   return rows[0] ? mapSupplier(rows[0]) : null;
@@ -4653,7 +4674,31 @@ export async function createContractFromOrder(input: {
           uc.unit_cost,
           p.unit_cost::numeric,
           0
-        ) as unit_cost
+        ) as usd_unit_basis,
+        coalesce(s.is_domestic_contract, false) as is_domestic_contract,
+        case
+          when coalesce(s.is_domestic_contract, false) then round(
+            (
+              coalesce(
+                nullif(op.unit_cost_snapshot::numeric, 0),
+                uc.unit_cost,
+                p.unit_cost::numeric,
+                0
+              )
+            )::numeric * ${DOMESTIC_CONTRACT_USD_TO_CNY} * ${DOMESTIC_CONTRACT_VAT_MULTIPLIER},
+            2
+          )
+          else coalesce(
+            nullif(op.unit_cost_snapshot::numeric, 0),
+            uc.unit_cost,
+            p.unit_cost::numeric,
+            0
+          )
+        end as contract_unit,
+        case
+          when coalesce(s.is_domestic_contract, false) then 'CNY'
+          else ${input.currency.trim()}
+        end as contract_currency
       from order_progress op
       join suppliers s on s.id = ${supplierIdNum}
       left join products p on p.product_name = op.product_name and p.sku = op.sku and p.is_active = true
@@ -4707,12 +4752,12 @@ export async function createContractFromOrder(input: {
         src.product_name,
         ${input.batch.trim()},
         src.quantity,
-        coalesce(src.unit_cost, 0),
-        src.quantity * coalesce(src.unit_cost, 0),
+        coalesce(src.contract_unit, 0),
+        src.quantity * coalesce(src.contract_unit, 0),
         src.delivery_date,
         src.unit_cost_quote_id_snapshot,
         src.unit_cost_quote_date_snapshot,
-        ${input.currency.trim()},
+        src.contract_currency,
         ${paymentTermsResolved},
         ${input.remark.trim()},
         ${input.deliveryAddress.trim()},
@@ -4730,9 +4775,10 @@ export async function createContractFromOrder(input: {
         po_batch = ins.batch,
         po_serial_code = ins.serial_code,
         po_bluetooth_id = ins.bluetooth_id,
-        unit_cost_snapshot = ins.unit_cost,
+        unit_cost_snapshot = src.usd_unit_basis,
         po_delivery_date = ins.delivery_date
       from ins
+      join src on src.order_progress_id = ins.order_progress_id
       where op.id = ins.order_progress_id
       returning op.id
     )

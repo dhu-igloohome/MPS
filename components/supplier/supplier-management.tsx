@@ -27,6 +27,8 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
     status: language === "en" ? "Status" : "Status",
     active: language === "en" ? "Active" : "Active",
     inactive: language === "en" ? "Inactive" : "Inactive",
+    domesticContract: language === "en" ? "Domestic (CNY contract)" : "境内（合同人民币）",
+    domesticContractShort: language === "en" ? "Domestic" : "境内",
     create: language === "en" ? "Create supplier" : "Create supplier",
     save: language === "en" ? "Save" : "Save",
     cancel: language === "en" ? "Cancel" : "Cancel",
@@ -46,6 +48,7 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
   const [leadTimeDays, setLeadTimeDays] = useState("0");
   const [moq, setMoq] = useState("0");
   const [incoterm, setIncoterm] = useState("");
+  const [isDomesticContract, setIsDomesticContract] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -64,6 +67,7 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
     setLeadTimeDays(String(s.leadTimeDays));
     setMoq(String(s.moq));
     setIncoterm(s.incoterm);
+    setIsDomesticContract(s.isDomesticContract);
     setIsActive(s.isActive);
     setMessage("");
   }
@@ -79,6 +83,7 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
     setLeadTimeDays("0");
     setMoq("0");
     setIncoterm("");
+    setIsDomesticContract(false);
     setIsActive(true);
   }
 
@@ -108,6 +113,7 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
         leadTimeDays: leadDaysNum,
         moq: moqNum,
         incoterm,
+        isDomesticContract,
         isActive,
       }),
     });
@@ -172,6 +178,10 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
           </label>
           <input value={incoterm} onChange={(e) => setIncoterm(e.target.value)} placeholder={t.incoterm} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
           <label className="flex min-w-0 items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
+            <input type="checkbox" checked={isDomesticContract} onChange={(e) => setIsDomesticContract(e.target.checked)} />
+            {t.domesticContract}
+          </label>
+          <label className="flex min-w-0 items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
             <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
             {t.active}
           </label>
@@ -197,13 +207,14 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
                 <th className="px-2 py-2">{t.leadTimeDays}</th>
                 <th className="px-2 py-2">{t.moq}</th>
                 <th className="px-2 py-2">{t.incoterm}</th>
+                <th className="px-2 py-2">{t.domesticContractShort}</th>
                 <th className="px-2 py-2">{t.status}</th>
                 <th className="px-2 py-2">{t.actions}</th>
               </tr>
             </thead>
             <tbody>
               {suppliers.length === 0 ? (
-                <tr><td className="px-2 py-6 text-center text-app-muted" colSpan={11}>{t.empty}</td></tr>
+                <tr><td className="px-2 py-6 text-center text-app-muted" colSpan={12}>{t.empty}</td></tr>
               ) : suppliers.map((s) => (
                 <tr key={s.id}>
                   <td className="px-2 py-2">{s.name}</td>
@@ -215,6 +226,7 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
                   <td className="px-2 py-2">{s.leadTimeDays}</td>
                   <td className="px-2 py-2">{s.moq}</td>
                   <td className="px-2 py-2">{s.incoterm || "-"}</td>
+                  <td className="px-2 py-2">{s.isDomesticContract ? (language === "en" ? "Yes" : "是") : "—"}</td>
                   <td className="px-2 py-2">{s.isActive ? t.active : t.inactive}</td>
                   <td className="px-2 py-2">
                     <div className="flex gap-2">

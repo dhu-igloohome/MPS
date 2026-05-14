@@ -201,6 +201,7 @@ async function setupSchema() {
   await db`alter table suppliers add column if not exists moq integer not null default 0;`;
   await db`alter table suppliers add column if not exists incoterm text not null default '';`;
   await db`alter table suppliers add column if not exists is_active boolean not null default true;`;
+  await db`alter table suppliers add column if not exists is_domestic_contract boolean not null default false;`;
 
   await db`
     create table if not exists contracts (

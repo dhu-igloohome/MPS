@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+
+import {
+  DOMESTIC_CONTRACT_CURRENCY,
+  domesticCnyContractUnitFromUsdBasis,
+} from "@/lib/contract-domestic-pricing";
 
 import type { Language } from "@/lib/i18n";
 import type {
@@ -106,6 +111,11 @@ export function ContractManagement({
     batch: "Batch",
     currency: "Currency",
     unitPrice: language === "en" ? "Unit price (USD)" : "单价 (USD)",
+    unitPriceDomestic: language === "en" ? "Unit price (CNY, incl. 13% VAT)" : "单价（人民币，含 13% 增值税）",
+    domesticUnitHint:
+      language === "en"
+        ? "From USD basis × 7 × 1.13. Order snapshot stays in USD."
+        : "由美金口径 ×7×1.13 换算；订单上的成本快照仍为美金口径。",
     paymentTerms: en ? "Payment terms" : "付款条款",
     paymentTermsHint: en
       ? "From Supply Chain → Suppliers for the resolved supplier."
@@ -185,6 +195,25 @@ export function ContractManagement({
     snapshot != null && Number.isFinite(snapshot) && snapshot > 0
       ? snapshot
       : quoteUnitPriceUsd;
+
+  const displayContractUnit = useMemo(() => {
+    if (selectedUnitPriceUsd == null || !Number.isFinite(selectedUnitPriceUsd) || selectedUnitPriceUsd <= 0) {
+      return null;
+    }
+    if (orderHint?.domesticContractBilling) {
+      return domesticCnyContractUnitFromUsdBasis(selectedUnitPriceUsd);
+    }
+    return selectedUnitPriceUsd;
+  }, [orderHint?.domesticContractBilling, selectedUnitPriceUsd]);
+
+  useEffect(() => {
+    if (!orderHint?.ready) return;
+    if (orderHint.domesticContractBilling) {
+      setCurrency(DOMESTIC_CONTRACT_CURRENCY);
+    } else {
+      setCurrency("USD");
+    }
+  }, [orderHint?.ready, orderHint?.domesticContractBilling, orderProgressId]);
 
   const orderOptionLabel = (o: OrderProgressEntry) => {
     const po = (o.orderNumber || "").trim() || "—";
@@ -353,24 +382,30 @@ export function ContractManagement({
             <span className="mb-1 block text-sm text-app-muted">{t.currency}</span>
             <input
               value={currency}
+              readOnly={orderHint?.domesticContractBilling === true}
               onChange={(e) => setCurrency(e.target.value.toUpperCase())}
               required
               autoComplete="off"
-              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm read-only:bg-slate-50"
             />
           </label>
           <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <label className="block min-w-0">
-              <span className="mb-1 block text-sm text-app-muted">{t.unitPrice}</span>
+              <span className="mb-1 block text-sm text-app-muted">
+                {orderHint?.domesticContractBilling ? t.unitPriceDomestic : t.unitPrice}
+              </span>
               <input
                 readOnly
                 value={
-                  selectedUnitPriceUsd != null && Number.isFinite(selectedUnitPriceUsd)
-                    ? selectedUnitPriceUsd.toFixed(2)
+                  displayContractUnit != null && Number.isFinite(displayContractUnit)
+                    ? displayContractUnit.toFixed(2)
                     : "—"
                 }
                 className="w-full min-w-0 rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
               />
+              {orderHint?.domesticContractBilling ? (
+                <p className="mt-1 text-[11px] text-app-muted">{t.domesticUnitHint}</p>
+              ) : null}
             </label>
           </div>
           <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">

@@ -81,6 +81,8 @@ export type SupplierEntry = {
   leadTimeDays: number;
   moq: number;
   incoterm: string;
+  /** When true, new contracts use CNY and USD-basis×7×1.13 for unit price; order snapshot stays USD basis. */
+  isDomesticContract: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -409,6 +411,8 @@ export type OrderContractCreateHint = {
   /** Payment terms from Suppliers master when supplier resolves. */
   paymentTerms: string;
   forecastId: string | null;
+  /** Resolved supplier: domestic billing (CNY contract unit from USD×7×1.13). */
+  domesticContractBilling: boolean;
   ready: boolean;
   reasonKey:
     | "ok"
