@@ -857,6 +857,8 @@ function orderContractHintMessage(reasonKey: OrderContractCreateHint["reasonKey"
       return "This order line needs a PO number and SKU that match a forecast row.";
     case "forecast_not_found":
       return "No forecast matches this order's PO and SKU in your regions.";
+    case "forecast_ops_not_ready":
+      return "This forecast line is not approved for PO yet. On the Forecast page, set Ops action to \"Ok to issue PO\" for the matching row, then try again.";
     case "cash_flow_supplier_empty":
       return "Choose a supplier in Supply Chain → Cost control → Cash flow analysis (Forecast cash flow) for this forecast.";
     case "supplier_not_in_master":
@@ -872,11 +874,16 @@ type ContractHintBatchRow = {
   order_progress_id: number;
   po_number: string | null;
   sku: string | null;
-  forecast_id: number | null;
+  matched_forecast_id: number | null;
+  matched_forecast_ops_action: string | null;
   fc_supplier: string | null;
   supplier_id: number | null;
   payment_terms: string | null;
 };
+
+function forecastRowReadyForContractOps(opsRaw: string | null | undefined): boolean {
+  return String(opsRaw ?? "").trim().toLowerCase() === "ok to issue po";
+}
 
 function mapBatchRowToHint(row: ContractHintBatchRow): OrderContractCreateHint {
   const po = String(row.po_number ?? "").trim();
@@ -892,7 +899,7 @@ function mapBatchRowToHint(row: ContractHintBatchRow): OrderContractCreateHint {
       reasonKey: "missing_po_or_sku",
     };
   }
-  if (row.forecast_id == null) {
+  if (row.matched_forecast_id == null) {
     return {
       cashFlowSupplierName: "",
       supplierId: null,
@@ -902,7 +909,17 @@ function mapBatchRowToHint(row: ContractHintBatchRow): OrderContractCreateHint {
       reasonKey: "forecast_not_found",
     };
   }
-  const fid = String(row.forecast_id);
+  if (!forecastRowReadyForContractOps(row.matched_forecast_ops_action)) {
+    return {
+      cashFlowSupplierName: "",
+      supplierId: null,
+      paymentTerms: "",
+      forecastId: String(row.matched_forecast_id),
+      ready: false,
+      reasonKey: "forecast_ops_not_ready",
+    };
+  }
+  const fid = String(row.matched_forecast_id);
   if (!fcName) {
     return {
       cashFlowSupplierName: "",
@@ -953,22 +970,23 @@ export async function listOrderContractCreateHintsFromOrderIds(
       op.id as order_progress_id,
       op.po_number,
       op.sku,
-      fr.id as forecast_id,
+      fr.matched_forecast_id,
+      fr.matched_forecast_ops_action,
       nullif(trim(fc.supplier_name), '') as fc_supplier,
       sup.id as supplier_id,
       sup.payment_terms
     from order_progress op
     left join lateral (
-      select f.id
+      select f.id as matched_forecast_id, f.ops_action as matched_forecast_ops_action
       from forecasts f
       where
         f.region = any(${sessionRegions})
         and lower(trim(f.po_number)) = lower(trim(coalesce(op.po_number, '')))
-        and lower(trim(f.sku)) = lower(trim(op.sku))
+        and lower(trim(f.sku)) = lower(trim(coalesce(op.sku, '')))
       order by f.created_at desc, f.id desc
       limit 1
     ) fr on true
-    left join forecast_cash_flow_settings fc on fc.forecast_id = fr.id
+    left join forecast_cash_flow_settings fc on fc.forecast_id = fr.matched_forecast_id
     left join lateral (
       select s.id, s.payment_terms
       from suppliers s

@@ -37,6 +37,10 @@ function contractHintHelp(language: Language, hint: OrderContractCreateHint | un
       return en
         ? "No forecast matches this PO and SKU in your regions."
         : "在您可见区域内，没有与该 PO + SKU 匹配的 Forecast。";
+    case "forecast_ops_not_ready":
+      return en
+        ? "The matching Forecast row must have Ops action set to \"Ok to issue PO\" before you can create a contract from this order."
+        : "与订单匹配的 Forecast 行需先将 Ops action 设为「Ok to issue PO」，之后才能从该订单创建合同。";
     case "cash_flow_supplier_empty":
       return en
         ? "Open Cost control → Cash flow analysis and pick a supplier for this forecast row."
@@ -112,6 +116,7 @@ export function ContractManagement({
       : "取自「供应链 → 供应商」主数据中该供应商的付款条款。",
     fieldHintsSummary: en ? "How fields are filled" : "字段说明",
     openCashFlow: en ? "Open cash flow analysis" : "打开现金流分析",
+    openForecast: en ? "Open Forecast" : "打开 Forecast",
     cannotCreateYet: en ? "Cannot create contract yet" : "暂无法创建合同",
     deliveryAddress: "Delivery address",
     remark: language === "en" ? "Remark" : "备注",
@@ -198,6 +203,8 @@ export function ContractManagement({
     orderHint &&
     !orderHint.ready &&
     (orderHint.reasonKey === "cash_flow_supplier_empty" || orderHint.reasonKey === "forecast_not_found");
+  const orderBlockerShowForecastLink =
+    orderHint && !orderHint.ready && orderHint.reasonKey === "forecast_ops_not_ready";
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -295,6 +302,14 @@ export function ContractManagement({
                   className="shrink-0 rounded-md border border-amber-300/80 bg-white px-2.5 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100/80 dark:border-amber-600 dark:bg-amber-950/60 dark:text-amber-100 dark:hover:bg-amber-900/50"
                 >
                   {t.openCashFlow}
+                </Link>
+              ) : null}
+              {orderBlockerShowForecastLink ? (
+                <Link
+                  href="/forecast"
+                  className="shrink-0 rounded-md border border-amber-300/80 bg-white px-2.5 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100/80 dark:border-amber-600 dark:bg-amber-950/60 dark:text-amber-100 dark:hover:bg-amber-900/50"
+                >
+                  {t.openForecast}
                 </Link>
               ) : null}
             </div>

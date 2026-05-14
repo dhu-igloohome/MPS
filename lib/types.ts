@@ -414,6 +414,8 @@ export type OrderContractCreateHint = {
     | "ok"
     | "missing_po_or_sku"
     | "forecast_not_found"
+    /** PO+SKU matched a forecast row, but Ops action is not "Ok to issue PO" yet. */
+    | "forecast_ops_not_ready"
     | "cash_flow_supplier_empty"
     | "supplier_not_in_master"
     /** Unexpected DB/runtime failure while resolving hint (page still loads). */
