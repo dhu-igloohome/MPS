@@ -203,6 +203,18 @@ async function setupSchema() {
   await db`alter table suppliers add column if not exists is_active boolean not null default true;`;
   await db`alter table suppliers add column if not exists is_domestic_contract boolean not null default false;`;
 
+  // Idempotent seed: known APAC suppliers — CN factories bill in CNY (境内合同); named offshore vendors stay USD.
+  await db`
+    update suppliers
+    set is_domestic_contract = true, updated_at = now()
+    where name in ('DKKS', 'HM', 'Huili', 'Jinjian');
+  `;
+  await db`
+    update suppliers
+    set is_domestic_contract = false, updated_at = now()
+    where name in ('Aztech - Malaysia', 'Raonark - Korea', 'Solity - Korea', 'VS-Malaysia');
+  `;
+
   await db`
     create table if not exists contracts (
       id bigserial primary key,
