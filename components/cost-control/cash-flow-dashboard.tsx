@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -650,19 +650,32 @@ export function CashFlowDashboard({
     [rangePreset, customFrom, customTo],
   );
 
+  // Defer the filter inputs so typing stays snappy: React keeps the input components
+  // updating at high priority while the (expensive) charts/tables re-render off the
+  // deferred values at lower priority.
+  const dSupplier = useDeferredValue(supplier);
+  const dQtyMin = useDeferredValue(qtyMin);
+  const dQtyMax = useDeferredValue(qtyMax);
+  const dTotalMin = useDeferredValue(totalMin);
+  const dTotalMax = useDeferredValue(totalMax);
+  const dAdvMin = useDeferredValue(advMin);
+  const dAdvMax = useDeferredValue(advMax);
+  const dFinMin = useDeferredValue(finMin);
+  const dFinMax = useDeferredValue(finMax);
+
   const filters: DashboardFilters = useMemo(
     () => ({
-      supplier,
-      qtyMin: optNum(qtyMin),
-      qtyMax: optNum(qtyMax),
-      totalMin: optNum(totalMin),
-      totalMax: optNum(totalMax),
-      advMin: optNum(advMin),
-      advMax: optNum(advMax),
-      finMin: optNum(finMin),
-      finMax: optNum(finMax),
+      supplier: dSupplier,
+      qtyMin: optNum(dQtyMin),
+      qtyMax: optNum(dQtyMax),
+      totalMin: optNum(dTotalMin),
+      totalMax: optNum(dTotalMax),
+      advMin: optNum(dAdvMin),
+      advMax: optNum(dAdvMax),
+      finMin: optNum(dFinMin),
+      finMax: optNum(dFinMax),
     }),
-    [supplier, qtyMin, qtyMax, totalMin, totalMax, advMin, advMax, finMin, finMax],
+    [dSupplier, dQtyMin, dQtyMax, dTotalMin, dTotalMax, dAdvMin, dAdvMax, dFinMin, dFinMax],
   );
 
   const filtered = useMemo(

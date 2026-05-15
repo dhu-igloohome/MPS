@@ -23,10 +23,12 @@ export default async function LogisticsProgressPage() {
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
-  const products = await listActiveProducts();
-  const entries = await listLogisticsShipmentsBySession(session);
-  const orderLines = await listOrderProgressBySessionRegions(session.regions);
-  const forecasts = await getForecastsByRegions(session.regions);
+  const [products, entries, orderLines, forecasts] = await Promise.all([
+    listActiveProducts(),
+    listLogisticsShipmentsBySession(session),
+    listOrderProgressBySessionRegions(session.regions),
+    getForecastsByRegions(session.regions),
+  ]);
 
   return (
     <AppShell

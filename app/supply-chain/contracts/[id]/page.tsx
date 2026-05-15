@@ -30,12 +30,14 @@ export default async function SupplyChainContractDetailPage({ params }: PageProp
   const contract = await getContractById(id);
   if (!contract) notFound();
 
-  const order = await getOrderProgressById(contract.orderProgressId);
+  const [order, cookieStore] = await Promise.all([
+    getOrderProgressById(contract.orderProgressId),
+    cookies(),
+  ]);
   if (!order || !sessionCanAccessOrderProgressRegion(session.regions, order.region)) {
     notFound();
   }
 
-  const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   const canPrint = contract.status === "approved" || contract.status === "sent";
 

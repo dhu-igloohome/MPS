@@ -25,12 +25,13 @@ export default async function SupplyChainContractPrintPage({ params }: PageProps
     notFound();
   }
 
-  const order = await getOrderProgressById(contract.orderProgressId);
+  const [order, suppliers] = await Promise.all([
+    getOrderProgressById(contract.orderProgressId),
+    listSuppliers(),
+  ]);
   if (!order || !sessionCanAccessOrderProgressRegion(session.regions, order.region)) {
     notFound();
   }
-
-  const suppliers = await listSuppliers();
   const supplier = suppliers.find((item) => item.id === contract.supplierId);
   const poData: PrintablePOData = {
     header: {

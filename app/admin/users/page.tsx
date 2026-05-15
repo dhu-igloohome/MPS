@@ -19,9 +19,11 @@ export default async function AdminUsersPage() {
     redirect("/dashboard");
   }
 
-  const users = await listUsersWithRegions();
-  const auditLogs = await listAdminAuditLogs(80);
-  const cookieStore = await cookies();
+  const [users, auditLogs, cookieStore] = await Promise.all([
+    listUsersWithRegions(),
+    listAdminAuditLogs(80),
+    cookies(),
+  ]);
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
   return (

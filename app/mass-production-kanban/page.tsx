@@ -21,8 +21,10 @@ export default async function MassProductionKanbanPage() {
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
-  const products = await listActiveProducts();
-  const entries = await listMassProductionKanbanBySessionRegions(session.regions);
+  const [products, entries] = await Promise.all([
+    listActiveProducts(),
+    listMassProductionKanbanBySessionRegions(session.regions),
+  ]);
   const allowedRegions = massProductionKanbanRegionsForSession(session.regions);
 
   const noRegionMessage =
