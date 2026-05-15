@@ -1466,10 +1466,10 @@ export async function createUserAccount(input: {
     );
   `;
 
-  for (const region of input.regions) {
+  if (input.regions.length > 0) {
+    const regionRows = input.regions.map((region) => ({ username: input.username, region }));
     await db`
-      insert into user_regions (username, region)
-      values (${input.username}, ${region});
+      insert into user_regions ${db(regionRows, "username", "region")}
     `;
   }
 }
@@ -1492,10 +1492,10 @@ export async function updateUserRegionsAndRole(input: {
     where username = ${input.username};
   `;
 
-  for (const region of input.regions) {
+  if (input.regions.length > 0) {
+    const regionRows = input.regions.map((region) => ({ username: input.username, region }));
     await db`
-      insert into user_regions (username, region)
-      values (${input.username}, ${region});
+      insert into user_regions ${db(regionRows, "username", "region")}
     `;
   }
 }
@@ -1555,9 +1555,10 @@ export async function listAdminAuditLogs(limit = 50) {
   );
 }
 
-export async function listProducts(limit = 500) {
+export async function listProducts(limit = 5000) {
   await ensureDatabase();
   const db = getSql();
+  // Fetch limit + 1 to detect overflow rather than silently truncating.
   const rows = await db<ProductRow[]>`
     select
       id,
@@ -1570,8 +1571,12 @@ export async function listProducts(limit = 500) {
       created_at::text
     from products
     order by created_at desc
-    limit ${limit};
+    limit ${limit + 1};
   `;
+  if (rows.length > limit) {
+    console.warn(`[listProducts] result hit limit=${limit}; consider pagination.`);
+    rows.length = limit;
+  }
   return rows.map(mapProduct);
 }
 
@@ -1609,25 +1614,24 @@ export async function upsertProductsBulk(
   await ensureDatabase();
   const db = getSql();
 
-  for (const item of items) {
-    await db`
-      insert into products (product_name, sku, variant, unit_cost, article_number, is_active)
-      values (
-        ${item.productName.trim()},
-        ${item.sku.trim()},
-        ${item.variant.trim()},
-        ${item.unitCost},
-        ${item.articleNumber.trim()},
-        true
-      )
-      on conflict (sku, variant) do update
-      set
-        product_name = excluded.product_name,
-        unit_cost = excluded.unit_cost,
-        article_number = excluded.article_number,
-        is_active = true;
-    `;
-  }
+  if (items.length === 0) return;
+  const rows = items.map((item) => ({
+    product_name: item.productName.trim(),
+    sku: item.sku.trim(),
+    variant: item.variant.trim(),
+    unit_cost: item.unitCost,
+    article_number: item.articleNumber.trim(),
+    is_active: true,
+  }));
+  await db`
+    insert into products ${db(rows, "product_name", "sku", "variant", "unit_cost", "article_number", "is_active")}
+    on conflict (sku, variant) do update
+    set
+      product_name = excluded.product_name,
+      unit_cost = excluded.unit_cost,
+      article_number = excluded.article_number,
+      is_active = true
+  `;
 }
 
 export async function updateProduct(input: {
@@ -1774,17 +1778,16 @@ async function seedOrderProductionStepsFromTemplate(
     where product_name = ${productName.trim()} and sku = ${sku.trim()}
     order by sort_order asc, id asc;
   `;
-  for (const t of templates) {
-    await db`
-      insert into order_production_steps (
-        order_progress_id,
-        sort_order,
-        label,
-        done
-      )
-      values (${orderProgressId}, ${t.sort_order}, ${t.label}, false);
-    `;
-  }
+  if (templates.length === 0) return;
+  const stepRows = templates.map((t) => ({
+    order_progress_id: orderProgressId,
+    sort_order: t.sort_order,
+    label: t.label,
+    done: false,
+  }));
+  await db`
+    insert into order_production_steps ${db(stepRows, "order_progress_id", "sort_order", "label", "done")}
+  `;
 }
 
 async function replaceOrderProductionStepsForOrder(
@@ -1808,14 +1811,74 @@ async function ensureOrderProductionStepsLoaded(
   if (ids.length === 0) {
     return new Map();
   }
-  let stepMap = await loadOrderProductionStepsByIds(db, ids);
+  const stepMap = await loadOrderProductionStepsByIds(db, ids);
+
+  // Identify orders that need seeding.
+  const needsSeeding: OrderProgressRow[] = [];
   for (const row of rows) {
     const oid = Number(row.id);
     if ((stepMap.get(oid) ?? []).length === 0) {
-      await seedOrderProductionStepsFromTemplate(db, oid, row.product_name, row.sku);
+      needsSeeding.push(row);
     }
   }
-  stepMap = await loadOrderProductionStepsByIds(db, ids);
+  if (needsSeeding.length === 0) {
+    return stepMap;
+  }
+
+  // Single template fetch for every distinct (product_name, sku) pair we need.
+  const pairKeys = new Set<string>();
+  const productNames: string[] = [];
+  const skus: string[] = [];
+  for (const row of needsSeeding) {
+    const pn = row.product_name.trim();
+    const sk = row.sku.trim();
+    const k = `${pn}::${sk}`;
+    if (pairKeys.has(k)) continue;
+    pairKeys.add(k);
+    productNames.push(pn);
+    skus.push(sk);
+  }
+  const templateRows = await db<{ product_name: string; sku: string; sort_order: number; label: string }[]>`
+    select t.product_name, t.sku, t.sort_order, t.label
+    from production_step_templates t
+    join unnest(${productNames}::text[], ${skus}::text[]) as pairs(product_name, sku)
+      on pairs.product_name = t.product_name and pairs.sku = t.sku
+    order by t.sort_order asc, t.id asc;
+  `;
+  const templatesByKey = new Map<string, { sort_order: number; label: string }[]>();
+  for (const t of templateRows) {
+    const k = `${t.product_name.trim()}::${t.sku.trim()}`;
+    const list = templatesByKey.get(k) ?? [];
+    list.push({ sort_order: t.sort_order, label: t.label });
+    templatesByKey.set(k, list);
+  }
+
+  // Single batch insert across all orders that need seeding.
+  const insertRows: Array<{ order_progress_id: number; sort_order: number; label: string; done: boolean }> = [];
+  const seededIds: number[] = [];
+  for (const row of needsSeeding) {
+    const k = `${row.product_name.trim()}::${row.sku.trim()}`;
+    const tpl = templatesByKey.get(k);
+    if (!tpl || tpl.length === 0) continue;
+    const oid = Number(row.id);
+    seededIds.push(oid);
+    for (const t of tpl) {
+      insertRows.push({ order_progress_id: oid, sort_order: t.sort_order, label: t.label, done: false });
+    }
+  }
+  if (insertRows.length === 0) {
+    return stepMap;
+  }
+  await db`
+    insert into order_production_steps ${db(insertRows, "order_progress_id", "sort_order", "label", "done")}
+    on conflict (order_progress_id, sort_order) do nothing
+  `;
+
+  // Reload just the newly-seeded orders and merge.
+  const newSteps = await loadOrderProductionStepsByIds(db, seededIds);
+  for (const [oid, steps] of newSteps) {
+    stepMap.set(oid, steps);
+  }
   return stepMap;
 }
 
@@ -1859,26 +1922,17 @@ async function replaceOrderProgressDeliveryPlans(
     delete from order_progress_delivery_plans
     where order_progress_id = ${orderProgressId};
   `;
-  let sortOrder = 0;
-  for (const p of plans) {
-    await db`
-      insert into order_progress_delivery_plans (
-        order_progress_id,
-        expected_delivery_date,
-        quantity,
-        progress,
-        sort_order
-      )
-      values (
-        ${orderProgressId},
-        ${p.expectedDeliveryDate},
-        ${p.quantity},
-        ${p.progress},
-        ${sortOrder}
-      );
-    `;
-    sortOrder += 1;
-  }
+  if (plans.length === 0) return;
+  const planRows = plans.map((p, idx) => ({
+    order_progress_id: orderProgressId,
+    expected_delivery_date: p.expectedDeliveryDate,
+    quantity: p.quantity,
+    progress: p.progress,
+    sort_order: idx,
+  }));
+  await db`
+    insert into order_progress_delivery_plans ${db(planRows, "order_progress_id", "expected_delivery_date", "quantity", "progress", "sort_order")}
+  `;
 }
 
 export async function listOrderProgressBySessionRegions(regions: Region[]) {
@@ -1923,13 +1977,18 @@ export async function listOrderProgressBySessionRegions(regions: Region[]) {
     from order_progress
     where region = any(${allowed})
     order by updated_at desc, id desc
-    limit 500;
+    limit 5001;
   `;
-  const planMap = await loadDeliveryPlansByProgressIds(
-    db,
-    rows.map((r) => Number(r.id)),
-  );
-  const stepMap = await ensureOrderProductionStepsLoaded(db, rows);
+  if (rows.length > 5000) {
+    console.warn("[listOrderProgressBySessionRegions] result hit limit=5000; consider pagination.");
+    rows.length = 5000;
+  }
+  // Run delivery-plan and production-step lookups in parallel — they don't depend on each other.
+  const ids = rows.map((r) => Number(r.id));
+  const [planMap, stepMap] = await Promise.all([
+    loadDeliveryPlansByProgressIds(db, ids),
+    ensureOrderProductionStepsLoaded(db, rows),
+  ]);
   return rows.map((row) => {
     const oid = Number(row.id);
     return mapOrderProgress(row, planMap.get(oid) ?? [], stepMap.get(oid) ?? []);
@@ -5732,9 +5791,10 @@ export async function syncLandedConsolidateSnapshotToUnitCostQuotes(input: {
 
   const quoteIncoterm = normalizeUnitCostIncoterm(input.incoterm);
   const seen = new Set<string>();
-  let inserted = 0;
   let skipped = 0;
 
+  // Collect every distinct (sku, supplier) pair we will need.
+  const pairs: { sku: string; supplier: string }[] = [];
   for (const line of input.lineItems) {
     const fid = Number(line.forecastId);
     const supplier = supplierByForecast.get(fid) ?? "";
@@ -5746,32 +5806,100 @@ export async function syncLandedConsolidateSnapshotToUnitCostQuotes(input: {
     const key = `${sku}::${supplier}`;
     if (seen.has(key)) continue;
     seen.add(key);
+    pairs.push({ sku, supplier });
+  }
 
-    const latest = await getLatestUnitCostQuoteBySkuSupplier(sku, supplier);
+  if (pairs.length === 0) {
+    return { inserted: 0, skipped };
+  }
+
+  const db = getSql();
+  // Single batch fetch: latest non-deleted quote per (sku, supplier).
+  const skus = pairs.map((p) => p.sku);
+  const suppliers = pairs.map((p) => p.supplier);
+  const latestRows = await db<UnitCostQuoteRow[]>`
+    select distinct on (sku, supplier_name)
+      id,
+      sku,
+      unit_price::text,
+      tax_included,
+      supplier_name,
+      quote_date::text,
+      manufacturer_country,
+      destination_country,
+      destination_tariff_pct::text,
+      cm_unit_price_tax_rate_pct::text,
+      sea_freight_unit_price::text,
+      air_freight_unit_price::text,
+      incoterm,
+      creation_reason,
+      created_by,
+      created_at::text
+    from unit_cost_quotes
+    where deleted_at is null
+      and sku = any(${skus}::text[])
+      and supplier_name = any(${suppliers}::text[])
+    order by sku, supplier_name, quote_date desc, id desc;
+  `;
+  const latestMap = new Map<string, UnitCostQuoteEntry>();
+  for (const r of latestRows) {
+    const entry = mapUnitCostQuote(r);
+    latestMap.set(`${entry.sku.trim()}::${entry.supplierName.trim()}`, entry);
+  }
+
+  // Build batch insert rows; skip pairs without a baseline quote.
+  const insertRows: Array<{
+    sku: string;
+    unit_price: number;
+    tax_included: boolean;
+    supplier_name: string;
+    quote_date: string;
+    manufacturer_country: string;
+    destination_country: string;
+    destination_tariff_pct: number | null;
+    cm_unit_price_tax_rate_pct: number | null;
+    sea_freight_unit_price: number | null;
+    air_freight_unit_price: number | null;
+    incoterm: string;
+    creation_reason: string;
+    created_by: string;
+  }> = [];
+  const destCountry = input.destinationCountry.trim();
+  const createdBy = input.createdBy.trim();
+  const quoteDate = input.quoteDate.trim();
+  for (const { sku, supplier } of pairs) {
+    const latest = latestMap.get(`${sku}::${supplier}`);
     if (!latest) {
       skipped += 1;
       continue;
     }
-
-    await createUnitCostQuote({
+    insertRows.push({
       sku: latest.sku,
-      unitPrice: latest.unitPrice,
-      taxIncluded: latest.taxIncluded,
-      supplierName: supplier,
-      quoteDate: input.quoteDate.trim(),
-      manufacturerCountry: latest.manufacturerCountry.trim(),
-      destinationCountry: input.destinationCountry.trim(),
-      destinationTariffPct: input.destinationTariffPct,
-      cmUnitPriceTaxRatePct: null,
-      seaFreightUnitPrice: input.seaFreightUsd,
-      airFreightUnitPrice: input.airFreightUsd,
+      unit_price: latest.unitPrice,
+      tax_included: latest.taxIncluded,
+      supplier_name: supplier,
+      quote_date: quoteDate,
+      manufacturer_country: latest.manufacturerCountry.trim(),
+      destination_country: destCountry,
+      destination_tariff_pct: input.destinationTariffPct,
+      cm_unit_price_tax_rate_pct: null,
+      sea_freight_unit_price: input.seaFreightUsd,
+      air_freight_unit_price: input.airFreightUsd,
       incoterm: quoteIncoterm,
-      createdBy: input.createdBy.trim(),
+      creation_reason: "",
+      created_by: createdBy,
     });
-    inserted += 1;
   }
 
-  return { inserted, skipped };
+  if (insertRows.length === 0) {
+    return { inserted: 0, skipped };
+  }
+
+  await db`
+    insert into unit_cost_quotes ${db(insertRows, "sku", "unit_price", "tax_included", "supplier_name", "quote_date", "manufacturer_country", "destination_country", "destination_tariff_pct", "cm_unit_price_tax_rate_pct", "sea_freight_unit_price", "air_freight_unit_price", "incoterm", "creation_reason", "created_by")}
+  `;
+
+  return { inserted: insertRows.length, skipped };
 }
 
 export async function enrichForecastRecordsForCashFlow(

@@ -24,11 +24,13 @@ export default async function OrderProgressPage() {
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
-  const products = await listActiveProducts();
-  const suppliers = await listSuppliers();
-  const entries = await listOrderProgressBySessionRegions(session.regions);
-  const deletionLogs = await listOrderProgressDeletionLogsBySessionRegions(session.regions, 100);
-  const forecasts = await getForecastsByRegions(session.regions);
+  const [products, suppliers, entries, deletionLogs, forecasts] = await Promise.all([
+    listActiveProducts(),
+    listSuppliers(),
+    listOrderProgressBySessionRegions(session.regions),
+    listOrderProgressDeletionLogsBySessionRegions(session.regions, 100),
+    getForecastsByRegions(session.regions),
+  ]);
   const allowedRegions = orderProgressRegionsForSession(session.regions);
 
   return (

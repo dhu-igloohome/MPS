@@ -6,10 +6,16 @@ import { Region } from "@/lib/types";
 
 const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL || "";
 
+// Pool sizing: serverless functions are typically short-lived and concurrent,
+// so favor a small-but-non-trivial pool. `max: 1` serialized every request.
+const POOL_MAX = Number(process.env.POSTGRES_POOL_MAX) || (process.env.NODE_ENV === "production" ? 10 : 5);
+
 const sql = connectionString
   ? postgres(connectionString, {
       ssl: "require",
-      max: 1,
+      max: POOL_MAX,
+      idle_timeout: 20,
+      max_lifetime: 60 * 30,
     })
   : null;
 
@@ -1113,6 +1119,13 @@ export async function ensureDatabase() {
   }
 
   if (appliedSchemaVersion >= CURRENT_SCHEMA_VERSION) {
+    return;
+  }
+
+  // Opt-out for dev: skip the ~150 idempotent CREATE/ALTER statements on cold start.
+  // Run `npm run db:init` deliberately when you pull a branch that changes schema.
+  if (process.env.SKIP_RUNTIME_BOOTSTRAP === "1") {
+    appliedSchemaVersion = CURRENT_SCHEMA_VERSION;
     return;
   }
 

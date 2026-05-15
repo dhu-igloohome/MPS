@@ -14,9 +14,11 @@ export default async function ForecastPage() {
   if (!session) {
     redirect("/login");
   }
-  const products = await listActiveProducts();
-  const entries = await getForecastsByRegions(session.regions);
-  const cookieStore = await cookies();
+  const [products, entries, cookieStore] = await Promise.all([
+    listActiveProducts(),
+    getForecastsByRegions(session.regions),
+    cookies(),
+  ]);
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
 
   return (

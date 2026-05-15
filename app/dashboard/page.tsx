@@ -24,14 +24,17 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [entries, orderProgressRows, logisticsRows, suppliers, unitCostQuotes] = await Promise.all([
-    getForecastsByRegions(session.regions),
-    listOrderProgressBySessionRegions(session.regions),
-    listLogisticsShipmentsBySession(session),
-    listSuppliers(),
-    listUnitCostQuotes(),
-  ]);
-  const forecastCashFlowRows = await enrichForecastRecordsForCashFlow(entries);
+  // Kick off forecasts first so the dependent enrich step can overlap with the other 4 queries.
+  const entriesPromise = getForecastsByRegions(session.regions);
+  const [entries, orderProgressRows, logisticsRows, suppliers, unitCostQuotes, forecastCashFlowRows] =
+    await Promise.all([
+      entriesPromise,
+      listOrderProgressBySessionRegions(session.regions),
+      listLogisticsShipmentsBySession(session),
+      listSuppliers(),
+      listUnitCostQuotes(),
+      entriesPromise.then(enrichForecastRecordsForCashFlow),
+    ]);
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);

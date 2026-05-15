@@ -24,14 +24,17 @@ export default async function SupplyChainCostControlPage() {
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const [cashFlowEntries, costAnalysisEntries, forecastRecords, suppliers, unitCostQuotes] = await Promise.all([
-    listCashFlowEntries(),
-    listCostAnalysisEntries(),
-    getForecastsByRegions(session.regions),
-    listSuppliers(),
-    listUnitCostQuotes(),
-  ]);
-  const forecastCashFlowRows = await enrichForecastRecordsForCashFlow(forecastRecords);
+  // Kick off forecasts first so the dependent enrich step can overlap with the other 4 queries.
+  const forecastRecordsPromise = getForecastsByRegions(session.regions);
+  const [cashFlowEntries, costAnalysisEntries, forecastRecords, suppliers, unitCostQuotes, forecastCashFlowRows] =
+    await Promise.all([
+      listCashFlowEntries(),
+      listCostAnalysisEntries(),
+      forecastRecordsPromise,
+      listSuppliers(),
+      listUnitCostQuotes(),
+      forecastRecordsPromise.then(enrichForecastRecordsForCashFlow),
+    ]);
   const fcSupplierNames = [
     ...new Set(
       suppliers.filter((s) => s.isActive).map((s) => s.name.trim()).filter(Boolean),
