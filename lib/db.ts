@@ -13,7 +13,9 @@ const sql = connectionString
     })
   : null;
 
-let bootstrapped = false;
+/** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
+const CURRENT_SCHEMA_VERSION = 2;
+let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
 function allOffices() {
@@ -1110,16 +1112,21 @@ export async function ensureDatabase() {
     );
   }
 
-  if (bootstrapped) {
+  if (appliedSchemaVersion >= CURRENT_SCHEMA_VERSION) {
     return;
   }
 
   if (!bootstrapPromise) {
     bootstrapPromise = (async () => {
-      await setupSchema();
-      await seedUsers();
-      await seedOffices();
-      bootstrapped = true;
+      try {
+        await setupSchema();
+        await seedUsers();
+        await seedOffices();
+        appliedSchemaVersion = CURRENT_SCHEMA_VERSION;
+      } catch (err) {
+        bootstrapPromise = null;
+        throw err;
+      }
     })();
   }
 
