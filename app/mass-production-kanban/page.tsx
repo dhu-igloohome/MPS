@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { MassProductionKanbanSection } from "@/components/order-progress/mass-production-kanban-section";
+import { OrderProgressSubnav } from "@/components/order-progress/order-progress-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
 import {
@@ -38,9 +39,10 @@ export default async function MassProductionKanbanPage() {
       title={language === "en" ? "Mass production Kanban" : "量产看板"}
       description={
         language === "en"
-          ? "Part of Order Progress (sidebar: hover Order Progress → Mass production Kanban). SKU-level tracking: quantity, MP, milestone dates by region. Calendar days (Singapore business context)."
-          : "归属订单进度模块（侧栏：悬停「订单进度」→「量产看板」）。按区域维护 SKU、数量、MP 与各节点日期。日期按日历日（业务语境为新加坡）。"
+          ? "Part of Order Progress. SKU-level tracking: quantity, MP, milestone dates by region. Calendar days (Singapore business context)."
+          : "归属订单进度模块。按区域维护 SKU、数量、MP 与各节点日期。日期按日历日（业务语境为新加坡）。"
       }
+      moduleTabs={<OrderProgressSubnav language={language} />}
     >
       {allowedRegions.length === 0 ? (
         <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

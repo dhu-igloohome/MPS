@@ -96,21 +96,6 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
     });
   }, [pathname, items]);
 
-  const onOrderProgressModule =
-    pathname === "/order-progress" ||
-    pathname === "/mass-production-kanban" ||
-    pathname === "/order-progress/production-management";
-
-  const orderProgressNavItem = items.find((i) => i.href === "/order-progress");
-  const orderProgressSubpages = orderProgressNavItem?.children ?? [];
-  const orderProgressActiveChild =
-    orderProgressSubpages.length > 0 ? activeChildHref(pathname, orderProgressSubpages) : null;
-
-  const mobilePill =
-    "shrink-0 rounded-lg border border-transparent px-3.5 py-2 text-sm font-medium tracking-tight text-[#4B5563] transition-colors duration-150 hover:bg-gray-100";
-  const mobileActive =
-    "border-[rgba(238,100,84,0.18)] bg-[var(--app-accent-soft)] text-[var(--app-accent)]";
-
   function isGroupExpanded(item: ShellNavItem): boolean {
     if (!item.children?.length) return false;
     const inBranch = isInNavBranch(pathname, item);
@@ -144,25 +129,7 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
   }
 
   return (
-    <>
-      {language && onOrderProgressModule && orderProgressSubpages.length > 0 ? (
-        <div
-          className="-mx-1 mb-3 flex flex-wrap gap-2 px-1"
-          aria-label={en ? "Order Progress sections" : "订单进度子页面"}
-        >
-          {orderProgressSubpages.map((child) => (
-            <Link
-              key={child.href}
-              href={child.href}
-              className={`${mobilePill} ${orderProgressActiveChild === child.href ? mobileActive : ""}`}
-            >
-              {child.label}
-            </Link>
-          ))}
-        </div>
-      ) : null}
-
-      <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8 lg:gap-10">
+    <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8 lg:gap-10">
         <nav
           className="w-full shrink-0 md:w-56 lg:w-60"
           aria-label="Main navigation"
@@ -271,7 +238,6 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
         </nav>
 
         <section className="min-w-0 flex-1 space-y-5">{children}</section>
-      </div>
-    </>
+    </div>
   );
 }

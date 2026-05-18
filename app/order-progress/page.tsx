@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { OrderProgressPanel } from "@/components/order-progress/order-progress-panel";
+import { OrderProgressSubnav } from "@/components/order-progress/order-progress-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
 import {
@@ -39,9 +40,10 @@ export default async function OrderProgressPage() {
       title={language === "en" ? "Order Progress" : "订单进度"}
       description={
         language === "en"
-          ? "Track order lines by region (independent from Forecast). Mass production Kanban and Production management live under Order Progress in the sidebar (hover the menu). Delivery dates use calendar days (Singapore business context)."
-          : "按区域维护订单行（与 Forecast 独立）。量产看板与生产管理请从侧栏「订单进度」悬停子菜单进入。交货日期按日历日存储（业务语境为新加坡）。"
+          ? "Track order lines by region (independent from Forecast). Use the tabs below to open Mass production Kanban or Production management. Delivery dates use calendar days (Singapore business context)."
+          : "按区域维护订单行（与 Forecast 独立）。可通过下方标签进入量产看板或生产管理。交货日期按日历日存储（业务语境为新加坡）。"
       }
+      moduleTabs={<OrderProgressSubnav language={language} />}
     >
       <OrderProgressPanel
         entries={entries}
