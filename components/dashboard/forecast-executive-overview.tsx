@@ -57,7 +57,7 @@ function PieTooltip({
     <div className="rounded-lg border border-app-border bg-white/95 px-3 py-2 text-xs shadow-[0_8px_24px_rgba(17,24,39,0.08)]">
       <p className="font-medium text-[#111827]">{p.name}</p>
       <p className="tabular-nums text-[#4B5563]">
-        BTO: {formatNum(p.bto)} · BTS: {formatNum(p.bts)}
+        BTO: {formatNum(p.bto)} ? BTS: {formatNum(p.bts)}
       </p>
       <p className="tabular-nums text-[#111827]">{formatNum(p.value)} total</p>
     </div>
