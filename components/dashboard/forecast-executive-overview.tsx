@@ -225,8 +225,10 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     </details>
   );
 
+  const allMonthsActive = selectedForecastMonths === undefined;
+
   const toolbar = (
-    <div className="flex w-full min-w-0 shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+    <div className="flex w-full min-w-0 shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
       {forecastExport ? (
         <a
           href={exportCsvHref || forecastExport.href}
@@ -241,6 +243,20 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
       >
         {t.openForecast}
       </Link>
+      {forecasts.length > 0 ? (
+        <button
+          type="button"
+          title={t.fcMonthHint}
+          className={`inline-flex shrink-0 items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 ${
+            allMonthsActive
+              ? "border-app-accent/50 bg-app-accent-soft text-[#111827] shadow-sm"
+              : "border-app-border bg-white text-foreground/85 hover:border-app-accent/35 hover:bg-app-accent-soft"
+          }`}
+          onClick={() => setSelectedForecastMonths(undefined)}
+        >
+          {t.fcMonthReset}
+        </button>
+      ) : null}
     </div>
   );
 
@@ -259,8 +275,6 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     );
   }
 
-  const allMonthsActive = selectedForecastMonths === undefined;
-
   return (
     <section className="app-card overflow-hidden p-6 shadow-sm">
       <div className="mb-6 min-w-0 border-b border-app-border/60 pb-6">
@@ -271,22 +285,9 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
       </div>
 
       <div className="mb-6 min-w-0 rounded-xl border border-app-border/80 bg-gradient-to-br from-[#fafafa] to-white p-4 shadow-sm sm:p-5">
-        <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <div className="min-w-0" title={t.fcMonthHint}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.fcMonthFilter}</p>
-          </div>
-          <button
-            type="button"
-            className={`shrink-0 rounded-lg border px-3 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 ${
-              allMonthsActive
-                ? "border-app-accent/50 bg-app-accent-soft text-[#111827] shadow-sm"
-                : "border-app-border bg-white text-foreground/85 hover:border-app-accent/35 hover:bg-app-accent-soft"
-            }`}
-            onClick={() => setSelectedForecastMonths(undefined)}
-          >
-            {t.fcMonthReset}
-          </button>
-        </div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]" title={t.fcMonthHint}>
+          {t.fcMonthFilter}
+        </p>
         {availableForecastMonths.length === 0 ? (
           <p className="mt-4 text-sm text-[#9CA3AF]">{t.fcMonthNone}</p>
         ) : (
