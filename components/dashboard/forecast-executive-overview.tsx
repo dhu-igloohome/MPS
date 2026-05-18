@@ -36,7 +36,7 @@ type Props = {
   /** ISO instant from the server; same as dashboard header (cross-ref under title). */
   dataSnapshotAt?: string;
   forecasts: ForecastEntry[];
-  /** When set, shows next to “Open Forecast” in the section toolbar (e.g. CSV export). */
+  /** When set, shows next to ?Open Forecast? in the section toolbar (e.g. CSV export). */
   forecastExport?: { href: string; label: string; snapshotToken?: string };
 };
 
@@ -57,7 +57,7 @@ function PieTooltip({
     <div className="rounded-lg border border-app-border bg-white/95 px-3 py-2 text-xs shadow-[0_8px_24px_rgba(17,24,39,0.08)]">
       <p className="font-medium text-[#111827]">{p.name}</p>
       <p className="tabular-nums text-[#4B5563]">
-        BTO: {formatNum(p.bto)} · BTS: {formatNum(p.bts)}
+        BTO: {formatNum(p.bto)} � BTS: {formatNum(p.bts)}
       </p>
       <p className="tabular-nums text-[#111827]">{formatNum(p.value)} total</p>
     </div>
@@ -82,7 +82,7 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     return max === -Infinity ? null : new Date(max).toISOString();
   }, [forecasts]);
 
-  /** Explicit month selection; `undefined` means “all months in data”. */
+  /** Explicit month selection; `undefined` means ?all months in data?. */
   const [selectedForecastMonths, setSelectedForecastMonths] = useState<string[] | undefined>(undefined);
 
   useEffect(() => {
@@ -124,48 +124,44 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
   }, [filteredForecasts, selectedForecastMonths]);
 
   const t = {
-    title: en ? "Forecast at a glance" : "Forecast 全景",
-    bto: en ? "Build to order" : "按单 (BTO)",
-    bts: en ? "Build to stock" : "备货 (BTS)",
-    total: en ? "Total volume" : "合计数量",
-    rows: en ? "Rows" : "填报行数",
-    sku: en ? "SKUs" : "SKU 数",
-    byRegion: en ? "Volume by region" : "各区域数量占比",
-    topProducts: en ? "Top products by volume" : "产品数量 Top",
-    trend: en ? "Monthly trend (BTO vs BTS)" : "月度走势（BTO / BTS）",
-    empty: en ? "No forecast data yet." : "暂无 Forecast 数据。",
-    openForecast: en ? "Open Forecast" : "打开 Forecast 填报",
-    fcMonthFilter: en ? "Forecast Month" : "Forecast 月份",
+    title: en ? "Forecast at a glance" : "Forecast ??",
+    bto: en ? "Build to order" : "?? (BTO)",
+    bts: en ? "Build to stock" : "?? (BTS)",
+    total: en ? "Total volume" : "????",
+    rows: en ? "Rows" : "????",
+    sku: en ? "SKUs" : "SKU ?",
+    byRegion: en ? "Volume by region" : "???????",
+    topProducts: en ? "Top products by volume" : "???? Top",
+    trend: en ? "Monthly trend (BTO vs BTS)" : "?????BTO / BTS?",
+    empty: en ? "No forecast data yet." : "?? Forecast ???",
+    openForecast: en ? "Open Forecast" : "?? Forecast ??",
+    fcMonthFilter: en ? "Forecast Month" : "Forecast ??",
     fcMonthHint: en
       ? "Choose months to filter KPIs and charts in this section."
-      : "选择月份以筛选本节 KPI 与图表。",
-    fcMonthReset: en ? "All months" : "全部月份",
-    fcMonthNone: en ? "No months match." : "没有符合条件的月份。",
-    chartZoneTotal: en ? "Total volume (chart scope)" : "合计数量（图表区）",
-    chartZoneTotalHint: en
-      ? "Same as Total volume KPI — BTO + BTS for the selected months."
-      : "与上方「合计数量」一致：所选月份 BTO + BTS。",
+      : "????????? KPI ????",
+    fcMonthReset: en ? "All months" : "????",
+    fcMonthNone: en ? "No months match." : "??????????",
     dataContext: en
       ? "Scope: forecast rows in your assigned regions only (same as list permissions)."
-      : "范围：仅包含您有权限区域内的 Forecast 记录（与列表权限一致）。",
-    latestRowLabel: en ? "Latest row (by created time)" : "最新填报（按创建时间）",
-    evidenceHeading: en ? "Three anchors" : "三条读数依据",
-    e1Title: en ? "Unified filter" : "统一筛选",
+      : "?????????????? Forecast ????????????",
+    latestRowLabel: en ? "Latest row (by created time)" : "???????????",
+    evidenceHeading: en ? "Three anchors" : "??????",
+    e1Title: en ? "Unified filter" : "????",
     e1Body: en
       ? "KPIs, region split, product Top, and the trend chart all read from the same Forecast Month selection."
-      : "KPI、区域占比、产品 Top、走势均来自同一组 Forecast 月份筛选后的数据集。",
-    e2Title: en ? "Same scope as the list" : "与列表同源",
+      : "KPI???????? Top????????? Forecast ??????????",
+    e2Title: en ? "Same scope as the list" : "?????",
     e2Body: en
-      ? "Rows are limited to your assigned regions — the same permission mask as the Forecast table."
-      : "行级权限与 Forecast 列表一致，仅展示您被分配区域内的记录。",
-    e3Title: en ? "One total definition" : "合计口径",
+      ? "Rows are limited to your assigned regions ? the same permission mask as the Forecast table."
+      : "????? Forecast ???????????????????",
+    e3Title: en ? "One total definition" : "????",
     e3Body: en
-      ? "Every “total volume” in this section is BTO + BTS for the selected months, including the large chart figure."
-      : "本节所有「合计数量」均为所选月份内 BTO + BTS，含图表区大号数字。",
+      ? "Every ?total volume? in this section is BTO + BTS for the selected months (summary strip and charts)."
+      : "????????????????? BTO + BTS?????????????",
     exportSnapshotHint: en
-      ? "This export carries the same dashboard “as of” instant in CSV metadata. Tabular sections are re-read from the database when you download."
-      : "此导出会在 CSV 元数据中写入与本页「数据截至」一致的快照时间；表格区在您点击下载时会再次从数据库读取。",
-    readingNotesSummary: en ? "Notes" : "说明",
+      ? "This export carries the same dashboard ?as of? instant in CSV metadata. Tabular sections are re-read from the database when you download."
+      : "????? CSV ???????????????????????????????????????????",
+    readingNotesSummary: en ? "Notes" : "??",
   };
 
   const latestRowDisplay = latestRowIso ? formatDataSnapshot(latestRowIso, language) : null;
@@ -213,6 +209,48 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
         ))}
       </div>
       {forecastExport?.snapshotToken ? <p className="text-[11px] text-[#6B7280]">{t.exportSnapshotHint}</p> : null}
+    </div>
+  );
+
+
+  const compactKpiStrip = (
+    <div
+      className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-5"
+      aria-label={en ? "Forecast summary for selected months" : "???? Forecast ??"}
+    >
+      <article className="min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-gradient-to-br from-white to-[#fff4f1]/80 px-3 py-2.5">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bto}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
+          {formatNum(kpi.bto)}
+        </p>
+      </article>
+      <article className="min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-gradient-to-br from-white to-emerald-50/60 px-3 py-2.5">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bts}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
+          {formatNum(kpi.bts)}
+        </p>
+      </article>
+      <article
+        className="min-w-0 overflow-hidden rounded-lg border border-app-accent/35 bg-gradient-to-br from-white to-[#fff4f1]/90 px-3 py-2.5 ring-1 ring-app-accent/15"
+        title={t.e3Body}
+      >
+        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.total}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
+          {formatNum(kpi.total)}
+        </p>
+      </article>
+      <article className="min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-white px-3 py-2.5">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.rows}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
+          {formatNum(kpi.rowCount)}
+        </p>
+      </article>
+      <article className="col-span-2 min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-white px-3 py-2.5 sm:col-span-1">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.sku}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
+          {formatNum(kpi.skuCount)}
+        </p>
+      </article>
     </div>
   );
 
@@ -285,10 +323,12 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
       </div>
 
       <div className="mb-6 min-w-0 rounded-xl border border-app-border/80 bg-gradient-to-br from-[#fafafa] to-white p-4 shadow-sm sm:p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]" title={t.fcMonthHint}>
-          {t.fcMonthFilter}
-        </p>
-        {availableForecastMonths.length === 0 ? (
+        <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,28rem)] lg:items-start lg:gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(20rem,32rem)]">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]" title={t.fcMonthHint}>
+              {t.fcMonthFilter}
+            </p>
+            {availableForecastMonths.length === 0 ? (
           <p className="mt-4 text-sm text-[#9CA3AF]">{t.fcMonthNone}</p>
         ) : (
           <div className="mt-4 min-w-0 overflow-x-auto overscroll-x-contain pb-0.5 [-webkit-overflow-scrolling:touch]">
@@ -335,40 +375,10 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
             </div>
           </div>
         )}
+          </div>
+          <div className="min-w-0 lg:pt-5">{compactKpiStrip}</div>
+        </div>
         {readingNotes}
-      </div>
-
-      <div className="mb-6 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <article className="min-w-0 overflow-hidden rounded-xl border border-app-border/90 bg-gradient-to-br from-white to-[#fff4f1]/80 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bto}</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.bto)}</p>
-        </article>
-        <article className="min-w-0 overflow-hidden rounded-xl border border-app-border/90 bg-gradient-to-br from-white to-emerald-50/60 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bts}</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.bts)}</p>
-        </article>
-        <article className="min-w-0 overflow-hidden rounded-xl border border-app-border/90 bg-white p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.total}</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.total)}</p>
-        </article>
-        <article className="min-w-0 overflow-hidden rounded-xl border border-app-border/90 bg-white p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.rows}</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.rowCount)}</p>
-        </article>
-        <article className="min-w-0 overflow-hidden rounded-xl border border-app-border/90 bg-white p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.sku}</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">{formatNum(kpi.skuCount)}</p>
-        </article>
-      </div>
-
-      <div
-        className="mb-6 min-w-0 overflow-hidden rounded-2xl border border-app-border/90 bg-gradient-to-br from-white via-white to-[#fff4f1]/70 px-5 py-6 sm:px-8 sm:py-7"
-        title={`${t.chartZoneTotal} — ${t.chartZoneTotalHint}`}
-      >
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.chartZoneTotal}</p>
-        <p className="mt-4 text-4xl font-semibold tracking-tight tabular-nums text-[#111827] sm:text-5xl">
-          {formatNum(kpi.total)}
-        </p>
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
