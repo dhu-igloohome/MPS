@@ -132,14 +132,24 @@ export async function AppShell({ session, title, description, headerMeta, module
               Igloo Foretracker | Igloo 订单追踪系统
             </p>
           </div>
-          <div className="flex flex-shrink-0 flex-wrap items-center gap-2.5 sm:gap-3">
-            <span className="max-w-[12rem] truncate text-xs text-app-muted sm:max-w-none sm:text-sm">
-              <span className="hidden sm:inline">{session.displayName}</span>
-              <span className="sm:hidden">{session.displayName.split(/\s+/)[0] || session.displayName}</span>
-              <span className="text-app-subtle"> ({session.role})</span>
-            </span>
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:gap-2.5">
+            <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-app-border/80 bg-white/95 px-2.5 py-1.5 shadow-sm ring-1 ring-black/[0.03] sm:gap-3 sm:px-3">
+              <div
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-app-accent-soft to-white text-xs font-bold text-app-accent ring-1 ring-[rgba(238,100,84,0.2)]"
+                aria-hidden
+              >
+                {(session.displayName.trim()[0] || "U").toUpperCase()}
+              </div>
+              <div className="min-w-0 max-w-[10rem] sm:max-w-[14rem]">
+                <p className="truncate text-sm font-medium text-foreground">
+                  <span className="hidden sm:inline">{session.displayName}</span>
+                  <span className="sm:hidden">{session.displayName.split(/\s+/)[0] || session.displayName}</span>
+                </p>
+                <p className="truncate text-[11px] text-app-muted">{session.role}</p>
+              </div>
+            </div>
             <LanguageToggle language={language} />
-            <LogoutButton />
+            <LogoutButton language={language} />
           </div>
         </div>
       </AutoHideHeader>
