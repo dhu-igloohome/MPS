@@ -125,7 +125,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 - [x] `components/product/product-management.tsx`
 - [x] `components/quality-control/test-case-management.tsx`
 - [ ] `components/quality-control/eight-d-management.tsx`
-- [ ] `components/quality-control/certification-management.tsx`
+- [x] `components/quality-control/certification-management.tsx`
 - [ ] `components/quality-control/ort-report-management.tsx`
 - [ ] `components/admin/user-management.tsx`（低优先级，作对照）
 
