@@ -85,7 +85,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 | `/cost-control` | `cash-flow-dashboard.tsx` 等 | 3+ | 🟡 筛选/表单已 `app-control-*` + `flex-wrap`；宽表 `min-w-[1080–2200px]` 保留横向滚动 | P1 表单完成 |
 | `/supply-chain/cost-control` | 同上 | — | 🟡 同 cost-control（成本分析 + PO 现金流 + 仪表盘筛选） | P1 表单完成 |
 | `/supply-chain/cost-control/unit-cost` | `unit-cost-panel.tsx` | 5 | 🟡 新建/编辑/筛选已 `app-control-*` + `flex-wrap`；历史宽表 `min-w-[840px]` 保留 | P1 表单完成 |
-| `/contracts` · `/supply-chain/contracts` | `contract-management.tsx` | 3 | 🔴 筛选 `select.w-full`（L490/L499）；表 `min-w-[1220px]` | P1 |
+| `/contracts` · `/supply-chain/contracts` | `contract-management.tsx` | 3 | 🟡 创建表单/筛选已 `app-control-*` + `flex-wrap`；表 `min-w-[1220px]` 保留 | P1 表单完成 |
 | `/suppliers` · `/supply-chain/suppliers` | `supplier-management.tsx` | 0 | 🟡 表 `min-w-[1300px]`，表单若新增 select 需按档位 | P2 |
 | `/admin/users` | `user-management.tsx` | 2 | 🟢 创建用户 `select` 无 `w-full`（L349）；表内 role 下拉在单元格内 | P3 |
 | `/admin/products` | `product-management.tsx` | 0 | 🟡 表 `min-w-[1080px]` | P2 |
@@ -113,7 +113,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 - [x] `components/cost-control/cost-analysis-panel.tsx`
 - [x] `components/cost-control/cash-flow-panel.tsx`
 - [x] `components/cost-control/po-cash-flow-panel.tsx`
-- [ ] `components/contract/contract-management.tsx`
+- [x] `components/contract/contract-management.tsx`
 - [ ] `components/logistics/landed-cost-consolidate-panel.tsx`
 - [ ] `components/logistics/shipping-report-panel.tsx`
 - [ ] `components/logistics/inventory-global-panel.tsx`

@@ -5,6 +5,15 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
+  ccInputMd,
+  ccInputSm,
+  ccLabel,
+  ccReadOnly,
+  ccSelectLg,
+  ccSelectMd,
+  ccSelectSm,
+} from "@/components/cost-control/cost-control-form-controls";
+import {
   DOMESTIC_CONTRACT_CURRENCY,
   domesticCnyContractUnitFromUsdBasis,
 } from "@/lib/contract-domestic-pricing";
@@ -287,11 +296,8 @@ export function ContractManagement({
     <div className="min-w-0 space-y-4">
       <section className="min-w-0 overflow-hidden rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-foreground">{t.createTitle}</h3>
-        <form
-          className="mt-4 grid min-w-0 grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          onSubmit={onCreate}
-        >
-          <details className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
+        <form className="mt-4 flex min-w-0 flex-wrap items-end gap-x-3 gap-y-2" onSubmit={onCreate}>
+          <details className="w-full shrink-0 basis-full">
             <summary className="cursor-pointer select-none text-xs text-app-muted hover:text-foreground/80">
               {t.fieldHintsSummary}
             </summary>
@@ -311,7 +317,7 @@ export function ContractManagement({
 
           {orderBlockerText ? (
             <div
-              className="flex min-w-0 flex-col gap-2 rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between lg:col-span-3 xl:col-span-4 dark:border-amber-700/50 dark:bg-amber-950/40"
+              className="flex w-full shrink-0 basis-full flex-col gap-2 rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between dark:border-amber-700/50 dark:bg-amber-950/40"
               role="status"
             >
               <div className="min-w-0">
@@ -329,8 +335,8 @@ export function ContractManagement({
             </div>
           ) : null}
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-app-muted">{t.orderLine}</span>
+          <label className="min-w-0 shrink-0">
+            <span className={ccLabel}>{t.orderLine}</span>
             <select
               value={orderProgressId}
               title={
@@ -339,7 +345,7 @@ export function ContractManagement({
                   : undefined
               }
               onChange={(e) => setOrderProgressId(e.target.value)}
-              className="w-full min-w-0 max-w-full truncate rounded-lg border border-app-border px-3 py-2 text-sm"
+              className={`${ccSelectLg} truncate`}
             >
               {orders.map((o) => (
                 <option
@@ -360,119 +366,114 @@ export function ContractManagement({
               </p>
             ) : null}
           </label>
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-app-muted">{t.supplier}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.supplier}</span>
             <input
               readOnly
               value={orderHint?.cashFlowSupplierName?.trim() ? orderHint.cashFlowSupplierName : "—"}
-              className="w-full min-w-0 rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
+              className={`${ccReadOnly} app-control-md`}
             />
           </label>
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-app-muted">{t.batch}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.batch}</span>
             <input
               value={batch}
               onChange={(e) => setBatch(e.target.value)}
               required
               autoComplete="off"
-              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+              className={ccInputSm}
             />
           </label>
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-app-muted">{t.currency}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.currency}</span>
             <input
               value={currency}
               readOnly={orderHint?.domesticContractBilling === true}
               onChange={(e) => setCurrency(e.target.value.toUpperCase())}
               required
               autoComplete="off"
-              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm read-only:bg-slate-50"
+              className={`${ccInputSm} read-only:bg-slate-50`}
             />
           </label>
-          <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <label className="block min-w-0">
-              <span className="mb-1 block text-sm text-app-muted">
-                {orderHint?.domesticContractBilling ? t.unitPriceDomestic : t.unitPrice}
-              </span>
-              <input
-                readOnly
-                value={
-                  displayContractUnit != null && Number.isFinite(displayContractUnit)
-                    ? displayContractUnit.toFixed(2)
-                    : "—"
-                }
-                className="w-full min-w-0 rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
-              />
-              {orderHint?.domesticContractBilling ? (
-                <p className="mt-1 text-[11px] text-app-muted">{t.domesticUnitHint}</p>
-              ) : null}
-            </label>
-          </div>
-          <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <label className="block min-w-0">
-              <span className="mb-1 block text-sm text-app-muted">{t.paymentTerms}</span>
-              <input
-                readOnly
-                value={orderHint?.paymentTerms?.trim() ? orderHint.paymentTerms : "—"}
-                className="w-full min-w-0 rounded-lg border border-app-border bg-slate-50 px-3 py-2 text-sm text-foreground"
-              />
-            </label>
-          </div>
-          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <span className="mb-1 block text-sm text-app-muted">{t.deliveryAddress}</span>
+          <label
+            className="shrink-0"
+            title={orderHint?.domesticContractBilling ? t.domesticUnitHint : undefined}
+          >
+            <span className={ccLabel}>
+              {orderHint?.domesticContractBilling ? t.unitPriceDomestic : t.unitPrice}
+            </span>
+            <input
+              readOnly
+              value={
+                displayContractUnit != null && Number.isFinite(displayContractUnit)
+                  ? displayContractUnit.toFixed(2)
+                  : "—"
+              }
+              className={`${ccReadOnly} app-control-num tabular-nums`}
+            />
+          </label>
+          <label className="min-w-0 shrink-0">
+            <span className={ccLabel}>{t.paymentTerms}</span>
+            <input
+              readOnly
+              title={orderHint?.paymentTerms?.trim() ? orderHint.paymentTerms : undefined}
+              value={orderHint?.paymentTerms?.trim() ? orderHint.paymentTerms : "—"}
+              className={`${ccReadOnly} app-control-md max-w-[18rem]`}
+            />
+          </label>
+          <label className="w-full shrink-0 basis-full sm:max-w-2xl">
+            <span className={ccLabel}>{t.deliveryAddress}</span>
             <input
               value={deliveryAddress}
               onChange={(e) => setDeliveryAddress(e.target.value)}
               required
               autoComplete="street-address"
               placeholder={t.deliveryAddress}
-              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+              className={`${ccInputMd} max-w-2xl`}
             />
           </label>
-          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <span className="mb-1 block text-sm text-app-muted">{t.remark}</span>
+          <label className="w-full shrink-0 basis-full sm:max-w-xl">
+            <span className={ccLabel}>{t.remark}</span>
             <textarea
               value={remark}
               onChange={(e) => setRemark(e.target.value)}
-              rows={3}
+              rows={2}
               placeholder={t.remark}
-              className="w-full resize-y rounded-lg border border-app-border px-3 py-2 text-sm min-h-[4.5rem]"
+              className="mt-0 w-full min-w-0 max-w-xl resize-y rounded-lg border border-app-border px-2 py-1.5 text-sm min-h-[3rem]"
             />
           </label>
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-app-muted">{t.serialCode}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.serialCode}</span>
             <input
               value={serialCode}
               onChange={(e) => setSerialCode(e.target.value)}
               autoComplete="off"
-              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+              className={ccInputSm}
             />
           </label>
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-app-muted">{t.bluetoothId}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.bluetoothId}</span>
             <input
               value={bluetoothId}
               onChange={(e) => setBluetoothId(e.target.value)}
               autoComplete="off"
-              className="w-full min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+              className={ccInputSm}
             />
           </label>
-          <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <button
-              type="submit"
-              disabled={
-                loading ||
-                !orderProgressId ||
-                !orderHint?.ready ||
-                !batch.trim() ||
-                !currency.trim() ||
-                !deliveryAddress.trim()
-              }
-              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
-            >
-              {t.create}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={
+              loading ||
+              !orderProgressId ||
+              !orderHint?.ready ||
+              !batch.trim() ||
+              !currency.trim() ||
+              !deliveryAddress.trim()
+            }
+            className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
+          >
+            {t.create}
+          </button>
         </form>
         {createFeedback ? (
           <p className={`mt-2 text-sm ${createFeedback.ok ? "text-emerald-700 dark:text-emerald-400" : "text-red-600"}`}>
@@ -483,22 +484,39 @@ export function ContractManagement({
 
       <section className="min-w-0 overflow-hidden rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-foreground">{t.listTitle}</h3>
-        <p className="mt-1 text-xs text-app-muted">{t.approvalHint}</p>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-          <label className="min-w-0 text-sm text-app-muted">
-            {t.filterStatus}
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as "all" | ContractStatus)} className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm text-foreground">
+        <details className="mt-1 text-xs text-app-muted">
+          <summary className="cursor-pointer select-none font-medium text-foreground/80">
+            {en ? "Approval workflow" : "审批流程说明"}
+          </summary>
+          <p className="mt-1 max-w-3xl leading-relaxed">{t.approvalHint}</p>
+        </details>
+        <div className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.filterStatus}</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as "all" | ContractStatus)}
+              className={ccSelectSm}
+            >
               <option value="all">{t.all}</option>
               <option value="draft">{t.draft}</option>
               <option value="approved">{t.approved}</option>
               <option value="sent">{t.sent}</option>
             </select>
           </label>
-          <label className="min-w-0 text-sm text-app-muted">
-            {t.filterSupplier}
-            <select value={supplierFilter} onChange={(e) => setSupplierFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm text-foreground">
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.filterSupplier}</span>
+            <select
+              value={supplierFilter}
+              onChange={(e) => setSupplierFilter(e.target.value)}
+              className={ccSelectMd}
+            >
               <option value="all">{t.all}</option>
-              {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
             </select>
           </label>
         </div>
