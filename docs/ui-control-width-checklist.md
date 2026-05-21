@@ -79,7 +79,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 | `/mass-production-kanban` | `mass-production-kanban-section.tsx` | 2 | 🟡 表单已 `app-control-*` + `flex-wrap`；表 `min-w-[1100px]` 保留 | P2 表单完成 |
 | `/logistics-progress` | `logistics-progress-panel.tsx` | 8 | 🟡 创建/编辑表单已 `app-control-*` + `flex-wrap`；表 `min-w-[1100px]` 保留 | P1 表单完成 |
 | `/logistics-progress/order-fulfillments` | `order-fulfillments-panel.tsx` | 2 | 🔴 单元格常量 `cellInputClass` 含 `w-full min-w-[6.5rem]`（L48–52） | P1 |
-| `/logistics-progress/shipping-report` | `shipping-report-panel.tsx` | 1 | 🔴 表 `min-w-[3200px]`（极宽滚动） | P2 |
+| `/logistics-progress/shipping-report` | `shipping-report-panel.tsx` | 1 | 🟡 录入表单已 `app-control-*` + `flex-wrap`；表 `min-w-[3200px]` 保留 | P2 表单完成 |
 | `/logistics-progress/inventory-global` | `inventory-global-panel.tsx` | 1 | 🔴 表 `min-w-[7200px]` | P2 |
 | `/logistics-progress/landed-cost-consolidate` | `landed-cost-consolidate-panel.tsx` | 2 | 🟡 表 `min-w-[1600px]`；Incoterm 列 `min-w-[6rem]` 相对合理 | P2 |
 | `/cost-control` | `cash-flow-dashboard.tsx` 等 | 3+ | 🟡 筛选/表单已 `app-control-*` + `flex-wrap`；宽表 `min-w-[1080–2200px]` 保留横向滚动 | P1 表单完成 |
@@ -115,7 +115,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 - [x] `components/cost-control/po-cash-flow-panel.tsx`
 - [x] `components/contract/contract-management.tsx`
 - [ ] `components/logistics/landed-cost-consolidate-panel.tsx`
-- [ ] `components/logistics/shipping-report-panel.tsx`
+- [x] `components/logistics/shipping-report-panel.tsx`
 - [ ] `components/logistics/inventory-global-panel.tsx`
 - [x] `components/order-progress/mass-production-kanban-section.tsx`
 - [ ] `components/npi/bom-management.tsx`

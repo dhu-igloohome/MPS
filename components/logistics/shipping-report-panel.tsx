@@ -3,6 +3,13 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  ccDate,
+  ccInputMd,
+  ccInputSm,
+  ccNum,
+  ccSelectSm,
+} from "@/components/cost-control/cost-control-form-controls";
 import type { Language } from "@/lib/i18n";
 import { SHIPPING_REPORT_SKU_OPTIONS } from "@/lib/shipping-report-skus";
 import type { ShippingReportEntry } from "@/lib/types";
@@ -264,46 +271,201 @@ export function ShippingReportPanel({ entries, language }: Props) {
             />
           </div>
         </div>
-        <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" onSubmit={onSubmit}>
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="SN *" value={form.sn} onChange={(e) => setForm((f) => ({ ...f, sn: e.target.value }))} required />
-          <input type="date" className="min-w-0 rounded-lg px-3 py-2 text-sm" value={form.dateReleased ?? ""} onChange={(e) => setForm((f) => ({ ...f, dateReleased: e.target.value || null }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Consignee's company name" value={form.consigneeCompanyName} onChange={(e) => setForm((f) => ({ ...f, consigneeCompanyName: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="DO / GRN Number" value={form.doGrnNumber} onChange={(e) => setForm((f) => ({ ...f, doGrnNumber: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="SO, CO / Reference Number" value={form.soCoReferenceNumber} onChange={(e) => setForm((f) => ({ ...f, soCoReferenceNumber: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="POD Link (SO only)" value={form.podLink} onChange={(e) => setForm((f) => ({ ...f, podLink: e.target.value }))} />
-          <select className="min-w-0 rounded-lg px-3 py-2 text-sm" value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}>
+        <form className="mt-4 flex min-w-0 flex-wrap items-end gap-x-3 gap-y-2" onSubmit={onSubmit}>
+          <input
+            className={ccInputSm}
+            placeholder="SN *"
+            value={form.sn}
+            onChange={(e) => setForm((f) => ({ ...f, sn: e.target.value }))}
+            required
+          />
+          <input
+            type="date"
+            className={ccDate}
+            value={form.dateReleased ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, dateReleased: e.target.value || null }))}
+            title={en ? "Date Released" : "Date Released"}
+          />
+          <input
+            className={`${ccInputMd} max-w-[14rem]`}
+            placeholder="Consignee's company name"
+            value={form.consigneeCompanyName}
+            onChange={(e) => setForm((f) => ({ ...f, consigneeCompanyName: e.target.value }))}
+          />
+          <input
+            className={ccInputMd}
+            placeholder="DO / GRN Number"
+            value={form.doGrnNumber}
+            onChange={(e) => setForm((f) => ({ ...f, doGrnNumber: e.target.value }))}
+          />
+          <input
+            className={ccInputMd}
+            placeholder="SO, CO / Reference Number"
+            value={form.soCoReferenceNumber}
+            onChange={(e) => setForm((f) => ({ ...f, soCoReferenceNumber: e.target.value }))}
+          />
+          <input
+            className={`${ccInputMd} max-w-[16rem]`}
+            placeholder="POD Link (SO only)"
+            value={form.podLink}
+            onChange={(e) => setForm((f) => ({ ...f, podLink: e.target.value }))}
+          />
+          <select className={ccSelectSm} value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}>
             {SHIPPING_REPORT_SKU_OPTIONS.map((sku) => (
               <option key={sku} value={sku}>
                 {sku}
               </option>
             ))}
           </select>
-          <input type="number" min={0} className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Accessory Quantity (optional)" value={form.accessoryQuantity} onChange={(e) => setForm((f) => ({ ...f, accessoryQuantity: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Accessory #" value={form.accessoryNumber} onChange={(e) => setForm((f) => ({ ...f, accessoryNumber: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Request By" value={form.requestBy} onChange={(e) => setForm((f) => ({ ...f, requestBy: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="P/O Number" value={form.poNumber} onChange={(e) => setForm((f) => ({ ...f, poNumber: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="BTO / BTS" value={form.btoBts} onChange={(e) => setForm((f) => ({ ...f, btoBts: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Purpose" value={form.purpose} onChange={(e) => setForm((f) => ({ ...f, purpose: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Ship From" value={form.shipFrom} onChange={(e) => setForm((f) => ({ ...f, shipFrom: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Ship To" value={form.shipTo} onChange={(e) => setForm((f) => ({ ...f, shipTo: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Ship To Region" value={form.shipToRegion} onChange={(e) => setForm((f) => ({ ...f, shipToRegion: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Shipping Mode" value={form.shippingMode} onChange={(e) => setForm((f) => ({ ...f, shippingMode: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Shipping Method" value={form.shippingMethod} onChange={(e) => setForm((f) => ({ ...f, shippingMethod: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Tracking number" value={form.trackingNumber} onChange={(e) => setForm((f) => ({ ...f, trackingNumber: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Cost Centre" value={form.costCentre} onChange={(e) => setForm((f) => ({ ...f, costCentre: e.target.value }))} />
-          <input type="number" min={0} step="0.01" className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Paid by Igloo (optional)" value={form.paidByIgloo} onChange={(e) => setForm((f) => ({ ...f, paidByIgloo: e.target.value }))} />
-          <input type="number" min={0} step="0.01" className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Paid by Customer (optional)" value={form.paidByCustomer} onChange={(e) => setForm((f) => ({ ...f, paidByCustomer: e.target.value }))} />
-          <input type="number" min={0} step="0.01" className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="SGD Paid by Igloo (optional)" value={form.sgdPaidByIgloo} onChange={(e) => setForm((f) => ({ ...f, sgdPaidByIgloo: e.target.value }))} />
-          <input type="number" min={0} step="0.01" className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="SGD Paid by Customer (optional)" value={form.sgdPaidByCustomer} onChange={(e) => setForm((f) => ({ ...f, sgdPaidByCustomer: e.target.value }))} />
-          <input type="number" min={0} step="0.01" className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="USD (optional)" value={form.usd} onChange={(e) => setForm((f) => ({ ...f, usd: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm" placeholder="Product Serial No." value={form.productSerialNo} onChange={(e) => setForm((f) => ({ ...f, productSerialNo: e.target.value }))} />
-          <input className="min-w-0 rounded-lg px-3 py-2 text-sm sm:col-span-2 md:col-span-3 lg:col-span-4" placeholder="Remarks" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} />
-          <div className="flex min-w-0 gap-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
-            <button type="submit" disabled={loading} className="app-button-primary px-4 py-2 text-sm font-medium disabled:opacity-60">
-              {editingId ? (en ? "Save" : "保存") : en ? "Create" : "创建"}
+          <input
+            type="number"
+            min={0}
+            className={ccNum}
+            placeholder="Accessory Qty"
+            value={form.accessoryQuantity}
+            onChange={(e) => setForm((f) => ({ ...f, accessoryQuantity: e.target.value }))}
+          />
+          <input
+            className={ccInputSm}
+            placeholder="Accessory #"
+            value={form.accessoryNumber}
+            onChange={(e) => setForm((f) => ({ ...f, accessoryNumber: e.target.value }))}
+          />
+          <input
+            className={ccInputSm}
+            placeholder="Request By"
+            value={form.requestBy}
+            onChange={(e) => setForm((f) => ({ ...f, requestBy: e.target.value }))}
+          />
+          <input
+            className={ccInputMd}
+            placeholder="P/O Number"
+            value={form.poNumber}
+            onChange={(e) => setForm((f) => ({ ...f, poNumber: e.target.value }))}
+          />
+          <input
+            className={ccInputSm}
+            placeholder="BTO / BTS"
+            value={form.btoBts}
+            onChange={(e) => setForm((f) => ({ ...f, btoBts: e.target.value }))}
+          />
+          <input
+            className={ccInputSm}
+            placeholder="Purpose"
+            value={form.purpose}
+            onChange={(e) => setForm((f) => ({ ...f, purpose: e.target.value }))}
+          />
+          <input
+            className={ccInputSm}
+            placeholder="Ship From"
+            value={form.shipFrom}
+            onChange={(e) => setForm((f) => ({ ...f, shipFrom: e.target.value }))}
+          />
+          <input
+            className={ccInputSm}
+            placeholder="Ship To"
+            value={form.shipTo}
+            onChange={(e) => setForm((f) => ({ ...f, shipTo: e.target.value }))}
+          />
+          <input
+            className={ccInputSm}
+            placeholder="Ship To Region"
+            value={form.shipToRegion}
+            onChange={(e) => setForm((f) => ({ ...f, shipToRegion: e.target.value }))}
+          />
+          <input
+            className={ccInputSm}
+            placeholder="Shipping Mode"
+            value={form.shippingMode}
+            onChange={(e) => setForm((f) => ({ ...f, shippingMode: e.target.value }))}
+          />
+          <input
+            className={ccInputSm}
+            placeholder="Shipping Method"
+            value={form.shippingMethod}
+            onChange={(e) => setForm((f) => ({ ...f, shippingMethod: e.target.value }))}
+          />
+          <input
+            className={ccInputMd}
+            placeholder="Tracking number"
+            value={form.trackingNumber}
+            onChange={(e) => setForm((f) => ({ ...f, trackingNumber: e.target.value }))}
+          />
+          <input
+            className={ccInputSm}
+            placeholder="Cost Centre"
+            value={form.costCentre}
+            onChange={(e) => setForm((f) => ({ ...f, costCentre: e.target.value }))}
+          />
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            className={ccNum}
+            placeholder="Paid by Igloo"
+            value={form.paidByIgloo}
+            onChange={(e) => setForm((f) => ({ ...f, paidByIgloo: e.target.value }))}
+          />
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            className={ccNum}
+            placeholder="Paid by Customer"
+            value={form.paidByCustomer}
+            onChange={(e) => setForm((f) => ({ ...f, paidByCustomer: e.target.value }))}
+          />
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            className={ccNum}
+            placeholder="SGD Paid by Igloo"
+            value={form.sgdPaidByIgloo}
+            onChange={(e) => setForm((f) => ({ ...f, sgdPaidByIgloo: e.target.value }))}
+          />
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            className={ccNum}
+            placeholder="SGD Paid by Customer"
+            value={form.sgdPaidByCustomer}
+            onChange={(e) => setForm((f) => ({ ...f, sgdPaidByCustomer: e.target.value }))}
+          />
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            className={ccNum}
+            placeholder="USD"
+            value={form.usd}
+            onChange={(e) => setForm((f) => ({ ...f, usd: e.target.value }))}
+          />
+          <input
+            className={ccInputMd}
+            placeholder="Product Serial No."
+            value={form.productSerialNo}
+            onChange={(e) => setForm((f) => ({ ...f, productSerialNo: e.target.value }))}
+          />
+          <input
+            className={`${ccInputMd} w-full min-w-0 max-w-2xl basis-full`}
+            placeholder="Remarks"
+            value={form.remarks}
+            onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="app-button-primary shrink-0 px-4 py-2 text-sm font-medium disabled:opacity-60"
+          >
+            {editingId ? (en ? "Save" : "保存") : en ? "Create" : "创建"}
+          </button>
+          {editingId ? (
+            <button type="button" onClick={resetForm} className="app-button-secondary shrink-0 px-4 py-2 text-sm">
+              {en ? "Cancel" : "取消"}
             </button>
-            {editingId ? <button type="button" onClick={resetForm} className="app-button-secondary px-4 py-2 text-sm">{en ? "Cancel" : "取消"}</button> : null}
-          </div>
+          ) : null}
         </form>
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
