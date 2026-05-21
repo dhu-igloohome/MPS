@@ -102,7 +102,7 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-[#F9FAFB] px-4 py-10">
-      <section className="w-full max-w-md rounded-2xl border border-app-border/90 bg-white p-6 shadow-[0_20px_40px_rgba(17,24,39,0.06)] sm:p-8">
+      <section className="w-full max-w-xl rounded-2xl border border-app-border/90 bg-white p-6 shadow-[0_20px_40px_rgba(17,24,39,0.06)] sm:p-8 sm:px-10">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="space-y-2">
             <Image
