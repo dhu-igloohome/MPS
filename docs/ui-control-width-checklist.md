@@ -123,7 +123,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 - [x] `components/npi/sop-management.tsx`
 - [x] `components/npi/tooling-management.tsx`
 - [x] `components/product/product-management.tsx`
-- [ ] `components/quality-control/test-case-management.tsx`
+- [x] `components/quality-control/test-case-management.tsx`
 - [ ] `components/quality-control/eight-d-management.tsx`
 - [ ] `components/quality-control/certification-management.tsx`
 - [ ] `components/quality-control/ort-report-management.tsx`
