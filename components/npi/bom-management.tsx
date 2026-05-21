@@ -3,6 +3,13 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  ccDate,
+  ccInputMd,
+  ccInputSm,
+  ccNum,
+  ccSelectSm,
+} from "@/components/cost-control/cost-control-form-controls";
 import type { Language } from "@/lib/i18n";
 import type { BomEntry, BomStatus } from "@/lib/types";
 
@@ -179,48 +186,64 @@ export function BomManagement({ entries, language }: BomManagementProps) {
     <div className="space-y-4">
       <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.title}</h3>
-        <p className="mt-1 text-sm text-app-muted">{t.subtitle}</p>
-        {editing ? <p className="mt-2 text-xs text-app-muted">Editing: {editing.sku} · {editing.componentCode}</p> : null}
+        <details className="mt-1 text-sm text-app-muted">
+          <summary className="cursor-pointer select-none font-medium text-foreground/80">
+            {language === "en" ? "About BOM" : "BOM 说明"}
+          </summary>
+          <p className="mt-1 max-w-3xl leading-relaxed">{t.subtitle}</p>
+        </details>
+        {editing ? (
+          <p className="mt-2 text-xs text-app-muted">
+            {language === "en" ? "Editing" : "编辑中"}: {editing.sku} · {editing.componentCode}
+          </p>
+        ) : null}
 
-        <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" onSubmit={onSubmit}>
-          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.projectName} onChange={(e) => setForm((f) => ({ ...f, projectName: e.target.value }))} placeholder="Project name" />
-          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value.toUpperCase() }))} placeholder="SKU *" required />
-          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.bomVersion} onChange={(e) => setForm((f) => ({ ...f, bomVersion: e.target.value }))} placeholder="BOM version" />
-          <select className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as BomStatus }))}>
+        <form className="mt-4 flex min-w-0 flex-wrap items-end gap-x-3 gap-y-2" onSubmit={onSubmit}>
+          <input className={ccInputMd} value={form.projectName} onChange={(e) => setForm((f) => ({ ...f, projectName: e.target.value }))} placeholder="Project name" />
+          <input className={ccInputSm} value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value.toUpperCase() }))} placeholder="SKU *" required />
+          <input className={ccInputSm} value={form.bomVersion} onChange={(e) => setForm((f) => ({ ...f, bomVersion: e.target.value }))} placeholder="BOM version" />
+          <select className={ccSelectSm} value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as BomStatus }))}>
             <option value="draft">draft</option>
             <option value="released">released</option>
             <option value="obsolete">obsolete</option>
           </select>
-          <input type="date" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.effectiveDate} onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))} />
-          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.componentCode} onChange={(e) => setForm((f) => ({ ...f, componentCode: e.target.value.toUpperCase() }))} placeholder="Component code *" required />
-          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.componentName} onChange={(e) => setForm((f) => ({ ...f, componentName: e.target.value }))} placeholder="Component name *" required />
-          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.specification} onChange={(e) => setForm((f) => ({ ...f, specification: e.target.value }))} placeholder="Specification" />
-          <input type="number" min={0} step="0.0001" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.quantityPer} onChange={(e) => setForm((f) => ({ ...f, quantityPer: e.target.value }))} placeholder="Qty per (default 0)" />
-          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.uom} onChange={(e) => setForm((f) => ({ ...f, uom: e.target.value.toUpperCase() }))} placeholder="UOM" />
-          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} placeholder="Supplier name" />
-          <input type="number" min={0} step="0.0001" className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.unitCost} onChange={(e) => setForm((f) => ({ ...f, unitCost: e.target.value }))} placeholder="Unit cost (optional)" />
-          <input type="number" min={0} step={1} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.moq} onChange={(e) => setForm((f) => ({ ...f, moq: e.target.value }))} placeholder="MOQ (0 = no MOQ)" />
-          <input type="number" min={0} step={1} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" value={form.leadTimeDays} onChange={(e) => setForm((f) => ({ ...f, leadTimeDays: e.target.value }))} placeholder="Lead time days (0 = unknown)" />
-          <label className="flex min-w-0 items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm">
+          <input type="date" className={ccDate} value={form.effectiveDate} onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))} />
+          <input className={ccInputSm} value={form.componentCode} onChange={(e) => setForm((f) => ({ ...f, componentCode: e.target.value.toUpperCase() }))} placeholder="Component code *" required />
+          <input className={ccInputMd} value={form.componentName} onChange={(e) => setForm((f) => ({ ...f, componentName: e.target.value }))} placeholder="Component name *" required />
+          <input className={ccInputMd} value={form.specification} onChange={(e) => setForm((f) => ({ ...f, specification: e.target.value }))} placeholder="Specification" />
+          <input type="number" min={0} step="0.0001" className={ccNum} value={form.quantityPer} onChange={(e) => setForm((f) => ({ ...f, quantityPer: e.target.value }))} placeholder="Qty per" title="Qty per (default 0)" />
+          <input className={ccInputSm} value={form.uom} onChange={(e) => setForm((f) => ({ ...f, uom: e.target.value.toUpperCase() }))} placeholder="UOM" />
+          <input className={ccInputMd} value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} placeholder="Supplier name" />
+          <input type="number" min={0} step="0.0001" className={ccNum} value={form.unitCost} onChange={(e) => setForm((f) => ({ ...f, unitCost: e.target.value }))} placeholder="Unit cost" title="Unit cost (optional)" />
+          <input type="number" min={0} step={1} className={ccNum} value={form.moq} onChange={(e) => setForm((f) => ({ ...f, moq: e.target.value }))} placeholder="MOQ" title="MOQ (0 = no MOQ)" />
+          <input type="number" min={0} step={1} className={ccNum} value={form.leadTimeDays} onChange={(e) => setForm((f) => ({ ...f, leadTimeDays: e.target.value }))} placeholder="Lead days" title="Lead time days (0 = unknown)" />
+          <label className="flex shrink-0 items-center gap-2 rounded-lg border border-app-border px-2 py-1.5 text-xs">
             <input type="checkbox" checked={form.isCritical} onChange={(e) => setForm((f) => ({ ...f, isCritical: e.target.checked }))} />
             Critical part
           </label>
-          <input className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm sm:col-span-2 md:col-span-3 lg:col-span-4" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} placeholder="Remarks" />
-          <div className="flex min-w-0 gap-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
-            <button type="submit" disabled={loading} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">
-              {editingId ? t.save : t.create}
+          <input
+            className={`${ccInputMd} w-full min-w-0 max-w-2xl basis-full`}
+            value={form.remarks}
+            onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
+            placeholder="Remarks"
+          />
+          <button type="submit" disabled={loading} className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">
+            {editingId ? t.save : t.create}
+          </button>
+          {editingId ? (
+            <button type="button" className="shrink-0 rounded-lg border border-app-border px-4 py-2 text-sm" onClick={resetForm}>
+              {t.cancel}
             </button>
-            {editingId ? <button type="button" className="rounded-lg border border-app-border px-4 py-2 text-sm" onClick={resetForm}>{t.cancel}</button> : null}
-          </div>
+          ) : null}
         </form>
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
       </section>
 
       <section className="app-card p-5">
-        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="mb-3 flex flex-wrap items-end gap-x-3 gap-y-2">
           <input
-            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
-            placeholder={language === "en" ? "Quick search: SKU / component / supplier" : "快速搜索：SKU/料号/供应商"}
+            className={`${ccInputMd} max-w-[16rem]`}
+            placeholder={language === "en" ? "Search SKU / component / supplier" : "搜索 SKU/料号/供应商"}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -228,7 +251,7 @@ export function BomManagement({ entries, language }: BomManagementProps) {
             }}
           />
           <select
-            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+            className={ccSelectSm}
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value as "all" | BomStatus);
@@ -241,7 +264,7 @@ export function BomManagement({ entries, language }: BomManagementProps) {
             <option value="obsolete">obsolete</option>
           </select>
           <select
-            className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm"
+            className={ccSelectSm}
             value={criticalFilter}
             onChange={(e) => {
               setCriticalFilter(e.target.value as "all" | "critical" | "non_critical");
@@ -252,9 +275,9 @@ export function BomManagement({ entries, language }: BomManagementProps) {
             <option value="critical">critical only</option>
             <option value="non_critical">non-critical only</option>
           </select>
-          <div className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-muted">
+          <span className="shrink-0 rounded-lg border border-app-border px-2 py-1.5 text-xs text-app-muted">
             {filteredEntries.length} {language === "en" ? "records" : "条记录"}
-          </div>
+          </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1500px] border-collapse text-sm">
