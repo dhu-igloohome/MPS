@@ -178,6 +178,10 @@ export function ForecastForm({
         : "CSV：需表头；forecast number 自动生成；incoterm 可选（默认 EXW，或 EXW/FOB/DAP/DDP）。\nAPI：按所选月份与区域从 SKU Tracker 写入 BTO；forecast number 自动生成。",
     skuLines: language === "en" ? "SKU lines" : "SKU 明细",
     addLine: language === "en" ? "Add line" : "加一行",
+    addLineHint:
+      language === "en"
+        ? "Add another SKU row before saving this forecast."
+        : "保存前可继续添加 SKU 行。",
     lineNo: language === "en" ? "#" : "序",
     incoterm: language === "en" ? "Incoterm" : "贸易术语 (Incoterm)",
     batchHint:
@@ -375,6 +379,10 @@ export function ForecastForm({
           : line,
       ),
     );
+  }
+
+  function addSkuLine() {
+    setLines((prev) => [...prev, newDraftForecastLine(products)]);
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -779,15 +787,18 @@ export function ForecastForm({
           </div>
 
           <div className="min-w-0 md:col-span-12">
-            <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-app-muted">{t.skuLines}</span>
+            <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-app-accent/25 bg-app-accent-soft/35 px-3 py-2">
+              <div className="min-w-0">
+                <span className="text-xs font-semibold uppercase tracking-wide text-foreground/80">{t.skuLines}</span>
+                <p className="mt-0.5 text-[11px] text-app-muted">{t.addLineHint}</p>
+              </div>
               <button
                 type="button"
-                onClick={() => setLines((prev) => [...prev, newDraftForecastLine(products)])}
+                onClick={addSkuLine}
                 disabled={products.length === 0}
-                className="app-button-secondary inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+                className="app-button-primary inline-flex shrink-0 items-center gap-1.5 px-3.5 py-2 text-sm font-semibold shadow-sm transition duration-150 ease-out hover:-translate-y-px hover:shadow-md active:translate-y-0 disabled:opacity-50"
               >
-                <Plus size={15} strokeWidth={1.5} />
+                <Plus size={16} strokeWidth={2} />
                 {t.addLine}
               </button>
             </div>
@@ -957,6 +968,21 @@ export function ForecastForm({
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={9} className="p-0">
+                        <button
+                          type="button"
+                          onClick={addSkuLine}
+                          disabled={products.length === 0}
+                          className="flex w-full items-center justify-center gap-2 border-t-2 border-dashed border-app-accent/40 bg-app-accent-soft/25 px-3 py-3 text-sm font-semibold text-app-accent transition duration-150 ease-out hover:bg-app-accent-soft/50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Plus size={16} strokeWidth={2} />
+                          {t.addLine}
+                        </button>
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>
