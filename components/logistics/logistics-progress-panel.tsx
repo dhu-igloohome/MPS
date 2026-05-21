@@ -4,6 +4,15 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import {
+  ccInputMd,
+  ccInputSm,
+  ccLabel,
+  ccNum,
+  ccSelectLg,
+  ccSelectMd,
+  ccSelectSm,
+} from "@/components/cost-control/cost-control-form-controls";
 import { Language } from "@/lib/i18n";
 import type {
   ForecastEntry,
@@ -307,7 +316,12 @@ export function LogisticsProgressPanel({
     <div className="space-y-6">
       <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-[#111827]">{t.formTitle}</h3>
-        <p className="mt-2 text-sm text-[#4B5563]">{t.hintRecordOnly}</p>
+        <details className="mt-2 text-xs text-app-muted">
+          <summary className="cursor-pointer select-none font-medium text-foreground/80">
+            {language === "en" ? "Record-keeping rules" : "记录规则说明"}
+          </summary>
+          <p className="mt-1 max-w-3xl leading-relaxed">{t.hintRecordOnly}</p>
+        </details>
         {products.length === 0 ? (
           <p className="mt-2 text-sm text-amber-800">
             {language === "en"
@@ -316,17 +330,14 @@ export function LogisticsProgressPanel({
           </p>
         ) : null}
 
-        <form
-          className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          onSubmit={onSubmit}
-        >
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.movementType}</span>
+        <form className="mt-4 flex min-w-0 flex-wrap items-end gap-x-3 gap-y-2" onSubmit={onSubmit}>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.movementType}</span>
             <select
               value={movementType}
               onChange={(e) => applyMovementType(e.target.value as LogisticsMovementType)}
               disabled={products.length === 0}
-              className="w-full max-w-md px-3 py-2 text-sm"
+              className={ccSelectMd}
             >
               {MOVEMENT_TYPES.map((m) => (
                 <option key={m} value={m}>
@@ -336,13 +347,13 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.from}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.from}</span>
             <select
               value={fromLocation}
               onChange={(e) => setFromLocation(e.target.value as LogisticsLocation)}
               disabled={movementType === "inbound" || products.length === 0}
-              className="w-full px-3 py-2 text-sm"
+              className={ccSelectSm}
             >
               {(movementType === "inbound" ? (["FACTORY"] as const) : OFFICE_LOCATIONS).map((loc) => (
                 <option key={loc} value={loc}>
@@ -352,13 +363,13 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.to}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.to}</span>
             <select
               value={toLocation}
               onChange={(e) => setToLocation(e.target.value as LogisticsLocation)}
               disabled={products.length === 0}
-              className="w-full px-3 py-2 text-sm"
+              className={ccSelectSm}
             >
               {OFFICE_LOCATIONS.map((loc) => (
                 <option key={loc} value={loc}>
@@ -368,14 +379,14 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.productName}</span>
             <select
               value={resolvedProductName}
               onChange={(e) => onProductNameChange(e.target.value)}
               required
               disabled={products.length === 0}
-              className="w-full px-3 py-2 text-sm"
+              className={ccSelectMd}
             >
               {productNameOptions.map((name) => (
                 <option key={name} value={name}>
@@ -385,8 +396,8 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.sku}</span>
             <select
               value={resolvedSku}
               onChange={(e) => {
@@ -399,7 +410,7 @@ export function LogisticsProgressPanel({
               }}
               required
               disabled={products.length === 0}
-              className="w-full px-3 py-2 text-sm"
+              className={ccSelectSm}
             >
               {skuOptions.map((p) => (
                 <option key={p.sku} value={p.sku}>
@@ -408,13 +419,13 @@ export function LogisticsProgressPanel({
               ))}
             </select>
           </label>
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.poNumber}</span>
+          <label className="shrink-0" title={t.poHint}>
+            <span className={ccLabel}>{t.poNumber}</span>
             <select
               value={resolvedPoNumber}
               onChange={(e) => onPoNumberChange(e.target.value)}
               required
-              className="w-full px-3 py-2 text-sm"
+              className={ccSelectMd}
             >
               {poOptions.map((po) => (
                 <option key={po} value={po}>
@@ -422,11 +433,10 @@ export function LogisticsProgressPanel({
                 </option>
               ))}
             </select>
-            <span className="mt-1 block text-xs text-app-muted">{t.poHint}</span>
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.quantity}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.quantity}</span>
             <input
               type="number"
               min={0}
@@ -434,16 +444,16 @@ export function LogisticsProgressPanel({
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               required
-              className="w-full px-3 py-2 text-sm"
+              className={ccNum}
             />
           </label>
 
-          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <span className="mb-1 block text-sm text-foreground/85">{t.orderLine}</span>
+          <label className="min-w-0 shrink-0">
+            <span className={ccLabel}>{t.orderLine}</span>
             <select
               value={orderProgressId}
               onChange={(e) => setOrderProgressId(e.target.value)}
-              className="w-full px-3 py-2 text-sm"
+              className={ccSelectLg}
             >
               <option value="">{t.orderLineNone}</option>
               {orderLines.map((line) => (
@@ -454,32 +464,32 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.trackingNumber}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.trackingNumber}</span>
             <input
               value={trackingNumber}
               onChange={(e) => setTrackingNumber(e.target.value)}
               maxLength={200}
-              className="w-full px-3 py-2 text-sm"
+              className={ccInputMd}
             />
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.carrier}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.carrier}</span>
             <input
               value={carrier}
               onChange={(e) => setCarrier(e.target.value)}
               maxLength={120}
-              className="w-full px-3 py-2 text-sm"
+              className={ccInputSm}
             />
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.status}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.status}</span>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as LogisticsShipmentStatus)}
-              className="w-full px-3 py-2 text-sm"
+              className={ccSelectSm}
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -489,35 +499,33 @@ export function LogisticsProgressPanel({
             </select>
           </label>
 
-          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <span className="mb-1 block text-sm text-foreground/85">{t.notes}</span>
+          <label className="w-full shrink-0 basis-full sm:max-w-xl">
+            <span className={ccLabel}>{t.notes}</span>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               maxLength={2000}
-              className="w-full px-3 py-2 text-sm"
+              className="mt-0 w-full min-w-0 max-w-xl rounded-lg border border-app-border px-2 py-1.5 text-sm"
             />
           </label>
 
-          <div className="flex min-w-0 flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-3 xl:col-span-4">
+          <button
+            type="submit"
+            disabled={loading || products.length === 0}
+            className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+          >
+            {loading ? "..." : editingId ? t.save : t.create}
+          </button>
+          {editingId ? (
             <button
-              type="submit"
-              disabled={loading || products.length === 0}
-              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+              type="button"
+              onClick={resetForm}
+              className="app-button-secondary shrink-0 px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
             >
-              {loading ? "..." : editingId ? t.save : t.create}
+              {t.cancelEdit}
             </button>
-            {editingId ? (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="app-button-secondary px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
-              >
-                {t.cancelEdit}
-              </button>
-            ) : null}
-          </div>
+          ) : null}
         </form>
 
         {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
