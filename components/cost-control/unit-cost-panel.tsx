@@ -11,6 +11,7 @@ import {
   ccSelectMd,
   ccSelectSm,
 } from "@/components/cost-control/cost-control-form-controls";
+import { TableCellLongText } from "@/components/shared/table-cell-long-text";
 import type { Language } from "@/lib/i18n";
 import type { ProductItem, SupplierEntry, UnitCostQuoteEntry } from "@/lib/types";
 
@@ -88,6 +89,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     deleteConfirm: en ? "Confirm delete" : "确认删除",
     deleting: en ? "Deleting…" : "删除中…",
     deleteReasonRequired: en ? "Deletion reason is required." : "请填写删除原因。",
+    viewFullReason: en ? "View full" : "查看全文",
+    reasonDetailTitle: en ? "Quotation reason" : "报价理由",
   };
 
   const skuOptions = useMemo(() => {
@@ -713,7 +716,14 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                     <td className="whitespace-nowrap px-2 py-2">{row.taxIncluded ? t.yes : t.no}</td>
                     <td className="max-w-[10rem] truncate px-2 py-2">{row.supplierName}</td>
                     <td className="max-w-[8rem] truncate px-2 py-2">{row.manufacturerCountry || "—"}</td>
-                    <td className="max-w-[14rem] truncate px-2 py-2 text-app-muted">{row.creationReason || "—"}</td>
+                    <td className="px-2 py-2 align-top">
+                      <TableCellLongText
+                        text={row.creationReason}
+                        viewLabel={t.viewFullReason}
+                        dialogTitle={t.reasonDetailTitle}
+                        closeLabel={t.cancel}
+                      />
+                    </td>
                     <td className="whitespace-nowrap px-2 py-2">{row.createdBy}</td>
                     <td className="whitespace-nowrap px-2 py-2 tabular-nums text-app-muted">
                       {row.createdAt.slice(0, 19).replace("T", " ")}
