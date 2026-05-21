@@ -14,6 +14,7 @@ import {
   forecastIncotermHint,
   type ForecastIncoterm,
 } from "@/lib/forecast-incoterm";
+import { TableCellLongText } from "@/components/shared/table-cell-long-text";
 import { Language } from "@/lib/i18n";
 import { ForecastEntry, ProductItem, Region } from "@/lib/types";
 
@@ -187,6 +188,8 @@ export function ForecastForm({
       language === "en"
         ? "Add another SKU row before saving this forecast."
         : "保存前可继续添加 SKU 行。",
+    viewFullText: language === "en" ? "View full" : "查看全文",
+    close: language === "en" ? "Close" : "关闭",
     lineNo: language === "en" ? "#" : "序",
     incoterm: language === "en" ? "Incoterm" : "贸易术语 (Incoterm)",
     batchHint:
@@ -817,16 +820,16 @@ export function ForecastForm({
             </div>
             <div className="app-table-shell overflow-hidden rounded-xl border border-app-border/90">
               <div className="overflow-x-auto">
-                <table className="app-table w-full table-fixed text-sm">
+                <table className="app-table w-full min-w-[52rem] table-fixed text-sm">
                   <colgroup>
                     <col className="w-8" />
                     <col className="w-[5.5rem]" />
-                    <col />
-                    <col className="w-[9.5rem]" />
+                    <col className="w-[11rem]" />
+                    <col className="w-[10.5rem]" />
                     <col className="w-[4.75rem]" />
                     <col className="w-[4.5rem]" />
                     <col className="w-[4.5rem]" />
-                    <col className="w-[7.5rem]" />
+                    <col className="w-[14rem]" />
                     <col className="w-9" />
                   </colgroup>
                   <thead>
@@ -861,13 +864,14 @@ export function ForecastForm({
                             ))}
                           </select>
                         </td>
-                        <td>
-                          <input
-                            value={line.productName}
-                            readOnly
-                            title={line.productName}
-                            className="w-full min-w-0 max-w-full truncate rounded-lg border border-app-border bg-slate-50/80 px-2 py-1.5 text-sm"
-                            aria-label={t.productName}
+                        <td className="max-w-[11rem]">
+                          <TableCellLongText
+                            text={line.productName}
+                            maxWidthClass="max-w-[10.5rem]"
+                            viewLabel={t.viewFullText}
+                            dialogTitle={t.productName}
+                            closeLabel={t.close}
+                            expandThreshold={20}
                           />
                         </td>
                         <td>
@@ -951,9 +955,9 @@ export function ForecastForm({
                             aria-label={t.bts}
                           />
                         </td>
-                        <td>
-                          <input
-                            type="text"
+                        <td className="min-w-[14rem]">
+                          <textarea
+                            rows={2}
                             value={line.remark}
                             onChange={(event) =>
                               setLines((prev) =>
@@ -961,7 +965,7 @@ export function ForecastForm({
                               )
                             }
                             placeholder={language === "en" ? "Optional" : "可选"}
-                            className="w-full min-w-0 max-w-full px-2 py-1.5 text-sm"
+                            className="w-full min-w-0 resize-y rounded-lg border border-app-border bg-white px-2 py-1.5 text-sm leading-snug"
                             aria-label={t.remark}
                           />
                         </td>
