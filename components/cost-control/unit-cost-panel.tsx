@@ -3,6 +3,14 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  ccDate,
+  ccInputSm,
+  ccLabel,
+  ccNum,
+  ccSelectMd,
+  ccSelectSm,
+} from "@/components/cost-control/cost-control-form-controls";
 import type { Language } from "@/lib/i18n";
 import type { ProductItem, SupplierEntry, UnitCostQuoteEntry } from "@/lib/types";
 
@@ -336,15 +344,24 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     router.refresh();
   }
 
+  const skuInputClass = duplicateSku
+    ? `${ccInputSm} border-amber-300 bg-amber-50/60`
+    : `${ccInputSm} border-app-border`;
+
   return (
     <div className="space-y-8">
-      <p className="text-sm text-app-muted">{t.hint}</p>
+      <details className="text-xs text-app-muted">
+        <summary className="cursor-pointer select-none font-medium text-foreground/80">
+          {en ? "Unit cost & landed cost workflow" : "单位成本与到岸成本说明"}
+        </summary>
+        <p className="mt-1 max-w-3xl leading-relaxed">{t.hint}</p>
+      </details>
 
       <section>
         <h3 className="mb-3 text-base font-semibold text-foreground">{t.title}</h3>
-        <form onSubmit={onSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
+        <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-x-3 gap-y-2">
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.sku}</span>
             <input
               list="unit-cost-sku-options"
               value={sku}
@@ -354,9 +371,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               }}
               required
               aria-describedby={duplicateSku || checkingDuplicateSku ? "unit-cost-duplicate-sku-hint" : undefined}
-              className={`w-full rounded-lg border px-3 py-2 text-sm ${
-                duplicateSku ? "border-amber-300 bg-amber-50/60" : "border-app-border"
-              }`}
+              className={skuInputClass}
               placeholder={en ? "e.g. IGB4E" : "例如 IGB4E"}
             />
             <datalist id="unit-cost-sku-options">
@@ -375,21 +390,21 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
             ) : null}
           </label>
           {duplicateSku ? (
-            <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-              <span className="mb-1 block text-sm text-foreground/85">{t.duplicateReason}</span>
+            <label className="min-w-0 w-full shrink-0 basis-full">
+              <span className={ccLabel}>{t.duplicateReason}</span>
               <textarea
                 value={creationReason}
                 onChange={(e) => setCreationReason(e.target.value)}
                 required={duplicateSku}
                 maxLength={500}
-                rows={3}
-                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                rows={2}
+                className="mt-0 w-full min-w-0 max-w-xl rounded-lg border border-app-border px-2 py-1.5 text-sm"
                 placeholder={t.duplicateReasonPlaceholder}
               />
             </label>
           ) : null}
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.unitPrice}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.unitPrice}</span>
             <input
               type="number"
               min={0}
@@ -397,25 +412,25 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               value={unitPrice}
               onChange={(e) => setUnitPrice(e.target.value)}
               required
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+              className={ccNum}
             />
           </label>
-          <label className="flex min-w-0 items-end gap-2 pb-0.5">
+          <label className="flex shrink-0 items-end gap-2 pb-1">
             <input
               type="checkbox"
               checked={taxIncluded}
               onChange={(e) => setTaxIncluded(e.target.checked)}
               className="h-4 w-4 rounded border-app-border"
             />
-            <span className="text-sm text-foreground/85">{t.taxIncluded}</span>
+            <span className="text-xs text-foreground/85">{t.taxIncluded}</span>
           </label>
-          <label className="block min-w-0 sm:col-span-2 lg:col-span-2 xl:col-span-2">
-            <span className="mb-1 block text-sm text-foreground/85">{t.supplier}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.supplier}</span>
             <select
               value={supplierName}
               onChange={(e) => setSupplierName(e.target.value)}
               required
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+              className={ccSelectMd}
             >
               <option value="">{en ? "Select supplier…" : "选择供应商…"}</option>
               {activeSupplierNames.map((name) => (
@@ -425,22 +440,22 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               ))}
             </select>
           </label>
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.quoteDate}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.quoteDate}</span>
             <input
               type="date"
               value={quoteDate}
               onChange={(e) => setQuoteDate(e.target.value)}
               required
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+              className={ccDate}
             />
           </label>
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.manufacturerCountry}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.manufacturerCountry}</span>
             <select
               value={manufacturerCountry}
               onChange={(e) => setManufacturerCountry(e.target.value)}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+              className={ccSelectMd}
             >
               <option value="">{t.selectMfrCountry}</option>
               {manufacturerCountrySelectOptions(manufacturerCountry).map((c) => (
@@ -450,15 +465,13 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               ))}
             </select>
           </label>
-          <div className="flex min-w-0 items-end xl:col-span-1">
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
-            >
-              {loading ? t.saving : t.save}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+          >
+            {loading ? t.saving : t.save}
+          </button>
         </form>
         {message ? <p className="mt-2 text-sm text-app-muted">{message}</p> : null}
       </section>
@@ -486,15 +499,15 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                 {t.cancel}
               </button>
             </div>
-            <form onSubmit={onSaveEdit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <label className="block min-w-0 sm:col-span-1">
-                <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
+            <form onSubmit={onSaveEdit} className="flex flex-wrap items-end gap-x-3 gap-y-2">
+              <label className="shrink-0">
+                <span className={ccLabel}>{t.sku}</span>
                 <input
                   list="unit-cost-sku-options-edit"
                   value={eSku}
                   onChange={(ev) => setEsku(ev.target.value)}
                   required
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                  className={ccInputSm}
                 />
                 <datalist id="unit-cost-sku-options-edit">
                   {skuOptions.map((s) => (
@@ -502,8 +515,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   ))}
                 </datalist>
               </label>
-              <label className="block min-w-0">
-                <span className="mb-1 block text-sm text-foreground/85">{t.unitPrice}</span>
+              <label className="shrink-0">
+                <span className={ccLabel}>{t.unitPrice}</span>
                 <input
                   type="number"
                   min={0}
@@ -511,25 +524,25 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   value={eUnitPrice}
                   onChange={(ev) => setEUnitPrice(ev.target.value)}
                   required
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                  className={ccNum}
                 />
               </label>
-              <label className="flex min-w-0 items-center gap-2 sm:col-span-2">
+              <label className="flex shrink-0 items-end gap-2 pb-1">
                 <input
                   type="checkbox"
                   checked={eTaxIncluded}
                   onChange={(ev) => setETaxIncluded(ev.target.checked)}
                   className="h-4 w-4 rounded border-app-border"
                 />
-                <span className="text-sm text-foreground/85">{t.taxIncluded}</span>
+                <span className="text-xs text-foreground/85">{t.taxIncluded}</span>
               </label>
-              <label className="block min-w-0 sm:col-span-2">
-                <span className="mb-1 block text-sm text-foreground/85">{t.supplier}</span>
+              <label className="shrink-0">
+                <span className={ccLabel}>{t.supplier}</span>
                 <select
                   value={eSupplierName}
                   onChange={(ev) => setESupplierName(ev.target.value)}
                   required
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                  className={ccSelectMd}
                 >
                   <option value="">{en ? "Select supplier…" : "选择供应商…"}</option>
                   {supplierOptionsForEdit.map((name) => (
@@ -539,22 +552,22 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   ))}
                 </select>
               </label>
-              <label className="block min-w-0">
-                <span className="mb-1 block text-sm text-foreground/85">{t.quoteDate}</span>
+              <label className="shrink-0">
+                <span className={ccLabel}>{t.quoteDate}</span>
                 <input
                   type="date"
                   value={eQuoteDate}
                   onChange={(ev) => setEQuoteDate(ev.target.value)}
                   required
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                  className={ccDate}
                 />
               </label>
-              <label className="block min-w-0">
-                <span className="mb-1 block text-sm text-foreground/85">{t.manufacturerCountry}</span>
+              <label className="shrink-0">
+                <span className={ccLabel}>{t.manufacturerCountry}</span>
                 <select
                   value={eManufacturerCountry}
                   onChange={(ev) => setEManufacturerCountry(ev.target.value)}
-                  className="w-full rounded-lg border border-app-border px-3 py-2 text-sm"
+                  className={ccSelectMd}
                 >
                   <option value="">{t.selectMfrCountry}</option>
                   {manufacturerCountrySelectOptions(eManufacturerCountry).map((c) => (
@@ -564,8 +577,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   ))}
                 </select>
               </label>
-              {editMessage ? <p className="min-w-0 text-sm text-red-600 sm:col-span-2">{editMessage}</p> : null}
-              <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2">
+              {editMessage ? <p className="w-full shrink-0 basis-full text-sm text-red-600">{editMessage}</p> : null}
+              <div className="flex w-full shrink-0 basis-full flex-wrap gap-2">
                 <button
                   type="submit"
                   disabled={editLoading}
@@ -650,14 +663,14 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
       ) : null}
 
       <section>
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-base font-semibold text-foreground">{t.history}</h3>
-          <label className="flex items-center gap-2 text-sm text-app-muted">
-            <span>{t.filterSku}</span>
+        <div className="mb-3 flex flex-wrap items-end gap-x-3 gap-y-2">
+          <h3 className="shrink-0 text-base font-semibold text-foreground">{t.history}</h3>
+          <label className="flex shrink-0 items-end gap-2">
+            <span className={ccLabel}>{t.filterSku}</span>
             <select
               value={filterSku}
               onChange={(e) => setFilterSku(e.target.value)}
-              className="rounded-lg border border-app-border bg-app-surface px-2 py-1 text-sm text-foreground"
+              className={ccSelectSm}
             >
               <option value="">{t.allSkus}</option>
               {skuOptions.map((s) => (

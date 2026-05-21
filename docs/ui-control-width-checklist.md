@@ -84,7 +84,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 | `/logistics-progress/landed-cost-consolidate` | `landed-cost-consolidate-panel.tsx` | 2 | 🟡 表 `min-w-[1600px]`；Incoterm 列 `min-w-[6rem]` 相对合理 | P2 |
 | `/cost-control` | `cash-flow-dashboard.tsx` 等 | 3+ | 🟡 筛选/表单已 `app-control-*` + `flex-wrap`；宽表 `min-w-[1080–2200px]` 保留横向滚动 | P1 表单完成 |
 | `/supply-chain/cost-control` | 同上 | — | 🟡 同 cost-control（成本分析 + PO 现金流 + 仪表盘筛选） | P1 表单完成 |
-| `/supply-chain/cost-control/unit-cost` | `unit-cost-panel.tsx` | 5 | 🔴 `w-full` 13 处 | P1 |
+| `/supply-chain/cost-control/unit-cost` | `unit-cost-panel.tsx` | 5 | 🟡 新建/编辑/筛选已 `app-control-*` + `flex-wrap`；历史宽表 `min-w-[840px]` 保留 | P1 表单完成 |
 | `/contracts` · `/supply-chain/contracts` | `contract-management.tsx` | 3 | 🔴 筛选 `select.w-full`（L490/L499）；表 `min-w-[1220px]` | P1 |
 | `/suppliers` · `/supply-chain/suppliers` | `supplier-management.tsx` | 0 | 🟡 表 `min-w-[1300px]`，表单若新增 select 需按档位 | P2 |
 | `/admin/users` | `user-management.tsx` | 2 | 🟢 创建用户 `select` 无 `w-full`（L349）；表内 role 下拉在单元格内 | P3 |
@@ -109,7 +109,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 - [ ] `components/logistics/logistics-progress-panel.tsx`
 - [ ] `components/logistics/order-fulfillments-panel.tsx`
 - [x] `components/cost-control/cash-flow-dashboard.tsx` — 筛选条 + 表内 date/shipping select
-- [ ] `components/cost-control/unit-cost-panel.tsx`
+- [x] `components/cost-control/unit-cost-panel.tsx`
 - [x] `components/cost-control/cost-analysis-panel.tsx`
 - [x] `components/cost-control/cash-flow-panel.tsx`
 - [x] `components/cost-control/po-cash-flow-panel.tsx`
