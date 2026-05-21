@@ -88,7 +88,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 | `/contracts` · `/supply-chain/contracts` | `contract-management.tsx` | 3 | 🟡 创建表单/筛选已 `app-control-*` + `flex-wrap`；表 `min-w-[1220px]` 保留 | P1 表单完成 |
 | `/suppliers` · `/supply-chain/suppliers` | `supplier-management.tsx` | 0 | 🟡 表 `min-w-[1300px]`，表单若新增 select 需按档位 | P2 |
 | `/admin/users` | `user-management.tsx` | 2 | 🟢 创建用户 `select` 无 `w-full`（L349）；表内 role 下拉在单元格内 | P3 |
-| `/admin/products` | `product-management.tsx` | 0 | 🟡 表 `min-w-[1080px]` | P2 |
+| `/admin/products` | `product-management.tsx` | 0 | 🟢 创建/批量区 `flex-wrap` + `app-control-*`；表内编辑紧凑；表 `min-w-[1080px]` 保留 | P2 完成 |
 | `/npi/*` | bom/ecn/sop/tooling | 2–3/页 | 🟡 各表 `min-w-[1200–1500px]`；bom 等表单 `w-full` 常见 | P2 |
 | `/quality-control/*` | test-case 等 | 1–3/页 | 🟡 多为宽表 + 紧凑表单；cert 等单文件组件 | P3 |
 | `/login` | `app/login/page.tsx` | 0 | 🟢 单列登录，`w-full` 符合 P4「长输入」 | — |
@@ -122,6 +122,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 - [x] `components/npi/ecn-management.tsx`
 - [x] `components/npi/sop-management.tsx`
 - [x] `components/npi/tooling-management.tsx`
+- [x] `components/product/product-management.tsx`
 - [ ] `components/quality-control/test-case-management.tsx`
 - [ ] `components/quality-control/eight-d-management.tsx`
 - [ ] `components/quality-control/certification-management.tsx`

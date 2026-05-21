@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  ccInputMd,
+  ccInputSm,
+  ccNum,
+} from "@/components/cost-control/cost-control-form-controls";
 import { Language } from "@/lib/i18n";
 import { ProductItem } from "@/lib/types";
 
@@ -288,23 +293,23 @@ export function ProductManagement({ products, language }: ProductManagementProps
     <div className="space-y-4">
       <section className="app-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t.createProduct}</h3>
-        <form className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" onSubmit={createItem}>
+        <form className="mt-4 flex min-w-0 flex-wrap items-end gap-x-3 gap-y-2" onSubmit={createItem}>
           <input
-            className="min-w-0 rounded-lg px-3 py-2"
+            className={ccInputMd}
             placeholder={t.productName}
             value={productName}
             onChange={(event) => setProductName(event.target.value)}
             required
           />
           <input
-            className="min-w-0 rounded-lg px-3 py-2"
+            className={ccInputSm}
             placeholder={t.sku}
             value={sku}
             onChange={(event) => setSku(event.target.value.toUpperCase())}
             required
           />
           <input
-            className="min-w-0 rounded-lg px-3 py-2"
+            className={ccInputSm}
             placeholder={t.variant}
             value={variant}
             onChange={(event) => setVariant(event.target.value.toUpperCase())}
@@ -314,28 +319,30 @@ export function ProductManagement({ products, language }: ProductManagementProps
             type="number"
             step="0.01"
             min={0}
-            className="min-w-0 rounded-lg px-3 py-2"
+            className={ccNum}
             placeholder={t.unitCost}
             value={unitCost}
             onChange={(event) => setUnitCost(event.target.value)}
+            title={t.unitCost}
           />
           <input
-            className="min-w-0 rounded-lg px-3 py-2 sm:col-span-2 lg:col-span-3 xl:col-span-4"
+            className={ccInputMd}
             placeholder={t.articleNumber}
             value={articleNumber}
             onChange={(event) => setArticleNumber(event.target.value)}
           />
-          <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <button className="app-button-primary px-4 py-2 text-sm">
-              {t.create}
-            </button>
-          </div>
+          <button type="submit" className="shrink-0 app-button-primary px-4 py-2 text-sm">
+            {t.create}
+          </button>
         </form>
         <div className="mt-4 rounded-xl border border-dashed border-app-border bg-gray-50 p-4">
           <p className="text-sm font-medium text-foreground/90">{t.batchTitle}</p>
-          <p className="mt-1 text-xs text-app-muted">
-            {t.headers}
-          </p>
+          <details className="mt-1 text-xs text-app-muted">
+            <summary className="cursor-pointer select-none font-medium text-foreground/80">
+              {language === "en" ? "CSV format" : "CSV 格式说明"}
+            </summary>
+            <p className="mt-1 max-w-3xl leading-relaxed">{t.headers}</p>
+          </details>
           <button
             type="button"
             onClick={downloadCsvTemplate}
@@ -347,7 +354,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
             type="file"
             accept=".csv,text/csv"
             onChange={handleBatchFileUpload}
-            className="mt-3 block w-full text-sm text-foreground/85 file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-surface file:px-3 file:py-1.5 file:text-sm"
+            className="mt-3 block max-w-md text-sm text-foreground/85 file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-surface file:px-3 file:py-1.5 file:text-sm"
           />
         </div>
       </section>
@@ -375,14 +382,14 @@ export function ProductManagement({ products, language }: ProductManagementProps
                     <input
                       value={item.productName}
                       onChange={(event) => updateRow(item.id, { productName: event.target.value })}
-                      className="w-full rounded-lg px-2 py-1"
+                      className={`${ccInputMd} max-w-[14rem] py-1`}
                     />
                   </td>
                   <td>
                     <input
                       value={item.sku}
                       onChange={(event) => updateRow(item.id, { sku: event.target.value.toUpperCase() })}
-                      className="w-full rounded-lg px-2 py-1"
+                      className={`${ccInputSm} py-1`}
                     />
                   </td>
                   <td>
@@ -391,7 +398,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
                       onChange={(event) =>
                         updateRow(item.id, { variant: event.target.value.toUpperCase() })
                       }
-                      className="w-full rounded-lg px-2 py-1"
+                      className={`${ccInputSm} py-1`}
                     />
                   </td>
                   <td>
@@ -401,14 +408,14 @@ export function ProductManagement({ products, language }: ProductManagementProps
                       min={0}
                       value={item.unitCost}
                       onChange={(event) => updateRow(item.id, { unitCost: Number(event.target.value) })}
-                      className="w-full rounded-lg px-2 py-1"
+                      className={`${ccNum} py-1`}
                     />
                   </td>
                   <td>
                     <input
                       value={item.articleNumber}
                       onChange={(event) => updateRow(item.id, { articleNumber: event.target.value })}
-                      className="w-full rounded-lg px-2 py-1"
+                      className={`${ccInputMd} max-w-[12rem] py-1`}
                     />
                   </td>
                   <td>
@@ -478,7 +485,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
               onChange={(e) => setTemplateDraft(e.target.value)}
               disabled={templateBusy}
               rows={14}
-              className="mt-3 w-full px-3 py-2 text-sm disabled:opacity-60"
+              className="mt-3 w-full min-w-0 rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm disabled:opacity-60"
             />
             <div className="mt-4 flex flex-wrap gap-2">
               <button
