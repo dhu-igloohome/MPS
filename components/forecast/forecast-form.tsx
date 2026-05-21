@@ -1,13 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BarChart3, CloudDownload, Download, Plus, Trash2, Upload } from "lucide-react";
-
-import { ForecastCompactKpiStrip, ForecastSectionHeader } from "@/components/forecast/forecast-shared-ui";
-import { forecastKpis } from "@/lib/cockpit-dashboard-agg";
-import { toast } from "@/lib/app-toast";
+import { CloudDownload, Download, Plus, Trash2, Upload } from "lucide-react";
 
 import {
   buildForecastDestinationOptions,
@@ -160,9 +155,6 @@ export function ForecastForm({
     removeSku: language === "en" ? "Delete" : "删除",
     bto: language === "en" ? "Build to Order" : "按单生产",
     bts: language === "en" ? "Build to Stock" : "备货生产",
-    total: language === "en" ? "Total volume" : "合计数量",
-    rows: language === "en" ? "Rows" : "填报行数",
-    skuCount: language === "en" ? "SKUs" : "SKU 数",
     saveFailed:
       language === "en"
         ? "Save failed. Please check fields and permissions."
@@ -223,26 +215,6 @@ export function ForecastForm({
     comment: language === "en" ? "Comment" : "评论",
     commentSaved: language === "en" ? "Comment saved." : "评论已保存。",
     commentSaveFailed: language === "en" ? "Could not save comment." : "评论保存失败。",
-    workspaceTitle: language === "en" ? "Forecast workspace" : "Forecast 工作台",
-    workspaceHint:
-      language === "en"
-        ? "Month and region drive KPIs and the record list below (toggle to show all months)."
-        : "月份与区域决定下方 KPI 与记录列表（可切换显示全部月份）。",
-    listFilterScope:
-      language === "en" ? "List: this month & region" : "列表：本月 + 本区",
-    listFilterAll: language === "en" ? "List: all months" : "列表：全部月份",
-    viewDashboard: language === "en" ? "View on Dashboard" : "在 Dashboard 查看",
-    importSection: language === "en" ? "Import & templates" : "导入与模板",
-    emptyFiltered:
-      language === "en"
-        ? "No records for the selected month and region."
-        : "当前月份与区域暂无记录。",
-    emptyCtaCreate: language === "en" ? "Create forecast below" : "在下方新建",
-    emptyCtaImport: language === "en" ? "Open import" : "打开导入",
-    totalKpiHint:
-      language === "en"
-        ? "Total = BTO + BTS for the scope shown in KPIs."
-        : "合计 = 当前 KPI 范围内 BTO + BTS。",
   };
   const defaultRegion = allowedRegions[0];
 
@@ -260,6 +232,7 @@ export function ForecastForm({
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [useExistingPo, setUseExistingPo] = useState(false);
   const [selectedPoNumber, setSelectedPoNumber] = useState("");
+  const [message, setMessage] = useState("");
   const [batchSummary, setBatchSummary] = useState<string | null>(null);
   const [batchErrors, setBatchErrors] = useState<{ row: number; message: string }[]>([]);
   const batchFileRef = useRef<HTMLInputElement>(null);
@@ -271,8 +244,6 @@ export function ForecastForm({
   const [savingRemarkId, setSavingRemarkId] = useState<string | null>(null);
   const [inlineOpsActionById, setInlineOpsActionById] = useState<Record<string, string>>({});
   const [savingOpsActionId, setSavingOpsActionId] = useState<string | null>(null);
-  const [listShowAllMonths, setListShowAllMonths] = useState(false);
-  const importDetailsRef = useRef<HTMLDetailsElement>(null);
   const destinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
   const editDestinationOptions = useMemo(() => {
     if (!editDraft) return destinationOptions;
@@ -291,25 +262,18 @@ export function ForecastForm({
 
   const entryIdSet = useMemo(() => new Set(entries.map((e) => e.id)), [entries]);
 
-  const filteredEntries = useMemo(() => {
-    if (listShowAllMonths) return entries;
-    return entries.filter((e) => e.month === month && e.region === region);
-  }, [entries, listShowAllMonths, month, region]);
-
-  const scopeKpi = useMemo(() => forecastKpis(filteredEntries), [filteredEntries]);
-
   useEffect(() => {
     setSelectedForecastIds((prev) => prev.filter((id) => entryIdSet.has(id)));
   }, [entryIdSet]);
 
   const allForecastRowsSelected =
-    filteredEntries.length > 0 &&
-    filteredEntries.every((e) => selectedForecastIds.includes(e.id));
+    entries.length > 0 && entries.every((e) => selectedForecastIds.includes(e.id));
   async function onBatchFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     setLoading(true);
+    setMessage("");
     setBatchSummary(null);
     setBatchErrors([]);
     const formData = new FormData();
@@ -326,7 +290,7 @@ export function ForecastForm({
     };
     setLoading(false);
     if (!response.ok) {
-      toast.error(data.message || (language === "en" ? "Batch import failed." : "批量导入失败。"));
+      setMessage(data.message || "Batch import failed");
       return;
     }
     const created = data.created ?? 0;
@@ -342,6 +306,7 @@ export function ForecastForm({
 
   async function onApiImportFromSkuTracker() {
     setLoading(true);
+    setMessage("");
     setBatchSummary(null);
     setBatchErrors([]);
     const response = await fetch("/api/forecasts/import-from-igloohome-web", {
@@ -357,13 +322,15 @@ export function ForecastForm({
     };
     setLoading(false);
     if (!response.ok) {
-      toast.error(data.message || (language === "en" ? "API import failed." : "API 导入失败。"));
+      setMessage(data.message || (language === "en" ? "API import failed." : "API 导入失败。"));
       return;
     }
     const created = data.created ?? 0;
     const failed = data.failed ?? 0;
     if (data.message && created === 0 && failed === 0) {
-      toast.message(data.message);
+      setMessage(data.message);
+    } else {
+      setMessage("");
     }
     setBatchSummary(
       language === "en"
@@ -406,6 +373,7 @@ export function ForecastForm({
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
+    setMessage("");
     setBatchSummary(null);
     setBatchErrors([]);
 
@@ -434,7 +402,7 @@ export function ForecastForm({
       const data = (await response.json().catch(() => ({}))) as { entry?: { poNumber?: string } };
       if (!response.ok) {
         setLoading(false);
-        toast.error(`${t.saveFailed} ${language === "en" ? "Failed row:" : "失败行："} ${i + 1}`);
+        setMessage(`${t.saveFailed} ${language === "en" ? "Failed row:" : "失败行："} ${i + 1}`);
         return;
       }
       created += 1;
@@ -444,8 +412,8 @@ export function ForecastForm({
     }
 
     setLoading(false);
-    toast.success(
-      `${t.saved} (${created})${issuedPo ? ` · ${language === "en" ? "Forecast #:" : "Forecast #："} ${issuedPo}` : ""}`,
+    setMessage(
+      `${t.saved} (${created}) ${issuedPo ? `${language === "en" ? "Forecast #:" : "Forecast #："} ${issuedPo}` : ""}`,
     );
     setLines([newDraftForecastLine(products)]);
     router.refresh();
@@ -454,7 +422,7 @@ export function ForecastForm({
     if (!window.confirm(t.deleteConfirm)) return;
     const reason = window.prompt(t.reasonPrompt)?.trim() || "";
     if (!reason) {
-      toast.error(language === "en" ? "Deletion reason is required." : "删除原因必填。");
+      setMessage(language === "en" ? "Deletion reason is required." : "删除原因必填。");
       return;
     }
     setDeletingId(id);
@@ -465,10 +433,10 @@ export function ForecastForm({
     });
     setDeletingId(null);
     if (!response.ok) {
-      toast.error(language === "en" ? "Delete failed." : "删除失败。");
+      setMessage(language === "en" ? "Delete failed." : "删除失败。");
       return;
     }
-    toast.success(language === "en" ? "Deleted." : "已删除。");
+    setMessage(language === "en" ? "Deleted." : "已删除。");
     setSelectedForecastIds((prev) => prev.filter((x) => x !== id));
     router.refresh();
   }
@@ -480,25 +448,16 @@ export function ForecastForm({
   }
 
   function toggleSelectAllForecasts() {
-    if (filteredEntries.length === 0) return;
+    if (entries.length === 0) return;
     if (allForecastRowsSelected) {
       setSelectedForecastIds([]);
     } else {
-      setSelectedForecastIds(filteredEntries.map((e) => e.id));
+      setSelectedForecastIds(entries.map((e) => e.id));
     }
   }
 
-  function scrollToForecastCreate() {
-    document.getElementById("forecast-create")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  function openImportSection() {
-    const el = importDetailsRef.current;
-    if (el) el.open = true;
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
   function startEditForecast(item: ForecastEntry) {
+    setMessage("");
     setEditDraft({
       id: item.id,
       month: item.month,
@@ -533,6 +492,7 @@ export function ForecastForm({
   async function saveEditForecast() {
     if (!editDraft) return;
     setSavingEdit(true);
+    setMessage("");
     const response = await fetch(`/api/forecasts/${encodeURIComponent(editDraft.id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -551,16 +511,16 @@ export function ForecastForm({
     const data = (await response.json().catch(() => ({}))) as { message?: string };
     setSavingEdit(false);
     if (!response.ok) {
-      toast.error(data.message || t.editSaveFailed);
+      setMessage(data.message || t.editSaveFailed);
       return;
     }
     setEditDraft(null);
-    toast.success(t.editSaved);
     setInlineRemarkById((prev) => {
       const next = { ...prev };
       delete next[editDraft.id];
       return next;
     });
+    setMessage(t.editSaved);
     router.refresh();
   }
 
@@ -569,10 +529,11 @@ export function ForecastForm({
     if (!window.confirm(t.batchDeleteConfirm(selectedForecastIds.length))) return;
     const reason = window.prompt(t.reasonPrompt)?.trim() || "";
     if (!reason) {
-      toast.error(language === "en" ? "Deletion reason is required." : "删除原因必填。");
+      setMessage(language === "en" ? "Deletion reason is required." : "删除原因必填。");
       return;
     }
     setBatchDeleting(true);
+    setMessage("");
     const response = await fetch("/api/forecasts/batch-delete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -581,12 +542,12 @@ export function ForecastForm({
     const data = (await response.json().catch(() => ({}))) as { message?: string; deleted?: number };
     setBatchDeleting(false);
     if (!response.ok) {
-      toast.error(data.message || (language === "en" ? "Batch delete failed." : "批量删除失败。"));
+      setMessage(data.message || (language === "en" ? "Batch delete failed." : "批量删除失败。"));
       return;
     }
     const n = data.deleted ?? selectedForecastIds.length;
     setSelectedForecastIds([]);
-    toast.success(t.batchDeleted(n));
+    setMessage(t.batchDeleted(n));
     router.refresh();
   }
 
@@ -594,6 +555,7 @@ export function ForecastForm({
     const draft = (inlineRemarkById[item.id] ?? item.remark).trim();
     if (draft === item.remark.trim()) return;
     setSavingRemarkId(item.id);
+    setMessage("");
     const response = await fetch(`/api/forecasts/${encodeURIComponent(item.id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -613,7 +575,7 @@ export function ForecastForm({
     const data = (await response.json().catch(() => ({}))) as { message?: string };
     setSavingRemarkId(null);
     if (!response.ok) {
-      toast.error(data.message || t.commentSaveFailed);
+      setMessage(data.message || t.commentSaveFailed);
       return;
     }
     setInlineRemarkById((prev) => {
@@ -621,7 +583,7 @@ export function ForecastForm({
       delete next[item.id];
       return next;
     });
-    toast.success(t.commentSaved);
+    setMessage(t.commentSaved);
     router.refresh();
   }
 
@@ -629,6 +591,7 @@ export function ForecastForm({
     const draft = (inlineOpsActionById[item.id] ?? item.opsAction).trim();
     if (draft === (item.opsAction || "").trim()) return;
     setSavingOpsActionId(item.id);
+    setMessage("");
     const response = await fetch(`/api/forecasts/${encodeURIComponent(item.id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -648,7 +611,7 @@ export function ForecastForm({
     const data = (await response.json().catch(() => ({}))) as { message?: string };
     setSavingOpsActionId(null);
     if (!response.ok) {
-      toast.error(data.message || (language === "en" ? "Could not save ops action." : "Ops action 保存失败。"));
+      setMessage(data.message || (language === "en" ? "Could not save ops action." : "Ops action 保存失败。"));
       return;
     }
     setInlineOpsActionById((prev) => {
@@ -656,107 +619,18 @@ export function ForecastForm({
       delete next[item.id];
       return next;
     });
-    toast.success(language === "en" ? "Ops action saved." : "Ops action 已保存。");
+    setMessage(language === "en" ? "Ops action saved." : "Ops action 已保存。");
     router.refresh();
   }
 
   return (
     <div className="space-y-5">
-      <section className="app-card sticky top-0 z-20 overflow-hidden shadow-[0_8px_24px_rgba(17,24,39,0.06)] ring-1 ring-app-border/80 backdrop-blur-sm">
-        <ForecastSectionHeader title={t.workspaceTitle} subtitle={t.workspaceHint} />
-        <div className="space-y-4 border-t border-app-border/60 px-5 py-4 sm:px-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:max-w-md">
-              <label className="block min-w-0">
-                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-app-muted">
-                  {t.forecastMonth}
-                </span>
-                <select
-                  value={month}
-                  onChange={(event) => setMonth(event.target.value)}
-                  className="w-full px-3 py-2 text-sm"
-                >
-                  {forecastMonthPicker.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {language === "en" ? opt.labelEn : opt.labelZh}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block min-w-0">
-                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-app-muted">
-                  {t.region}
-                </span>
-                <select
-                  value={region}
-                  onChange={(event) => onRegionChange(event.target.value as Region)}
-                  className="w-full px-3 py-2 text-sm"
-                >
-                  {allowedRegions.map((item) => (
-                    <option key={item} value={item}>
-                      {forecastRegionSelectLabel(item, language)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                title={t.workspaceHint}
-                className={`inline-flex shrink-0 items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 ${
-                  listShowAllMonths
-                    ? "border-app-border bg-white text-foreground/85 hover:border-app-accent/35"
-                    : "border-app-accent/50 bg-app-accent-soft text-[#111827] shadow-sm"
-                }`}
-                onClick={() => setListShowAllMonths(false)}
-              >
-                {t.listFilterScope}
-              </button>
-              <button
-                type="button"
-                className={`inline-flex shrink-0 items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 ${
-                  listShowAllMonths
-                    ? "border-app-accent/50 bg-app-accent-soft text-[#111827] shadow-sm"
-                    : "border-app-border bg-white text-foreground/85 hover:border-app-accent/35"
-                }`}
-                onClick={() => setListShowAllMonths(true)}
-              >
-                {t.listFilterAll}
-              </button>
-              <Link
-                href="/dashboard"
-                className="app-button-secondary inline-flex items-center gap-2 px-3 py-2 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
-              >
-                <BarChart3 size={16} strokeWidth={1.5} />
-                {t.viewDashboard}
-              </Link>
-            </div>
-          </div>
-          <ForecastCompactKpiStrip
-            language={language}
-            kpi={scopeKpi}
-            labels={{
-              bto: t.bto,
-              bts: t.bts,
-              total: t.total,
-              rows: t.rows,
-              sku: t.skuCount,
-              totalHint: t.totalKpiHint,
-            }}
-          />
+      <section className="app-card overflow-hidden">
+        <div className="border-b border-app-border bg-slate-50/70 px-5 py-4 sm:px-6">
+          <h2 className="text-lg font-semibold text-foreground">{t.title}</h2>
+          <p className="mt-1 text-sm text-app-muted">{t.subtitle}</p>
         </div>
-      </section>
-
-      <details ref={importDetailsRef} id="forecast-import" className="app-card group overflow-hidden">
-        <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-          <ForecastSectionHeader
-            title={t.importSection}
-            subtitle={language === "en" ? "CSV template, batch upload, SKU Tracker API" : "CSV 模板、批量上传、SKU Tracker API"}
-          />
-        </summary>
-        <div className="border-t border-app-border/60 px-5 py-5 sm:px-6">
-          <p className="mb-3 text-sm text-app-muted">{t.subtitle}</p>
+        <div className="px-5 py-5 sm:px-6">
           <div className="flex flex-wrap items-center gap-2">
             <a
               href="/api/forecasts/csv-template"
@@ -812,19 +686,19 @@ export function ForecastForm({
             </p>
           ) : null}
         </div>
-      </details>
+      </section>
 
-      <section id="forecast-create" className="app-card scroll-mt-24 overflow-hidden">
-        <ForecastSectionHeader
-          title={language === "en" ? "Create forecast" : "新增 Forecast"}
-          subtitle={
-            language === "en"
-              ? "Month and region match the workspace bar above. Add SKU lines, then save."
-              : "月份与区域与顶部工作台一致；添加 SKU 行后保存。"
-          }
-        />
+      <section className="app-card overflow-hidden">
+        <div className="border-b border-app-border bg-slate-50/70 px-5 py-4 sm:px-6">
+          <h3 className="text-base font-semibold text-foreground">{language === "en" ? "Create forecast" : "新增 Forecast"}</h3>
+          <p className="mt-1 text-xs text-app-muted">
+            {language === "en"
+              ? "Group inputs in columns to reduce scrolling. SKU controls are on the right."
+              : "通过分栏减少滚动；SKU 操作按钮在右侧。"}
+          </p>
+        </div>
 
-        <form className="grid grid-cols-1 gap-4 border-t border-app-border/60 px-5 py-5 sm:px-6 md:grid-cols-12" onSubmit={onSubmit}>
+        <form className="grid grid-cols-1 gap-4 px-5 py-5 sm:px-6 md:grid-cols-12" onSubmit={onSubmit}>
           <label className="block min-w-0 md:col-span-4">
             <span className="mb-1 block text-sm text-foreground/85">{t.forecastMonth}</span>
             <select
@@ -1012,7 +886,7 @@ export function ForecastForm({
                           prev.map((x) => (x.key === line.key ? { ...x, buildToOrder: event.target.value } : x)),
                         )
                       }
-                      className="w-full px-3 py-2 text-right text-sm tabular-nums"
+                      className="w-full px-3 py-2 text-sm"
                     />
                   </label>
 
@@ -1027,7 +901,7 @@ export function ForecastForm({
                           prev.map((x) => (x.key === line.key ? { ...x, buildToStock: event.target.value } : x)),
                         )
                       }
-                      className="w-full px-3 py-2 text-right text-sm tabular-nums"
+                      className="w-full px-3 py-2 text-sm"
                     />
                   </label>
 
@@ -1050,13 +924,16 @@ export function ForecastForm({
           </div>
 
           <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 md:col-span-12">
-            <button
-              type="submit"
-              disabled={loading || products.length === 0}
-              className="app-button-primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-60"
-            >
-              {loading ? t.saving : t.saveForecast}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={loading || products.length === 0}
+                className="app-button-primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-60"
+              >
+                {loading ? t.saving : t.saveForecast}
+              </button>
+              {message ? <span className="text-sm text-app-muted">{message}</span> : null}
+            </div>
           </div>
         </form>
       </section>
@@ -1064,10 +941,10 @@ export function ForecastForm({
       {editDraft ? (
         <div
           ref={forecastEditPanelRef}
-          className="app-card sticky bottom-4 z-20 scroll-mt-24 overflow-hidden border-2 border-app-accent/40 shadow-lg ring-1 ring-app-accent/20"
+          className="mt-6 rounded-xl border-2 border-[var(--app-accent)] bg-app-accent-soft/40 p-4"
         >
-          <ForecastSectionHeader title={t.editPanelTitle} subtitle={t.editHint} />
-          <div className="px-5 pb-5 sm:px-6">
+          <h3 className="text-base font-semibold text-foreground">{t.editPanelTitle}</h3>
+          <p className="mt-1 text-xs text-app-muted">{t.editHint}</p>
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block min-w-0">
               <span className="mb-1 block text-sm text-foreground/85">{t.forecastNumberLabel}</span>
@@ -1219,22 +1096,25 @@ export function ForecastForm({
               {t.cancelEdit}
             </button>
           </div>
-          </div>
         </div>
       ) : null}
 
       <section className="app-card overflow-hidden">
-        <ForecastSectionHeader
-          title={t.allForecasts}
-          subtitle={
-            canDelete
-              ? t.actionsRules
-              : language === "en"
-                ? "Edit updates a saved row (same validation as create)."
-                : "点「编辑」可修改已保存记录（校验与新建一致）。"
-          }
-          action={
-            canDelete && filteredEntries.length > 0 ? (
+        <div className="border-b border-app-border bg-slate-50/70 px-5 py-4 sm:px-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-foreground">{t.allForecasts}</h3>
+              {canDelete ? (
+                <p className="mt-1 max-w-3xl text-xs text-app-muted">{t.actionsRules}</p>
+              ) : (
+                <p className="mt-1 max-w-3xl text-xs text-app-muted">
+                  {language === "en"
+                    ? "Actions: Edit to update a saved row (same validation as create)."
+                    : "操作：点「编辑」可修改已保存的记录（校验规则与新建一致）。"}
+                </p>
+              )}
+            </div>
+            {canDelete && entries.length > 0 ? (
               <div className="flex flex-wrap items-center gap-2 sm:pt-0.5">
                 <span className="text-xs tabular-nums text-app-muted">
                   {language === "en" ? `${selectedForecastIds.length} selected` : `已选 ${selectedForecastIds.length} 条`}
@@ -1249,24 +1129,11 @@ export function ForecastForm({
                   {batchDeleting ? (language === "en" ? "Deleting…" : "删除中…") : t.deleteSelected}
                 </button>
               </div>
-            ) : undefined
-          }
-        />
+            ) : null}
+          </div>
+        </div>
 
-        <div className="border-t border-app-border/60 px-5 py-5 sm:px-6">
-          {!listShowAllMonths ? (
-            <p className="mb-3 text-xs text-app-muted">
-              {language === "en"
-                ? `Showing ${formatForecastMonthDisplay(month, language)} · ${forecastRegionSelectLabel(region, language)} (${filteredEntries.length} rows)`
-                : `筛选：${formatForecastMonthDisplay(month, language)} · ${forecastRegionSelectLabel(region, language)}（${filteredEntries.length} 条）`}
-            </p>
-          ) : (
-            <p className="mb-3 text-xs text-app-muted">
-              {language === "en"
-                ? `Showing all months (${filteredEntries.length} rows)`
-                : `显示全部月份（${filteredEntries.length} 条）`}
-            </p>
-          )}
+        <div className="px-5 py-5 sm:px-6">
           <div className="app-table-shell overflow-hidden">
             <div className="max-h-[65vh] overflow-auto">
               <table className="app-table min-w-[1280px]">
@@ -1300,34 +1167,14 @@ export function ForecastForm({
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEntries.length === 0 ? (
+                  {entries.length === 0 ? (
                     <tr>
-                      <td colSpan={canDelete ? 14 : 13} className="py-12">
-                        <div className="mx-auto max-w-md text-center">
-                          <p className="text-sm font-medium text-foreground">
-                            {entries.length === 0 ? t.noRecords : t.emptyFiltered}
-                          </p>
-                          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={scrollToForecastCreate}
-                              className="app-button-primary px-4 py-2 text-sm"
-                            >
-                              {t.emptyCtaCreate}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={openImportSection}
-                              className="app-button-secondary px-4 py-2 text-sm"
-                            >
-                              {t.emptyCtaImport}
-                            </button>
-                          </div>
-                        </div>
+                      <td colSpan={canDelete ? 14 : 13} className="py-10 text-center text-app-muted">
+                        {t.noRecords}
                       </td>
                     </tr>
                   ) : (
-                    filteredEntries.map((item, rowIdx) => {
+                    entries.map((item, rowIdx) => {
                       const selected = selectedForecastIds.includes(item.id);
                       const editing = editDraft?.id === item.id;
                       const base =
@@ -1362,8 +1209,8 @@ export function ForecastForm({
                             {item.productName}
                           </td>
                           <td className="whitespace-nowrap">{item.sku}</td>
-                          <td className="text-right tabular-nums">{item.buildToOrder}</td>
-                          <td className="text-right tabular-nums">{item.buildToStock}</td>
+                          <td className="tabular-nums">{item.buildToOrder}</td>
+                          <td className="tabular-nums">{item.buildToStock}</td>
                           <td className="whitespace-nowrap">{item.createdAt.slice(0, 10)}</td>
                           <td className="align-top">
                             <div className="flex flex-wrap gap-1.5">

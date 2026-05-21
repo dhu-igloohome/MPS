@@ -18,9 +18,6 @@ import {
   YAxis,
 } from "recharts";
 
-import { ForecastCompactKpiStrip, formatForecastNum } from "@/components/forecast/forecast-shared-ui";
-
-const formatNum = formatForecastNum;
 import {
   aggregateForecastByRegion,
   aggregateForecastTopProducts,
@@ -42,6 +39,10 @@ type Props = {
   /** When set, shows next to “Open Forecast” in the section toolbar (e.g. CSV export). */
   forecastExport?: { href: string; label: string; snapshotToken?: string };
 };
+
+function formatNum(n: number) {
+  return new Intl.NumberFormat("en-US").format(n);
+}
 
 function PieTooltip({
   active,
@@ -213,12 +214,44 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
 
 
   const compactKpiStrip = (
-    <ForecastCompactKpiStrip
-      language={language}
-      kpi={kpi}
-      labels={{ bto: t.bto, bts: t.bts, total: t.total, rows: t.rows, sku: t.sku, totalHint: t.e3Body }}
-      className="lg:grid-cols-2 xl:grid-cols-5"
-    />
+    <div
+      className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-5"
+      aria-label={en ? "Forecast summary for selected months" : "所选月份 Forecast 摘要"}
+    >
+      <article className="min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-gradient-to-br from-white to-[#fff4f1]/80 px-3 py-2.5">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bto}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
+          {formatNum(kpi.bto)}
+        </p>
+      </article>
+      <article className="min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-gradient-to-br from-white to-emerald-50/60 px-3 py-2.5">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bts}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
+          {formatNum(kpi.bts)}
+        </p>
+      </article>
+      <article
+        className="min-w-0 overflow-hidden rounded-lg border border-app-accent/35 bg-gradient-to-br from-white to-[#fff4f1]/90 px-3 py-2.5 ring-1 ring-app-accent/15"
+        title={t.e3Body}
+      >
+        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.total}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
+          {formatNum(kpi.total)}
+        </p>
+      </article>
+      <article className="min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-white px-3 py-2.5">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.rows}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
+          {formatNum(kpi.rowCount)}
+        </p>
+      </article>
+      <article className="col-span-2 min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-white px-3 py-2.5 sm:col-span-1">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.sku}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
+          {formatNum(kpi.skuCount)}
+        </p>
+      </article>
+    </div>
   );
 
   const readingNotes = (
