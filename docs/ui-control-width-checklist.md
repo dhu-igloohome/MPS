@@ -120,7 +120,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 - [x] `components/order-progress/mass-production-kanban-section.tsx`
 - [x] `components/npi/bom-management.tsx`
 - [x] `components/npi/ecn-management.tsx`
-- [ ] `components/npi/sop-management.tsx`
+- [x] `components/npi/sop-management.tsx`
 - [x] `components/npi/tooling-management.tsx`
 - [ ] `components/quality-control/test-case-management.tsx`
 - [ ] `components/quality-control/eight-d-management.tsx`
