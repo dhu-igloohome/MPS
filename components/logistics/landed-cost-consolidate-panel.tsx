@@ -189,7 +189,12 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
     <div className="space-y-4">
       <section className="app-card p-4">
         <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.title}</h5>
-        <p className="mt-1 text-xs text-[#9CA3AF]">{t.hint}</p>
+        <details className="mt-1 text-xs text-[#9CA3AF]">
+          <summary className="cursor-pointer select-none font-medium text-foreground/80">
+            {en ? "Landed cost rules" : "到岸成本规则说明"}
+          </summary>
+          <p className="mt-1 max-w-3xl leading-relaxed">{t.hint}</p>
+        </details>
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[1600px] border-collapse text-xs sm:text-sm">
@@ -245,7 +250,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                           value={row.poIssueDate ?? ""}
                           onChange={(e) => void patchForecast(row.id, { poIssueDate: e.target.value || null })}
                           disabled={rowSavingId === row.id}
-                          className="w-full max-w-[11rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                          className="app-control-sm max-w-[11rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                           aria-label={t.poIssue}
                         />
                       </div>
@@ -282,7 +287,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                             void patchForecast(row.id, { destinationTariffPct: n });
                           }}
                           disabled={rowSavingId === row.id}
-                          className="w-full max-w-[6.5rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums dark:border-slate-600 dark:bg-slate-800"
+                          className="app-control-num max-w-[6.5rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums dark:border-slate-600 dark:bg-slate-800"
                           aria-label={t.tariff}
                         />
                       ) : (
@@ -299,7 +304,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                             })
                           }
                           disabled={rowSavingId === row.id}
-                          className="w-full max-w-[11rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
+                          className="app-control-sm max-w-[9rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
                           aria-label={t.ship}
                         >
                           <option value="ocean">{t.shipOcean}</option>
@@ -331,7 +336,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                             void patchForecast(row.id, { freightUsdPerUnit: n });
                           }}
                           disabled={rowSavingId === row.id}
-                          className="w-full max-w-[7rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums dark:border-slate-600 dark:bg-slate-800"
+                          className="app-control-num max-w-[7rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums dark:border-slate-600 dark:bg-slate-800"
                           aria-label={t.freight}
                         />
                       ) : (
@@ -348,7 +353,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                             })
                           }
                           disabled={rowSavingId === row.id}
-                          className="w-full max-w-[5.5rem] rounded-lg border border-slate-200 bg-white px-1 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
+                          className="app-control-xs max-w-[5.5rem] rounded-lg border border-slate-200 bg-white px-1 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
                           aria-label={t.incoterm}
                         >
                           {FORECAST_INCOTERMS.map((ic) => (

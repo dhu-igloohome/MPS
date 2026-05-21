@@ -81,7 +81,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 | `/logistics-progress/order-fulfillments` | `order-fulfillments-panel.tsx` | 2 | 🔴 单元格常量 `cellInputClass` 含 `w-full min-w-[6.5rem]`（L48–52） | P1 |
 | `/logistics-progress/shipping-report` | `shipping-report-panel.tsx` | 1 | 🟡 录入表单已 `app-control-*` + `flex-wrap`；表 `min-w-[3200px]` 保留 | P2 表单完成 |
 | `/logistics-progress/inventory-global` | `inventory-global-panel.tsx` | 1 | 🟡 录入表单已 `app-control-*` + `flex-wrap`；表 `min-w-[7200px]` 保留 | P2 表单完成 |
-| `/logistics-progress/landed-cost-consolidate` | `landed-cost-consolidate-panel.tsx` | 2 | 🟡 表 `min-w-[1600px]`；Incoterm 列 `min-w-[6rem]` 相对合理 | P2 |
+| `/logistics-progress/landed-cost-consolidate` | `landed-cost-consolidate-panel.tsx` | 2 | 🟡 表内控件已 `app-control-*`；说明收进 `<details>`；表 `min-w-[1600px]` 保留 | P2 表内完成 |
 | `/cost-control` | `cash-flow-dashboard.tsx` 等 | 3+ | 🟡 筛选/表单已 `app-control-*` + `flex-wrap`；宽表 `min-w-[1080–2200px]` 保留横向滚动 | P1 表单完成 |
 | `/supply-chain/cost-control` | 同上 | — | 🟡 同 cost-control（成本分析 + PO 现金流 + 仪表盘筛选） | P1 表单完成 |
 | `/supply-chain/cost-control/unit-cost` | `unit-cost-panel.tsx` | 5 | 🟡 新建/编辑/筛选已 `app-control-*` + `flex-wrap`；历史宽表 `min-w-[840px]` 保留 | P1 表单完成 |
@@ -114,7 +114,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 - [x] `components/cost-control/cash-flow-panel.tsx`
 - [x] `components/cost-control/po-cash-flow-panel.tsx`
 - [x] `components/contract/contract-management.tsx`
-- [ ] `components/logistics/landed-cost-consolidate-panel.tsx`
+- [x] `components/logistics/landed-cost-consolidate-panel.tsx`
 - [x] `components/logistics/shipping-report-panel.tsx`
 - [x] `components/logistics/inventory-global-panel.tsx`
 - [x] `components/order-progress/mass-production-kanban-section.tsx`
