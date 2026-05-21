@@ -24,12 +24,7 @@ export default async function ForecastPage() {
   return (
     <AppShell
       session={session}
-      title={language === "en" ? "Forecast Collection" : "Forecast 填报"}
-      description={
-        language === "en"
-          ? "Module 1: collect monthly order forecast from APAC/EU/USA offices."
-          : "模块 1：收集 APAC/EU/USA 办公室月度订单 forecast。"
-      }
+      title={language === "en" ? "Forecast" : "Forecast 填报"}
     >
       <ForecastForm
         allowedRegions={session.regions}

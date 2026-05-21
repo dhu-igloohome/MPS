@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CloudDownload, Download, Plus, Trash2, Upload } from "lucide-react";
+import { CircleHelp, CloudDownload, Download, Plus, Trash2, Upload } from "lucide-react";
 
 import {
   buildForecastDestinationOptions,
@@ -164,14 +164,18 @@ export function ForecastForm({
     saveForecast: language === "en" ? "Save Forecast" : "保存 Forecast",
     useExistingPo: language === "en" ? "Use existing forecast number" : "复用已有 forecast number",
     existingPo: language === "en" ? "Existing forecast number" : "已有 forecast number",
-    batchImport: language === "en" ? "Batch import (CSV)" : "CSV 批量导入",
-    apiImport:
-      language === "en" ? "API import (SKU Tracker)" : "API 导入（SKU Tracker）",
+    batchImport: language === "en" ? "CSV import" : "CSV 导入",
+    apiImport: language === "en" ? "API import" : "API 导入",
     apiImportHint:
       language === "en"
         ? "One-click: loads SKU-level monthly sales for the selected Forecast Month from igloohome SKU Tracker (public /api/data). Uses current Region; default destination is Singapore (APAC), Germany (EU), or United States (North America). Quantities map to Build to Order; forecast numbers are auto-generated."
         : "一键从 igloohome SKU Tracker 拉取所选 Forecast 月份各 SKU 的月度销量（公开 /api/data）。使用当前区域；默认目的国为 APAC→新加坡、EU→德国、北美→美国。数量写入「按单生产」；forecast number 仍由系统生成。",
-    downloadTemplate: language === "en" ? "Download CSV template" : "下载 CSV 模板",
+    downloadTemplate: language === "en" ? "CSV template" : "CSV 模板",
+    importHelpTitle: language === "en" ? "Import notes" : "导入说明",
+    importHelp:
+      language === "en"
+        ? "CSV: header required; forecast # auto-generated; incoterm optional (EXW default, or EXW/FOB/DAP/DDP).\nAPI: pulls SKU Tracker sales for selected month & region into BTO; forecast # auto-generated."
+        : "CSV：需表头；forecast number 自动生成；incoterm 可选（默认 EXW，或 EXW/FOB/DAP/DDP）。\nAPI：按所选月份与区域从 SKU Tracker 写入 BTO；forecast number 自动生成。",
     incoterm: language === "en" ? "Incoterm" : "贸易术语 (Incoterm)",
     batchHint:
       language === "en"
@@ -625,49 +629,54 @@ export function ForecastForm({
 
   return (
     <div className="space-y-5">
-      <section className="app-card overflow-hidden">
-        <div className="border-b border-app-border bg-slate-50/70 px-5 py-4 sm:px-6">
-          <h2 className="text-lg font-semibold text-foreground">{t.title}</h2>
-          <p className="mt-1 text-sm text-app-muted">{t.subtitle}</p>
+      <section className="app-card overflow-hidden px-4 py-3 sm:px-5">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <a
+            href="/api/forecasts/csv-template"
+            className="app-button-secondary inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
+          >
+            <Download size={15} strokeWidth={1.5} />
+            {t.downloadTemplate}
+          </a>
+          <input
+            ref={batchFileRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={onBatchFileChange}
+          />
+          <button
+            type="button"
+            disabled={loading || products.length === 0}
+            onClick={() => batchFileRef.current?.click()}
+            className="app-button-secondary inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+          >
+            <Upload size={15} strokeWidth={1.5} />
+            {t.batchImport}
+          </button>
+          <button
+            type="button"
+            disabled={loading || products.length === 0}
+            onClick={onApiImportFromSkuTracker}
+            title={t.apiImportHint}
+            className="app-button-secondary inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+          >
+            <CloudDownload size={15} strokeWidth={1.5} />
+            {t.apiImport}
+          </button>
+          <button
+            type="button"
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-transparent px-2 py-1.5 text-sm text-app-muted transition hover:border-app-border hover:bg-slate-50 hover:text-foreground"
+            title={`${t.importHelpTitle}\n\n${t.importHelp}`}
+            aria-label={t.importHelpTitle}
+          >
+            <CircleHelp size={16} strokeWidth={1.5} />
+            <span className="hidden sm:inline">{t.importHelpTitle}</span>
+          </button>
         </div>
-        <div className="px-5 py-5 sm:px-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <a
-              href="/api/forecasts/csv-template"
-              className="app-button-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
-            >
-              <Download size={16} strokeWidth={1.5} />
-              {t.downloadTemplate}
-            </a>
-            <input
-              ref={batchFileRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={onBatchFileChange}
-            />
-            <button
-              type="button"
-              disabled={loading || products.length === 0}
-              onClick={() => batchFileRef.current?.click()}
-              className="app-button-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
-            >
-              <Upload size={16} strokeWidth={1.5} />
-              {t.batchImport}
-            </button>
-            <button
-              type="button"
-              disabled={loading || products.length === 0}
-              onClick={onApiImportFromSkuTracker}
-              className="app-button-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
-            >
-              <CloudDownload size={16} strokeWidth={1.5} />
-              {t.apiImport}
-            </button>
-          </div>
-          <p className="mt-2 text-xs text-app-muted">{t.batchHint}</p>
-          <p className="mt-1 text-xs text-app-muted">{t.apiImportHint}</p>
-          {batchSummary ? <p className="mt-2 text-sm text-emerald-800">{batchSummary}</p> : null}
+        {batchSummary || batchErrors.length > 0 || products.length === 0 ? (
+          <div className="mt-2 min-w-0 border-t border-app-border/60 pt-2">
+          {batchSummary ? <p className="text-sm text-emerald-800">{batchSummary}</p> : null}
           {batchErrors.length > 0 ? (
             <ul className="mt-2 max-h-40 list-inside list-disc overflow-y-auto rounded-xl border border-red-200 bg-red-50/60 px-4 py-3 text-sm text-red-800">
               {batchErrors.map((err) => (
@@ -681,58 +690,55 @@ export function ForecastForm({
             </ul>
           ) : null}
           {products.length === 0 ? (
-            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
               {t.noProducts}
             </p>
           ) : null}
-        </div>
+          </div>
+        ) : null}
       </section>
 
       <section className="app-card overflow-hidden">
-        <div className="border-b border-app-border bg-slate-50/70 px-5 py-4 sm:px-6">
-          <h3 className="text-base font-semibold text-foreground">{language === "en" ? "Create forecast" : "新增 Forecast"}</h3>
-          <p className="mt-1 text-xs text-app-muted">
-            {language === "en"
-              ? "Group inputs in columns to reduce scrolling. SKU controls are on the right."
-              : "通过分栏减少滚动；SKU 操作按钮在右侧。"}
-          </p>
-        </div>
+        <form className="grid grid-cols-1 gap-4 px-4 py-4 sm:px-5 md:grid-cols-12" onSubmit={onSubmit}>
+          <div className="flex min-w-0 flex-wrap items-end gap-3 md:col-span-12">
+            <p className="shrink-0 pb-2 text-sm font-semibold text-foreground">
+              {language === "en" ? "New" : "新建"}
+            </p>
+            <label className="block min-w-[11rem] flex-1">
+              <span className="mb-1 block text-xs text-foreground/85">{t.forecastMonth}</span>
+              <select
+                value={month}
+                onChange={(event) => setMonth(event.target.value)}
+                required
+                className="w-full px-3 py-2 text-sm"
+              >
+                {forecastMonthPicker.options.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {language === "en" ? opt.labelEn : opt.labelZh}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <form className="grid grid-cols-1 gap-4 px-5 py-5 sm:px-6 md:grid-cols-12" onSubmit={onSubmit}>
-          <label className="block min-w-0 md:col-span-4">
-            <span className="mb-1 block text-sm text-foreground/85">{t.forecastMonth}</span>
-            <select
-              value={month}
-              onChange={(event) => setMonth(event.target.value)}
-              required
-              className="w-full px-3 py-2 text-sm"
+            <label className="block min-w-[8rem] flex-1">
+              <span className="mb-1 block text-xs text-foreground/85">{t.region}</span>
+              <select
+                value={region}
+                onChange={(event) => onRegionChange(event.target.value as Region)}
+                className="w-full px-3 py-2 text-sm"
+              >
+                {allowedRegions.map((item) => (
+                  <option key={item} value={item}>
+                    {forecastRegionSelectLabel(item, language)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label
+              className="flex min-h-[38px] shrink-0 items-center gap-2 rounded-xl border border-app-border bg-white px-3 py-2 text-sm"
+              title={t.useExistingPo}
             >
-              {forecastMonthPicker.options.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {language === "en" ? opt.labelEn : opt.labelZh}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block min-w-0 md:col-span-4">
-            <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
-            <select
-              value={region}
-              onChange={(event) => onRegionChange(event.target.value as Region)}
-              className="w-full px-3 py-2 text-sm"
-            >
-              {allowedRegions.map((item) => (
-                <option key={item} value={item}>
-                  {forecastRegionSelectLabel(item, language)}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="min-w-0 md:col-span-4">
-            <span className="mb-1 block text-sm text-foreground/85">{t.useExistingPo}</span>
-            <label className="flex min-w-0 items-center gap-2 rounded-xl border border-app-border bg-white px-3 py-2 text-sm">
               <input
                 type="checkbox"
                 checked={useExistingPo}
@@ -745,27 +751,29 @@ export function ForecastForm({
                   }
                 }}
               />
-              <span className="text-app-muted">{t.useExistingPo}</span>
+              <span className="whitespace-nowrap text-xs text-app-muted">
+                {language === "en" ? "Reuse #" : "复用编号"}
+              </span>
             </label>
-          </div>
 
-          {useExistingPo ? (
-            <label className="block min-w-0 md:col-span-6 lg:col-span-4">
-              <span className="mb-1 block text-sm text-foreground/85">{t.existingPo}</span>
-              <select
-                value={selectedPoNumber}
-                onChange={(event) => setSelectedPoNumber(event.target.value)}
-                required
-                className="w-full px-3 py-2 text-sm"
-              >
-                {regionPoOptions.map((po) => (
-                  <option key={po} value={po}>
-                    {po}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
+            {useExistingPo ? (
+              <label className="block min-w-[12rem] flex-1">
+                <span className="mb-1 block text-xs text-foreground/85">{t.existingPo}</span>
+                <select
+                  value={selectedPoNumber}
+                  onChange={(event) => setSelectedPoNumber(event.target.value)}
+                  required
+                  className="w-full px-3 py-2 text-sm"
+                >
+                  {regionPoOptions.map((po) => (
+                    <option key={po} value={po}>
+                      {po}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+          </div>
 
           <div className="min-w-0 md:col-span-12 space-y-3">
             {lines.map((line, idx) => (
@@ -1100,40 +1108,38 @@ export function ForecastForm({
       ) : null}
 
       <section className="app-card overflow-hidden">
-        <div className="border-b border-app-border bg-slate-50/70 px-5 py-4 sm:px-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h3 className="text-base font-semibold text-foreground">{t.allForecasts}</h3>
-              {canDelete ? (
-                <p className="mt-1 max-w-3xl text-xs text-app-muted">{t.actionsRules}</p>
-              ) : (
-                <p className="mt-1 max-w-3xl text-xs text-app-muted">
-                  {language === "en"
-                    ? "Actions: Edit to update a saved row (same validation as create)."
-                    : "操作：点「编辑」可修改已保存的记录（校验规则与新建一致）。"}
-                </p>
-              )}
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-app-border/80 px-4 py-3 sm:px-5">
+          <h3
+            className="text-sm font-semibold text-foreground"
+            title={
+              canDelete
+                ? t.actionsRules
+                : language === "en"
+                  ? "Edit updates a saved row."
+                  : "点「编辑」可修改已保存记录。"
+            }
+          >
+            {t.allForecasts}
+          </h3>
+          {canDelete && entries.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs tabular-nums text-app-muted">
+                {language === "en" ? `${selectedForecastIds.length} selected` : `已选 ${selectedForecastIds.length} 条`}
+              </span>
+              <button
+                type="button"
+                disabled={batchDeleting || selectedForecastIds.length === 0}
+                onClick={onBatchDeleteForecasts}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm text-red-700 transition duration-150 ease-out hover:-translate-y-px hover:bg-red-50 active:translate-y-0 disabled:opacity-50"
+              >
+                <Trash2 size={15} strokeWidth={1.5} />
+                {batchDeleting ? (language === "en" ? "Deleting…" : "删除中…") : t.deleteSelected}
+              </button>
             </div>
-            {canDelete && entries.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-2 sm:pt-0.5">
-                <span className="text-xs tabular-nums text-app-muted">
-                  {language === "en" ? `${selectedForecastIds.length} selected` : `已选 ${selectedForecastIds.length} 条`}
-                </span>
-                <button
-                  type="button"
-                  disabled={batchDeleting || selectedForecastIds.length === 0}
-                  onClick={onBatchDeleteForecasts}
-                  className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm text-red-700 transition duration-150 ease-out hover:-translate-y-px hover:bg-red-50 active:translate-y-0 disabled:opacity-50"
-                >
-                  <Trash2 size={16} strokeWidth={1.5} />
-                  {batchDeleting ? (language === "en" ? "Deleting…" : "删除中…") : t.deleteSelected}
-                </button>
-              </div>
-            ) : null}
-          </div>
+          ) : null}
         </div>
 
-        <div className="px-5 py-5 sm:px-6">
+        <div className="px-4 py-4 sm:px-5">
           <div className="app-table-shell overflow-hidden">
             <div className="max-h-[65vh] overflow-auto">
               <table className="app-table min-w-[1280px]">
