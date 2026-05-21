@@ -176,6 +176,9 @@ export function ForecastForm({
       language === "en"
         ? "CSV: header required; forecast # auto-generated; incoterm optional (EXW default, or EXW/FOB/DAP/DDP).\nAPI: pulls SKU Tracker sales for selected month & region into BTO; forecast # auto-generated."
         : "CSV：需表头；forecast number 自动生成；incoterm 可选（默认 EXW，或 EXW/FOB/DAP/DDP）。\nAPI：按所选月份与区域从 SKU Tracker 写入 BTO；forecast number 自动生成。",
+    skuLines: language === "en" ? "SKU lines" : "SKU 明细",
+    addLine: language === "en" ? "Add line" : "加一行",
+    lineNo: language === "en" ? "#" : "序",
     incoterm: language === "en" ? "Incoterm" : "贸易术语 (Incoterm)",
     batchHint:
       language === "en"
@@ -775,173 +778,188 @@ export function ForecastForm({
             ) : null}
           </div>
 
-          <div className="min-w-0 md:col-span-12 space-y-3">
-            {lines.map((line, idx) => (
-              <div key={line.key} className="min-w-0 rounded-2xl border border-app-border bg-white p-4 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-app-subtle">
-                      {language === "en" ? "Line" : "行"} {idx + 1}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {idx === lines.length - 1 ? (
-                      <button
-                        type="button"
-                        onClick={() => setLines((prev) => [...prev, newDraftForecastLine(products)])}
-                        className="app-button-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
-                      >
-                        <Plus size={16} strokeWidth={1.5} />
-                        {language === "en" ? "Add line" : "新增一行"}
-                      </button>
-                    ) : null}
-                    {lines.length > 1 ? (
-                      <button
-                        type="button"
-                        onClick={() => setLines((prev) => prev.filter((x) => x.key !== line.key))}
-                        className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm text-red-700 transition duration-150 ease-out hover:-translate-y-px hover:bg-red-50 active:translate-y-0"
-                      >
-                        <Trash2 size={16} strokeWidth={1.5} />
-                        {t.removeSku}
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-12">
-                  <label className="block min-w-0 md:col-span-6">
-                    <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
-                    <select
-                      value={line.sku}
-                      onChange={(event) => updateLineSku(line.key, event.target.value)}
-                      required
-                      className="w-full px-3 py-2 text-sm"
-                    >
-                      {skuOptions.map((item) => (
-                        <option key={item} value={item}>
-                          {item}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="block min-w-0 md:col-span-6">
-                    <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
-                    <input
-                      value={line.productName}
-                      readOnly
-                      className="w-full rounded-xl border border-app-border bg-slate-50 px-3 py-2 text-sm"
-                    />
-                  </label>
-
-                  <label className="block min-w-0 md:col-span-6">
-                    <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
-                    <select
-                      value={line.destination}
-                      onChange={(event) =>
-                        setLines((prev) =>
-                          prev.map((x) => (x.key === line.key ? { ...x, destination: event.target.value } : x)),
-                        )
-                      }
-                      required
-                      className="w-full px-3 py-2 text-sm"
-                    >
-                      <option value="" disabled>
-                        {t.destinationPlaceholder}
-                      </option>
-                      {destinationOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {language === "en" ? opt.labelEn : opt.labelZh}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
-                  </label>
-
-                  <label className="block min-w-0 md:col-span-6">
-                    <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
-                    <select
-                      value={line.incoterm}
-                      onChange={(event) =>
-                        setLines((prev) =>
-                          prev.map((x) =>
-                            x.key === line.key ? { ...x, incoterm: event.target.value as ForecastIncoterm } : x,
-                          ),
-                        )
-                      }
-                      required
-                      className="w-full px-3 py-2 text-sm"
-                    >
-                      {FORECAST_INCOTERMS.map((code) => (
-                        <option key={code} value={code}>
-                          {code}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="mt-2 text-xs leading-relaxed text-app-muted">
-                      {forecastIncotermHint(line.incoterm, language)}
-                    </p>
-                  </label>
-
-                  <label className="block min-w-0 md:col-span-6">
-                    <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={line.buildToOrder}
-                      onChange={(event) =>
-                        setLines((prev) =>
-                          prev.map((x) => (x.key === line.key ? { ...x, buildToOrder: event.target.value } : x)),
-                        )
-                      }
-                      className="w-full px-3 py-2 text-sm"
-                    />
-                  </label>
-
-                  <label className="block min-w-0 md:col-span-6">
-                    <span className="mb-1 block text-sm text-foreground/85">{t.bts}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={line.buildToStock}
-                      onChange={(event) =>
-                        setLines((prev) =>
-                          prev.map((x) => (x.key === line.key ? { ...x, buildToStock: event.target.value } : x)),
-                        )
-                      }
-                      className="w-full px-3 py-2 text-sm"
-                    />
-                  </label>
-
-                  <label className="block min-w-0 md:col-span-12">
-                    <span className="mb-1 block text-sm text-foreground/85">{t.remark}</span>
-                    <textarea
-                      value={line.remark}
-                      onChange={(event) =>
-                        setLines((prev) =>
-                          prev.map((x) => (x.key === line.key ? { ...x, remark: event.target.value } : x)),
-                        )
-                      }
-                      rows={2}
-                      className="w-full px-3 py-2 text-sm"
-                    />
-                  </label>
-                </div>
+          <div className="min-w-0 md:col-span-12">
+            <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-app-muted">{t.skuLines}</span>
+              <button
+                type="button"
+                onClick={() => setLines((prev) => [...prev, newDraftForecastLine(products)])}
+                disabled={products.length === 0}
+                className="app-button-secondary inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+              >
+                <Plus size={15} strokeWidth={1.5} />
+                {t.addLine}
+              </button>
+            </div>
+            <div className="app-table-shell overflow-hidden rounded-xl border border-app-border/90">
+              <div className="overflow-x-auto">
+                <table className="app-table min-w-[920px] text-sm">
+                  <thead>
+                    <tr className="[&>th]:bg-slate-50/90 [&>th]:px-2 [&>th]:py-2 [&>th]:text-left [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-app-muted">
+                      <th className="w-8">{t.lineNo}</th>
+                      <th className="w-[7rem]">{t.sku}</th>
+                      <th className="min-w-[12rem]">{t.productName}</th>
+                      <th className="min-w-[10rem]">{t.destination}</th>
+                      <th className="w-[5.5rem]">{t.incoterm}</th>
+                      <th className="w-[5rem]">{t.bto}</th>
+                      <th className="w-[5rem]">{t.bts}</th>
+                      <th className="min-w-[8rem]">{t.remark}</th>
+                      <th className="w-10" aria-hidden />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lines.map((line, idx) => (
+                      <tr key={line.key} className="align-top [&>td]:px-2 [&>td]:py-1.5">
+                        <td className="tabular-nums text-app-muted">{idx + 1}</td>
+                        <td>
+                          <select
+                            value={line.sku}
+                            onChange={(event) => updateLineSku(line.key, event.target.value)}
+                            required
+                            className="w-full min-w-0 px-2 py-1.5 text-sm"
+                            aria-label={t.sku}
+                          >
+                            {skuOptions.map((item) => (
+                              <option key={item} value={item}>
+                                {item}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            value={line.productName}
+                            readOnly
+                            title={line.productName}
+                            className="w-full min-w-0 truncate rounded-lg border border-app-border bg-slate-50/80 px-2 py-1.5 text-sm"
+                            aria-label={t.productName}
+                          />
+                        </td>
+                        <td>
+                          <select
+                            value={line.destination}
+                            onChange={(event) =>
+                              setLines((prev) =>
+                                prev.map((x) =>
+                                  x.key === line.key ? { ...x, destination: event.target.value } : x,
+                                ),
+                              )
+                            }
+                            required
+                            title={t.destinationHint}
+                            className="w-full min-w-0 px-2 py-1.5 text-sm"
+                            aria-label={t.destination}
+                          >
+                            <option value="" disabled>
+                              {t.destinationPlaceholder}
+                            </option>
+                            {destinationOptions.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {language === "en" ? opt.labelEn : opt.labelZh}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <select
+                            value={line.incoterm}
+                            onChange={(event) =>
+                              setLines((prev) =>
+                                prev.map((x) =>
+                                  x.key === line.key
+                                    ? { ...x, incoterm: event.target.value as ForecastIncoterm }
+                                    : x,
+                                ),
+                              )
+                            }
+                            required
+                            title={forecastIncotermHint(line.incoterm, language)}
+                            className="w-full min-w-0 px-2 py-1.5 text-sm font-medium"
+                            aria-label={t.incoterm}
+                          >
+                            {FORECAST_INCOTERMS.map((code) => (
+                              <option key={code} value={code}>
+                                {code}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min={0}
+                            value={line.buildToOrder}
+                            onChange={(event) =>
+                              setLines((prev) =>
+                                prev.map((x) =>
+                                  x.key === line.key ? { ...x, buildToOrder: event.target.value } : x,
+                                ),
+                              )
+                            }
+                            className="w-full px-2 py-1.5 text-right text-sm tabular-nums"
+                            aria-label={t.bto}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min={0}
+                            value={line.buildToStock}
+                            onChange={(event) =>
+                              setLines((prev) =>
+                                prev.map((x) =>
+                                  x.key === line.key ? { ...x, buildToStock: event.target.value } : x,
+                                ),
+                              )
+                            }
+                            className="w-full px-2 py-1.5 text-right text-sm tabular-nums"
+                            aria-label={t.bts}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={line.remark}
+                            onChange={(event) =>
+                              setLines((prev) =>
+                                prev.map((x) => (x.key === line.key ? { ...x, remark: event.target.value } : x)),
+                              )
+                            }
+                            placeholder={language === "en" ? "Optional" : "可选"}
+                            className="w-full min-w-0 px-2 py-1.5 text-sm"
+                            aria-label={t.remark}
+                          />
+                        </td>
+                        <td className="text-center">
+                          {lines.length > 1 ? (
+                            <button
+                              type="button"
+                              onClick={() => setLines((prev) => prev.filter((x) => x.key !== line.key))}
+                              className="inline-flex rounded-lg p-1.5 text-red-600 transition hover:bg-red-50"
+                              title={t.removeSku}
+                              aria-label={t.removeSku}
+                            >
+                              <Trash2 size={15} strokeWidth={1.5} />
+                            </button>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
+            </div>
           </div>
 
-          <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 md:col-span-12">
-            <div className="flex items-center gap-3">
-              <button
-                type="submit"
-                disabled={loading || products.length === 0}
-                className="app-button-primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-60"
-              >
-                {loading ? t.saving : t.saveForecast}
-              </button>
-              {message ? <span className="text-sm text-app-muted">{message}</span> : null}
-            </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-3 border-t border-app-border/60 pt-3 md:col-span-12">
+            <button
+              type="submit"
+              disabled={loading || products.length === 0}
+              className="app-button-primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-60"
+            >
+              {loading ? t.saving : t.saveForecast}
+            </button>
+            {message ? <span className="text-sm text-app-muted">{message}</span> : null}
           </div>
         </form>
       </section>
