@@ -195,6 +195,8 @@ export function ToolingManagement({ entries, language }: Props) {
           <select
             className={ccSelectSm}
             value={form.toolingType}
+            title={language === "en" ? "Tooling type" : "工装类型"}
+            aria-label={language === "en" ? "Tooling type" : "工装类型"}
             onChange={(e) => setForm((f) => ({ ...f, toolingType: e.target.value as ToolingType }))}
           >
             <option value="mold">mold</option>
@@ -205,6 +207,8 @@ export function ToolingManagement({ entries, language }: Props) {
           <select
             className={ccSelectSm}
             value={form.status}
+            title={language === "en" ? "Status" : "状态"}
+            aria-label={language === "en" ? "Status" : "状态"}
             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as ToolingStatus }))}
           >
             <option value="design">design</option>
@@ -334,6 +338,8 @@ export function ToolingManagement({ entries, language }: Props) {
           <select
             className={ccSelectSm}
             value={statusFilter}
+            title={language === "en" ? "Filter by status" : "按状态筛选"}
+            aria-label={language === "en" ? "Filter by status" : "按状态筛选"}
             onChange={(e) => {
               setStatusFilter(e.target.value as "all" | ToolingStatus);
               setPage(1);
