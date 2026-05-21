@@ -4,6 +4,16 @@ import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import {
+  ccDate,
+  ccInputMd,
+  ccLabel,
+  ccNum,
+  ccReadOnly,
+  ccSelectMd,
+  ccSelectSm,
+  ccSelectXs,
+} from "@/components/cost-control/cost-control-form-controls";
 import { Language } from "@/lib/i18n";
 import type {
   ForecastEntry,
@@ -716,8 +726,13 @@ export function OrderProgressPanel({
             </button>
           </div>
         </div>
-        <p className="mt-2 text-xs text-app-muted">{t.batchHint}</p>
-        <p className="mt-1 text-xs text-app-muted">{t.forecastAutoHint}</p>
+        <details className="mt-2 text-xs text-app-muted">
+          <summary className="cursor-pointer select-none font-medium text-foreground/80">
+            {language === "en" ? "Import & auto-link notes" : "导入与 Forecast 关联说明"}
+          </summary>
+          <p className="mt-1 max-w-3xl leading-relaxed">{t.batchHint}</p>
+          <p className="mt-1 max-w-3xl leading-relaxed">{t.forecastAutoHint}</p>
+        </details>
         {batchSummary ? (
           <p className="mt-2 text-sm text-emerald-800">{batchSummary}</p>
         ) : null}
@@ -741,26 +756,23 @@ export function OrderProgressPanel({
           </p>
         ) : null}
 
-        <form
-          className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          onSubmit={onSubmit}
-        >
-          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <span className="mb-1 block text-sm text-foreground/85">{t.orderNumber}</span>
+        <form className="mt-4 flex min-w-0 flex-wrap items-end gap-x-3 gap-y-2" onSubmit={onSubmit}>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.orderNumber}</span>
             <input
               value={orderNumber}
               readOnly
               placeholder={language === "en" ? "Auto-generated on create (IG-PO-xxxxxxx)" : "创建时自动生成（IG-PO-xxxxxxx）"}
-              className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm"
+              className={`${ccReadOnly} app-control-md`}
             />
           </label>
-          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <span className="mb-1 block text-sm text-foreground/85">{t.poNumber}</span>
+          <label className="shrink-0" title={t.poHint}>
+            <span className={ccLabel}>{t.poNumber}</span>
             <select
               value={resolvedPoNumber}
               onChange={(e) => onPoNumberChange(e.target.value)}
               required
-              className="w-full px-3 py-2 text-sm"
+              className={ccSelectMd}
             >
               {poOptions.map((po) => (
                 <option key={po} value={po}>
@@ -768,19 +780,19 @@ export function OrderProgressPanel({
                 </option>
               ))}
             </select>
-            <span className="mt-1 block text-xs text-app-muted">{t.poHint}</span>
           </label>
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
+          <label className="min-w-0 shrink-0">
+            <span className={ccLabel}>{t.productName}</span>
             <input
               value={resolvedProductName}
               readOnly
-              className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm"
+              title={resolvedProductName}
+              className={`${ccReadOnly} app-control-md max-w-[14rem]`}
             />
           </label>
 
-          <div className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
+          <div className="shrink-0" title={t.skuMultiHint}>
+            <span className={ccLabel}>{t.sku}</span>
             {editingId ? (
               <select
                 value={resolvedSku}
@@ -799,7 +811,7 @@ export function OrderProgressPanel({
                 }}
                 required
                 disabled={products.length === 0}
-                className="w-full px-3 py-2 text-sm"
+                className={ccSelectSm}
               >
                 {skuOptions.map((p) => (
                   <option key={p.sku} value={p.sku}>
@@ -808,7 +820,7 @@ export function OrderProgressPanel({
                 ))}
               </select>
             ) : (
-              <div className="space-y-1 rounded-lg px-3 py-2">
+              <div className="max-w-[14rem] space-y-1 rounded-lg border border-app-border/80 bg-app-surface/60 px-2 py-1.5">
                 {skuOptions.map((p) => (
                   <label key={p.sku} className="flex min-w-0 items-center gap-2 text-sm">
                     <input
@@ -840,11 +852,10 @@ export function OrderProgressPanel({
                 ))}
               </div>
             )}
-            <span className="mt-1 block text-xs text-app-muted">{t.skuMultiHint}</span>
           </div>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.quantity}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.quantity}</span>
             <input
               type="number"
               min={0}
@@ -852,35 +863,33 @@ export function OrderProgressPanel({
               value={quantity}
               readOnly
               required
-              className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm"
+              className={`${ccReadOnly} app-control-num tabular-nums`}
             />
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.orderDate}</span>
+          <label className="shrink-0" title={t.dateHint}>
+            <span className={ccLabel}>{t.orderDate}</span>
             <input
               type="date"
               value={orderDate}
               onChange={(e) => setOrderDate(e.target.value)}
               required
-              className="w-full px-3 py-2 text-sm"
+              className={ccDate}
             />
-            <span className="mt-1 block text-xs text-app-muted">{t.dateHint}</span>
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.expectedDeliveryDate}</span>
+          <label className="shrink-0" title={t.dateHint}>
+            <span className={ccLabel}>{t.expectedDeliveryDate}</span>
             <input
               type="date"
               value={expectedDeliveryDate}
               onChange={(e) => setExpectedDeliveryDate(e.target.value)}
               required={planRows.length === 0}
-              className="w-full px-3 py-2 text-sm"
+              className={ccDate}
             />
-            <span className="mt-1 block text-xs text-app-muted">{t.dateHint}</span>
           </label>
 
-          <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4 rounded-xl border border-app-border/90 bg-app-accent-soft/50 p-4">
+          <div className="w-full shrink-0 basis-full rounded-xl border border-app-border/90 bg-app-accent-soft/50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm font-medium text-foreground/90">{t.deliveryBatches}</span>
               <button
@@ -891,16 +900,19 @@ export function OrderProgressPanel({
                 {t.addBatch}
               </button>
             </div>
-            <p className="mt-2 text-xs text-app-muted">{t.deliveryBatchesHint}</p>
+            <details className="mt-2 text-xs text-app-muted">
+              <summary className="cursor-pointer select-none">{language === "en" ? "Batch rules" : "分批规则"}</summary>
+              <p className="mt-1 max-w-3xl leading-relaxed">{t.deliveryBatchesHint}</p>
+            </details>
             {planRows.length > 0 ? (
               <div className="mt-3 space-y-3">
                 {planRows.map((row, index) => (
                   <div
                     key={row.key}
-                    className="grid min-w-0 grid-cols-1 gap-2 rounded-lg border border-app-border/90 bg-app-surface p-3 sm:grid-cols-[minmax(0,1fr)_7rem_minmax(0,1fr)_auto] sm:items-end"
+                    className="flex min-w-0 flex-wrap items-end gap-2 rounded-lg border border-app-border/90 bg-app-surface p-3"
                   >
-                    <label className="block min-w-0">
-                      <span className="mb-1 block text-xs text-app-muted">{t.batchDate}</span>
+                    <label className="shrink-0">
+                      <span className={ccLabel}>{t.batchDate}</span>
                       <input
                         type="date"
                         value={row.expectedDeliveryDate}
@@ -910,11 +922,11 @@ export function OrderProgressPanel({
                             rows.map((r, i) => (i === index ? { ...r, expectedDeliveryDate: v } : r)),
                           );
                         }}
-                        className="w-full rounded-lg border border-app-border px-2 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+                        className={`${ccDate} outline-none ring-app-accent focus:ring-2`}
                       />
                     </label>
-                    <label className="block min-w-0">
-                      <span className="mb-1 block text-xs text-app-muted">{t.batchQty}</span>
+                    <label className="shrink-0">
+                      <span className={ccLabel}>{t.batchQty}</span>
                       <input
                         type="number"
                         min={0}
@@ -926,11 +938,11 @@ export function OrderProgressPanel({
                             rows.map((r, i) => (i === index ? { ...r, quantity: v } : r)),
                           );
                         }}
-                        className="w-full rounded-lg border border-app-border px-2 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+                        className={`${ccNum} outline-none ring-app-accent focus:ring-2`}
                       />
                     </label>
-                    <label className="block min-w-0">
-                      <span className="mb-1 block text-xs text-app-muted">{t.batchProgress}</span>
+                    <label className="shrink-0">
+                      <span className={ccLabel}>{t.batchProgress}</span>
                       <select
                         value={row.progress}
                         onChange={(e) => {
@@ -939,7 +951,7 @@ export function OrderProgressPanel({
                             rows.map((r, i) => (i === index ? { ...r, progress: v } : r)),
                           );
                         }}
-                        className="w-full rounded-lg border border-app-border px-2 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+                        className={`${ccSelectSm} outline-none ring-app-accent focus:ring-2`}
                       >
                         {PROGRESS.map((p) => (
                           <option key={p} value={p}>
@@ -948,28 +960,22 @@ export function OrderProgressPanel({
                         ))}
                       </select>
                     </label>
-                    <div className="flex sm:justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setPlanRows((rows) => rows.filter((_, i) => i !== index))}
-                        className="rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
-                      >
-                        {t.removeBatch}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPlanRows((rows) => rows.filter((_, i) => i !== index))}
+                      className="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50"
+                    >
+                      {t.removeBatch}
+                    </button>
                   </div>
                 ))}
               </div>
             ) : null}
           </div>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.orderType}</span>
-            <select
-              value={orderType}
-              disabled
-              className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm"
-            >
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.orderType}</span>
+            <select value={orderType} disabled className={`${ccSelectXs} bg-gray-50`}>
               {ORDER_TYPES.map((o) => (
                 <option key={o} value={o}>
                   {orderTypeLabel(language, o)}
@@ -978,12 +984,12 @@ export function OrderProgressPanel({
             </select>
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.progress}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.progress}</span>
             <select
               value={progress}
               onChange={(e) => setProgress(e.target.value as OrderProgressStatus)}
-              className="w-full px-3 py-2 text-sm"
+              className={ccSelectSm}
             >
               {PROGRESS.map((p) => (
                 <option key={p} value={p}>
@@ -993,12 +999,12 @@ export function OrderProgressPanel({
             </select>
           </label>
 
-          <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <span className="mb-1 block text-sm text-foreground/85">{t.factoryName}</span>
+          <label className="shrink-0" title={t.factoryNameHint}>
+            <span className={ccLabel}>{t.factoryName}</span>
             <select
               value={factoryNameTrimmed}
               onChange={(e) => setFactoryName(e.target.value)}
-              className="w-full px-3 py-2 text-sm"
+              className={ccSelectMd}
             >
               <option value="">{t.selectFactory}</option>
               {factoryNameNotInActiveList ? (
@@ -1012,15 +1018,14 @@ export function OrderProgressPanel({
                 </option>
               ))}
             </select>
-            <span className="mt-1 block text-xs text-app-muted">{t.factoryNameHint}</span>
           </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.region}</span>
             <select
               value={resolvedRegion}
               onChange={(e) => setRegion(e.target.value as OrderProgressRegion)}
-              className="w-full px-3 py-2 text-sm"
+              className={ccSelectSm}
             >
               {allowedRegions.map((r) => (
                 <option key={r} value={r}>
@@ -1030,27 +1035,25 @@ export function OrderProgressPanel({
             </select>
           </label>
 
-          <div className="flex min-w-0 flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-3 xl:col-span-4">
+          <button
+            type="submit"
+            disabled={loading || products.length === 0}
+            className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+          >
+            {loading ? "..." : editingId ? t.save : t.create}
+          </button>
+          {editingId ? (
             <button
-              type="submit"
-              disabled={loading || products.length === 0}
-              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+              type="button"
+              onClick={resetForm}
+              className="app-button-secondary shrink-0 px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
             >
-              {loading ? "..." : editingId ? t.save : t.create}
+              {t.cancelEdit}
             </button>
-            {editingId ? (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="app-button-secondary px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
-              >
-                {t.cancelEdit}
-              </button>
-            ) : null}
-          </div>
+          ) : null}
 
           {editingId ? (
-            <div className="min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4 rounded-xl border border-app-border/90 bg-app-accent-soft/50 p-4">
+            <div className="w-full shrink-0 basis-full rounded-xl border border-app-border/90 bg-app-accent-soft/50 p-4">
               <p className="text-sm font-medium text-foreground/90">{t.productionTitle}</p>
               {renderProductionChecklist(
                 editingId,

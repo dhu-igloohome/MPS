@@ -74,7 +74,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 |------|--------|-----------------|----------------------|--------|
 | `/forecast` | `forecast-form.tsx` | 12 | 🟡 P0 已修：顶栏/录入表/编辑条用 `app-control-*`；记录表 Ops/评论仍宽表布局（`min-w-[1280px]`） | P0 样板完成 |
 | `/dashboard` | `cockpit-visualizations.tsx` | 11 | 🔴 筛选区全部 `select.mt-1.w-full`（L282–561）；网格列导致短枚举拉满 | P1 |
-| `/order-progress` | `order-progress-panel.tsx` | 7 | 🔴 大量 `w-full`（rg 16 处）；表 `min-w-[1280px]` | P1 |
+| `/order-progress` | `order-progress-panel.tsx` | 7 | 🟡 创建/编辑表单与分批行已 `app-control-*` + `flex-wrap`；表 `min-w-[1280px]` 保留 | P1 表单完成 |
 | `/order-progress/production-management` | `production-management-panel.tsx` | 0* | 🟡 以表格/看板为主，继承 order 系 `w-full` 模式需 spot check | P2 |
 | `/mass-production-kanban` | `mass-production-kanban-section.tsx` | 2 | 🟡 表 `min-w-[1100px]` + 部分 `w-full` | P2 |
 | `/logistics-progress` | `logistics-progress-panel.tsx` | 8 | 🔴 `w-full` 13 处；表 `min-w-[1100px]` | P1 |
@@ -105,7 +105,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 
 - [x] `components/forecast/forecast-form.tsx` — **P0 样板页**（新建区 + 编辑条；记录宽表待二期）
 - [ ] `components/dashboard/cockpit-visualizations.tsx`
-- [ ] `components/order-progress/order-progress-panel.tsx`
+- [x] `components/order-progress/order-progress-panel.tsx`
 - [ ] `components/logistics/logistics-progress-panel.tsx`
 - [ ] `components/logistics/order-fulfillments-panel.tsx`
 - [x] `components/cost-control/cash-flow-dashboard.tsx` — 筛选条 + 表内 date/shipping select
