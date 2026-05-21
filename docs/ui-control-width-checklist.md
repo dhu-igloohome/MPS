@@ -76,7 +76,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 | `/dashboard` | `cockpit-visualizations.tsx` | 11 | 🔴 筛选区全部 `select.mt-1.w-full`（L282–561）；网格列导致短枚举拉满 | P1 |
 | `/order-progress` | `order-progress-panel.tsx` | 7 | 🟡 创建/编辑表单与分批行已 `app-control-*` + `flex-wrap`；表 `min-w-[1280px]` 保留 | P1 表单完成 |
 | `/order-progress/production-management` | `production-management-panel.tsx` | 0* | 🟡 以表格/看板为主，继承 order 系 `w-full` 模式需 spot check | P2 |
-| `/mass-production-kanban` | `mass-production-kanban-section.tsx` | 2 | 🟡 表 `min-w-[1100px]` + 部分 `w-full` | P2 |
+| `/mass-production-kanban` | `mass-production-kanban-section.tsx` | 2 | 🟡 表单已 `app-control-*` + `flex-wrap`；表 `min-w-[1100px]` 保留 | P2 表单完成 |
 | `/logistics-progress` | `logistics-progress-panel.tsx` | 8 | 🔴 `w-full` 13 处；表 `min-w-[1100px]` | P1 |
 | `/logistics-progress/order-fulfillments` | `order-fulfillments-panel.tsx` | 2 | 🔴 单元格常量 `cellInputClass` 含 `w-full min-w-[6.5rem]`（L48–52） | P1 |
 | `/logistics-progress/shipping-report` | `shipping-report-panel.tsx` | 1 | 🔴 表 `min-w-[3200px]`（极宽滚动） | P2 |
@@ -117,7 +117,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 - [ ] `components/logistics/landed-cost-consolidate-panel.tsx`
 - [ ] `components/logistics/shipping-report-panel.tsx`
 - [ ] `components/logistics/inventory-global-panel.tsx`
-- [ ] `components/order-progress/mass-production-kanban-section.tsx`
+- [x] `components/order-progress/mass-production-kanban-section.tsx`
 - [ ] `components/npi/bom-management.tsx`
 - [ ] `components/npi/ecn-management.tsx`
 - [ ] `components/npi/sop-management.tsx`

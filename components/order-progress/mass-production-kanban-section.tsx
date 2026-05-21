@@ -3,6 +3,14 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  ccDate,
+  ccInputMd,
+  ccLabel,
+  ccNum,
+  ccSelectLg,
+  ccSelectSm,
+} from "@/components/cost-control/cost-control-form-controls";
 import { Language } from "@/lib/i18n";
 import type {
   MassProductionKanbanEntry,
@@ -230,21 +238,28 @@ export function MassProductionKanbanSection({
       className="app-card scroll-mt-4 border-l-4 border-l-[var(--app-accent)] p-5"
     >
       <h3 className="text-lg font-semibold text-foreground">{t.sectionTitle}</h3>
-      <p className="mt-1 text-xs text-app-muted">
-        {language === "en"
-          ? "Track mass production milestones per product/SKU and region (MP, dates, ORT, etc.)."
-          : "按产品/SKU 与区域维护量产节点（MP、各工序日期、ORT 等）。"}
-      </p>
+      <details className="mt-1 text-xs text-app-muted">
+        <summary className="cursor-pointer select-none font-medium text-foreground/80">
+          {language === "en" ? "Kanban overview" : "看板说明"}
+        </summary>
+        <p className="mt-1 max-w-3xl leading-relaxed">
+          {language === "en"
+            ? "Track mass production milestones per product/SKU and region (MP, dates, ORT, etc.)."
+            : "按产品/SKU 与区域维护量产节点（MP、各工序日期、ORT 等）。"}
+        </p>
+        <p className="mt-1 max-w-3xl leading-relaxed">{t.skuHint}</p>
+        <p className="mt-1 max-w-3xl leading-relaxed">{t.dateHint}</p>
+      </details>
 
-      <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" onSubmit={onSubmit}>
-        <label className="block min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-          <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
+      <form className="mt-4 flex min-w-0 flex-wrap items-end gap-x-3 gap-y-2" onSubmit={onSubmit}>
+        <label className="min-w-0 shrink-0">
+          <span className={ccLabel}>{t.sku}</span>
           <select
             value={resolvedProductId}
             onChange={(e) => setProductId(e.target.value)}
             required
             disabled={products.length === 0}
-            className="w-full px-3 py-2 text-sm"
+            className={ccSelectLg}
           >
             {products.map((p) => (
               <option key={p.id} value={p.id}>
@@ -252,11 +267,10 @@ export function MassProductionKanbanSection({
               </option>
             ))}
           </select>
-          <span className="mt-1 block text-xs text-app-muted">{t.skuHint}</span>
         </label>
 
-        <label className="block min-w-0">
-          <span className="mb-1 block text-sm text-foreground/85">{t.quantity}</span>
+        <label className="shrink-0">
+          <span className={ccLabel}>{t.quantity}</span>
           <input
             type="number"
             min={0}
@@ -264,16 +278,16 @@ export function MassProductionKanbanSection({
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             required
-            className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+            className={`${ccNum} outline-none ring-app-accent focus:ring-2`}
           />
         </label>
 
-        <label className="block min-w-0 sm:col-span-2 lg:col-span-2">
-          <span className="mb-1 block text-sm text-foreground/85">{t.mp}</span>
+        <label className="min-w-0 shrink-0">
+          <span className={ccLabel}>{t.mp}</span>
           <input
             value={mp}
             onChange={(e) => setMp(e.target.value)}
-            className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+            className={`${ccInputMd} max-w-[16rem] outline-none ring-app-accent focus:ring-2`}
             maxLength={2000}
           />
         </label>
@@ -290,23 +304,23 @@ export function MassProductionKanbanSection({
             ["deliver", t.deliver],
           ] as const
         ).map(([key, label]) => (
-          <label key={key} className="block min-w-0">
-            <span className="mb-1 block text-sm text-foreground/85">{label}</span>
+          <label key={key} className="shrink-0" title={t.dateHint}>
+            <span className={ccLabel}>{label}</span>
             <input
               type="date"
               value={dates[key]}
               onChange={(e) => setDates((d) => ({ ...d, [key]: e.target.value }))}
-              className="w-full rounded-lg border border-app-border px-3 py-2 text-sm outline-none ring-app-accent focus:ring-2"
+              className={`${ccDate} outline-none ring-app-accent focus:ring-2`}
             />
           </label>
         ))}
 
-        <label className="block min-w-0">
-          <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
+        <label className="shrink-0">
+          <span className={ccLabel}>{t.region}</span>
           <select
             value={resolvedRegion}
             onChange={(e) => setRegion(e.target.value as MassProductionKanbanRegion)}
-            className="w-full px-3 py-2 text-sm"
+            className={ccSelectSm}
           >
             {allowedRegions.map((r) => (
               <option key={r} value={r}>
@@ -316,26 +330,22 @@ export function MassProductionKanbanSection({
           </select>
         </label>
 
-        <p className="min-w-0 text-xs text-app-muted sm:col-span-2 lg:col-span-3 xl:col-span-4">{t.dateHint}</p>
-
-        <div className="flex min-w-0 flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-3 xl:col-span-4">
+        <button
+          type="submit"
+          disabled={loading || products.length === 0}
+          className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+        >
+          {loading ? "..." : editingId ? t.save : t.create}
+        </button>
+        {editingId ? (
           <button
-            type="submit"
-            disabled={loading || products.length === 0}
-            className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+            type="button"
+            onClick={resetForm}
+            className="app-button-secondary shrink-0 px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
           >
-            {loading ? "..." : editingId ? t.save : t.create}
+            {t.cancelEdit}
           </button>
-          {editingId ? (
-            <button
-              type="button"
-              onClick={resetForm}
-              className="app-button-secondary px-4 py-2 text-sm text-foreground/85 hover:bg-app-accent-soft"
-            >
-              {t.cancelEdit}
-            </button>
-          ) : null}
-        </div>
+        ) : null}
       </form>
 
       {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
