@@ -156,6 +156,9 @@ export function ForecastForm({
     removeSku: language === "en" ? "Delete" : "删除",
     bto: language === "en" ? "Build to Order" : "按单生产",
     bts: language === "en" ? "Build to Stock" : "备货生产",
+    btoHeader: language === "en" ? "BTO" : "按单",
+    btsHeader: language === "en" ? "BTS" : "备货",
+    createdHeader: language === "en" ? "Created" : "创建",
     saveFailed:
       language === "en"
         ? "Save failed. Please check fields and permissions."
@@ -824,11 +827,11 @@ export function ForecastForm({
                   <colgroup>
                     <col className="w-8" />
                     <col className="w-[5.5rem]" />
-                    <col className="w-[11rem]" />
+                    <col className="w-[8rem]" />
                     <col className="w-[10.5rem]" />
                     <col className="w-[4.75rem]" />
-                    <col className="w-[4.5rem]" />
-                    <col className="w-[4.5rem]" />
+                    <col className="w-[5rem]" />
+                    <col className="w-[5rem]" />
                     <col className="w-[14rem]" />
                     <col className="w-9" />
                   </colgroup>
@@ -839,8 +842,12 @@ export function ForecastForm({
                       <th>{t.productName}</th>
                       <th>{t.destination}</th>
                       <th>{t.incoterm}</th>
-                      <th className="text-right">{t.bto}</th>
-                      <th className="text-right">{t.bts}</th>
+                      <th className="whitespace-nowrap px-1.5 text-right" title={t.bto}>
+                        {t.btoHeader}
+                      </th>
+                      <th className="whitespace-nowrap px-1.5 text-right" title={t.bts}>
+                        {t.btsHeader}
+                      </th>
                       <th>{t.remark}</th>
                       <th aria-hidden />
                     </tr>
@@ -864,10 +871,10 @@ export function ForecastForm({
                             ))}
                           </select>
                         </td>
-                        <td className="max-w-[11rem]">
+                        <td className="max-w-[8rem]">
                           <TableCellLongText
                             text={line.productName}
-                            maxWidthClass="max-w-[10.5rem]"
+                            maxWidthClass="max-w-[7.5rem]"
                             viewLabel={t.viewFullText}
                             dialogTitle={t.productName}
                             closeLabel={t.close}
@@ -1221,11 +1228,11 @@ export function ForecastForm({
                   <col className="w-[5.5rem]" />
                   <col className="w-[8.5rem]" />
                   <col className="w-[4.25rem]" />
-                  <col className="w-[11rem]" />
+                  <col className="w-[8rem]" />
                   <col className="w-[5.5rem]" />
-                  <col className="w-[4.25rem]" />
-                  <col className="w-[4.25rem]" />
-                  <col className="w-[6.5rem]" />
+                  <col className="w-[5.25rem]" />
+                  <col className="w-[5.25rem]" />
+                  <col className="w-[7.25rem]" />
                   <col className="w-[8.5rem]" />
                   <col className="w-[12rem]" />
                   <col className="w-[14rem]" />
@@ -1251,9 +1258,15 @@ export function ForecastForm({
                     <th className="whitespace-nowrap">{t.incoterm}</th>
                     <th>{t.productName}</th>
                     <th className="whitespace-nowrap">{t.sku}</th>
-                    <th className="whitespace-nowrap text-right">{t.bto}</th>
-                    <th className="whitespace-nowrap text-right">{t.bts}</th>
-                    <th className="whitespace-nowrap">{t.createdAt}</th>
+                    <th className="whitespace-nowrap px-1.5 text-right" title={t.bto}>
+                      {t.btoHeader}
+                    </th>
+                    <th className="whitespace-nowrap px-1.5 text-right" title={t.bts}>
+                      {t.btsHeader}
+                    </th>
+                    <th className="whitespace-nowrap px-1.5" title={t.createdAt}>
+                      {t.createdHeader}
+                    </th>
                     <th>{t.actions}</th>
                     <th>{t.comment}</th>
                     <th>Ops action</th>
@@ -1302,10 +1315,10 @@ export function ForecastForm({
                             {forecastDestinationDisplay(item.destination, language, destinationOptions)}
                           </td>
                           <td className="whitespace-nowrap font-medium">{item.incoterm}</td>
-                          <td className="max-w-[11rem] align-top">
+                          <td className="max-w-[8rem] align-top">
                             <TableCellLongText
                               text={item.productName}
-                              maxWidthClass="max-w-[10.5rem]"
+                              maxWidthClass="max-w-[7.5rem]"
                               viewLabel={t.viewFullText}
                               dialogTitle={t.productName}
                               closeLabel={t.close}
