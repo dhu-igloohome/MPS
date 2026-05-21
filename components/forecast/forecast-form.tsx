@@ -1213,7 +1213,23 @@ export function ForecastForm({
         <div className="px-4 py-4 sm:px-5">
           <div className="app-table-shell overflow-hidden">
             <div className="max-h-[65vh] overflow-auto">
-              <table className="app-table min-w-[1280px]">
+              <table className="app-table w-full min-w-[72rem] table-fixed text-sm">
+                <colgroup>
+                  {canDelete ? <col className="w-10" /> : null}
+                  <col className="w-[6.5rem]" />
+                  <col className="w-[9.5rem]" />
+                  <col className="w-[5.5rem]" />
+                  <col className="w-[8.5rem]" />
+                  <col className="w-[4.25rem]" />
+                  <col className="w-[11rem]" />
+                  <col className="w-[5.5rem]" />
+                  <col className="w-[4.25rem]" />
+                  <col className="w-[4.25rem]" />
+                  <col className="w-[6.5rem]" />
+                  <col className="w-[8.5rem]" />
+                  <col className="w-[12rem]" />
+                  <col className="w-[14rem]" />
+                </colgroup>
                 <thead>
                   <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:bg-slate-50">
                     {canDelete ? (
@@ -1228,19 +1244,19 @@ export function ForecastForm({
                         />
                       </th>
                     ) : null}
-                    <th>{t.forecastMonth}</th>
-                    <th>{language === "en" ? "Forecast #" : "Forecast #"}</th>
-                    <th>{t.region}</th>
+                    <th className="whitespace-nowrap">{t.forecastMonth}</th>
+                    <th className="whitespace-nowrap">{language === "en" ? "Forecast #" : "Forecast #"}</th>
+                    <th className="whitespace-nowrap">{t.region}</th>
                     <th>{t.destination}</th>
-                    <th>{t.incoterm}</th>
+                    <th className="whitespace-nowrap">{t.incoterm}</th>
                     <th>{t.productName}</th>
-                    <th>{t.sku}</th>
-                    <th>{t.bto}</th>
-                    <th>{t.bts}</th>
-                    <th>{t.createdAt}</th>
+                    <th className="whitespace-nowrap">{t.sku}</th>
+                    <th className="whitespace-nowrap text-right">{t.bto}</th>
+                    <th className="whitespace-nowrap text-right">{t.bts}</th>
+                    <th className="whitespace-nowrap">{t.createdAt}</th>
                     <th>{t.actions}</th>
-                    <th className="min-w-[12rem]">{t.comment}</th>
-                    <th className="min-w-[14rem]">Ops action</th>
+                    <th>{t.comment}</th>
+                    <th>Ops action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1277,18 +1293,29 @@ export function ForecastForm({
                               />
                             </td>
                           ) : null}
-                          <td>{formatForecastMonthDisplay(item.month, language)}</td>
-                          <td className="font-medium">{item.poNumber || "—"}</td>
-                          <td>{forecastRegionSelectLabel(item.region, language)}</td>
-                          <td>{forecastDestinationDisplay(item.destination, language, destinationOptions)}</td>
-                          <td className="whitespace-nowrap font-medium">{item.incoterm}</td>
-                          <td className="max-w-[22rem] truncate" title={item.productName}>
-                            {item.productName}
+                          <td className="whitespace-nowrap">{formatForecastMonthDisplay(item.month, language)}</td>
+                          <td className="truncate font-medium" title={item.poNumber || undefined}>
+                            {item.poNumber || "—"}
                           </td>
-                          <td className="whitespace-nowrap">{item.sku}</td>
-                          <td className="tabular-nums">{item.buildToOrder}</td>
-                          <td className="tabular-nums">{item.buildToStock}</td>
-                          <td className="whitespace-nowrap">{item.createdAt.slice(0, 10)}</td>
+                          <td className="whitespace-nowrap">{forecastRegionSelectLabel(item.region, language)}</td>
+                          <td className="truncate" title={forecastDestinationDisplay(item.destination, language, destinationOptions)}>
+                            {forecastDestinationDisplay(item.destination, language, destinationOptions)}
+                          </td>
+                          <td className="whitespace-nowrap font-medium">{item.incoterm}</td>
+                          <td className="max-w-[11rem] align-top">
+                            <TableCellLongText
+                              text={item.productName}
+                              maxWidthClass="max-w-[10.5rem]"
+                              viewLabel={t.viewFullText}
+                              dialogTitle={t.productName}
+                              closeLabel={t.close}
+                              expandThreshold={22}
+                            />
+                          </td>
+                          <td className="whitespace-nowrap font-medium">{item.sku}</td>
+                          <td className="text-right tabular-nums">{item.buildToOrder}</td>
+                          <td className="text-right tabular-nums">{item.buildToStock}</td>
+                          <td className="whitespace-nowrap tabular-nums text-app-muted">{item.createdAt.slice(0, 10)}</td>
                           <td className="align-top">
                             <div className="flex flex-wrap gap-1.5">
                               <button
@@ -1311,7 +1338,7 @@ export function ForecastForm({
                               ) : null}
                             </div>
                           </td>
-                          <td className="max-w-[20rem] align-top">
+                          <td className="align-top">
                             <textarea
                               rows={3}
                               maxLength={4000}
@@ -1322,7 +1349,7 @@ export function ForecastForm({
                               onBlur={() => void saveInlineRemark(item)}
                               disabled={savingRemarkId === item.id || savingEdit || deletingId === item.id}
                               placeholder={language === "en" ? "Add a comment…" : "输入评论…"}
-                              className="w-full max-w-[12rem] rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground placeholder:text-app-muted focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
+                              className="w-full min-w-0 resize-y rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground placeholder:text-app-muted focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
                               aria-label={language === "en" ? "Comment" : "评论"}
                             />
                           </td>
