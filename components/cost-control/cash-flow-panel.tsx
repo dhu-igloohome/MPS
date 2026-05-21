@@ -244,7 +244,12 @@ export function CashFlowPanel({
             {t.fcExportReport}
           </button>
         </div>
-        <p className="mt-1 text-xs text-app-muted">{t.fcHint}</p>
+        <details className="mt-1 text-xs text-app-muted">
+          <summary className="cursor-pointer select-none font-medium text-foreground/80">
+            {language === "en" ? "Forecast cash flow notes" : "Forecast 现金流说明"}
+          </summary>
+          <p className="mt-1 max-w-3xl leading-relaxed">{t.fcHint}</p>
+        </details>
         <div className="app-table-shell mt-3 overflow-x-auto">
           <table className="w-full min-w-[1280px] border-collapse text-xs sm:text-sm">
             <thead>
@@ -285,7 +290,7 @@ export function CashFlowPanel({
                         value={row.cashFlowSupplierName}
                         onChange={(e) => void onFcSupplierChange(row.id, e.target.value)}
                         disabled={fcRowSavingId === row.id}
-                        className="w-full max-w-[12rem] rounded-lg border border-app-border bg-app-surface px-2 py-1 text-sm"
+                        className="app-control-md max-w-[11rem] rounded-lg border border-app-border bg-app-surface px-2 py-1 text-sm"
                         aria-label={t.fcSupplierName}
                       >
                         <option value="">{t.fcSelectSupplier}</option>

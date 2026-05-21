@@ -9,6 +9,17 @@ import {
   parseDestination,
   type CostDestination,
 } from "@/lib/cost-analysis-compute";
+import {
+  ccInputMd,
+  ccInputSm,
+  ccLabel,
+  ccMoneyNum,
+  ccMoneyPrefix,
+  ccMoneyWrap,
+  ccNum,
+  ccSelectSm,
+  ccSelectXs,
+} from "@/components/cost-control/cost-control-form-controls";
 import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
 import type { CostAnalysisEntry, CostFreightMode } from "@/lib/types";
@@ -272,14 +283,14 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
     await refresh();
   }
 
-  const inputBase =
-    "mt-1 min-w-0 w-full rounded-lg border border-app-border px-2 py-1.5 text-sm text-foreground";
-  const moneyInputBase =
-    "min-w-0 w-full rounded-lg border border-app-border py-1.5 pr-2 pl-6 text-sm text-foreground";
-
   return (
     <div className="space-y-4">
-      <p className="text-sm text-app-muted">{t.hint}</p>
+      <details className="text-xs text-app-muted">
+        <summary className="cursor-pointer select-none font-medium text-foreground/80">
+          {language === "en" ? "How totals are computed" : "合计计算说明"}
+        </summary>
+        <p className="mt-1 max-w-3xl leading-relaxed">{t.hint}</p>
+      </details>
 
       <div className="app-table-shell overflow-x-auto">
         <table className="w-full min-w-[1600px] border-collapse text-xs sm:text-sm">
@@ -393,111 +404,137 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <label className="min-w-0 text-sm">
-            {t.cmRegion}
+        <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.cmRegion}</span>
             <input
-              className={inputBase}
+              className={ccInputSm}
               list="cm-region-suggestions-cost"
               value={form.cmRegion}
               onChange={(e) => setForm((f) => ({ ...f, cmRegion: e.target.value }))}
               autoComplete="off"
             />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.supplier}
-            <input className={inputBase} list="supplier-suggestions-cost" value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} />
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.supplier}</span>
+            <input
+              className={ccInputMd}
+              list="supplier-suggestions-cost"
+              value={form.supplierName}
+              onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))}
+            />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.sku}
-            <input className={inputBase} value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))} required />
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.sku}</span>
+            <input className={ccInputSm} value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))} required />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.qty}
-            <input type="number" min={0} step={1} className={inputBase} value={form.quantity || ""} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) || 0 }))} required />
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.qty}</span>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              className={ccNum}
+              value={form.quantity || ""}
+              onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) || 0 }))}
+              required
+            />
           </label>
-          <label className="min-w-0 text-sm sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            {t.orderNo}
-            <input className={inputBase} value={form.orderNumber} onChange={(e) => setForm((f) => ({ ...f, orderNumber: e.target.value }))} required />
+          <label className="min-w-0 shrink-0">
+            <span className={ccLabel}>{t.orderNo}</span>
+            <input
+              className={ccInputMd}
+              value={form.orderNumber}
+              onChange={(e) => setForm((f) => ({ ...f, orderNumber: e.target.value }))}
+              required
+            />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.ee}
-            <div className="relative mt-1">
-              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.ee}</span>
+            <div className={ccMoneyWrap}>
+              <span className={ccMoneyPrefix}>$</span>
               <input
                 type="number"
                 min={0}
                 step="0.01"
-                className={moneyInputBase}
+                className={ccMoneyNum}
                 value={form.eeCost || ""}
                 onChange={(e) => setForm((f) => ({ ...f, eeCost: Number(e.target.value) || 0 }))}
               />
             </div>
           </label>
-          <label className="min-w-0 text-sm">
-            {t.me}
-            <div className="relative mt-1">
-              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.me}</span>
+            <div className={ccMoneyWrap}>
+              <span className={ccMoneyPrefix}>$</span>
               <input
                 type="number"
                 min={0}
                 step="0.01"
-                className={moneyInputBase}
+                className={ccMoneyNum}
                 value={form.meCost || ""}
                 onChange={(e) => setForm((f) => ({ ...f, meCost: Number(e.target.value) || 0 }))}
               />
             </div>
           </label>
-          <label className="min-w-0 text-sm">
-            {t.assembly}
-            <div className="relative mt-1">
-              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.assembly}</span>
+            <div className={ccMoneyWrap}>
+              <span className={ccMoneyPrefix}>$</span>
               <input
                 type="number"
                 min={0}
                 step="0.01"
-                className={moneyInputBase}
+                className={ccMoneyNum}
                 value={form.assemblyCost || ""}
                 onChange={(e) => setForm((f) => ({ ...f, assemblyCost: Number(e.target.value) || 0 }))}
               />
             </div>
           </label>
-          <label className="min-w-0 text-sm">
-            {t.tariff}
-            <input type="number" min={0} max={100} step="0.1" className={inputBase} value={form.tariffPct || ""} onChange={(e) => setForm((f) => ({ ...f, tariffPct: Number(e.target.value) || 0 }))} />
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.tariff}</span>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step="0.1"
+              className={ccNum}
+              value={form.tariffPct || ""}
+              onChange={(e) => setForm((f) => ({ ...f, tariffPct: Number(e.target.value) || 0 }))}
+            />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.airFreight}
-            <div className="relative mt-1">
-              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.airFreight}</span>
+            <div className={ccMoneyWrap}>
+              <span className={ccMoneyPrefix}>$</span>
               <input
                 type="number"
                 min={0}
                 step="0.01"
-                className={moneyInputBase}
+                className={ccMoneyNum}
                 value={form.airFreightPerUnit || ""}
                 onChange={(e) => setForm((f) => ({ ...f, airFreightPerUnit: Number(e.target.value) || 0 }))}
               />
             </div>
           </label>
-          <label className="min-w-0 text-sm">
-            {t.seaFreight}
-            <div className="relative mt-1">
-              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">$</span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.seaFreight}</span>
+            <div className={ccMoneyWrap}>
+              <span className={ccMoneyPrefix}>$</span>
               <input
                 type="number"
                 min={0}
                 step="0.01"
-                className={moneyInputBase}
+                className={ccMoneyNum}
                 value={form.seaFreightPerUnit || ""}
                 onChange={(e) => setForm((f) => ({ ...f, seaFreightPerUnit: Number(e.target.value) || 0 }))}
               />
             </div>
           </label>
-          <label className="min-w-0 text-sm">
-            {t.freight}
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.freight}</span>
             <select
-              className={inputBase}
+              className={ccSelectXs}
               value={form.freightMode}
               onChange={(e) => setForm((f) => ({ ...f, freightMode: e.target.value as CostFreightMode }))}
             >
@@ -505,10 +542,10 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               <option value="sea">{language === "en" ? "Sea" : "海运"}</option>
             </select>
           </label>
-          <label className="min-w-0 text-sm">
-            {t.chinaVat}
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.chinaVat}</span>
             <select
-              className={inputBase}
+              className={ccSelectXs}
               value={form.includesChinaVat ? "yes" : "no"}
               onChange={(e) => setForm((f) => ({ ...f, includesChinaVat: e.target.value === "yes" }))}
             >
@@ -516,10 +553,10 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               <option value="yes">{t.yes}</option>
             </select>
           </label>
-          <label className="min-w-0 text-sm">
-            {t.dest}
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.dest}</span>
             <select
-              className={inputBase}
+              className={ccSelectSm}
               value={form.destinationCountry}
               onChange={(e) => setForm((f) => ({ ...f, destinationCountry: e.target.value as CostDestination }))}
             >
@@ -530,9 +567,9 @@ export function CostAnalysisPanel({ language, initialEntries }: CostAnalysisPane
               ))}
             </select>
           </label>
-          <label className="min-w-0 text-sm sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            {t.remark}
-            <input className={inputBase} value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} />
+          <label className="min-w-0 shrink-0">
+            <span className={ccLabel}>{t.remark}</span>
+            <input className={ccInputMd} value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} />
           </label>
         </div>
 

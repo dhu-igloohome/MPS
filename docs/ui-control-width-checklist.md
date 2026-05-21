@@ -82,8 +82,8 @@ rg 'min-w-\[' components --glob '*.tsx'
 | `/logistics-progress/shipping-report` | `shipping-report-panel.tsx` | 1 | 🔴 表 `min-w-[3200px]`（极宽滚动） | P2 |
 | `/logistics-progress/inventory-global` | `inventory-global-panel.tsx` | 1 | 🔴 表 `min-w-[7200px]` | P2 |
 | `/logistics-progress/landed-cost-consolidate` | `landed-cost-consolidate-panel.tsx` | 2 | 🟡 表 `min-w-[1600px]`；Incoterm 列 `min-w-[6rem]` 相对合理 | P2 |
-| `/cost-control` | `cash-flow-dashboard.tsx` 等 | 3+ | 🔴 dashboard 内 `w-full` 19 处；多表 `min-w-[1080–2200px]` | P1 |
-| `/supply-chain/cost-control` | 同上 | — | 同 cost-control 组件 | P1 |
+| `/cost-control` | `cash-flow-dashboard.tsx` 等 | 3+ | 🟡 筛选/表单已 `app-control-*` + `flex-wrap`；宽表 `min-w-[1080–2200px]` 保留横向滚动 | P1 表单完成 |
+| `/supply-chain/cost-control` | 同上 | — | 🟡 同 cost-control（成本分析 + PO 现金流 + 仪表盘筛选） | P1 表单完成 |
 | `/supply-chain/cost-control/unit-cost` | `unit-cost-panel.tsx` | 5 | 🔴 `w-full` 13 处 | P1 |
 | `/contracts` · `/supply-chain/contracts` | `contract-management.tsx` | 3 | 🔴 筛选 `select.w-full`（L490/L499）；表 `min-w-[1220px]` | P1 |
 | `/suppliers` · `/supply-chain/suppliers` | `supplier-management.tsx` | 0 | 🟡 表 `min-w-[1300px]`，表单若新增 select 需按档位 | P2 |
@@ -108,11 +108,11 @@ rg 'min-w-\[' components --glob '*.tsx'
 - [ ] `components/order-progress/order-progress-panel.tsx`
 - [ ] `components/logistics/logistics-progress-panel.tsx`
 - [ ] `components/logistics/order-fulfillments-panel.tsx`
-- [ ] `components/cost-control/cash-flow-dashboard.tsx`
+- [x] `components/cost-control/cash-flow-dashboard.tsx` — 筛选条 + 表内 date/shipping select
 - [ ] `components/cost-control/unit-cost-panel.tsx`
-- [ ] `components/cost-control/cost-analysis-panel.tsx`
-- [ ] `components/cost-control/cash-flow-panel.tsx`
-- [ ] `components/cost-control/po-cash-flow-panel.tsx`
+- [x] `components/cost-control/cost-analysis-panel.tsx`
+- [x] `components/cost-control/cash-flow-panel.tsx`
+- [x] `components/cost-control/po-cash-flow-panel.tsx`
 - [ ] `components/contract/contract-management.tsx`
 - [ ] `components/logistics/landed-cost-consolidate-panel.tsx`
 - [ ] `components/logistics/shipping-report-panel.tsx`

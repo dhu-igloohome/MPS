@@ -4,6 +4,17 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
+import {
+  ccDate,
+  ccInputMd,
+  ccLabel,
+  ccMoneyNum,
+  ccMoneyPrefix,
+  ccMoneyWrap,
+  ccNum,
+  ccReadOnly,
+  ccSelectLg,
+} from "@/components/cost-control/cost-control-form-controls";
 import { findCostAnalysisForCashFlow } from "@/lib/cash-flow-cost-analysis-link";
 import { formatUsd } from "@/lib/format-usd";
 import { computeCashFlowDerivedActuals, computeTotalAmount } from "@/lib/cash-flow-validation";
@@ -271,12 +282,6 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
     await refresh();
   }
 
-  const inputBase =
-    "mt-1 min-w-0 w-full rounded-lg border border-app-border px-2 py-1.5 text-sm text-foreground";
-  const readOnlyMuted = `${inputBase} cursor-not-allowed bg-app-muted/25`;
-  const moneyInputBase =
-    "min-w-0 w-full rounded-lg border border-app-border py-1.5 pr-2 pl-6 text-sm text-foreground";
-
   return (
     <div className="mt-10 space-y-4 border-t border-app-border/80 pt-8">
       <h4 className="text-base font-semibold text-foreground">{t.sectionTitle}</h4>
@@ -288,7 +293,12 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
         showForecastCashFlowSummary={false}
       />
 
-      <p className="text-sm text-app-muted">{t.tableHint}</p>
+      <details className="text-xs text-app-muted">
+        <summary className="cursor-pointer select-none font-medium text-foreground/80">
+          {language === "en" ? "PO cash flow rules" : "PO 现金流规则说明"}
+        </summary>
+        <p className="mt-1 max-w-3xl leading-relaxed">{t.tableHint}</p>
+      </details>
 
       <div className="app-table-shell overflow-x-auto">
         <table className="w-full min-w-[1200px] border-collapse text-xs sm:text-sm">
@@ -376,11 +386,11 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
           <p className="text-sm text-red-600">{t.orphanEdit}</p>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <label className="min-w-0 text-sm sm:col-span-2 lg:col-span-2">
-            {t.pickCostLine}
+        <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
+          <label className="min-w-0 w-full shrink-0 sm:w-auto">
+            <span className={ccLabel}>{t.pickCostLine}</span>
             <select
-              className={inputBase}
+              className={ccSelectLg}
               value={selectedCostLineId}
               onChange={(e) => {
                 const id = e.target.value.trim();
@@ -416,72 +426,64 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               ))}
             </select>
           </label>
-          <label className="min-w-0 text-sm">
-            {t.orderNo}
-            <input className={readOnlyMuted} value={form.orderNumber} readOnly tabIndex={-1} />
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.orderNo}</span>
+            <input className={`${ccReadOnly} app-control-sm`} value={form.orderNumber} readOnly tabIndex={-1} />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.sku}
-            <input className={readOnlyMuted} value={form.sku} readOnly tabIndex={-1} />
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.sku}</span>
+            <input className={`${ccReadOnly} app-control-sm`} value={form.sku} readOnly tabIndex={-1} />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.orderDate}
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.orderDate}</span>
             <input
               type="date"
-              className={inputBase}
+              className={ccDate}
               value={form.orderDate}
               onChange={(e) => setForm((f) => ({ ...f, orderDate: e.target.value }))}
               required
             />
           </label>
-          <label className="min-w-0 text-sm">
-            <span className="flex flex-wrap items-center gap-1">
-              {t.qty}
-              <span className="text-xs font-normal text-app-muted">({t.qtyHint})</span>
-            </span>
+          <label className="shrink-0" title={t.qtyHint}>
+            <span className={ccLabel}>{t.qty}</span>
             <input
               type="number"
               min={0}
               step={1}
-              className={readOnlyMuted}
+              className={`${ccReadOnly} app-control-num`}
               value={form.quantity === 0 && !form.orderNumber ? "" : form.quantity}
               readOnly
               tabIndex={-1}
-              title={t.qtyHint}
             />
           </label>
-          <label className="min-w-0 text-sm">
-            <span className="flex flex-wrap items-center gap-1">
-              {t.unitPrice}
-              <span className="text-xs font-normal text-app-muted">({t.unitPriceHint})</span>
-            </span>
+          <label className="shrink-0" title={t.unitPriceReadOnly}>
+            <span className={ccLabel}>{t.unitPrice}</span>
             <input
               type="text"
-              className={readOnlyMuted}
+              className={`${ccReadOnly} app-control-num`}
               value={form.unitPrice ? formatUsd(form.unitPrice, 4) : ""}
               readOnly
               tabIndex={-1}
-              title={t.unitPriceReadOnly}
             />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.total}
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.total}</span>
             <input
               type="text"
-              className={`${inputBase} bg-app-muted/20`}
+              className={`${ccReadOnly} app-control-num bg-app-muted/20`}
               readOnly
               value={formatUsd(form.totalAmount, 2)}
               tabIndex={-1}
             />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.advPct}
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.advPct}</span>
             <input
               type="number"
               min={0}
               max={100}
               step="0.1"
-              className={inputBase}
+              className={ccNum}
               value={form.advanceRatioPct || ""}
               onChange={(e) => {
                 const adv = Number(e.target.value);
@@ -494,26 +496,26 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               required
             />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.termDays}
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.termDays}</span>
             <input
               type="number"
               min={0}
               step={1}
-              className={inputBase}
+              className={ccNum}
               value={form.paymentTermDays || ""}
               onChange={(e) => setForm((f) => ({ ...f, paymentTermDays: Number(e.target.value) }))}
               required
             />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.finPct}
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.finPct}</span>
             <input
               type="number"
               min={0}
               max={100}
               step="0.1"
-              className={inputBase}
+              className={ccNum}
               value={form.finalRatioPct || ""}
               onChange={(e) => {
                 const fin = Number(e.target.value);
@@ -526,27 +528,25 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               required
             />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.actAdvDate}
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.actAdvDate}</span>
             <input
               type="text"
-              className={readOnlyMuted}
+              className={`${ccReadOnly} app-control-sm`}
               readOnly
               tabIndex={-1}
               value={derivedActuals.actualAdvanceDate}
             />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.actAdvAmt}
-            <div className="relative mt-1">
-              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">
-                $
-              </span>
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.actAdvAmt}</span>
+            <div className={ccMoneyWrap}>
+              <span className={ccMoneyPrefix}>$</span>
               <input
                 type="number"
                 min={0}
                 step="0.01"
-                className={moneyInputBase}
+                className={ccMoneyNum}
                 value={form.actualAdvanceAmount ?? ""}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -557,41 +557,32 @@ export function PoCashFlowPanel({ language, initialEntries, costAnalysisEntries 
               />
             </div>
           </label>
-          <label className="min-w-0 text-sm">
-            {t.actFinDate}
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.actFinDate}</span>
             <input
               type="text"
-              className={readOnlyMuted}
+              className={`${ccReadOnly} app-control-sm`}
               readOnly
               tabIndex={-1}
               value={derivedActuals.actualFinalDate}
             />
           </label>
-          <label className="min-w-0 text-sm">
-            {t.actFinAmt}
-            <div className="relative mt-1">
-              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-sm text-app-muted">
-                $
-              </span>
-              <input
-                type="text"
-                className={`${moneyInputBase} cursor-not-allowed bg-app-muted/25`}
-                readOnly
-                tabIndex={-1}
-                value={formatUsd(derivedActuals.actualFinalAmount, 2)}
-              />
-            </div>
-          </label>
-          <label className="min-w-0 text-sm sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            {t.remark}
+          <label className="shrink-0">
+            <span className={ccLabel}>{t.actFinAmt}</span>
             <input
-              className={inputBase}
-              value={form.remarks}
-              onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
+              type="text"
+              className={`${ccReadOnly} app-control-num`}
+              readOnly
+              tabIndex={-1}
+              value={formatUsd(derivedActuals.actualFinalAmount, 2)}
             />
           </label>
+          <label className="min-w-0 shrink-0">
+            <span className={ccLabel}>{t.remark}</span>
+            <input className={ccInputMd} value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} />
+          </label>
         </div>
-        <p className="mt-2 text-xs text-app-muted">
+        <p className="mt-2 text-xs text-app-muted" title={`${t.expectedAdv}: ${formatUsd(expectedAdv, 2)} · ${t.expectedFin}: ${formatUsd(expectedFin, 2)}`}>
           {t.expectedAdv}: {formatUsd(expectedAdv, 2)} · {t.expectedFin}: {formatUsd(expectedFin, 2)}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">

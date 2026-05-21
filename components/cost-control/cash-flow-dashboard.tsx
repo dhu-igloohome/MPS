@@ -1022,7 +1022,7 @@ export function CashFlowDashboard({
                             value={row.poIssueDate ?? ""}
                             onChange={(e) => void persistFcPoIssueDate(row.id, e.target.value)}
                             disabled={fcPoSavingId === row.id}
-                            className="w-full max-w-[11rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                            className="app-control-sm max-w-[11rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                             aria-label={t.fcColPoIssue}
                           />
                         </div>
@@ -1301,7 +1301,7 @@ export function CashFlowDashboard({
                                 )
                               }
                               disabled={fcShippingSavingId === row.id}
-                              className="w-full max-w-[13rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
+                              className="app-control-xs max-w-[8rem] rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
                               aria-label={t.lcColShip}
                             >
                               <option value="ocean">{t.lcShipOcean}</option>
@@ -1544,11 +1544,11 @@ export function CashFlowDashboard({
       </div>
 
       <div className="app-card p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 xl:items-end">
-          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+        <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
+          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
             {t.range}
             <select
-              className="mt-1 w-full bg-white px-3 py-2 text-sm"
+              className="app-control-sm mt-1 block bg-white px-2 py-1.5 text-sm dark:bg-slate-800"
               value={rangePreset}
               onChange={(e) => setRangePreset(e.target.value as RangePreset)}
             >
@@ -1559,37 +1559,37 @@ export function CashFlowDashboard({
           </label>
           {rangePreset === "custom" ? (
             <>
-              <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+              <label className="shrink-0 text-xs font-medium text-[#4B5563]">
                 {t.from}
                 <input
                   type="date"
-                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
+                  className="app-control-sm mt-1 block bg-white px-2 py-1.5 text-sm dark:bg-slate-800"
                   value={customFrom}
                   onChange={(e) => setCustomFrom(e.target.value)}
                 />
               </label>
-              <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+              <label className="shrink-0 text-xs font-medium text-[#4B5563]">
                 {t.to}
                 <input
                   type="date"
-                  className="mt-1 w-full bg-white px-3 py-2 text-sm"
+                  className="app-control-sm mt-1 block bg-white px-2 py-1.5 text-sm dark:bg-slate-800"
                   value={customTo}
                   onChange={(e) => setCustomTo(e.target.value)}
                 />
               </label>
             </>
           ) : (
-            <div className="min-w-0 sm:col-span-2 md:col-span-2 xl:col-span-2 text-xs text-[#9CA3AF]">
+            <div className="shrink-0 pb-1 text-xs text-[#9CA3AF]">
               {dateRange.from} → {dateRange.to}
             </div>
           )}
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 border-t border-slate-200/80 pt-4 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+        <div className="mt-4 flex flex-wrap items-end gap-x-3 gap-y-2 border-t border-slate-200/80 pt-4 dark:border-slate-700">
+          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
             {t.supplier}
             <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="app-control-md mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
               value={supplier}
               onChange={(e) => setSupplier(e.target.value)}
             >
@@ -1601,97 +1601,95 @@ export function CashFlowDashboard({
               ))}
             </select>
           </label>
-          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
             {t.qtyMin}
             <input
               type="number"
               min={0}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
               value={qtyMin}
               onChange={(e) => setQtyMin(e.target.value)}
             />
           </label>
-          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
             {t.qtyMax}
             <input
               type="number"
               min={0}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
               value={qtyMax}
               onChange={(e) => setQtyMax(e.target.value)}
             />
           </label>
-          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
             {t.totalMin}
             <input
               type="number"
               min={0}
               step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
               value={totalMin}
               onChange={(e) => setTotalMin(e.target.value)}
             />
           </label>
-          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
             {t.totalMax}
             <input
               type="number"
               min={0}
               step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
               value={totalMax}
               onChange={(e) => setTotalMax(e.target.value)}
             />
           </label>
-          <div className="flex min-w-0 items-end">
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              {t.resetFilters}
-            </button>
-          </div>
-          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="shrink-0 rounded-xl border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            {t.resetFilters}
+          </button>
+          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
             {t.advMin}
             <input
               type="number"
               min={0}
               step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
               value={advMin}
               onChange={(e) => setAdvMin(e.target.value)}
             />
           </label>
-          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
             {t.advMax}
             <input
               type="number"
               min={0}
               step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
               value={advMax}
               onChange={(e) => setAdvMax(e.target.value)}
             />
           </label>
-          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
             {t.finMin}
             <input
               type="number"
               min={0}
               step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
               value={finMin}
               onChange={(e) => setFinMin(e.target.value)}
             />
           </label>
-          <label className="min-w-0 text-xs font-medium text-[#4B5563]">
+          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
             {t.finMax}
             <input
               type="number"
               min={0}
               step="0.01"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
               value={finMax}
               onChange={(e) => setFinMax(e.target.value)}
             />
