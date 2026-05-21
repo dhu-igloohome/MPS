@@ -61,3 +61,45 @@ When **creating or adjusting** Tailwind CSS grids for forms, filters, KPI rows, 
 - **Long identifiers**: add `truncate` or `break-words` / `break-all` only where the design calls for a single-line chip or wrapped copy; do not remove existing table horizontal scroll when the table is intentionally wide.
 
 These rules are **layout-only** unless a change is explicitly required for behavior or accessibility.
+
+### Control width (content-driven / intrinsic sizing) — project-wide
+
+**Non-negotiables** for forms, filters, toolbars, and editable tables. Full audit checklist: `docs/ui-control-width-checklist.md`.
+
+1. **Width follows information density**  
+   Short-value fields (region, Incoterm, SKU, status, month, yes/no) must size to content + padding — not stretch to fill leftover row width.
+
+2. **More controls per row**  
+   Filter/create toolbars: `flex flex-wrap items-end gap-2`. Short fields use `shrink-0` + width utilities — **never `flex-1`** on labels wrapping month/region/Incoterm/SKU selects.
+
+3. **Native `<select>` dropdown width**  
+   Browser panels are **≥ trigger width**. Narrow the trigger first (`app-control-xs` / `app-control-sm` / `app-control-md` in `app/globals.css`); do not rely on CSS to shrink the open list below the trigger.
+
+4. **Help text does not steal layout**  
+   Incoterm, destination, import rules, etc.: use `title`, `CircleHelp` + short label, or collapsed `<details>` — **no always-visible multi-line hints** under compact controls.
+
+#### Width tiers (use existing classes)
+
+| Tier | Examples | Classes |
+|------|----------|---------|
+| XS | Incoterm, line # | `app-control-xs` |
+| S | Region, SKU, month | `app-control-sm` |
+| M | Destination, forecast # | `app-control-md` |
+| Num | BTO, BTS, qty | `app-control-num` |
+| L | Product name, remark, URL | `min-w-0` cell + `truncate` / `max-w-*`; only here use `w-full` inside a **bounded** column |
+
+#### Anti-patterns (do not introduce)
+
+- `label` + `flex-1` + `select.w-full` for short enums on one toolbar row  
+- Table `min-w-[…]` on every column + `select.w-full` in Incoterm/SKU cells  
+- Replacing vertical space savings with full-width triggers  
+
+#### Tables
+
+- Prefer `table-fixed` + `<colgroup>` or explicit narrow `th`/`col` widths for short columns.  
+- `w-full` inside a cell is OK only when the **column** is intentionally narrow or capped (`max-w-*`).  
+- Long text columns (product name, comments) get the remaining width + `truncate` + `title`.
+
+#### When editing grids (exception to “always w-full”)
+
+Inside responsive grids, `w-full` applies to **L-tier** fields in bounded cells (`min-w-0`). **S/XS-tier** fields in the same row use `app-control-sm` etc., not `w-full`.
