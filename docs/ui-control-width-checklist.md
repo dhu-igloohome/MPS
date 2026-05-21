@@ -58,7 +58,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 | **L** | 产品名、备注 | `min-w-0 flex-1 max-w-[…]` + `truncate` |
 | **Full** | 登录用户名、长文本 | 表单单列时 `w-full` 合理 |
 
-工具类（建议在 `globals.css` `@layer components` 增补，**待实现**）：
+工具类（已在 `app/globals.css` `@layer components`）：
 
 - `.app-control-xs` → `w-auto max-w-[5rem]`
 - `.app-control-sm` → `w-auto min-w-[5.5rem] max-w-[10rem]`
@@ -72,7 +72,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 
 | 路由 | 主组件 | `<select>` 数量 | 宽度相关事实（代码） | 优先级 |
 |------|--------|-----------------|----------------------|--------|
-| `/forecast` | `forecast-form.tsx` | 12 | 🔴 顶栏 `label.flex-1`（L710/L726/L763）；表内 `select.w-full`（L814+）；表 `min-w-[920px]`；Incoterm 列无 `max-w` | P0 |
+| `/forecast` | `forecast-form.tsx` | 12 | 🟡 P0 已修：顶栏/录入表/编辑条用 `app-control-*`；记录表 Ops/评论仍宽表布局（`min-w-[1280px]`） | P0 样板完成 |
 | `/dashboard` | `cockpit-visualizations.tsx` | 11 | 🔴 筛选区全部 `select.mt-1.w-full`（L282–561）；网格列导致短枚举拉满 | P1 |
 | `/order-progress` | `order-progress-panel.tsx` | 7 | 🔴 大量 `w-full`（rg 16 处）；表 `min-w-[1280px]` | P1 |
 | `/order-progress/production-management` | `production-management-panel.tsx` | 0* | 🟡 以表格/看板为主，继承 order 系 `w-full` 模式需 spot check | P2 |
@@ -103,7 +103,7 @@ rg 'min-w-\[' components --glob '*.tsx'
 
 修复时 **按文件** 勾选，避免遗漏：
 
-- [ ] `components/forecast/forecast-form.tsx` — **P0 样板页**
+- [x] `components/forecast/forecast-form.tsx` — **P0 样板页**（新建区 + 编辑条；记录宽表待二期）
 - [ ] `components/dashboard/cockpit-visualizations.tsx`
 - [ ] `components/order-progress/order-progress-panel.tsx`
 - [ ] `components/logistics/logistics-progress-panel.tsx`
@@ -187,5 +187,6 @@ rg 'select' components -A1 --glob '*.tsx' | rg 'w-full'
 | 日期 | 说明 |
 |------|------|
 | 2026-05-21 | 初版：rg 扫描 38 个 `page.tsx`、23 个含 select 组件；根因指向组件 class 而非 globals |
+| 2026-05-21 | Forecast P0：`app-control-xs/sm/md/num` + `forecast-form` 顶栏/录入表/编辑条 |
 
 **下次修订**：某文件修复合并后，更新 §3 状态列（🔴→🟢）并注明 PR/commit，避免清单与代码脱节。

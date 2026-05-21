@@ -707,13 +707,13 @@ export function ForecastForm({
             <p className="shrink-0 pb-2 text-sm font-semibold text-foreground">
               {language === "en" ? "New" : "新建"}
             </p>
-            <label className="block min-w-[11rem] flex-1">
+            <label className="block shrink-0">
               <span className="mb-1 block text-xs text-foreground/85">{t.forecastMonth}</span>
               <select
                 value={month}
                 onChange={(event) => setMonth(event.target.value)}
                 required
-                className="w-full px-3 py-2 text-sm"
+                className="app-control-sm px-3 py-2 text-sm"
               >
                 {forecastMonthPicker.options.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -723,12 +723,12 @@ export function ForecastForm({
               </select>
             </label>
 
-            <label className="block min-w-[8rem] flex-1">
+            <label className="block shrink-0">
               <span className="mb-1 block text-xs text-foreground/85">{t.region}</span>
               <select
                 value={region}
                 onChange={(event) => onRegionChange(event.target.value as Region)}
-                className="w-full px-3 py-2 text-sm"
+                className="app-control-sm px-3 py-2 text-sm"
               >
                 {allowedRegions.map((item) => (
                   <option key={item} value={item}>
@@ -760,13 +760,13 @@ export function ForecastForm({
             </label>
 
             {useExistingPo ? (
-              <label className="block min-w-[12rem] flex-1">
+              <label className="block shrink-0">
                 <span className="mb-1 block text-xs text-foreground/85">{t.existingPo}</span>
                 <select
                   value={selectedPoNumber}
                   onChange={(event) => setSelectedPoNumber(event.target.value)}
                   required
-                  className="w-full px-3 py-2 text-sm"
+                  className="app-control-md px-3 py-2 text-sm"
                 >
                   {regionPoOptions.map((po) => (
                     <option key={po} value={po}>
@@ -793,18 +793,29 @@ export function ForecastForm({
             </div>
             <div className="app-table-shell overflow-hidden rounded-xl border border-app-border/90">
               <div className="overflow-x-auto">
-                <table className="app-table min-w-[920px] text-sm">
+                <table className="app-table w-full table-fixed text-sm">
+                  <colgroup>
+                    <col className="w-8" />
+                    <col className="w-[5.5rem]" />
+                    <col />
+                    <col className="w-[9.5rem]" />
+                    <col className="w-[4.75rem]" />
+                    <col className="w-[4.5rem]" />
+                    <col className="w-[4.5rem]" />
+                    <col className="w-[7.5rem]" />
+                    <col className="w-9" />
+                  </colgroup>
                   <thead>
                     <tr className="[&>th]:bg-slate-50/90 [&>th]:px-2 [&>th]:py-2 [&>th]:text-left [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-app-muted">
-                      <th className="w-8">{t.lineNo}</th>
-                      <th className="w-[7rem]">{t.sku}</th>
-                      <th className="min-w-[12rem]">{t.productName}</th>
-                      <th className="min-w-[10rem]">{t.destination}</th>
-                      <th className="w-[5.5rem]">{t.incoterm}</th>
-                      <th className="w-[5rem]">{t.bto}</th>
-                      <th className="w-[5rem]">{t.bts}</th>
-                      <th className="min-w-[8rem]">{t.remark}</th>
-                      <th className="w-10" aria-hidden />
+                      <th>{t.lineNo}</th>
+                      <th>{t.sku}</th>
+                      <th>{t.productName}</th>
+                      <th>{t.destination}</th>
+                      <th>{t.incoterm}</th>
+                      <th className="text-right">{t.bto}</th>
+                      <th className="text-right">{t.bts}</th>
+                      <th>{t.remark}</th>
+                      <th aria-hidden />
                     </tr>
                   </thead>
                   <tbody>
@@ -816,7 +827,7 @@ export function ForecastForm({
                             value={line.sku}
                             onChange={(event) => updateLineSku(line.key, event.target.value)}
                             required
-                            className="w-full min-w-0 px-2 py-1.5 text-sm"
+                            className="app-control-sm max-w-full px-2 py-1.5 text-sm"
                             aria-label={t.sku}
                           >
                             {skuOptions.map((item) => (
@@ -831,7 +842,7 @@ export function ForecastForm({
                             value={line.productName}
                             readOnly
                             title={line.productName}
-                            className="w-full min-w-0 truncate rounded-lg border border-app-border bg-slate-50/80 px-2 py-1.5 text-sm"
+                            className="w-full min-w-0 max-w-full truncate rounded-lg border border-app-border bg-slate-50/80 px-2 py-1.5 text-sm"
                             aria-label={t.productName}
                           />
                         </td>
@@ -847,7 +858,7 @@ export function ForecastForm({
                             }
                             required
                             title={t.destinationHint}
-                            className="w-full min-w-0 px-2 py-1.5 text-sm"
+                            className="app-control-md max-w-full px-2 py-1.5 text-sm"
                             aria-label={t.destination}
                           >
                             <option value="" disabled>
@@ -874,7 +885,7 @@ export function ForecastForm({
                             }
                             required
                             title={forecastIncotermHint(line.incoterm, language)}
-                            className="w-full min-w-0 px-2 py-1.5 text-sm font-medium"
+                            className="app-control-xs px-2 py-1.5 text-sm font-medium"
                             aria-label={t.incoterm}
                           >
                             {FORECAST_INCOTERMS.map((code) => (
@@ -896,7 +907,7 @@ export function ForecastForm({
                                 ),
                               )
                             }
-                            className="w-full px-2 py-1.5 text-right text-sm tabular-nums"
+                            className="app-control-num px-2 py-1.5 text-sm"
                             aria-label={t.bto}
                           />
                         </td>
@@ -912,7 +923,7 @@ export function ForecastForm({
                                 ),
                               )
                             }
-                            className="w-full px-2 py-1.5 text-right text-sm tabular-nums"
+                            className="app-control-num px-2 py-1.5 text-sm"
                             aria-label={t.bts}
                           />
                         </td>
@@ -926,7 +937,7 @@ export function ForecastForm({
                               )
                             }
                             placeholder={language === "en" ? "Optional" : "可选"}
-                            className="w-full min-w-0 px-2 py-1.5 text-sm"
+                            className="w-full min-w-0 max-w-full px-2 py-1.5 text-sm"
                             aria-label={t.remark}
                           />
                         </td>
@@ -971,21 +982,21 @@ export function ForecastForm({
         >
           <h3 className="text-base font-semibold text-foreground">{t.editPanelTitle}</h3>
           <p className="mt-1 text-xs text-app-muted">{t.editHint}</p>
-          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label className="block min-w-0">
-              <span className="mb-1 block text-sm text-foreground/85">{t.forecastNumberLabel}</span>
+          <div className="mt-4 flex min-w-0 flex-wrap items-end gap-3">
+            <label className="block shrink-0">
+              <span className="mb-1 block text-xs text-foreground/85">{t.forecastNumberLabel}</span>
               <input
                 value={editDraft.poNumber || "—"}
                 readOnly
-                className="w-full rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm"
+                className="app-control-md rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm"
               />
             </label>
-            <label className="block min-w-0">
-              <span className="mb-1 block text-sm text-foreground/85">{t.forecastMonth}</span>
+            <label className="block shrink-0">
+              <span className="mb-1 block text-xs text-foreground/85">{t.forecastMonth}</span>
               <select
                 value={editDraft.month}
                 onChange={(e) => setEditDraft((d) => (d ? { ...d, month: e.target.value } : d))}
-                className="w-full px-3 py-2 text-sm"
+                className="app-control-sm px-3 py-2 text-sm"
               >
                 {forecastMonthPicker.options.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -994,14 +1005,14 @@ export function ForecastForm({
                 ))}
               </select>
             </label>
-            <label className="block min-w-0">
-              <span className="mb-1 block text-sm text-foreground/85">{t.region}</span>
+            <label className="block shrink-0">
+              <span className="mb-1 block text-xs text-foreground/85">{t.region}</span>
               <select
                 value={editDraft.region}
                 onChange={(e) =>
                   setEditDraft((d) => (d ? { ...d, region: e.target.value as Region } : d))
                 }
-                className="w-full px-3 py-2 text-sm"
+                className="app-control-sm px-3 py-2 text-sm"
               >
                 {allowedRegions.map((item) => (
                   <option key={item} value={item}>
@@ -1010,13 +1021,14 @@ export function ForecastForm({
                 ))}
               </select>
             </label>
-            <label className="block min-w-0">
-              <span className="mb-1 block text-sm text-foreground/85">{t.destination}</span>
+            <label className="block shrink-0">
+              <span className="mb-1 block text-xs text-foreground/85">{t.destination}</span>
               <select
                 value={editDraft.destination}
                 onChange={(e) => setEditDraft((d) => (d ? { ...d, destination: e.target.value } : d))}
                 required
-                className="w-full px-3 py-2 text-sm"
+                title={t.destinationHint}
+                className="app-control-md px-3 py-2 text-sm"
               >
                 {editDestinationOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -1024,10 +1036,9 @@ export function ForecastForm({
                   </option>
                 ))}
               </select>
-              <span className="mt-1 block text-xs text-app-muted">{t.destinationHint}</span>
             </label>
-            <label className="block min-w-0 md:col-span-2">
-              <span className="mb-1 block text-sm text-foreground/85">{t.incoterm}</span>
+            <label className="block shrink-0">
+              <span className="mb-1 block text-xs text-foreground/85">{t.incoterm}</span>
               <select
                 value={editDraft.incoterm}
                 onChange={(e) =>
@@ -1036,7 +1047,8 @@ export function ForecastForm({
                   )
                 }
                 required
-                className="w-full px-3 py-2 text-sm"
+                title={forecastIncotermHint(editDraft.incoterm, language)}
+                className="app-control-xs px-3 py-2 text-sm font-medium"
               >
                 {FORECAST_INCOTERMS.map((code) => (
                   <option key={code} value={code}>
@@ -1044,16 +1056,13 @@ export function ForecastForm({
                   </option>
                 ))}
               </select>
-              <p className="mt-2 text-xs leading-relaxed text-app-muted">
-                {forecastIncotermHint(editDraft.incoterm, language)}
-              </p>
             </label>
-            <label className="block min-w-0">
-              <span className="mb-1 block text-sm text-foreground/85">{t.sku}</span>
+            <label className="block shrink-0">
+              <span className="mb-1 block text-xs text-foreground/85">{t.sku}</span>
               <select
                 value={editDraft.sku}
                 onChange={(e) => updateEditSku(e.target.value)}
-                className="w-full px-3 py-2 text-sm"
+                className="app-control-sm px-3 py-2 text-sm"
               >
                 {skuOptions.map((item) => (
                   <option key={item} value={item}>
@@ -1062,16 +1071,17 @@ export function ForecastForm({
                 ))}
               </select>
             </label>
-            <label className="block min-w-0">
-              <span className="mb-1 block text-sm text-foreground/85">{t.productName}</span>
+            <label className="block max-w-[14rem] shrink-0">
+              <span className="mb-1 block text-xs text-foreground/85">{t.productName}</span>
               <input
                 value={editDraft.productName}
                 readOnly
-                className="w-full rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm"
+                title={editDraft.productName}
+                className="w-full truncate rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm"
               />
             </label>
-            <label className="block min-w-0">
-              <span className="mb-1 block text-sm text-foreground/85">{t.bto}</span>
+            <label className="block shrink-0">
+              <span className="mb-1 block text-xs text-foreground/85">{t.bto}</span>
               <input
                 type="number"
                 min={0}
@@ -1079,11 +1089,11 @@ export function ForecastForm({
                 onChange={(e) =>
                   setEditDraft((d) => (d ? { ...d, buildToOrder: e.target.value } : d))
                 }
-                className="w-full px-3 py-2 text-sm"
+                className="app-control-num px-3 py-2 text-sm"
               />
             </label>
-            <label className="block min-w-0">
-              <span className="mb-1 block text-sm text-foreground/85">{t.bts}</span>
+            <label className="block shrink-0">
+              <span className="mb-1 block text-xs text-foreground/85">{t.bts}</span>
               <input
                 type="number"
                 min={0}
@@ -1091,15 +1101,15 @@ export function ForecastForm({
                 onChange={(e) =>
                   setEditDraft((d) => (d ? { ...d, buildToStock: e.target.value } : d))
                 }
-                className="w-full px-3 py-2 text-sm"
+                className="app-control-num px-3 py-2 text-sm"
               />
             </label>
-            <label className="block min-w-0 md:col-span-2">
-              <span className="mb-1 block text-sm text-foreground/85">{t.remark}</span>
-              <textarea
+            <label className="block max-w-[12rem] shrink-0">
+              <span className="mb-1 block text-xs text-foreground/85">{t.remark}</span>
+              <input
+                type="text"
                 value={editDraft.remark}
                 onChange={(e) => setEditDraft((d) => (d ? { ...d, remark: e.target.value } : d))}
-                rows={2}
                 className="w-full px-3 py-2 text-sm"
               />
             </label>
@@ -1269,7 +1279,7 @@ export function ForecastForm({
                               onBlur={() => void saveInlineRemark(item)}
                               disabled={savingRemarkId === item.id || savingEdit || deletingId === item.id}
                               placeholder={language === "en" ? "Add a comment…" : "输入评论…"}
-                              className="w-full min-w-[10rem] rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground placeholder:text-app-muted focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
+                              className="w-full max-w-[12rem] rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground placeholder:text-app-muted focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
                               aria-label={language === "en" ? "Comment" : "评论"}
                             />
                           </td>
@@ -1285,7 +1295,7 @@ export function ForecastForm({
                                 savingEdit ||
                                 deletingId === item.id
                               }
-                              className="w-full min-w-[12rem] rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
+                              className="app-control-md max-w-[14rem] rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
                               aria-label="Ops action"
                             >
                               <option value="">{language === "en" ? "—" : "—"}</option>

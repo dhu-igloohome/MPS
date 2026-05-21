@@ -164,6 +164,33 @@
     border-color: var(--app-border-strong);
   }
 
+  /* Content-driven widths — docs/ui-control-width-checklist.md */
+  .app-control-xs {
+    width: auto;
+    min-width: 3.25rem;
+    max-width: 4.75rem;
+  }
+
+  .app-control-sm {
+    width: auto;
+    min-width: 5rem;
+    max-width: 9.5rem;
+  }
+
+  .app-control-md {
+    width: auto;
+    min-width: 7rem;
+    max-width: 13rem;
+  }
+
+  .app-control-num {
+    width: auto;
+    min-width: 3.25rem;
+    max-width: 5.5rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
   .app-table-shell {
     border-radius: 1rem;
     border: 1px solid var(--app-border);
