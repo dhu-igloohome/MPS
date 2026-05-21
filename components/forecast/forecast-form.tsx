@@ -166,6 +166,11 @@ export function ForecastForm({
     existingPo: language === "en" ? "Existing forecast number" : "已有 forecast number",
     batchImport: language === "en" ? "CSV import" : "CSV 导入",
     apiImport: language === "en" ? "API import" : "API 导入",
+    bulkImport: language === "en" ? "Bulk import" : "批量导入",
+    bulkImportHint:
+      language === "en"
+        ? "Template download, CSV upload, or one-click SKU Tracker sync."
+        : "可下载模板、上传 CSV，或一键从 SKU Tracker 同步。",
     apiImportHint:
       language === "en"
         ? "One-click: loads SKU-level monthly sales for the selected Forecast Month from igloohome SKU Tracker (public /api/data). Uses current Region; default destination is Singapore (APAC), Germany (EU), or United States (North America). Quantities map to Build to Order; forecast numbers are auto-generated."
@@ -641,49 +646,57 @@ export function ForecastForm({
   return (
     <div className="space-y-5">
       <section className="app-card overflow-hidden px-4 py-3 sm:px-5">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <a
-            href="/api/forecasts/csv-template"
-            className="app-button-secondary inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
-          >
-            <Download size={15} strokeWidth={1.5} />
-            {t.downloadTemplate}
-          </a>
-          <input
-            ref={batchFileRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={onBatchFileChange}
-          />
-          <button
-            type="button"
-            disabled={loading || products.length === 0}
-            onClick={() => batchFileRef.current?.click()}
-            className="app-button-secondary inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
-          >
-            <Upload size={15} strokeWidth={1.5} />
-            {t.batchImport}
-          </button>
-          <button
-            type="button"
-            disabled={loading || products.length === 0}
-            onClick={onApiImportFromSkuTracker}
-            title={t.apiImportHint}
-            className="app-button-secondary inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
-          >
-            <CloudDownload size={15} strokeWidth={1.5} />
-            {t.apiImport}
-          </button>
-          <button
-            type="button"
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-transparent px-2 py-1.5 text-sm text-app-muted transition hover:border-app-border hover:bg-slate-50 hover:text-foreground"
-            title={`${t.importHelpTitle}\n\n${t.importHelp}`}
-            aria-label={t.importHelpTitle}
-          >
-            <CircleHelp size={16} strokeWidth={1.5} />
-            <span className="hidden sm:inline">{t.importHelpTitle}</span>
-          </button>
+        <div className="rounded-xl border border-app-accent/30 bg-gradient-to-r from-app-accent-soft/50 to-white px-3 py-3 sm:px-4">
+          <div className="mb-2.5 flex min-w-0 flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">{t.bulkImport}</p>
+              <p className="mt-0.5 text-[11px] text-app-muted">{t.bulkImportHint}</p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-app-border/80 bg-white/80 px-2 py-1 text-xs text-app-muted transition hover:border-app-border hover:bg-white hover:text-foreground"
+              title={`${t.importHelpTitle}\n\n${t.importHelp}`}
+              aria-label={t.importHelpTitle}
+            >
+              <CircleHelp size={15} strokeWidth={1.5} />
+              <span className="hidden sm:inline">{t.importHelpTitle}</span>
+            </button>
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <a
+              href="/api/forecasts/csv-template"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border-2 border-app-border bg-white px-3.5 py-2 text-sm font-medium text-foreground shadow-sm transition duration-150 ease-out hover:border-app-accent/50 hover:bg-app-accent-soft/40 hover:shadow-md active:translate-y-0"
+            >
+              <Download size={16} strokeWidth={2} />
+              {t.downloadTemplate}
+            </a>
+            <input
+              ref={batchFileRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={onBatchFileChange}
+            />
+            <button
+              type="button"
+              disabled={loading || products.length === 0}
+              onClick={() => batchFileRef.current?.click()}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border-2 border-app-accent bg-white px-3.5 py-2 text-sm font-semibold text-app-accent shadow-sm transition duration-150 ease-out hover:bg-app-accent-soft hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Upload size={16} strokeWidth={2} />
+              {t.batchImport}
+            </button>
+            <button
+              type="button"
+              disabled={loading || products.length === 0}
+              onClick={onApiImportFromSkuTracker}
+              title={t.apiImportHint}
+              className="app-button-primary inline-flex shrink-0 items-center gap-1.5 px-3.5 py-2 text-sm font-semibold shadow-sm transition duration-150 ease-out hover:-translate-y-px hover:shadow-md active:translate-y-0 disabled:opacity-50"
+            >
+              <CloudDownload size={16} strokeWidth={2} />
+              {t.apiImport}
+            </button>
+          </div>
         </div>
         {batchSummary || batchErrors.length > 0 || products.length === 0 ? (
           <div className="mt-2 min-w-0 border-t border-app-border/60 pt-2">
