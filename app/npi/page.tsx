@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
-import { listBomEntries, listEcnEntries, listToolingEntries } from "@/lib/repositories";
+import { listEcnApprovals } from "@/lib/ecn-approval-repository";
+import { listBomEntries, listToolingEntries } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +18,12 @@ export default async function NpiPage() {
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   const [bomEntries, ecnEntries, toolingEntries] = await Promise.all([
     listBomEntries(),
-    listEcnEntries(),
+    listEcnApprovals(),
     listToolingEntries(),
   ]);
-  const openEcnCount = ecnEntries.filter((e) => e.status !== "implemented" && e.status !== "rejected").length;
+  const openEcnCount = ecnEntries.filter(
+    (e) => e.status === "draft" || e.status === "under_review",
+  ).length;
   const toolingDueCount = toolingEntries.filter(
     (e) => e.nextMaintenanceDue && new Date(e.nextMaintenanceDue).getTime() <= Date.now(),
   ).length;
@@ -37,7 +40,7 @@ export default async function NpiPage() {
     },
     {
       href: "/npi/ecn",
-      title: language === "en" ? "ECN Management" : "ECN 管理",
+      title: language === "en" ? "ECN Approval Flow" : "ECN 审批流",
     },
     {
       href: "/npi/sop",

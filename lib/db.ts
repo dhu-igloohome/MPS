@@ -20,7 +20,7 @@ const sql = connectionString
   : null;
 
 /** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
-const CURRENT_SCHEMA_VERSION = 3;
+const CURRENT_SCHEMA_VERSION = 4;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -1074,6 +1074,77 @@ async function setupSchema() {
     alter table mass_production_kanban
     add constraint mass_production_kanban_region_check
     check (region in ('APAC', 'EU', 'US', 'Shenzhen office'));
+  `;
+
+  await db`
+    create table if not exists ecn_approval_requests (
+      id bigserial primary key,
+      ecn_no text not null unique,
+      status text not null default 'draft'
+        check (status in ('draft', 'under_review', 'approved', 'rejected')),
+      sku text not null,
+      product_name text not null default '',
+      variant text not null default '',
+      change_team text not null
+        check (change_team in ('me', 'ee', 'fw')),
+      change_reason text not null default '',
+      jira_links text not null default '',
+      import_batch text not null default '',
+      material_stock_disposition text not null
+        check (material_stock_disposition in ('keep_until_exhausted', 'rework', 'discard', 'per_comments')),
+      production_line_disposition text not null
+        check (production_line_disposition in ('keep_producing', 'change_material', 'per_comments')),
+      finished_goods_disposition text not null
+        check (finished_goods_disposition in ('keep_using', 'rework', 'discard', 'per_comments')),
+      comments text not null default '',
+      production_files_url text not null default '',
+      approval_department text not null
+        check (approval_department in ('ee_me', 'project', 'operations')),
+      created_by text not null references users(username),
+      submitted_at timestamptz,
+      rejected_by text references users(username),
+      rejection_reason text not null default '',
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_ecn_approval_requests_status
+    on ecn_approval_requests (status, updated_at desc);
+  `;
+  await db`
+    create index if not exists idx_ecn_approval_requests_ecn_no
+    on ecn_approval_requests (ecn_no);
+  `;
+
+  await db`
+    create table if not exists ecn_approval_attachments (
+      id bigserial primary key,
+      request_id bigint not null references ecn_approval_requests(id) on delete cascade,
+      file_name text not null,
+      mime_type text not null,
+      file_size integer not null check (file_size > 0 and file_size <= 5242880),
+      file_data bytea not null,
+      uploaded_by text not null references users(username),
+      created_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_ecn_approval_attachments_request
+    on ecn_approval_attachments (request_id);
+  `;
+
+  await db`
+    create table if not exists ecn_approval_signoffs (
+      id bigserial primary key,
+      request_id bigint not null references ecn_approval_requests(id) on delete cascade,
+      approver_username text not null references users(username),
+      decision text not null default 'pending'
+        check (decision in ('pending', 'approved', 'rejected')),
+      comment text not null default '',
+      decided_at timestamptz,
+      unique (request_id, approver_username)
+    );
   `;
 }
 

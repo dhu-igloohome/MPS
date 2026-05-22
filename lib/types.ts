@@ -142,26 +142,67 @@ export type ToolingEntry = {
   updatedAt: string;
 };
 
-export type EcnStatus = "draft" | "under_review" | "approved" | "implemented" | "rejected";
-export type EcnPriority = "low" | "medium" | "high";
+import type {
+  EcnApprovalDepartment,
+  EcnApprovalStatus,
+  EcnChangeTeam,
+  EcnFinishedGoodsDisposition,
+  EcnMaterialStockDisposition,
+  EcnProductionLineDisposition,
+} from "@/lib/ecn-approval-config";
 
-export type EcnEntry = {
+export type {
+  EcnApprovalDepartment,
+  EcnApprovalStatus,
+  EcnChangeTeam,
+  EcnFinishedGoodsDisposition,
+  EcnMaterialStockDisposition,
+  EcnProductionLineDisposition,
+};
+
+export type EcnApprovalSignoffEntry = {
+  id: string;
+  approverUsername: string;
+  decision: "pending" | "approved" | "rejected";
+  comment: string;
+  decidedAt: string | null;
+};
+
+export type EcnApprovalAttachmentEntry = {
+  id: string;
+  requestId: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedBy: string;
+  createdAt: string;
+};
+
+export type EcnApprovalEntry = {
   id: string;
   ecnNo: string;
-  title: string;
-  status: EcnStatus;
-  priority: EcnPriority;
-  requester: string;
-  owner: string;
-  targetEffectiveDate: string | null;
-  actualEffectiveDate: string | null;
-  affectedSkus: string;
-  impactSummary: string;
-  reason: string;
-  remarks: string;
+  status: EcnApprovalStatus;
+  sku: string;
+  productName: string;
+  variant: string;
+  changeTeam: EcnChangeTeam;
+  changeReason: string;
+  jiraLinks: string[];
+  importBatch: string;
+  materialStockDisposition: EcnMaterialStockDisposition;
+  productionLineDisposition: EcnProductionLineDisposition;
+  finishedGoodsDisposition: EcnFinishedGoodsDisposition;
+  comments: string;
+  productionFilesUrl: string;
+  approvalDepartment: EcnApprovalDepartment;
   createdBy: string;
+  submittedAt: string | null;
+  rejectedBy: string | null;
+  rejectionReason: string;
   createdAt: string;
   updatedAt: string;
+  attachments: EcnApprovalAttachmentEntry[];
+  signoffs: EcnApprovalSignoffEntry[];
 };
 
 export type SopStatus = "draft" | "in_review" | "released" | "obsolete";

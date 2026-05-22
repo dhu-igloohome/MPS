@@ -57,4 +57,18 @@ export const USER_ACCOUNTS: UserAccount[] = [
     role: "regional_admin",
     regions: ALL_REGIONS,
   },
+  {
+    username: "jimmy",
+    password: "jimmy123",
+    displayName: "Jimmy",
+    role: "regional_admin",
+    regions: ALL_REGIONS,
+  },
+  {
+    username: "even",
+    password: "even123",
+    displayName: "Even",
+    role: "regional_admin",
+    regions: ALL_REGIONS,
+  },
 ];

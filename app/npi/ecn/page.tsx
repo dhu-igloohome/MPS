@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { EcnManagement } from "@/components/npi/ecn-management";
+import { EcnApprovalFlow } from "@/components/npi/ecn-approval-flow";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
-import { listEcnEntries } from "@/lib/repositories";
+import { listEcnApprovals } from "@/lib/ecn-approval-repository";
+import { listProducts } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -14,16 +15,25 @@ export default async function NpiEcnPage() {
   if (!session) redirect("/login");
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const entries = await listEcnEntries();
+  const [entries, products] = await Promise.all([listEcnApprovals(), listProducts()]);
 
   return (
     <AppShell
       session={session}
-      title={language === "en" ? "NPI Management · ECN Management" : "NPI 管理 · ECN 管理"}
-      description={language === "en" ? "Manage engineering changes, status and impact." : "管理工程变更流程、状态与影响。"}
+      title={language === "en" ? "NPI Management · ECN Approval Flow" : "NPI 管理 · ECN 审批流"}
+      description={
+        language === "en"
+          ? "Submit and approve engineering change notices in Foretracker."
+          : "在 Foretracker 内提交与审批工程变更（ECN）。"
+      }
     >
-      <EcnManagement entries={entries} language={language} />
+      <EcnApprovalFlow
+        entries={entries}
+        products={products}
+        language={language}
+        username={session.username}
+        role={session.role}
+      />
     </AppShell>
   );
 }
-

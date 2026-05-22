@@ -9,9 +9,6 @@ import {
   AdminUser,
   BomEntry,
   BomStatus,
-  EcnEntry,
-  EcnPriority,
-  EcnStatus,
   ForecastCashFlowRow,
   ForecastCashFlowShippingMode,
   ForecastEntry,
@@ -228,25 +225,6 @@ type ToolingRow = {
   next_maintenance_due: string | null;
   cost: string | number;
   currency: string;
-  remarks: string;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-};
-
-type EcnRow = {
-  id: number;
-  ecn_no: string;
-  title: string;
-  status: EcnStatus;
-  priority: EcnPriority;
-  requester: string;
-  owner: string;
-  target_effective_date: string | null;
-  actual_effective_date: string | null;
-  affected_skus: string;
-  impact_summary: string;
-  reason: string;
   remarks: string;
   created_by: string;
   created_at: string;
@@ -3548,27 +3526,6 @@ function mapToolingEntry(row: ToolingRow): ToolingEntry {
   };
 }
 
-function mapEcnEntry(row: EcnRow): EcnEntry {
-  return {
-    id: String(row.id),
-    ecnNo: row.ecn_no || "",
-    title: row.title || "",
-    status: row.status,
-    priority: row.priority,
-    requester: row.requester || "",
-    owner: row.owner || "",
-    targetEffectiveDate: row.target_effective_date ? formatPgDateOnly(row.target_effective_date) : null,
-    actualEffectiveDate: row.actual_effective_date ? formatPgDateOnly(row.actual_effective_date) : null,
-    affectedSkus: row.affected_skus || "",
-    impactSummary: row.impact_summary || "",
-    reason: row.reason || "",
-    remarks: row.remarks || "",
-    createdBy: row.created_by,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
 function mapSopEntry(row: SopRow): SopEntry {
   return {
     id: String(row.id),
@@ -4118,99 +4075,6 @@ export async function deleteToolingEntryById(id: string): Promise<void> {
   await ensureDatabase();
   const db = getSql();
   await db`delete from npi_tooling_entries where id = ${Number(id)};`;
-}
-
-export async function listEcnEntries(): Promise<EcnEntry[]> {
-  await ensureDatabase();
-  const db = getSql();
-  const rows = await db<EcnRow[]>`
-    select
-      id, ecn_no, title, status, priority, requester, owner, target_effective_date::text, actual_effective_date::text,
-      affected_skus, impact_summary, reason, remarks, created_by, created_at::text, updated_at::text
-    from npi_ecn_entries
-    order by updated_at desc, id desc;
-  `;
-  return rows.map(mapEcnEntry);
-}
-
-export async function createEcnEntry(input: {
-  ecnNo: string;
-  title: string;
-  status: EcnStatus;
-  priority: EcnPriority;
-  requester: string;
-  owner: string;
-  targetEffectiveDate: string | null;
-  actualEffectiveDate: string | null;
-  affectedSkus: string;
-  impactSummary: string;
-  reason: string;
-  remarks: string;
-  createdBy: string;
-}): Promise<EcnEntry> {
-  await ensureDatabase();
-  const db = getSql();
-  const rows = await db<EcnRow[]>`
-    insert into npi_ecn_entries (
-      ecn_no, title, status, priority, requester, owner, target_effective_date, actual_effective_date,
-      affected_skus, impact_summary, reason, remarks, created_by, updated_at
-    ) values (
-      ${input.ecnNo.trim()}, ${input.title.trim()}, ${input.status}, ${input.priority}, ${input.requester.trim()}, ${input.owner.trim()},
-      ${input.targetEffectiveDate}, ${input.actualEffectiveDate}, ${input.affectedSkus.trim()}, ${input.impactSummary.trim()},
-      ${input.reason.trim()}, ${input.remarks.trim()}, ${input.createdBy}, now()
-    )
-    returning
-      id, ecn_no, title, status, priority, requester, owner, target_effective_date::text, actual_effective_date::text,
-      affected_skus, impact_summary, reason, remarks, created_by, created_at::text, updated_at::text;
-  `;
-  return mapEcnEntry(rows[0]);
-}
-
-export async function updateEcnEntry(input: {
-  id: string;
-  ecnNo: string;
-  title: string;
-  status: EcnStatus;
-  priority: EcnPriority;
-  requester: string;
-  owner: string;
-  targetEffectiveDate: string | null;
-  actualEffectiveDate: string | null;
-  affectedSkus: string;
-  impactSummary: string;
-  reason: string;
-  remarks: string;
-}): Promise<EcnEntry | null> {
-  await ensureDatabase();
-  const db = getSql();
-  const rows = await db<EcnRow[]>`
-    update npi_ecn_entries
-    set
-      ecn_no = ${input.ecnNo.trim()},
-      title = ${input.title.trim()},
-      status = ${input.status},
-      priority = ${input.priority},
-      requester = ${input.requester.trim()},
-      owner = ${input.owner.trim()},
-      target_effective_date = ${input.targetEffectiveDate},
-      actual_effective_date = ${input.actualEffectiveDate},
-      affected_skus = ${input.affectedSkus.trim()},
-      impact_summary = ${input.impactSummary.trim()},
-      reason = ${input.reason.trim()},
-      remarks = ${input.remarks.trim()},
-      updated_at = now()
-    where id = ${Number(input.id)}
-    returning
-      id, ecn_no, title, status, priority, requester, owner, target_effective_date::text, actual_effective_date::text,
-      affected_skus, impact_summary, reason, remarks, created_by, created_at::text, updated_at::text;
-  `;
-  return rows[0] ? mapEcnEntry(rows[0]) : null;
-}
-
-export async function deleteEcnEntryById(id: string): Promise<void> {
-  await ensureDatabase();
-  const db = getSql();
-  await db`delete from npi_ecn_entries where id = ${Number(id)};`;
 }
 
 export async function listSopEntries(): Promise<SopEntry[]> {
