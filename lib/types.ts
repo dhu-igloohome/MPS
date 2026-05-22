@@ -290,6 +290,23 @@ export type Qc8dReportEntry = {
   updatedAt: string;
 };
 
+/** Offline Word/Excel/PDF contract archived by PO (not required to link order_progress in phase 1). */
+export type ContractFileUploadEntry = {
+  id: string;
+  poNumber: string;
+  sku: string;
+  supplierName: string;
+  remark: string;
+  signedDate: string | null;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  orderProgressId: string | null;
+  contractId: string | null;
+  uploadedBy: string;
+  createdAt: string;
+};
+
 export type ContractEntry = {
   id: string;
   orderProgressId: string;

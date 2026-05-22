@@ -6,6 +6,7 @@ import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
 import {
+  listContractFileUploads,
   listContractsBySessionRegions,
   listOrderContractCreateHints,
   listOrderProgressBySessionRegions,
@@ -22,11 +23,12 @@ export default async function SupplyChainContractsPage() {
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
-  const [contracts, orders, suppliers, unitCostQuotes] = await Promise.all([
+  const [contracts, orders, suppliers, unitCostQuotes, contractFileUploads] = await Promise.all([
     listContractsBySessionRegions(session.regions),
     listOrderProgressBySessionRegions(session.regions),
     listSuppliers(),
     listUnitCostQuotes(),
+    listContractFileUploads(),
   ]);
   const orderContractHints = await listOrderContractCreateHints(orders, session.regions);
 
@@ -43,6 +45,7 @@ export default async function SupplyChainContractsPage() {
         orderContractHints={orderContractHints}
         suppliers={suppliers}
         unitCostQuotes={unitCostQuotes}
+        contractFileUploads={contractFileUploads}
         language={language}
         role={session.role}
       />

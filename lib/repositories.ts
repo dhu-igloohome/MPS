@@ -26,6 +26,7 @@ import {
   UnitCostQuoteEntry,
   UnitCostQuoteIncoterm,
   ContractEntry,
+  ContractFileUploadEntry,
   ContractStatus,
   OrderProductionStep,
   OrderProgressDeliveryPlan,
@@ -3716,6 +3717,150 @@ function mapContract(row: ContractRow): ContractEntry {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+type ContractFileUploadRow = {
+  id: number;
+  po_number: string;
+  sku: string;
+  supplier_name: string;
+  remark: string;
+  signed_date: string | null;
+  file_name: string;
+  mime_type: string;
+  file_size: number;
+  order_progress_id: number | null;
+  contract_id: number | null;
+  uploaded_by: string;
+  created_at: string;
+};
+
+function mapContractFileUpload(row: ContractFileUploadRow): ContractFileUploadEntry {
+  return {
+    id: String(row.id),
+    poNumber: row.po_number,
+    sku: row.sku || "",
+    supplierName: row.supplier_name || "",
+    remark: row.remark || "",
+    signedDate: row.signed_date ? formatPgDateOnly(row.signed_date) : null,
+    fileName: row.file_name,
+    mimeType: row.mime_type,
+    fileSize: Number(row.file_size),
+    orderProgressId: row.order_progress_id != null ? String(row.order_progress_id) : null,
+    contractId: row.contract_id != null ? String(row.contract_id) : null,
+    uploadedBy: row.uploaded_by,
+    createdAt: row.created_at,
+  };
+}
+
+export async function listContractFileUploads(): Promise<ContractFileUploadEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ContractFileUploadRow[]>`
+    select
+      id,
+      po_number,
+      sku,
+      supplier_name,
+      remark,
+      signed_date::text,
+      file_name,
+      mime_type,
+      file_size,
+      order_progress_id,
+      contract_id,
+      uploaded_by,
+      created_at::text
+    from contract_file_uploads
+    order by created_at desc, id desc;
+  `;
+  return rows.map(mapContractFileUpload);
+}
+
+export async function createContractFileUpload(input: {
+  poNumber: string;
+  sku?: string;
+  supplierName?: string;
+  remark?: string;
+  signedDate?: string | null;
+  fileName: string;
+  mimeType: string;
+  fileData: Buffer;
+  uploadedBy: string;
+}): Promise<ContractFileUploadEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const poNumber = input.poNumber.trim();
+  if (!poNumber) throw new Error("PO number is required");
+  const signed =
+    input.signedDate && String(input.signedDate).trim()
+      ? String(input.signedDate).trim()
+      : null;
+  const rows = await db<ContractFileUploadRow[]>`
+    insert into contract_file_uploads (
+      po_number,
+      sku,
+      supplier_name,
+      remark,
+      signed_date,
+      file_name,
+      mime_type,
+      file_size,
+      file_data,
+      uploaded_by
+    )
+    values (
+      ${poNumber},
+      ${(input.sku ?? "").trim()},
+      ${(input.supplierName ?? "").trim()},
+      ${(input.remark ?? "").trim()},
+      ${signed},
+      ${input.fileName},
+      ${input.mimeType},
+      ${input.fileData.length},
+      ${input.fileData},
+      ${input.uploadedBy}
+    )
+    returning
+      id,
+      po_number,
+      sku,
+      supplier_name,
+      remark,
+      signed_date::text,
+      file_name,
+      mime_type,
+      file_size,
+      order_progress_id,
+      contract_id,
+      uploaded_by,
+      created_at::text;
+  `;
+  return mapContractFileUpload(rows[0]);
+}
+
+export async function getContractFileUploadDownload(
+  id: string,
+): Promise<{ fileName: string; mimeType: string; fileData: Buffer } | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const idNum = Number(id);
+  if (!Number.isFinite(idNum) || idNum < 1) return null;
+  const rows = await db<
+    { file_name: string; mime_type: string; file_data: Uint8Array }[]
+  >`
+    select file_name, mime_type, file_data
+    from contract_file_uploads
+    where id = ${idNum}
+    limit 1;
+  `;
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    fileName: row.file_name,
+    mimeType: row.mime_type,
+    fileData: Buffer.from(row.file_data),
   };
 }
 

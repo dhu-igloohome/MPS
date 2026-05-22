@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { ContractOfflineUploads } from "@/components/contract/contract-offline-uploads";
 import {
   ccInputMd,
   ccInputSm,
@@ -21,6 +22,7 @@ import {
 import type { Language } from "@/lib/i18n";
 import type {
   ContractEntry,
+  ContractFileUploadEntry,
   ContractStatus,
   OrderContractCreateHint,
   OrderProgressEntry,
@@ -35,6 +37,7 @@ type ContractManagementProps = {
   orderContractHints: Record<string, OrderContractCreateHint>;
   suppliers: SupplierEntry[];
   unitCostQuotes: UnitCostQuoteEntry[];
+  contractFileUploads: ContractFileUploadEntry[];
   language: Language;
   role: UserRole;
 };
@@ -105,6 +108,7 @@ export function ContractManagement({
   orderContractHints,
   suppliers,
   unitCostQuotes,
+  contractFileUploads,
   language,
   role,
 }: ContractManagementProps) {
@@ -559,6 +563,8 @@ export function ContractManagement({
           </table>
         </div>
       </section>
+
+      <ContractOfflineUploads uploads={contractFileUploads} language={language} />
     </div>
   );
 }

@@ -20,7 +20,7 @@ const sql = connectionString
   : null;
 
 /** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
-const CURRENT_SCHEMA_VERSION = 2;
+const CURRENT_SCHEMA_VERSION = 3;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -293,6 +293,33 @@ async function setupSchema() {
     alter table contracts
     add constraint contracts_status_check
     check (status in ('draft', 'approved', 'sent'));
+  `;
+
+  await db`
+    create table if not exists contract_file_uploads (
+      id bigserial primary key,
+      po_number text not null,
+      sku text not null default '',
+      supplier_name text not null default '',
+      remark text not null default '',
+      signed_date date,
+      file_name text not null,
+      mime_type text not null,
+      file_size integer not null check (file_size > 0 and file_size <= 5242880),
+      file_data bytea not null,
+      order_progress_id bigint references order_progress(id) on delete set null,
+      contract_id bigint references contracts(id) on delete set null,
+      uploaded_by text not null references users(username),
+      created_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_contract_file_uploads_po
+    on contract_file_uploads (po_number);
+  `;
+  await db`
+    create index if not exists idx_contract_file_uploads_created
+    on contract_file_uploads (created_at desc);
   `;
 
   await db`
