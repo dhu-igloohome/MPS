@@ -18,6 +18,10 @@ import {
   DOMESTIC_CONTRACT_CURRENCY,
   domesticCnyContractUnitFromUsdBasis,
 } from "@/lib/contract-domestic-pricing";
+import {
+  CONTRACT_REMARK_TEMPLATES,
+  type ContractRemarkTemplateId,
+} from "@/lib/contract-remark-templates";
 
 import type { Language } from "@/lib/i18n";
 import type {
@@ -138,6 +142,9 @@ export function ContractManagement({
     cannotCreateYet: en ? "Cannot create contract yet" : "暂无法创建合同",
     deliveryAddress: "Delivery address",
     remark: language === "en" ? "Remark" : "备注",
+    remarkTemplate: en ? "Template" : "模板",
+    remarkTemplateNone: en ? "— Custom —" : "— 自定义 —",
+    remarkTemplate1: en ? "Template 1" : "模板1",
     serialCode: "Serial code",
     bluetoothId: "Bluetooth ID",
     create: "Create contract",
@@ -163,6 +170,7 @@ export function ContractManagement({
   const [currency, setCurrency] = useState("USD");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [remark, setRemark] = useState("");
+  const [remarkTemplate, setRemarkTemplate] = useState<"" | ContractRemarkTemplateId>("");
   const [serialCode, setSerialCode] = useState("");
   const [bluetoothId, setBluetoothId] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ContractStatus>("all");
@@ -270,6 +278,7 @@ export function ContractManagement({
     setCurrency("USD");
     setDeliveryAddress("");
     setRemark("");
+    setRemarkTemplate("");
     setSerialCode("");
     setBluetoothId("");
     setCreateFeedback({
@@ -437,13 +446,33 @@ export function ContractManagement({
             />
           </label>
           <label className="w-full shrink-0 basis-full sm:max-w-xl">
-            <span className={ccLabel}>{t.remark}</span>
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+              <span className={ccLabel}>{t.remark}</span>
+              <select
+                value={remarkTemplate}
+                onChange={(e) => {
+                  const id = e.target.value as "" | ContractRemarkTemplateId;
+                  setRemarkTemplate(id);
+                  if (id && CONTRACT_REMARK_TEMPLATES[id]) {
+                    setRemark(CONTRACT_REMARK_TEMPLATES[id]);
+                  }
+                }}
+                className={`${ccSelectSm} max-w-[9rem]`}
+                aria-label={t.remarkTemplate}
+              >
+                <option value="">{t.remarkTemplateNone}</option>
+                <option value="template1">{t.remarkTemplate1}</option>
+              </select>
+            </div>
             <textarea
               value={remark}
-              onChange={(e) => setRemark(e.target.value)}
-              rows={2}
+              onChange={(e) => {
+                setRemark(e.target.value);
+                setRemarkTemplate("");
+              }}
+              rows={remarkTemplate === "template1" ? 10 : 2}
               placeholder={t.remark}
-              className="mt-0 w-full min-w-0 max-w-xl resize-y rounded-lg border border-app-border px-2 py-1.5 text-sm min-h-[3rem]"
+              className="mt-1 w-full min-w-0 max-w-xl resize-y rounded-lg border border-app-border px-2 py-1.5 text-sm min-h-[3rem]"
             />
           </label>
           <label className="shrink-0">
