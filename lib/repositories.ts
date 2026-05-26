@@ -4693,6 +4693,7 @@ export async function createContractFromOrder(input: {
   orderProgressId: string;
   batch: string;
   currency: string;
+  paymentTerms?: string;
   remark: string;
   deliveryAddress: string;
   serialCode: string;
@@ -4706,7 +4707,8 @@ export async function createContractFromOrder(input: {
   if (!hint.ready || !hint.supplierId) {
     throw new Error(orderContractHintMessage(hint.reasonKey, hint.cashFlowSupplierName));
   }
-  const paymentTermsResolved = (hint.paymentTerms ?? "").trim() || "Cash";
+  const paymentTermsResolved =
+    (input.paymentTerms ?? "").trim() || (hint.paymentTerms ?? "").trim() || "Cash";
   const supplierIdNum = Number(hint.supplierId);
   if (!Number.isFinite(supplierIdNum) || supplierIdNum < 1) {
     throw new Error("Invalid supplier resolution");

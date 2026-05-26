@@ -20,6 +20,7 @@ export async function POST(request: Request) {
   const batch = String(body.batch || "").trim();
   const currency = String(body.currency || "USD").trim();
   const remark = String(body.remark ?? body.qualityRemarks ?? "").trim();
+  const paymentTerms = String(body.paymentTerms || "").trim();
   const deliveryAddress = String(body.deliveryAddress || "").trim();
   const serialCode = String(body.serialCode || "").trim();
   const bluetoothId = String(body.bluetoothId || "").trim();
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
       orderProgressId,
       batch,
       currency,
+      paymentTerms,
       remark,
       deliveryAddress,
       serialCode,

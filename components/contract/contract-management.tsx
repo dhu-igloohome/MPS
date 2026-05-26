@@ -131,8 +131,8 @@ export function ContractManagement({
         : "由美金口径 ×7×1.13 换算；订单上的成本快照仍为美金口径。",
     paymentTerms: en ? "Payment terms" : "付款条款",
     paymentTermsHint: en
-      ? "From Supply Chain → Suppliers for the resolved supplier."
-      : "取自「供应链 → 供应商」主数据中该供应商的付款条款。",
+      ? "Pre-filled from Suppliers; edit before creating if needed."
+      : "默认取自「供应链 → 供应商」，创建前可按需修改。",
     fieldHintsSummary: en ? "How fields are filled" : "字段说明",
     openCashFlow: en ? "Open cash flow analysis" : "打开现金流分析",
     cannotCreateYet: en ? "Cannot create contract yet" : "暂无法创建合同",
@@ -161,6 +161,7 @@ export function ContractManagement({
   const [orderProgressId, setOrderProgressId] = useState(orders[0]?.id ?? "");
   const [batch, setBatch] = useState("");
   const [currency, setCurrency] = useState("USD");
+  const [paymentTerms, setPaymentTerms] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [remark, setRemark] = useState("");
   const [serialCode, setSerialCode] = useState("");
@@ -228,6 +229,10 @@ export function ContractManagement({
     }
   }, [orderHint?.ready, orderHint?.domesticContractBilling, orderProgressId]);
 
+  useEffect(() => {
+    setPaymentTerms(orderHint?.paymentTerms?.trim() ?? "");
+  }, [orderProgressId, orderHint?.paymentTerms]);
+
   const orderOptionLabel = (o: OrderProgressEntry) => {
     const po = (o.orderNumber || "").trim() || "—";
     const sku = (o.sku || "").trim() || "—";
@@ -253,6 +258,7 @@ export function ContractManagement({
         orderProgressId,
         batch,
         currency,
+        paymentTerms,
         deliveryAddress,
         remark,
         serialCode,
@@ -419,10 +425,11 @@ export function ContractManagement({
           <label className="min-w-0 shrink-0">
             <span className={ccLabel}>{t.paymentTerms}</span>
             <input
-              readOnly
-              title={orderHint?.paymentTerms?.trim() ? orderHint.paymentTerms : undefined}
-              value={orderHint?.paymentTerms?.trim() ? orderHint.paymentTerms : "—"}
-              className={`${ccReadOnly} app-control-md max-w-[18rem]`}
+              value={paymentTerms}
+              onChange={(e) => setPaymentTerms(e.target.value)}
+              title={paymentTerms.trim() || undefined}
+              placeholder={t.paymentTerms}
+              className={`${ccInputMd} app-control-md max-w-[18rem]`}
             />
           </label>
           <label className="w-full shrink-0 basis-full sm:max-w-2xl">
