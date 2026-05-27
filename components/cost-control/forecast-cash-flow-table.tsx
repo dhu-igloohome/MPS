@@ -5,6 +5,11 @@ import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CreateContractFromForecastModal } from "@/components/contract/create-contract-from-forecast-modal";
+import { forecastLineTotalUsd } from "@/lib/contract-forecast-coverage";
+import {
+  computeForecastPaymentSchedule,
+  formatScheduleDateEnglish,
+} from "@/lib/forecast-supplier-payment-schedule";
 import { formatUsd } from "@/lib/format-usd";
 import type { ForecastContractCoverageSummary } from "@/lib/contract-forecast-coverage";
 import type { Language } from "@/lib/i18n";
@@ -24,6 +29,8 @@ type Labels = {
   fcNoUnitCostHint: string;
   fcBto: string;
   fcBts: string;
+  fcDeposit: string;
+  fcBalance: string;
   fcCreatedAt: string;
   fcActions: string;
   fcComment: string;
@@ -86,6 +93,16 @@ export function ForecastCashFlowTable({
   const modalSupplier =
     modalGroup?.lineRows.map((r) => r.cashFlowSupplierName.trim()).find(Boolean) ?? "";
 
+  const supplierTermsByName = useMemo(() => {
+    const m = new Map<string, { paymentTerms: string; leadTimeDays: number }>();
+    for (const s of suppliers) {
+      const k = s.name.trim().toLowerCase();
+      if (!k) continue;
+      m.set(k, { paymentTerms: s.paymentTerms || "", leadTimeDays: s.leadTimeDays ?? 0 });
+    }
+    return m;
+  }, [suppliers]);
+
   function toggleSku(sku: string) {
     setExpandedSkus((prev) => {
       const next = new Set(prev);
@@ -97,6 +114,21 @@ export function ForecastCashFlowTable({
 
   function renderDataRow(row: ForecastCashFlowRow, skuCov: (typeof groups)[0]["cov"]) {
     const rowCov = skuCov?.rows.find((r) => r.forecastId === row.id);
+    const lineTotal = forecastLineTotalUsd(row);
+    const nameKey = row.cashFlowSupplierName.trim().toLowerCase();
+    const supMeta = nameKey ? supplierTermsByName.get(nameKey) : undefined;
+    const schedule =
+      lineTotal != null &&
+      row.poIssueDate &&
+      /^\d{4}-\d{2}-\d{2}$/.test(row.poIssueDate) &&
+      supMeta
+        ? computeForecastPaymentSchedule({
+            lineTotalUsd: lineTotal,
+            poIssueDate: row.poIssueDate,
+            leadTimeDays: supMeta.leadTimeDays,
+            paymentTerms: supMeta.paymentTerms,
+          })
+        : null;
     return (
       <tr key={row.id} className="border-b border-app-border/40 bg-app-surface/30">
         <td className="px-2 py-2 whitespace-nowrap pl-6">{formatMonth(row.month)}</td>
@@ -133,6 +165,38 @@ export function ForecastCashFlowTable({
         </td>
         <td className="px-2 py-2 tabular-nums">{row.buildToOrder}</td>
         <td className="px-2 py-2 tabular-nums">{row.buildToStock}</td>
+        <td className="min-w-[7.5rem] px-2 py-2 align-top">
+          {schedule?.parseFailed ? (
+            <span className="cursor-help text-app-muted" title={supMeta?.paymentTerms || ""}>
+              —
+            </span>
+          ) : schedule?.deposit ? (
+            <div className="flex flex-col gap-0.5 text-xs" lang="en">
+              <span className="whitespace-nowrap font-medium text-foreground">
+                {formatScheduleDateEnglish(schedule.deposit.dateYmd)}
+              </span>
+              <span className="tabular-nums text-app-muted">{formatUsd(schedule.deposit.amountUsd, 2)}</span>
+            </div>
+          ) : (
+            <span className="text-app-muted">—</span>
+          )}
+        </td>
+        <td className="min-w-[7.5rem] px-2 py-2 align-top">
+          {schedule?.parseFailed ? (
+            <span className="cursor-help text-app-muted" title={supMeta?.paymentTerms || ""}>
+              —
+            </span>
+          ) : schedule?.balance ? (
+            <div className="flex flex-col gap-0.5 text-xs" lang="en">
+              <span className="whitespace-nowrap font-medium text-foreground">
+                {formatScheduleDateEnglish(schedule.balance.dateYmd)}
+              </span>
+              <span className="tabular-nums text-app-muted">{formatUsd(schedule.balance.amountUsd, 2)}</span>
+            </div>
+          ) : (
+            <span className="text-app-muted">—</span>
+          )}
+        </td>
         <td className="px-2 py-2 whitespace-nowrap tabular-nums text-xs text-app-muted">
           {row.createdAt.slice(0, 10)}
         </td>
@@ -184,6 +248,8 @@ export function ForecastCashFlowTable({
               <th className="px-2 py-2">{labels.fcUnitPriceUsd}</th>
               <th className="px-2 py-2">{labels.fcBto}</th>
               <th className="px-2 py-2">{labels.fcBts}</th>
+              <th className="px-2 py-2">{labels.fcDeposit}</th>
+              <th className="px-2 py-2">{labels.fcBalance}</th>
               <th className="px-2 py-2">{labels.fcCreatedAt}</th>
               <th className="px-2 py-2">{labels.fcCoverageCol}</th>
               <th className="px-2 py-2">{labels.fcActions}</th>
@@ -193,7 +259,7 @@ export function ForecastCashFlowTable({
           <tbody>
             {groups.length === 0 ? (
               <tr>
-                <td colSpan={14} className="px-2 py-6 text-center text-app-muted">
+                <td colSpan={16} className="px-2 py-6 text-center text-app-muted">
                   {labels.fcEmpty}
                 </td>
               </tr>
@@ -220,7 +286,7 @@ export function ForecastCashFlowTable({
                           ({lineRows.length} {en ? "lines" : "行"})
                         </span>
                       </td>
-                      <td colSpan={4} className="px-2 py-2 text-xs tabular-nums">
+                      <td colSpan={6} className="px-2 py-2 text-xs tabular-nums">
                         {cov ? (
                           <>
                             <span className={remaining > 0 ? "font-medium text-amber-700" : "text-emerald-700"}>
