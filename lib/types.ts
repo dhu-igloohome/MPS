@@ -350,7 +350,10 @@ export type ContractFileUploadEntry = {
 
 export type ContractEntry = {
   id: string;
-  orderProgressId: string;
+  orderProgressId: string | null;
+  /** Set when contract is created from Forecast cash flow (phase 1+). */
+  forecastId: string | null;
+  buyerEntityCode: string;
   supplierId: string;
   supplierName: string;
   poNumber: string;

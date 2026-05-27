@@ -282,6 +282,18 @@ async function main() {
     create unique index if not exists idx_contracts_po_sku_unique
     on contracts (po_number, sku);
   `;
+  await sql`drop index if exists idx_contracts_po_sku_unique;`;
+  await sql`create index if not exists idx_contracts_po_sku on contracts (po_number, sku);`;
+  await sql`alter table contracts alter column order_progress_id drop not null;`;
+  await sql`
+    alter table contracts
+    add column if not exists forecast_id bigint references forecasts(id) on delete set null;
+  `;
+  await sql`
+    alter table contracts
+    add column if not exists buyer_entity_code text not null default 'shenzhen';
+  `;
+  await sql`create index if not exists idx_contracts_forecast_id on contracts (forecast_id);`;
   await sql`alter table contracts add column if not exists currency text not null default 'USD';`;
   await sql`alter table contracts add column if not exists payment_terms text not null default 'Cash';`;
   await sql`alter table contracts add column if not exists remark text not null default '';`;

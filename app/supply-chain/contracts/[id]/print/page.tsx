@@ -2,11 +2,12 @@ import { notFound, redirect } from "next/navigation";
 
 import { PrintablePOPage } from "@/components/contract/printable-po-page";
 import type { PrintablePOData } from "@/components/contract/printable-po";
+import { getContractBuyerEntity } from "@/lib/contract-buyer-entities";
 import {
   getContractById,
   getOrderProgressById,
   listSuppliers,
-  sessionCanAccessOrderProgressRegion,
+  sessionCanAccessContract,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
@@ -25,27 +26,30 @@ export default async function SupplyChainContractPrintPage({ params }: PageProps
     notFound();
   }
 
-  const [order, suppliers] = await Promise.all([
-    getOrderProgressById(contract.orderProgressId),
-    listSuppliers(),
-  ]);
-  if (!order || !sessionCanAccessOrderProgressRegion(session.regions, order.region)) {
+  if (!(await sessionCanAccessContract(session.regions, contract))) {
     notFound();
   }
+  const [order, suppliers] = await Promise.all([
+    contract.orderProgressId ? getOrderProgressById(contract.orderProgressId) : Promise.resolve(null),
+    listSuppliers(),
+  ]);
   const supplier = suppliers.find((item) => item.id === contract.supplierId);
+  const buyer = getContractBuyerEntity(
+    contract.buyerEntityCode === "singapore" ? "singapore" : "shenzhen",
+  );
   const poData: PrintablePOData = {
     header: {
-      companyName: "IG",
+      companyName: buyer.legalName,
       poNumber: contract.poNumber,
       date: contract.signedDate || contract.createdAt?.slice(0, 10) || "-",
     },
     serialCode: contract.serialCode,
     bluetoothId: contract.bluetoothId,
     buyerInfo: {
-      name: "IG",
+      name: buyer.legalName,
       contact: session.username || "-",
       phone: "-",
-      address: order.factoryName || "-",
+      address: buyer.address,
     },
     vendorInfo: {
       name: contract.supplierName || supplier?.name || "-",
@@ -71,7 +75,7 @@ export default async function SupplyChainContractPrintPage({ params }: PageProps
     },
     terms: {
       paymentTerms: contract.paymentTerms || "Cash",
-      deliveryAddress: contract.deliveryAddress || order.factoryName || "-",
+      deliveryAddress: contract.deliveryAddress || order?.factoryName || "-",
       remark: contract.remark || "-",
     },
   };

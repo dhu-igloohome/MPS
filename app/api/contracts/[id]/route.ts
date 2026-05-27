@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   getContractById,
-  getOrderProgressById,
-  sessionCanAccessOrderProgressRegion,
+  sessionCanAccessContract,
   updateContractStatusById,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
@@ -34,9 +33,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const contract = await getContractById(id);
   if (!contract) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
-  const order = await getOrderProgressById(contract.orderProgressId);
-  if (!order) return NextResponse.json({ message: "Order not found" }, { status: 404 });
-  if (!sessionCanAccessOrderProgressRegion(session.regions, order.region)) {
+  if (!(await sessionCanAccessContract(session.regions, contract))) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 

@@ -5,10 +5,11 @@ import { notFound, redirect } from "next/navigation";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
+import { getContractBuyerEntity } from "@/lib/contract-buyer-entities";
 import {
   getContractById,
   getOrderProgressById,
-  sessionCanAccessOrderProgressRegion,
+  sessionCanAccessContract,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
@@ -30,13 +31,14 @@ export default async function SupplyChainContractDetailPage({ params }: PageProp
   const contract = await getContractById(id);
   if (!contract) notFound();
 
-  const [order, cookieStore] = await Promise.all([
-    getOrderProgressById(contract.orderProgressId),
-    cookies(),
-  ]);
-  if (!order || !sessionCanAccessOrderProgressRegion(session.regions, order.region)) {
+  const cookieStore = await cookies();
+  if (!(await sessionCanAccessContract(session.regions, contract))) {
     notFound();
   }
+  const order = contract.orderProgressId ? await getOrderProgressById(contract.orderProgressId) : null;
+  const buyer = getContractBuyerEntity(
+    contract.buyerEntityCode === "singapore" ? "singapore" : "shenzhen",
+  );
 
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   const canPrint = contract.status === "approved" || contract.status === "sent";
@@ -85,8 +87,15 @@ export default async function SupplyChainContractDetailPage({ params }: PageProp
               </span>
             </dd>
           </div>
+          <div className="min-w-0 md:col-span-2">
+            <dt className="text-xs text-app-muted">{language === "en" ? "Buyer (Party A)" : "甲方"}</dt>
+            <dd className="text-sm text-foreground">
+              {buyer.legalName}
+              <span className="block text-xs text-app-muted">{buyer.address}</span>
+            </dd>
+          </div>
           <div className="min-w-0"><dt className="text-xs text-app-muted">Supplier</dt><dd className="text-sm text-foreground">{contract.supplierName}</dd></div>
-          <div className="min-w-0"><dt className="text-xs text-app-muted">Order Number</dt><dd className="text-sm text-foreground">{order.orderNumber || "-"}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-app-muted">Order Number</dt><dd className="text-sm text-foreground">{order?.orderNumber || "—"}</dd></div>
           <div className="min-w-0"><dt className="text-xs text-app-muted">Product</dt><dd className="text-sm text-foreground">{contract.productName}</dd></div>
           <div className="min-w-0"><dt className="text-xs text-app-muted">SKU</dt><dd className="text-sm text-foreground">{contract.sku}</dd></div>
           <div className="min-w-0"><dt className="text-xs text-app-muted">Quantity</dt><dd className="text-sm text-foreground">{contract.quantity}</dd></div>

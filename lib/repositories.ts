@@ -1,4 +1,6 @@
 import { ensureDatabase, getSql } from "@/lib/db";
+import { resolveBuyerEntityCode } from "@/lib/contract-buyer-entities";
+import { computeForecastContractCoverage } from "@/lib/contract-forecast-coverage";
 import { DOMESTIC_CONTRACT_USD_TO_CNY, DOMESTIC_CONTRACT_VAT_MULTIPLIER } from "@/lib/contract-domestic-pricing";
 import { normalizeForecastIncotermStored, parseForecastIncoterm } from "@/lib/forecast-incoterm";
 import { forecastPoPrefixForRegion, singaporeYmdCompact } from "@/lib/forecast-po";
@@ -346,7 +348,9 @@ type Qc8dReportRow = {
 
 type ContractRow = {
   id: number;
-  order_progress_id: number;
+  order_progress_id: number | null;
+  forecast_id: number | null;
+  buyer_entity_code: string;
   supplier_id: number;
   supplier_name: string;
   po_number: string;
@@ -1652,6 +1656,20 @@ function formatPgDateOnly(value: string | Date): string {
   }
   const s = String(value);
   return s.length >= 10 ? s.slice(0, 10) : s;
+}
+
+function addCalendarDaysToYmd(ymd: string, days: number): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim());
+  if (!m) return ymd;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const dt = new Date(y, mo - 1, d);
+  dt.setDate(dt.getDate() + days);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
 }
 
 function mapDeliveryPlanRow(row: OrderProgressDeliveryPlanRow): OrderProgressDeliveryPlan {
@@ -3652,7 +3670,9 @@ function mapQc8dReportEntry(row: Qc8dReportRow): Qc8dReportEntry {
 function mapContract(row: ContractRow): ContractEntry {
   return {
     id: String(row.id),
-    orderProgressId: String(row.order_progress_id),
+    orderProgressId: row.order_progress_id != null ? String(row.order_progress_id) : null,
+    forecastId: row.forecast_id != null ? String(row.forecast_id) : null,
+    buyerEntityCode: row.buyer_entity_code || "shenzhen",
     supplierId: String(row.supplier_id),
     supplierName: row.supplier_name,
     poNumber: row.po_number,
@@ -4616,6 +4636,8 @@ export async function listContractsBySessionRegions(regions: Region[]): Promise<
     select
       c.id,
       c.order_progress_id,
+      c.forecast_id,
+      c.buyer_entity_code,
       c.supplier_id,
       c.supplier_name,
       c.po_number,
@@ -4638,8 +4660,11 @@ export async function listContractsBySessionRegions(regions: Region[]): Promise<
       c.created_at::text,
       c.updated_at::text
     from contracts c
-    join order_progress op on op.id = c.order_progress_id
-    where op.region = any(${allowed})
+    left join order_progress op on op.id = c.order_progress_id
+    left join forecasts f on f.id = c.forecast_id
+    where
+      (op.id is not null and op.region = any(${allowed}))
+      or (f.id is not null and f.region = any(${regions}))
     order by c.created_at desc, c.id desc;
   `;
   return rows.map(mapContract);
@@ -4659,6 +4684,8 @@ export async function listContractsByPoNumberInSessionRegions(
     select
       c.id,
       c.order_progress_id,
+      c.forecast_id,
+      c.buyer_entity_code,
       c.supplier_id,
       c.supplier_name,
       c.po_number,
@@ -4681,12 +4708,250 @@ export async function listContractsByPoNumberInSessionRegions(
       c.created_at::text,
       c.updated_at::text
     from contracts c
-    join order_progress op on op.id = c.order_progress_id
-    where op.region = any(${allowed})
-      and c.po_number = ${normalizedPo}
+    left join order_progress op on op.id = c.order_progress_id
+    left join forecasts f on f.id = c.forecast_id
+    where
+      c.po_number = ${normalizedPo}
+      and (
+        (op.id is not null and op.region = any(${allowed}))
+        or (f.id is not null and f.region = any(${regions}))
+      )
     order by c.sku asc, c.id asc;
   `;
   return rows.map(mapContract);
+}
+
+export type ForecastContractAllocation = {
+  forecastId: string;
+  supplierName: string;
+  quantity: number;
+};
+
+export async function createContractsFromForecast(input: {
+  allocations: ForecastContractAllocation[];
+  batch: string;
+  currency: string;
+  remark: string;
+  deliveryAddress: string;
+  serialCode: string;
+  bluetoothId: string;
+  createdBy: string;
+  sessionRegions: Region[];
+}): Promise<{ contracts: ContractEntry[] }> {
+  await ensureDatabase();
+  const db = getSql();
+  const batch = input.batch.trim();
+  const deliveryAddress = input.deliveryAddress.trim();
+  if (!batch || !deliveryAddress) {
+    throw new Error("Missing required fields");
+  }
+  const allocations = input.allocations
+    .map((a) => ({
+      forecastId: a.forecastId.trim(),
+      supplierName: (a.supplierName ?? "").trim(),
+      quantity: Math.max(0, Math.trunc(a.quantity)),
+    }))
+    .filter((a) => a.forecastId && a.supplierName && a.quantity > 0);
+  if (allocations.length === 0) {
+    throw new Error("At least one forecast line with quantity is required");
+  }
+
+  const forecasts = await getForecastsByRegions(input.sessionRegions);
+  const fcRows = await enrichForecastRecordsForCashFlow(forecasts);
+  const fcById = new Map(fcRows.map((r) => [r.id, r]));
+  const contracts = await listContractsBySessionRegions(input.sessionRegions);
+  const coverage = computeForecastContractCoverage(fcRows, contracts);
+
+  const created: ContractEntry[] = [];
+  const remainingByForecastId = new Map<string, number>();
+  for (const skuCov of Object.values(coverage.bySku)) {
+    for (const rowCov of skuCov.rows) {
+      remainingByForecastId.set(rowCov.forecastId, rowCov.remainingQty);
+    }
+  }
+  const allocQtySumByForecastId = new Map<string, number>();
+  for (const alloc of allocations) {
+    allocQtySumByForecastId.set(
+      alloc.forecastId,
+      (allocQtySumByForecastId.get(alloc.forecastId) ?? 0) + alloc.quantity,
+    );
+  }
+  for (const [fid, sumQty] of allocQtySumByForecastId.entries()) {
+    const remaining = remainingByForecastId.get(fid) ?? 0;
+    if (sumQty > remaining) {
+      throw new Error(`Quantity ${sumQty} exceeds remaining ${remaining} for forecast ${fid}`);
+    }
+  }
+
+  for (const alloc of allocations) {
+    const row = fcById.get(alloc.forecastId);
+    if (!row) {
+      throw new Error(`Forecast row ${alloc.forecastId} is not available for contract creation`);
+    }
+    const supplierName = alloc.supplierName.trim();
+    if (!supplierName) {
+      throw new Error(`Choose a supplier in Forecast cash flow for ${row.sku} (${row.poNumber || "no PO"})`);
+    }
+
+    const supplierRows = await db<
+      { id: number; name: string; payment_terms: string; is_domestic_contract: boolean }[]
+    >`
+      select id, name, payment_terms, coalesce(is_domestic_contract, false) as is_domestic_contract
+      from suppliers
+      where is_active = true and lower(trim(name)) = lower(trim(${supplierName}))
+      order by id asc
+      limit 1;
+    `;
+    const sup = supplierRows[0];
+    if (!sup) {
+      throw new Error(`Supplier "${supplierName}" is not found in Suppliers (or is inactive)`);
+    }
+
+    const paymentTerms = (sup.payment_terms ?? "").trim() || "Cash";
+    const buyerCode = resolveBuyerEntityCode(Boolean(sup.is_domestic_contract));
+    const poNumber = (row.poNumber || "").trim();
+    if (!poNumber) {
+      throw new Error(`Forecast row for ${row.sku} needs a PO number`);
+    }
+
+    const poIssue = row.poIssueDate && /^\d{4}-\d{2}-\d{2}$/.test(row.poIssueDate) ? row.poIssueDate : null;
+    const signedDate = poIssue ?? row.createdAt.slice(0, 10);
+    const deliveryDate = addCalendarDaysToYmd(signedDate, 56);
+
+    const insRows = await db<ContractRow[]>`
+      with src as (
+        select
+          ${Number(row.id)}::bigint as forecast_id,
+          ${Number(sup.id)}::bigint as supplier_id,
+          ${sup.name}::text as supplier_name,
+          ${poNumber}::text as po_number,
+          ${signedDate}::date as signed_date,
+          ${row.sku.trim()}::text as sku,
+          ${row.productName.trim()}::text as product_name,
+          ${alloc.quantity}::int as quantity,
+          coalesce(
+            nullif(uc.unit_price::numeric, 0),
+            uc.unit_price::numeric,
+            0
+          ) as usd_unit_basis,
+          coalesce(${Boolean(sup.is_domestic_contract)}, false) as is_domestic_contract,
+          case
+            when coalesce(${Boolean(sup.is_domestic_contract)}, false) then round(
+              (
+                coalesce(
+                  nullif(uc.unit_price::numeric, 0),
+                  uc.unit_price::numeric,
+                  0
+                )
+              )::numeric * ${DOMESTIC_CONTRACT_USD_TO_CNY} * ${DOMESTIC_CONTRACT_VAT_MULTIPLIER},
+              2
+            )
+            else coalesce(
+              nullif(uc.unit_price::numeric, 0),
+              uc.unit_price::numeric,
+              0
+            )
+          end as contract_unit,
+          case
+            when coalesce(${Boolean(sup.is_domestic_contract)}, false) then 'CNY'
+            else ${input.currency.trim() || "USD"}
+          end as contract_currency,
+          uc.id as unit_cost_quote_id_snapshot,
+          uc.quote_date::date as unit_cost_quote_date_snapshot
+        from lateral (
+          select id, quote_date, unit_price
+          from unit_cost_quotes
+          where sku = ${row.sku.trim()} and trim(supplier_name) = trim(${sup.name}) and deleted_at is null
+          order by quote_date desc, id desc
+          limit 1
+        ) uc
+      )
+      insert into contracts (
+        order_progress_id,
+        forecast_id,
+        buyer_entity_code,
+        supplier_id,
+        supplier_name,
+        po_number,
+        signed_date,
+        sku,
+        product_name,
+        batch,
+        quantity,
+        unit_cost,
+        total_amount,
+        delivery_date,
+        unit_cost_quote_id_snapshot,
+        unit_cost_quote_date_snapshot,
+        currency,
+        payment_terms,
+        remark,
+        delivery_address,
+        serial_code,
+        bluetooth_id,
+        status,
+        created_by
+      )
+      select
+        null,
+        src.forecast_id,
+        ${buyerCode},
+        src.supplier_id,
+        src.supplier_name,
+        src.po_number,
+        src.signed_date,
+        src.sku,
+        src.product_name,
+        ${batch},
+        src.quantity,
+        coalesce(src.contract_unit, 0),
+        src.quantity * coalesce(src.contract_unit, 0),
+        ${deliveryDate}::date,
+        src.unit_cost_quote_id_snapshot,
+        src.unit_cost_quote_date_snapshot,
+        src.contract_currency,
+        ${paymentTerms},
+        ${input.remark.trim()},
+        ${deliveryAddress},
+        ${input.serialCode.trim()},
+        ${input.bluetoothId.trim()},
+        'draft',
+        ${input.createdBy}
+      from src
+      returning
+        id,
+        order_progress_id,
+        forecast_id,
+        buyer_entity_code,
+        supplier_id,
+        supplier_name,
+        po_number,
+        signed_date::text,
+        sku,
+        product_name,
+        batch,
+        quantity,
+        unit_cost::text,
+        total_amount::text,
+        delivery_date::text,
+        currency,
+        payment_terms,
+        remark,
+        delivery_address,
+        serial_code,
+        bluetooth_id,
+        status,
+        created_by,
+        created_at::text,
+        updated_at::text;
+    `;
+    if (!insRows[0]) {
+      throw new Error("Create contract failed");
+    }
+    created.push(mapContract(insRows[0]));
+  }
+
+  return { contracts: created };
 }
 
 export async function createContractFromOrder(input: {
@@ -4711,18 +4976,7 @@ export async function createContractFromOrder(input: {
   if (!Number.isFinite(supplierIdNum) || supplierIdNum < 1) {
     throw new Error("Invalid supplier resolution");
   }
-  const duplicates = await db<{ id: number; po_number: string; sku: string }[]>`
-    select c.id, c.po_number, c.sku
-    from contracts c
-    join order_progress op on op.po_number = c.po_number and op.sku = c.sku
-    where op.id = ${Number(input.orderProgressId)}
-    limit 1;
-  `;
-  if (duplicates[0]) {
-    throw new Error(
-      `Contract already exists for PO ${duplicates[0].po_number} / SKU ${duplicates[0].sku}. Please edit the existing contract.`,
-    );
-  }
+  const buyerEntityCode = resolveBuyerEntityCode(Boolean(hint.domesticContractBilling));
   const rows = await db<ContractRow[]>`
     with src as (
       select
@@ -4788,6 +5042,8 @@ export async function createContractFromOrder(input: {
     ins as (
       insert into contracts (
         order_progress_id,
+        forecast_id,
+        buyer_entity_code,
         supplier_id,
         supplier_name,
         po_number,
@@ -4812,6 +5068,8 @@ export async function createContractFromOrder(input: {
       )
       select
         src.order_progress_id,
+        null,
+        ${buyerEntityCode},
         src.supplier_id,
         src.supplier_name,
         src.po_number as po_number,
@@ -4834,7 +5092,32 @@ export async function createContractFromOrder(input: {
         'draft',
         ${input.createdBy}
       from src
-      returning *
+      returning
+        id,
+        order_progress_id,
+        forecast_id,
+        buyer_entity_code,
+        supplier_id,
+        supplier_name,
+        po_number,
+        signed_date::text,
+        sku,
+        product_name,
+        batch,
+        quantity,
+        unit_cost::text,
+        total_amount::text,
+        delivery_date::text,
+        currency,
+        payment_terms,
+        remark,
+        delivery_address,
+        serial_code,
+        bluetooth_id,
+        status,
+        created_by,
+        created_at::text,
+        updated_at::text
     ),
     upd as (
       update order_progress op
@@ -4850,36 +5133,24 @@ export async function createContractFromOrder(input: {
       where op.id = ins.order_progress_id
       returning op.id
     )
-    select
-      id,
-      order_progress_id,
-      supplier_id,
-      supplier_name,
-      po_number,
-      signed_date::text,
-      sku,
-      product_name,
-      batch,
-      quantity,
-      unit_cost::text,
-      total_amount::text,
-      delivery_date::text,
-      currency,
-      payment_terms,
-      remark,
-      delivery_address,
-      serial_code,
-      bluetooth_id,
-      status,
-      created_by,
-      created_at::text,
-      updated_at::text
-    from ins;
+    select * from ins;
   `;
   if (!rows[0]) {
     throw new Error("Create contract failed");
   }
   return mapContract(rows[0]);
+}
+
+export async function sessionCanAccessContract(regions: Region[], contract: ContractEntry): Promise<boolean> {
+  if (contract.orderProgressId) {
+    const order = await getOrderProgressById(contract.orderProgressId);
+    return order != null && sessionCanAccessOrderProgressRegion(regions, order.region);
+  }
+  if (contract.forecastId) {
+    const forecast = await getForecastById(contract.forecastId);
+    return forecast != null && regions.includes(forecast.region);
+  }
+  return false;
 }
 
 export async function getContractById(id: string): Promise<ContractEntry | null> {
@@ -4889,6 +5160,8 @@ export async function getContractById(id: string): Promise<ContractEntry | null>
     select
       id,
       order_progress_id,
+      forecast_id,
+      buyer_entity_code,
       supplier_id,
       supplier_name,
       po_number,
@@ -4930,6 +5203,8 @@ export async function updateContractStatusById(
     returning
       id,
       order_progress_id,
+      forecast_id,
+      buyer_entity_code,
       supplier_id,
       supplier_name,
       po_number,

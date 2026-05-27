@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
-import { formatUsd } from "@/lib/format-usd";
+import { ForecastCashFlowTable } from "@/components/cost-control/forecast-cash-flow-table";
+import type { ForecastContractCoverageSummary } from "@/lib/contract-forecast-coverage";
 import type { Language } from "@/lib/i18n";
 import type {
   ForecastCashFlowRow,
@@ -17,6 +17,7 @@ import type {
 type CashFlowPanelProps = {
   language: Language;
   forecastCashFlowRows: ForecastCashFlowRow[];
+  forecastContractCoverage: ForecastContractCoverageSummary;
   /** Active supplier names (Supply Chain → Suppliers) for Forecast cash flow dropdown. */
   fcSupplierNames: string[];
   /** Supplier master data for payment schedule (terms + lead time). */
@@ -129,6 +130,10 @@ const LABELS = {
     fcExportReport: "Export Forecast cash flow report",
     fcExportEmpty: "No rows to export",
     fcOpsActionCol: "Ops action",
+    fcCoverageCol: "Pending contract",
+    fcCreateContract: "Create contract",
+    fcFilterPending: "Only SKUs with pending contract qty",
+    fcRowRemaining: "Remaining",
   },
   zh: {
     fcTitle: "Forecast 现金流",
@@ -155,12 +160,17 @@ const LABELS = {
     fcExportReport: "导出 Forecast 现金流报表",
     fcExportEmpty: "没有可导出的行",
     fcOpsActionCol: "运营操作",
+    fcCoverageCol: "待建合同",
+    fcCreateContract: "创建合同",
+    fcFilterPending: "仅显示待建合同 SKU",
+    fcRowRemaining: "待建",
   },
 };
 
 export function CashFlowPanel({
   language,
   forecastCashFlowRows,
+  forecastContractCoverage,
   fcSupplierNames,
   fcSuppliers,
   landedCostConsolidateSnapshots,
@@ -250,94 +260,17 @@ export function CashFlowPanel({
           </summary>
           <p className="mt-1 max-w-3xl leading-relaxed">{t.fcHint}</p>
         </details>
-        <div className="app-table-shell mt-3 overflow-x-auto">
-          <table className="w-full min-w-[1280px] border-collapse text-xs sm:text-sm">
-            <thead>
-              <tr className="border-b border-app-border/80 bg-app-surface/80 text-left text-app-muted">
-                <th className="px-2 py-2">{t.fcMonth}</th>
-                <th className="px-2 py-2">{t.fcForecastNo}</th>
-                <th className="px-2 py-2">{t.fcRegion}</th>
-                <th className="px-2 py-2">{t.fcDestination}</th>
-                <th className="px-2 py-2">{t.fcProductName}</th>
-                <th className="px-2 py-2">{t.sku}</th>
-                <th className="min-w-[10rem] px-2 py-2">{t.fcSupplierName}</th>
-                <th className="px-2 py-2">{t.fcUnitPriceUsd}</th>
-                <th className="px-2 py-2">{t.fcBto}</th>
-                <th className="px-2 py-2">{t.fcBts}</th>
-                <th className="px-2 py-2">{t.fcCreatedAt}</th>
-                <th className="px-2 py-2">{t.fcActions}</th>
-                <th className="px-2 py-2">{t.fcComment}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fcRows.length === 0 ? (
-                <tr>
-                  <td colSpan={13} className="px-2 py-6 text-center text-app-muted">
-                    {t.fcEmpty}
-                  </td>
-                </tr>
-              ) : (
-                fcRows.map((row) => (
-                  <tr key={row.id} className="border-b border-app-border/40">
-                    <td className="px-2 py-2 whitespace-nowrap">{formatForecastMonthCell(row.month, language)}</td>
-                    <td className="px-2 py-2">{row.poNumber || "—"}</td>
-                    <td className="px-2 py-2">{row.region}</td>
-                    <td className="max-w-[8rem] break-words px-2 py-2">{row.destination || "—"}</td>
-                    <td className="max-w-[10rem] break-words px-2 py-2">{row.productName}</td>
-                    <td className="px-2 py-2 font-medium">{row.sku}</td>
-                    <td className="px-2 py-2 align-top">
-                      <select
-                        value={row.cashFlowSupplierName}
-                        onChange={(e) => void onFcSupplierChange(row.id, e.target.value)}
-                        disabled={fcRowSavingId === row.id}
-                        className="app-control-md max-w-[11rem] rounded-lg border border-app-border bg-app-surface px-2 py-1 text-sm"
-                        aria-label={t.fcSupplierName}
-                      >
-                        <option value="">{t.fcSelectSupplier}</option>
-                        {fcSupplierNames.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td
-                      className="px-2 py-2 tabular-nums"
-                      title={
-                        row.cashFlowSupplierName && row.unitPriceUsd == null
-                          ? t.fcNoUnitCostHint
-                          : undefined
-                      }
-                    >
-                      {!row.cashFlowSupplierName
-                        ? "—"
-                        : row.unitPriceUsd != null
-                          ? formatUsd(row.unitPriceUsd, 4)
-                          : t.fcNoUnitCostQuote}
-                    </td>
-                    <td className="px-2 py-2 tabular-nums">{row.buildToOrder}</td>
-                    <td className="px-2 py-2 tabular-nums">{row.buildToStock}</td>
-                    <td className="px-2 py-2 whitespace-nowrap tabular-nums">
-                      {row.createdAt.slice(0, 10)}
-                    </td>
-                    <td className="px-2 py-2 whitespace-nowrap">
-                      <Link
-                        href="/forecast"
-                        className="text-app-accent hover:underline"
-                        prefetch={false}
-                      >
-                        {t.fcOpenForecast}
-                      </Link>
-                    </td>
-                    <td className="max-w-[14rem] break-words px-2 py-2 text-app-muted">
-                      {row.remark?.trim() ? row.remark : "—"}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <ForecastCashFlowTable
+          language={language}
+          rows={fcRows}
+          coverage={forecastContractCoverage}
+          fcSupplierNames={fcSupplierNames}
+          suppliers={fcSuppliers}
+          labels={t}
+          formatMonth={(ym) => formatForecastMonthCell(ym, language)}
+          onSupplierChange={(forecastId, supplierName) => void onFcSupplierChange(forecastId, supplierName)}
+          rowSavingId={fcRowSavingId}
+        />
       </section>
 
       {fcMessage ? <p className="text-sm text-red-600">{fcMessage}</p> : null}

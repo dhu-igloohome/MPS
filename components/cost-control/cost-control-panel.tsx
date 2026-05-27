@@ -6,6 +6,7 @@ import { CashFlowPanel } from "@/components/cost-control/cash-flow-panel";
 import { CostAnalysisPanel } from "@/components/cost-control/cost-analysis-panel";
 import { PoCashFlowPanel } from "@/components/cost-control/po-cash-flow-panel";
 import type { Language } from "@/lib/i18n";
+import type { ForecastContractCoverageSummary } from "@/lib/contract-forecast-coverage";
 import type {
   CashFlowEntry,
   CostAnalysisEntry,
@@ -20,6 +21,7 @@ type CostControlPanelProps = {
   cashFlowEntries: CashFlowEntry[];
   costAnalysisEntries: CostAnalysisEntry[];
   forecastCashFlowRows: ForecastCashFlowRow[];
+  forecastContractCoverage: ForecastContractCoverageSummary;
   fcSupplierNames: string[];
   /** Full supplier records (payment terms, lead time) for forecast dashboard schedule. */
   suppliers: SupplierEntry[];
@@ -43,6 +45,7 @@ export function CostControlPanel({
   cashFlowEntries,
   costAnalysisEntries,
   forecastCashFlowRows,
+  forecastContractCoverage,
   fcSupplierNames,
   suppliers,
   landedCostConsolidateSnapshots,
@@ -75,6 +78,7 @@ export function CostControlPanel({
             <CashFlowPanel
               language={language}
               forecastCashFlowRows={forecastCashFlowRows}
+              forecastContractCoverage={forecastContractCoverage}
               fcSupplierNames={fcSupplierNames}
               fcSuppliers={suppliers}
               landedCostConsolidateSnapshots={landedCostConsolidateSnapshots}

@@ -6,10 +6,12 @@ import { CostControlPanel } from "@/components/cost-control/cost-control-panel";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
+import { computeForecastContractCoverage } from "@/lib/contract-forecast-coverage";
 import {
   enrichForecastRecordsForCashFlow,
   getForecastsByRegions,
   listCashFlowEntries,
+  listContractsBySessionRegions,
   listCostAnalysisEntries,
   listSuppliers,
   listUnitCostQuotes,
@@ -26,7 +28,7 @@ export default async function SupplyChainCostControlPage() {
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   // Kick off forecasts first so the dependent enrich step can overlap with the other 4 queries.
   const forecastRecordsPromise = getForecastsByRegions(session.regions);
-  const [cashFlowEntries, costAnalysisEntries, forecastRecords, suppliers, unitCostQuotes, forecastCashFlowRows] =
+  const [cashFlowEntries, costAnalysisEntries, forecastRecords, suppliers, unitCostQuotes, forecastCashFlowRows, contracts] =
     await Promise.all([
       listCashFlowEntries(),
       listCostAnalysisEntries(),
@@ -34,7 +36,9 @@ export default async function SupplyChainCostControlPage() {
       listSuppliers(),
       listUnitCostQuotes(),
       forecastRecordsPromise.then(enrichForecastRecordsForCashFlow),
+      listContractsBySessionRegions(session.regions),
     ]);
+  const forecastContractCoverage = computeForecastContractCoverage(forecastCashFlowRows, contracts);
   const fcSupplierNames = [
     ...new Set(
       suppliers.filter((s) => s.isActive).map((s) => s.name.trim()).filter(Boolean),
@@ -58,6 +62,7 @@ export default async function SupplyChainCostControlPage() {
           cashFlowEntries={cashFlowEntries}
           costAnalysisEntries={costAnalysisEntries}
           forecastCashFlowRows={forecastCashFlowRows}
+          forecastContractCoverage={forecastContractCoverage}
           fcSupplierNames={fcSupplierNames}
           suppliers={suppliers}
           landedCostConsolidateSnapshots={[]}

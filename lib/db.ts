@@ -262,6 +262,22 @@ async function setupSchema() {
     create unique index if not exists idx_contracts_po_sku_unique
     on contracts (po_number, sku);
   `;
+  await db`drop index if exists idx_contracts_po_sku_unique;`;
+  await db`
+    create index if not exists idx_contracts_po_sku on contracts (po_number, sku);
+  `;
+  await db`alter table contracts alter column order_progress_id drop not null;`;
+  await db`
+    alter table contracts
+    add column if not exists forecast_id bigint references forecasts(id) on delete set null;
+  `;
+  await db`
+    alter table contracts
+    add column if not exists buyer_entity_code text not null default 'shenzhen';
+  `;
+  await db`
+    create index if not exists idx_contracts_forecast_id on contracts (forecast_id);
+  `;
   await db`alter table contracts add column if not exists currency text not null default 'USD';`;
   await db`alter table contracts add column if not exists payment_terms text not null default 'Cash';`;
   await db`alter table contracts add column if not exists remark text not null default '';`;
