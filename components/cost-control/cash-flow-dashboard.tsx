@@ -29,11 +29,14 @@ import {
   buildLandedCostPaymentBarData,
   type LandedCostBarSeriesMeta,
 } from "@/lib/landed-cost-cash-flow-chart";
+import { forecastLineTotalUsd } from "@/lib/contract-forecast-coverage";
 import {
-  computeForecastPaymentSchedule,
   formatScheduleDateEnglish,
+  formatScheduleMonth,
+  resolveForecastRowPayment,
   type ForecastPaySchedule,
 } from "@/lib/forecast-supplier-payment-schedule";
+import { buildSupplierTermsIndex } from "@/lib/supplier-name-lookup";
 import {
   buildForecastDestinationOptions,
   forecastDestinationDisplay,
@@ -87,13 +90,6 @@ type Props = {
   /** When true with forecastSummaryOnly: hide editable tables; show chart strip for Dashboard embed. */
   dashboardChartsOnly?: boolean;
 };
-
-function forecastLineTotalUsd(row: ForecastCashFlowRow): number | null {
-  if (row.unitPriceUsd == null) return null;
-  const qty = Number(row.buildToOrder) + Number(row.buildToStock);
-  if (!Number.isFinite(qty) || qty <= 0) return null;
-  return row.unitPriceUsd * qty;
-}
 
 /** English display for stored YYYY-MM-DD (avoids TZ shift around midnight). */
 function formatPoIssueDateEnglish(ymd: string | null | undefined): string {
@@ -683,49 +679,26 @@ export function CashFlowDashboard({
     [enriched, filters, dateRange.from, dateRange.to],
   );
 
-  const supplierTermsByName = useMemo(() => {
-    const m = new Map<string, { paymentTerms: string; leadTimeDays: number }>();
-    for (const s of fcSuppliers) {
-      const k = s.name.trim().toLowerCase();
-      if (!k) continue;
-      m.set(k, { paymentTerms: s.paymentTerms || "", leadTimeDays: s.leadTimeDays ?? 0 });
-    }
-    return m;
-  }, [fcSuppliers]);
+  const supplierTermsIndex = useMemo(() => buildSupplierTermsIndex(fcSuppliers), [fcSuppliers]);
 
   const fcDashboardRows = useMemo(() => {
     return forecastCashFlowRows.map((row) => {
-      const lineTotal = forecastLineTotalUsd(row);
       const supplierLabel = row.cashFlowSupplierName.trim() || "—";
-      const nameKey = row.cashFlowSupplierName.trim().toLowerCase();
-      const supMeta = nameKey ? supplierTermsByName.get(nameKey) : undefined;
-
-      let schedule: ForecastPaySchedule | null = null;
-      if (
-        lineTotal != null &&
-        row.poIssueDate &&
-        /^\d{4}-\d{2}-\d{2}$/.test(row.poIssueDate) &&
-        nameKey &&
-        supMeta
-      ) {
-        schedule = computeForecastPaymentSchedule({
-          lineTotalUsd: lineTotal,
-          poIssueDate: row.poIssueDate,
-          leadTimeDays: supMeta.leadTimeDays,
-          paymentTerms: supMeta.paymentTerms,
-        });
-      }
-
+      const { lineTotal, schedule, supMeta, unknownSupplier } = resolveForecastRowPayment(
+        row,
+        fcSuppliers,
+        supplierTermsIndex,
+      );
       return {
         row,
         lineTotal,
         supplierLabel,
         schedule,
         supMeta,
-        unknownSupplier: Boolean(nameKey && !supMeta),
+        unknownSupplier,
       };
     });
-  }, [forecastCashFlowRows, supplierTermsByName]);
+  }, [forecastCashFlowRows, fcSuppliers, supplierTermsIndex]);
 
   const fcSumComputable = useMemo(
     () => fcDashboardRows.reduce((s, x) => s + (x.lineTotal ?? 0), 0),
@@ -1047,9 +1020,9 @@ export function CashFlowDashboard({
                             {t.na}
                           </span>
                         ) : schedule?.deposit ? (
-                          <div className="flex flex-col gap-0.5 text-xs" lang="en">
+                          <div className="flex flex-col gap-0.5 text-xs">
                             <span className="whitespace-nowrap font-medium text-slate-800 dark:text-slate-100">
-                              {formatScheduleDateEnglish(schedule.deposit.dateYmd)}
+                              {formatScheduleMonth(schedule.deposit.dateYmd, language === "en" ? "en" : "zh")}
                             </span>
                             <span className="tabular-nums text-slate-700 dark:text-slate-200">
                               {formatUsd(schedule.deposit.amountUsd, 2)}
@@ -1076,9 +1049,9 @@ export function CashFlowDashboard({
                             {t.na}
                           </span>
                         ) : schedule?.balance ? (
-                          <div className="flex flex-col gap-0.5 text-xs" lang="en">
+                          <div className="flex flex-col gap-0.5 text-xs">
                             <span className="whitespace-nowrap font-medium text-slate-800 dark:text-slate-100">
-                              {formatScheduleDateEnglish(schedule.balance.dateYmd)}
+                              {formatScheduleMonth(schedule.balance.dateYmd, language === "en" ? "en" : "zh")}
                             </span>
                             <span className="tabular-nums text-slate-700 dark:text-slate-200">
                               {formatUsd(schedule.balance.amountUsd, 2)}

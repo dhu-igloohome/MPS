@@ -5,11 +5,11 @@ import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CreateContractFromForecastModal } from "@/components/contract/create-contract-from-forecast-modal";
-import { forecastLineTotalUsd } from "@/lib/contract-forecast-coverage";
 import {
-  computeForecastPaymentSchedule,
-  formatScheduleDateEnglish,
+  formatScheduleMonth,
+  resolveForecastRowPayment,
 } from "@/lib/forecast-supplier-payment-schedule";
+import { buildSupplierTermsIndex } from "@/lib/supplier-name-lookup";
 import { formatUsd } from "@/lib/format-usd";
 import type { ForecastContractCoverageSummary } from "@/lib/contract-forecast-coverage";
 import type { Language } from "@/lib/i18n";
@@ -93,15 +93,8 @@ export function ForecastCashFlowTable({
   const modalSupplier =
     modalGroup?.lineRows.map((r) => r.cashFlowSupplierName.trim()).find(Boolean) ?? "";
 
-  const supplierTermsByName = useMemo(() => {
-    const m = new Map<string, { paymentTerms: string; leadTimeDays: number }>();
-    for (const s of suppliers) {
-      const k = s.name.trim().toLowerCase();
-      if (!k) continue;
-      m.set(k, { paymentTerms: s.paymentTerms || "", leadTimeDays: s.leadTimeDays ?? 0 });
-    }
-    return m;
-  }, [suppliers]);
+  const supplierTermsIndex = useMemo(() => buildSupplierTermsIndex(suppliers), [suppliers]);
+  const monthLang = language === "en" ? "en" : "zh";
 
   function toggleSku(sku: string) {
     setExpandedSkus((prev) => {
@@ -114,21 +107,11 @@ export function ForecastCashFlowTable({
 
   function renderDataRow(row: ForecastCashFlowRow, skuCov: (typeof groups)[0]["cov"]) {
     const rowCov = skuCov?.rows.find((r) => r.forecastId === row.id);
-    const lineTotal = forecastLineTotalUsd(row);
-    const nameKey = row.cashFlowSupplierName.trim().toLowerCase();
-    const supMeta = nameKey ? supplierTermsByName.get(nameKey) : undefined;
-    const schedule =
-      lineTotal != null &&
-      row.poIssueDate &&
-      /^\d{4}-\d{2}-\d{2}$/.test(row.poIssueDate) &&
-      supMeta
-        ? computeForecastPaymentSchedule({
-            lineTotalUsd: lineTotal,
-            poIssueDate: row.poIssueDate,
-            leadTimeDays: supMeta.leadTimeDays,
-            paymentTerms: supMeta.paymentTerms,
-          })
-        : null;
+    const { lineTotal, schedule, supMeta, unknownSupplier } = resolveForecastRowPayment(
+      row,
+      suppliers,
+      supplierTermsIndex,
+    );
     return (
       <tr key={row.id} className="border-b border-app-border/40 bg-app-surface/30">
         <td className="px-2 py-2 whitespace-nowrap pl-6">{formatMonth(row.month)}</td>
@@ -166,14 +149,20 @@ export function ForecastCashFlowTable({
         <td className="px-2 py-2 tabular-nums">{row.buildToOrder}</td>
         <td className="px-2 py-2 tabular-nums">{row.buildToStock}</td>
         <td className="min-w-[7.5rem] px-2 py-2 align-top">
-          {schedule?.parseFailed ? (
+          {lineTotal == null || !row.poIssueDate || !row.cashFlowSupplierName.trim() ? (
+            <span className="text-app-muted">—</span>
+          ) : unknownSupplier ? (
+            <span className="text-app-muted" title={en ? "Supplier not in master list" : "供应商未在档案中匹配"}>
+              —
+            </span>
+          ) : schedule?.parseFailed ? (
             <span className="cursor-help text-app-muted" title={supMeta?.paymentTerms || ""}>
               —
             </span>
           ) : schedule?.deposit ? (
-            <div className="flex flex-col gap-0.5 text-xs" lang="en">
+            <div className="flex flex-col gap-0.5 text-xs">
               <span className="whitespace-nowrap font-medium text-foreground">
-                {formatScheduleDateEnglish(schedule.deposit.dateYmd)}
+                {formatScheduleMonth(schedule.deposit.dateYmd, monthLang)}
               </span>
               <span className="tabular-nums text-app-muted">{formatUsd(schedule.deposit.amountUsd, 2)}</span>
             </div>
@@ -182,14 +171,20 @@ export function ForecastCashFlowTable({
           )}
         </td>
         <td className="min-w-[7.5rem] px-2 py-2 align-top">
-          {schedule?.parseFailed ? (
+          {lineTotal == null || !row.poIssueDate || !row.cashFlowSupplierName.trim() ? (
+            <span className="text-app-muted">—</span>
+          ) : unknownSupplier ? (
+            <span className="text-app-muted" title={en ? "Supplier not in master list" : "供应商未在档案中匹配"}>
+              —
+            </span>
+          ) : schedule?.parseFailed ? (
             <span className="cursor-help text-app-muted" title={supMeta?.paymentTerms || ""}>
               —
             </span>
           ) : schedule?.balance ? (
-            <div className="flex flex-col gap-0.5 text-xs" lang="en">
+            <div className="flex flex-col gap-0.5 text-xs">
               <span className="whitespace-nowrap font-medium text-foreground">
-                {formatScheduleDateEnglish(schedule.balance.dateYmd)}
+                {formatScheduleMonth(schedule.balance.dateYmd, monthLang)}
               </span>
               <span className="tabular-nums text-app-muted">{formatUsd(schedule.balance.amountUsd, 2)}</span>
             </div>
