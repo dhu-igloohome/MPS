@@ -3,6 +3,11 @@ import { resolveBuyerEntityCode } from "@/lib/contract-buyer-entities";
 import { computeForecastContractCoverage } from "@/lib/contract-forecast-coverage";
 import { DOMESTIC_CONTRACT_USD_TO_CNY, DOMESTIC_CONTRACT_VAT_MULTIPLIER } from "@/lib/contract-domestic-pricing";
 import { normalizeForecastIncotermStored, parseForecastIncoterm } from "@/lib/forecast-incoterm";
+import { supplierLookupStrippedKey } from "@/lib/supplier-name-lookup";
+import {
+  buildSkuSupplierToLatestQuoteMap,
+  findLatestUnitCostQuoteInMap,
+} from "@/lib/unit-cost-quote-lookup";
 import { forecastPoPrefixForRegion, singaporeYmdCompact } from "@/lib/forecast-po";
 import type { ParsedOrderProgressDeliveryPlan } from "@/lib/order-progress-delivery-plans";
 import { hashPassword, verifyPassword } from "@/lib/security";
@@ -4861,7 +4866,9 @@ export async function createContractsFromForecast(input: {
         from lateral (
           select id, quote_date, unit_price
           from unit_cost_quotes
-          where sku = ${row.sku.trim()} and trim(supplier_name) = trim(${sup.name}) and deleted_at is null
+          where lower(trim(sku)) = lower(trim(${row.sku.trim()}))
+            and lower(trim(supplier_name)) = lower(trim(${sup.name}))
+            and deleted_at is null
           order by quote_date desc, id desc
           limit 1
         ) uc
@@ -5030,7 +5037,9 @@ export async function createContractFromOrder(input: {
           quote_date::date as unit_cost_quote_date_snapshot,
           unit_price::numeric as unit_cost
         from unit_cost_quotes
-        where sku = op.sku and trim(supplier_name) = trim(s.name) and deleted_at is null
+        where lower(trim(sku)) = lower(trim(op.sku))
+          and lower(trim(supplier_name)) = lower(trim(s.name))
+          and deleted_at is null
         order by quote_date desc, id desc
         limit 1
       ) uc on true
@@ -5961,14 +5970,6 @@ export async function updateUnitCostQuote(input: {
   return row ? mapUnitCostQuote(row) : null;
 }
 
-function buildSkuSupplierToLatestQuote(quotes: UnitCostQuoteEntry[]): Map<string, UnitCostQuoteEntry> {
-  const m = new Map<string, UnitCostQuoteEntry>();
-  for (const q of quotes) {
-    const k = `${q.sku.trim()}::${q.supplierName.trim()}`;
-    if (!m.has(k)) m.set(k, q);
-  }
-  return m;
-}
 
 function normalizeForecastShippingMode(raw: string | null | undefined): ForecastCashFlowShippingMode {
   const s = (raw || "").trim().toLowerCase();
@@ -6003,11 +6004,46 @@ export async function getLatestUnitCostQuoteBySkuSupplier(
       created_by,
       created_at::text
     from unit_cost_quotes
-    where sku = ${sk} and supplier_name = ${sup} and deleted_at is null
+    where lower(trim(sku)) = lower(trim(${sk}))
+      and lower(trim(supplier_name)) = lower(trim(${sup}))
+      and deleted_at is null
     order by quote_date desc, id desc
     limit 1;
   `;
-  return rows[0] ? mapUnitCostQuote(rows[0]) : null;
+  if (rows[0]) return mapUnitCostQuote(rows[0]);
+
+  const target = supplierLookupStrippedKey(sup);
+  if (!target) return null;
+
+  const candidates = await db<UnitCostQuoteRow[]>`
+    select
+      id,
+      sku,
+      unit_price::text,
+      tax_included,
+      supplier_name,
+      quote_date::text,
+      manufacturer_country,
+      destination_country,
+      destination_tariff_pct::text,
+      cm_unit_price_tax_rate_pct::text,
+      sea_freight_unit_price::text,
+      air_freight_unit_price::text,
+      incoterm,
+      creation_reason,
+      created_by,
+      created_at::text
+    from unit_cost_quotes
+    where lower(trim(sku)) = lower(trim(${sk})) and deleted_at is null
+    order by quote_date desc, id desc;
+  `;
+  let found: UnitCostQuoteRow | undefined;
+  for (const r of candidates) {
+    if (supplierLookupStrippedKey(r.supplier_name) !== target) continue;
+    if (found) return null;
+    found = r;
+  }
+  return found ? mapUnitCostQuote(found) : null;
 }
 
 export async function softDeleteUnitCostQuote(input: {
@@ -6259,9 +6295,10 @@ export async function enrichForecastRecordsForCashFlow(
     });
   }
   const quotes = await listUnitCostQuotes();
-  const latestQuoteMap = buildSkuSupplierToLatestQuote(quotes);
+  const latestQuoteMap = buildSkuSupplierToLatestQuoteMap(quotes);
 
-  return approved.map((f) => {
+  return Promise.all(
+    approved.map(async (f) => {
     const s = settings.get(f.id) ?? {
       supplier: "",
       poIssueDate: null,
@@ -6273,8 +6310,12 @@ export async function enrichForecastRecordsForCashFlow(
       unitPriceUsdSnapshot: null as number | null,
     };
     const supplier = s.supplier;
-    const key = `${f.sku.trim()}::${supplier}`;
-    const latestUnitCostQuote = supplier ? (latestQuoteMap.get(key) ?? null) : null;
+    let latestUnitCostQuote = supplier
+      ? findLatestUnitCostQuoteInMap(latestQuoteMap, f.sku, supplier)
+      : null;
+    if (supplier && !latestUnitCostQuote) {
+      latestUnitCostQuote = await getLatestUnitCostQuoteBySkuSupplier(f.sku, supplier);
+    }
     const unitPriceUsd =
       s.unitPriceUsdSnapshot != null ? s.unitPriceUsdSnapshot : latestUnitCostQuote != null ? latestUnitCostQuote.unitPrice : null;
     return {
@@ -6289,7 +6330,8 @@ export async function enrichForecastRecordsForCashFlow(
       cashFlowIncoterm: s.cashFlowIncoterm,
       landedCostCashFlowPublishedAt: s.landedCostCashFlowPublishedAt,
     };
-  });
+    }),
+  );
 }
 
 export async function patchForecastCashFlowSettings(input: {

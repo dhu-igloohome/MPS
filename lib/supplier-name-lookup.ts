@@ -17,7 +17,8 @@ export function normalizeSupplierLookupKey(name: string): string {
     .toLowerCase();
 }
 
-function stripSupplierPunctuation(name: string): string {
+/** Aggressive key for fuzzy supplier match (Co., Ltd vs Co Ltd, etc.). */
+export function supplierLookupStrippedKey(name: string): string {
   return normalizeSupplierLookupKey(name).replace(/[\s().,，、·\-_]/g, "");
 }
 
@@ -51,12 +52,12 @@ export function lookupSupplierTerms(
   const direct = index.get(k);
   if (direct) return direct;
 
-  const stripped = stripSupplierPunctuation(supplierName);
+  const stripped = supplierLookupStrippedKey(supplierName);
   if (!stripped) return undefined;
 
   let found: SupplierTermsMeta | undefined;
   for (const [key, meta] of index) {
-    if (stripSupplierPunctuation(key) !== stripped) continue;
+    if (supplierLookupStrippedKey(key) !== stripped) continue;
     if (found) return undefined;
     found = meta;
   }
