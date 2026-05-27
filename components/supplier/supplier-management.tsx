@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import type { Language } from "@/lib/i18n";
 import type { SupplierEntry } from "@/lib/types";
+import { parsePaymentTerms } from "@/lib/forecast-supplier-payment-schedule";
 
 type SupplierManagementProps = {
   suppliers: SupplierEntry[];
@@ -37,6 +38,12 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
     actions: language === "en" ? "Actions" : "Actions",
     empty: language === "en" ? "No suppliers yet." : "No suppliers yet.",
     confirmDelete: language === "en" ? "Delete this supplier?" : "Delete this supplier?",
+    paymentTermsHint: language === "en"
+      ? 'Examples: "20% deposit, balance 80% Net 75 days", "Net 30", "Cash".'
+      : '示例："预付30% 尾款70% 账期60天" / "20% deposit, balance 80% Net 75 days" / "Net 30" / "Cash"。',
+    paymentTermsInvalid: language === "en"
+      ? "Payment terms cannot be parsed. Please adjust the text."
+      : "付款条款无法解析，请调整描述。",
   };
 
   const [name, setName] = useState("");
@@ -55,6 +62,7 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
   const [message, setMessage] = useState("");
 
   const editingRow = useMemo(() => suppliers.find((s) => s.id === editingId) ?? null, [editingId, suppliers]);
+  const parsedTermsOk = useMemo(() => (paymentTerms.trim() ? Boolean(parsePaymentTerms(paymentTerms)) : true), [paymentTerms]);
 
   function startEdit(s: SupplierEntry) {
     setEditingId(s.id);
@@ -153,7 +161,16 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
           <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder={t.contactPhone} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t.address} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
           <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.email} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
-          <input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} placeholder={t.paymentTerms} className="min-w-0 rounded-lg border border-app-border px-3 py-2 text-sm" />
+          <div className="min-w-0">
+            <input
+              value={paymentTerms}
+              onChange={(e) => setPaymentTerms(e.target.value)}
+              placeholder={t.paymentTerms}
+              className={`w-full rounded-lg border px-3 py-2 text-sm ${parsedTermsOk ? "border-app-border" : "border-red-300"}`}
+            />
+            <p className="mt-1 text-xs text-app-muted">{t.paymentTermsHint}</p>
+            {!parsedTermsOk ? <p className="mt-1 text-xs text-red-600">{t.paymentTermsInvalid}</p> : null}
+          </div>
           <label className="min-w-0 text-sm text-app-muted">
             <span className="mb-1 block">{t.leadTimeDays}</span>
             <input
@@ -186,7 +203,13 @@ export function SupplierManagement({ suppliers, language }: SupplierManagementPr
             {t.active}
           </label>
           <div className="flex min-w-0 gap-2 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-            <button type="submit" disabled={loading || !name.trim()} className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60">{editingId ? t.save : t.create}</button>
+            <button
+              type="submit"
+              disabled={loading || !name.trim() || !parsedTermsOk}
+              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
+            >
+              {editingId ? t.save : t.create}
+            </button>
             {editingId ? <button type="button" onClick={resetForm} className="rounded-lg border border-app-border px-4 py-2 text-sm">{t.cancel}</button> : null}
           </div>
         </form>

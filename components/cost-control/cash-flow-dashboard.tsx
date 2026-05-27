@@ -743,6 +743,46 @@ export function CashFlowDashboard({
     [fcPaymentBar.chartData],
   );
 
+  const fcBarDiagnostics = useMemo(() => {
+    let total = 0;
+    let missingSupplier = 0;
+    let unknownSupplier = 0;
+    let missingPoDate = 0;
+    let missingUnitCost = 0;
+    let parseFailed = 0;
+    let schedulable = 0;
+
+    for (const x of fcDashboardRows) {
+      total += 1;
+      const hasSupplier = Boolean(x.row.cashFlowSupplierName.trim());
+      if (!hasSupplier) {
+        missingSupplier += 1;
+        continue;
+      }
+      if (x.unknownSupplier) {
+        unknownSupplier += 1;
+        continue;
+      }
+      if (!x.row.poIssueDate) {
+        missingPoDate += 1;
+        continue;
+      }
+      if (x.lineTotal == null) {
+        missingUnitCost += 1;
+        continue;
+      }
+      if (x.schedule?.parseFailed) {
+        parseFailed += 1;
+        continue;
+      }
+      if (x.schedule?.deposit || x.schedule?.balance) {
+        schedulable += 1;
+      }
+    }
+
+    return { total, missingSupplier, unknownSupplier, missingPoDate, missingUnitCost, parseFailed, schedulable };
+  }, [fcDashboardRows]);
+
   const lcPaymentBar = useMemo(() => {
     const monthKeys = paymentMonthWindowAroundToday(6, 6);
     const monthLabelFn = (mk: string) => {
@@ -1115,7 +1155,40 @@ export function CashFlowDashboard({
             <p className="mt-1 text-xs text-[#9CA3AF]">{dashboardChartsOnly ? t.fcBarHintDash : t.fcBarHint}</p>
             <div className="mt-3 h-80 w-full min-w-0">
               {!fcBarHasAnyAmount ? (
-                <p className="py-16 text-center text-sm text-slate-400">{t.fcBarNoData}</p>
+                <div className="py-10">
+                  <p className="text-center text-sm text-slate-400">{t.fcBarNoData}</p>
+                  {fcBarDiagnostics.total > 0 && fcBarDiagnostics.schedulable === 0 ? (
+                    <div className="mx-auto mt-4 max-w-3xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                      <p className="font-medium">
+                        {language === "en"
+                          ? "Why it's empty: no forecast lines can compute deposit/balance yet."
+                          : "为空原因：当前没有任何 Forecast 行能计算订金/尾款。"}
+                      </p>
+                      <ul className="mt-2 grid gap-1 text-amber-800 sm:grid-cols-2 lg:grid-cols-3">
+                        <li>
+                          {language === "en" ? "Missing supplier" : "未选供应商"}: {fcBarDiagnostics.missingSupplier}
+                        </li>
+                        <li>
+                          {language === "en" ? "Supplier not in master" : "供应商未匹配到档案"}: {fcBarDiagnostics.unknownSupplier}
+                        </li>
+                        <li>
+                          {language === "en" ? "Missing PO issue date" : "缺少 PO 下达日"}: {fcBarDiagnostics.missingPoDate}
+                        </li>
+                        <li>
+                          {language === "en" ? "Missing unit cost quote" : "缺少单位成本报价"}: {fcBarDiagnostics.missingUnitCost}
+                        </li>
+                        <li>
+                          {language === "en" ? "Unparseable payment terms" : "付款条款无法解析"}: {fcBarDiagnostics.parseFailed}
+                        </li>
+                      </ul>
+                      <p className="mt-2 text-amber-800">
+                        {language === "en"
+                          ? "Fix those in Supply Chain → Cost control (Forecast cash flow) and Supply Chain → Suppliers."
+                          : "请在「供应链 → 成本控制（Forecast cash flow）」与「供应链 → 供应商」中按上方提示补齐。"}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart

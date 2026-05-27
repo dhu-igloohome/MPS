@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createSupplier, listSuppliers } from "@/lib/repositories";
+import { parsePaymentTerms } from "@/lib/forecast-supplier-payment-schedule";
 import { getSession } from "@/lib/session";
 
 export async function GET() {
@@ -29,6 +30,15 @@ export async function POST(request: Request) {
   if (!name) return NextResponse.json({ message: "Missing supplier name" }, { status: 400 });
   if (!Number.isFinite(leadTimeDays) || leadTimeDays < 0 || !Number.isFinite(moq) || moq < 0) {
     return NextResponse.json({ message: "Invalid numeric fields" }, { status: 400 });
+  }
+  if (paymentTerms && !parsePaymentTerms(paymentTerms)) {
+    return NextResponse.json(
+      {
+        message:
+          'Payment terms cannot be parsed. Use formats like: "20% deposit, balance 80% Net 75 days", "Net 30", or "预付30% 尾款70% 账期60天".',
+      },
+      { status: 400 },
+    );
   }
 
   try {

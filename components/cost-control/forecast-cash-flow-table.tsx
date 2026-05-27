@@ -96,6 +96,50 @@ export function ForecastCashFlowTable({
   const supplierTermsIndex = useMemo(() => buildSupplierTermsIndex(suppliers), [suppliers]);
   const monthLang = language === "en" ? "en" : "zh";
 
+  const diagnostics = useMemo(() => {
+    let total = 0;
+    let missingSupplier = 0;
+    let unknownSupplier = 0;
+    let missingPoDate = 0;
+    let missingUnitCost = 0;
+    let parseFailed = 0;
+    let schedulable = 0;
+
+    for (const r of rows) {
+      total += 1;
+      const hasSupplier = Boolean(r.cashFlowSupplierName.trim());
+      if (!hasSupplier) {
+        missingSupplier += 1;
+        continue;
+      }
+      const { lineTotal, schedule, unknownSupplier: unk } = resolveForecastRowPayment(
+        r,
+        suppliers,
+        supplierTermsIndex,
+      );
+      if (unk) {
+        unknownSupplier += 1;
+        continue;
+      }
+      if (!r.poIssueDate) {
+        missingPoDate += 1;
+        continue;
+      }
+      if (lineTotal == null) {
+        missingUnitCost += 1;
+        continue;
+      }
+      if (schedule?.parseFailed) {
+        parseFailed += 1;
+        continue;
+      }
+      if (schedule?.deposit || schedule?.balance) {
+        schedulable += 1;
+      }
+    }
+    return { total, missingSupplier, unknownSupplier, missingPoDate, missingUnitCost, parseFailed, schedulable };
+  }, [rows, suppliers, supplierTermsIndex]);
+
   function toggleSku(sku: string) {
     setExpandedSkus((prev) => {
       const next = new Set(prev);
@@ -229,6 +273,35 @@ export function ForecastCashFlowTable({
           {labels.fcFilterPending}
         </label>
       </div>
+      {diagnostics.total > 0 && diagnostics.schedulable === 0 ? (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-medium">
+            {en ? "No scheduled payments can be computed yet." : "当前无法计算任何订金/尾款应付。"}
+          </p>
+          <ul className="mt-2 grid gap-1 text-xs text-amber-800 sm:grid-cols-2 lg:grid-cols-3">
+            <li>
+              {en ? "Missing supplier" : "未选供应商"}: {diagnostics.missingSupplier}
+            </li>
+            <li>
+              {en ? "Supplier not in master" : "供应商未匹配到档案"}: {diagnostics.unknownSupplier}
+            </li>
+            <li>
+              {en ? "Missing PO issue date" : "缺少 PO 下达日"}: {diagnostics.missingPoDate}
+            </li>
+            <li>
+              {en ? "Missing unit cost quote" : "缺少单位成本报价"}: {diagnostics.missingUnitCost}
+            </li>
+            <li>
+              {en ? "Unparseable payment terms" : "付款条款无法解析"}: {diagnostics.parseFailed}
+            </li>
+          </ul>
+          <p className="mt-2 text-xs text-amber-800">
+            {en
+              ? "Fix: pick Supplier name, ensure Unit cost has a quote for SKU + supplier, set PO issue date, and ensure supplier Payment terms is parseable."
+              : "处理方式：选择供应商；确保「单位成本」存在该 SKU+供应商报价；填写 PO 下达日；并在「供应商」中把 Payment terms 写成可解析格式。"}
+          </p>
+        </div>
+      ) : null}
       <div className="app-table-shell mt-3 overflow-x-auto">
         <table className="w-full min-w-[1400px] border-collapse text-xs sm:text-sm">
           <thead>
