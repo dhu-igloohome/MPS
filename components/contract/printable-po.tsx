@@ -168,12 +168,12 @@ export function PrintablePO({ poData }: PrintablePOProps) {
       <section className="mt-12 grid grid-cols-2 gap-12">
         <div>
           <div className="mt-12 border-t border-gray-800 pt-2 text-sm">
-            需方签章 (Buyer Signature/Stamp)
+            供方签章 (Vendor Signature/Stamp)
           </div>
         </div>
         <div>
           <div className="mt-12 border-t border-gray-800 pt-2 text-sm">
-            供方签章 (Vendor Signature/Stamp)
+            需方签章 (Buyer Signature/Stamp)
           </div>
         </div>
       </section>
