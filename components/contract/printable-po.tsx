@@ -33,6 +33,7 @@ export type PrintablePOData = {
     name: string;
     contact: string;
     phone: string;
+    address?: string;
   };
   lineItems: PrintablePOLineItem[];
   summary: {
@@ -57,6 +58,8 @@ function money(currency: string, amount: number) {
 export function PrintablePO({ poData }: PrintablePOProps) {
   const serial = (poData.serialCode ?? "").trim();
   const bluetooth = (poData.bluetoothId ?? "").trim();
+
+  const vendorAddress = (poData.vendorInfo.address ?? "").trim();
 
   return (
     <div className="mx-auto w-full max-w-[210mm] bg-white p-6 text-sm text-black shadow print:m-0 print:max-w-none print:bg-white print:p-0 print:shadow-none">
@@ -84,6 +87,7 @@ export function PrintablePO({ poData }: PrintablePOProps) {
           <p className="break-words font-medium">{poData.vendorInfo.name || "-"}</p>
           <p>联系人 Contact: {poData.vendorInfo.contact || "-"}</p>
           <p>电话 Phone: {poData.vendorInfo.phone || "-"}</p>
+          {vendorAddress ? <p className="break-words">地址 Address: {vendorAddress}</p> : null}
         </div>
         <div className="rounded border border-gray-800 p-3">
           <p className="mb-1 text-xs font-semibold">需方 (Buyer)</p>

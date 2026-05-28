@@ -55,6 +55,7 @@ export default async function SupplyChainContractPrintPage({ params }: PageProps
       name: contract.supplierName || supplier?.name || "-",
       contact: supplier?.contactName || "-",
       phone: supplier?.contactPhone || "-",
+      address: supplier?.address || "-",
     },
     lineItems: [
       {

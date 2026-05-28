@@ -38,6 +38,7 @@ export default async function SupplyChainContractBatchPrintByPoPage({ params }: 
       name: first.supplierName || "-",
       contact: "-",
       phone: "-",
+      address: "-",
     },
     lineItems: contracts.map((item, index) => ({
       index: index + 1,
