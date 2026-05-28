@@ -223,8 +223,8 @@ async function setupSchema() {
   await db`
     insert into buyer_entities (code, legal_name, address, updated_by)
     values
-      ('shenzhen', '深圳市伊格鲁科技有限公司', '深圳市宝安区西乡街道共和工业路华丰互联网创意园A座205', 'admin'),
-      ('singapore', 'Igloocompany Pte Ltd', '71 Ayer Rajah Crescent #01-25, Singapore 139951', 'admin')
+      ('shenzhen', '深圳市伊格鲁科技有限公司', '深圳市宝安区西乡街道共和工业路华丰互联网创意园A座205', 'david'),
+      ('singapore', 'Igloocompany Pte Ltd', '71 Ayer Rajah Crescent #01-25, Singapore 139951', 'david')
     on conflict (code) do nothing;
   `;
   await db`alter table suppliers add column if not exists email text not null default '';`;
