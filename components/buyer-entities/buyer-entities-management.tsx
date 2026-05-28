@@ -49,6 +49,11 @@ export function BuyerEntitiesManagement({ language, initialBuyerEntities, canEdi
     save: en ? "Save" : "保存",
     saving: en ? "Saving…" : "保存中…",
     noPerm: en ? "You do not have permission to edit." : "当前账号无权限编辑（仅 super_admin 可改）。",
+    editing: en ? "Editing" : "正在编辑",
+    shenzhen: en ? "Shenzhen entity" : "深圳主体",
+    singapore: en ? "Singapore entity" : "新加坡主体",
+    activePill: en ? "Active" : "启用",
+    inactivePill: en ? "Inactive" : "停用",
   };
 
   const merged = useMemo(() => {
@@ -56,6 +61,12 @@ export function BuyerEntitiesManagement({ language, initialBuyerEntities, canEdi
     for (const e of initialBuyerEntities) byCode.set(e.code, e);
     return DEFAULT_CODES.map((c) => byCode.get(c) ?? emptyRow(c));
   }, [initialBuyerEntities]);
+
+  const mergedByCode = useMemo(() => {
+    const m = new Map<BuyerEntityCode, BuyerEntityEntry>();
+    merged.forEach((e) => m.set(e.code, e));
+    return m;
+  }, [merged]);
 
   const [editingCode, setEditingCode] = useState<BuyerEntityCode>("shenzhen");
   const [form, setForm] = useState<BuyerEntityEntry>(() => merged[0] ?? emptyRow("shenzhen"));
@@ -106,19 +117,65 @@ export function BuyerEntitiesManagement({ language, initialBuyerEntities, canEdi
         <p className="mt-1 text-sm text-app-muted">{t.hint}</p>
         {!canEdit ? <p className="mt-2 text-sm text-amber-700">{t.noPerm}</p> : null}
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {DEFAULT_CODES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => startEdit(c)}
-              className={`rounded-lg border px-3 py-2 text-sm ${
-                editingCode === c ? "border-app-border bg-white shadow-sm" : "border-app-border/70 bg-app-surface"
-              }`}
-            >
-              {c === "shenzhen" ? (en ? "Shenzhen" : "深圳主体") : en ? "Singapore" : "新加坡主体"}
-            </button>
-          ))}
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {DEFAULT_CODES.map((c) => {
+            const isOn = editingCode === c;
+            const row = mergedByCode.get(c) ?? emptyRow(c);
+            const title = c === "shenzhen" ? t.shenzhen : t.singapore;
+            const pill = row.isActive ? t.activePill : t.inactivePill;
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => startEdit(c)}
+                className={`group relative overflow-hidden rounded-2xl border p-4 text-left shadow-sm transition ${
+                  isOn
+                    ? "border-[var(--app-accent)] bg-white ring-2 ring-[var(--app-accent)]/20"
+                    : "border-app-border/80 bg-app-surface hover:bg-white"
+                }`}
+                aria-current={isOn ? "true" : undefined}
+              >
+                <div
+                  className={`pointer-events-none absolute inset-0 opacity-0 transition ${
+                    isOn ? "opacity-100" : "group-hover:opacity-100"
+                  }`}
+                  style={{
+                    background:
+                      "radial-gradient(600px circle at 20% 20%, rgba(59,130,246,0.18), transparent 40%), radial-gradient(600px circle at 80% 0%, rgba(99,102,241,0.14), transparent 35%)",
+                  }}
+                />
+                <div className="relative flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className={`text-sm font-semibold ${isOn ? "text-foreground" : "text-foreground/90"}`}>
+                      {title}
+                    </p>
+                    <p className="mt-1 truncate text-sm text-app-muted">
+                      {row.legalName?.trim() ? row.legalName : (en ? "Not set" : "未设置")}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-xs text-app-muted">
+                      {row.address?.trim() ? row.address : (en ? "Address not set" : "地址未设置")}
+                    </p>
+                  </div>
+                  <div className="shrink-0">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${
+                        row.isActive
+                          ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                          : "bg-slate-50 text-slate-600 ring-slate-200"
+                      }`}
+                    >
+                      {pill}
+                    </span>
+                    {isOn ? (
+                      <span className="mt-2 block text-xs font-medium text-[var(--app-accent)]">
+                        {t.editing}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         <form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" onSubmit={onSave}>
