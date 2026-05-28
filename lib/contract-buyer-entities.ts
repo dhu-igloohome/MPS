@@ -4,6 +4,9 @@ export type ContractBuyerEntity = {
   code: ContractBuyerEntityCode;
   legalName: string;
   address: string;
+  contactName?: string;
+  contactPhone?: string;
+  email?: string;
   companyRegNo?: string;
   gstRegNo?: string;
 };

@@ -20,7 +20,7 @@ const sql = connectionString
   : null;
 
 /** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
-const CURRENT_SCHEMA_VERSION = 4;
+const CURRENT_SCHEMA_VERSION = 5;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -202,6 +202,30 @@ async function setupSchema() {
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     );
+  `;
+
+  await db`
+    create table if not exists buyer_entities (
+      code text primary key check (code in ('shenzhen', 'singapore')),
+      legal_name text not null default '',
+      address text not null default '',
+      contact_name text not null default '',
+      contact_phone text not null default '',
+      email text not null default '',
+      company_reg_no text not null default '',
+      gst_reg_no text not null default '',
+      is_active boolean not null default true,
+      updated_by text not null references users(username),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  // Seed defaults (idempotent) so UI always has both entities.
+  await db`
+    insert into buyer_entities (code, legal_name, address, updated_by)
+    values
+      ('shenzhen', '深圳市伊格鲁科技有限公司', '深圳市宝安区西乡街道共和工业路华丰互联网创意园A座205', 'admin'),
+      ('singapore', 'Igloocompany Pte Ltd', '71 Ayer Rajah Crescent #01-25, Singapore 139951', 'admin')
+    on conflict (code) do nothing;
   `;
   await db`alter table suppliers add column if not exists email text not null default '';`;
   await db`alter table suppliers add column if not exists payment_terms text not null default '';`;

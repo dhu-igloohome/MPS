@@ -52,6 +52,8 @@ import {
   InventoryGlobalEntry,
   LogisticsLandedCostConsolidateLineItem,
   LogisticsLandedCostConsolidateSnapshot,
+  BuyerEntityEntry,
+  BuyerEntityCode,
   SupplierEntry,
   ToolingEntry,
   ToolingStatus,
@@ -188,6 +190,20 @@ type SupplierRow = {
   is_domestic_contract: boolean;
   is_active: boolean;
   created_at: string;
+  updated_at: string;
+};
+
+type BuyerEntityRow = {
+  code: string;
+  legal_name: string;
+  address: string;
+  contact_name: string;
+  contact_phone: string;
+  email: string;
+  company_reg_no: string;
+  gst_reg_no: string;
+  is_active: boolean;
+  updated_by: string;
   updated_at: string;
 };
 
@@ -3498,6 +3514,29 @@ function mapSupplier(row: SupplierRow): SupplierEntry {
   };
 }
 
+function parseBuyerEntityCode(raw: string): BuyerEntityCode | null {
+  const s = String(raw || "").trim();
+  if (s === "shenzhen" || s === "singapore") return s;
+  return null;
+}
+
+function mapBuyerEntity(row: BuyerEntityRow): BuyerEntityEntry {
+  const code = parseBuyerEntityCode(row.code) ?? "shenzhen";
+  return {
+    code,
+    legalName: row.legal_name || "",
+    address: row.address || "",
+    contactName: row.contact_name || "",
+    contactPhone: row.contact_phone || "",
+    email: row.email || "",
+    companyRegNo: row.company_reg_no || "",
+    gstRegNo: row.gst_reg_no || "",
+    isActive: Boolean(row.is_active),
+    updatedBy: row.updated_by || "",
+    updatedAt: row.updated_at,
+  };
+}
+
 function mapBomEntry(row: BomRow): BomEntry {
   return {
     id: String(row.id),
@@ -4534,6 +4573,118 @@ export async function listSuppliers(): Promise<SupplierEntry[]> {
     order by name asc, id asc;
   `;
   return rows.map(mapSupplier);
+}
+
+export async function listBuyerEntities(): Promise<BuyerEntityEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<BuyerEntityRow[]>`
+    select
+      code,
+      legal_name,
+      address,
+      contact_name,
+      contact_phone,
+      email,
+      company_reg_no,
+      gst_reg_no,
+      is_active,
+      updated_by,
+      updated_at::text
+    from buyer_entities
+    order by code asc;
+  `;
+  return rows.map(mapBuyerEntity);
+}
+
+export async function getBuyerEntityByCode(code: BuyerEntityCode): Promise<BuyerEntityEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<BuyerEntityRow[]>`
+    select
+      code,
+      legal_name,
+      address,
+      contact_name,
+      contact_phone,
+      email,
+      company_reg_no,
+      gst_reg_no,
+      is_active,
+      updated_by,
+      updated_at::text
+    from buyer_entities
+    where code = ${code}
+    limit 1;
+  `;
+  return rows[0] ? mapBuyerEntity(rows[0]) : null;
+}
+
+export async function upsertBuyerEntity(input: {
+  code: BuyerEntityCode;
+  legalName: string;
+  address: string;
+  contactName: string;
+  contactPhone: string;
+  email: string;
+  companyRegNo?: string;
+  gstRegNo?: string;
+  isActive: boolean;
+  updatedBy: string;
+}): Promise<BuyerEntityEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const code = input.code;
+  const legalName = input.legalName.trim();
+  const address = input.address.trim();
+  const contactName = input.contactName.trim();
+  const contactPhone = input.contactPhone.trim();
+  const email = input.email.trim();
+  const companyRegNo = String(input.companyRegNo ?? "").trim();
+  const gstRegNo = String(input.gstRegNo ?? "").trim();
+  const isActive = Boolean(input.isActive);
+  const updatedBy = input.updatedBy.trim();
+  if (!updatedBy) throw new Error("Missing updatedBy");
+  if (!legalName) throw new Error("Missing legalName");
+  if (!address) throw new Error("Missing address");
+
+  const rows = await db<BuyerEntityRow[]>`
+    insert into buyer_entities (
+      code, legal_name, address, contact_name, contact_phone, email,
+      company_reg_no, gst_reg_no, is_active, updated_by
+    )
+    values (
+      ${code}, ${legalName}, ${address}, ${contactName}, ${contactPhone}, ${email},
+      ${companyRegNo}, ${gstRegNo}, ${isActive}, ${updatedBy}
+    )
+    on conflict (code) do update
+    set
+      legal_name = excluded.legal_name,
+      address = excluded.address,
+      contact_name = excluded.contact_name,
+      contact_phone = excluded.contact_phone,
+      email = excluded.email,
+      company_reg_no = excluded.company_reg_no,
+      gst_reg_no = excluded.gst_reg_no,
+      is_active = excluded.is_active,
+      updated_by = excluded.updated_by,
+      updated_at = now()
+    returning
+      code,
+      legal_name,
+      address,
+      contact_name,
+      contact_phone,
+      email,
+      company_reg_no,
+      gst_reg_no,
+      is_active,
+      updated_by,
+      updated_at::text;
+  `;
+  const r = rows[0];
+  if (!r) throw new Error("Upsert buyer entity failed");
+  return mapBuyerEntity(r);
 }
 
 export async function createSupplier(input: {

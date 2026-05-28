@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BarChart3, Building2, Calculator, ChevronRight, Coins, FileText, Landmark } from "lucide-react";
+import { BarChart3, Building2, Calculator, ChevronRight, Coins, FileText, Landmark, Settings } from "lucide-react";
 
 import type { Language } from "@/lib/i18n";
 import type { LucideIcon } from "lucide-react";
@@ -61,6 +61,11 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
     label: language === "en" ? "Suppliers" : "供应商管理",
     Icon: Building2,
   };
+  const buyerEntitiesItem: SupplyChainSubnavItem = {
+    href: "/supply-chain/buyer-entities",
+    label: language === "en" ? "Buyer Entities" : "需方信息",
+    Icon: Settings,
+  };
 
   const isOn = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const isCostControlChildOn = (href: string) => {
@@ -82,6 +87,7 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
   const onCost = isOn(costControlItem.href);
   const onContracts = isOn(contractsItem.href);
   const onSuppliers = isOn(suppliersItem.href);
+  const onBuyerEntities = isOn(buyerEntitiesItem.href);
   const subListId = "supply-sub-cost-control";
 
   return (
@@ -89,7 +95,7 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
       className="w-full rounded-xl bg-zinc-200/60 p-1"
       aria-label={language === "en" ? "Supply chain sections" : "供应链分区"}
     >
-      <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-1 sm:grid-cols-4">
         <div
           className={`flex min-h-[2.75rem] min-w-0 items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium transition-all ${
             onCost
@@ -152,6 +158,19 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
         >
           <suppliersItem.Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={1.75} aria-hidden />
           <span className="truncate whitespace-nowrap">{suppliersItem.label}</span>
+        </Link>
+
+        <Link
+          href={buyerEntitiesItem.href}
+          aria-current={onBuyerEntities ? "page" : undefined}
+          className={`flex min-h-[2.75rem] min-w-0 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+            onBuyerEntities
+              ? "bg-white text-[#111827] shadow-sm ring-1 ring-black/[0.06]"
+              : "text-[#4B5563] hover:bg-white/70 hover:text-[#111827] sm:hover:bg-white/50"
+          } `}
+        >
+          <buyerEntitiesItem.Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={1.75} aria-hidden />
+          <span className="truncate whitespace-nowrap">{buyerEntitiesItem.label}</span>
         </Link>
       </div>
 

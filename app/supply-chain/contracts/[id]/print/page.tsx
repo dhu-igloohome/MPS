@@ -5,6 +5,7 @@ import type { PrintablePOData } from "@/components/contract/printable-po";
 import { getContractBuyerEntity } from "@/lib/contract-buyer-entities";
 import {
   getContractById,
+  getBuyerEntityByCode,
   getOrderProgressById,
   listSuppliers,
   sessionCanAccessContract,
@@ -34,9 +35,10 @@ export default async function SupplyChainContractPrintPage({ params }: PageProps
     listSuppliers(),
   ]);
   const supplier = suppliers.find((item) => item.id === contract.supplierId);
-  const buyer = getContractBuyerEntity(
-    contract.buyerEntityCode === "singapore" ? "singapore" : "shenzhen",
-  );
+  const buyerCode = contract.buyerEntityCode === "singapore" ? "singapore" : "shenzhen";
+  const buyerDb = await getBuyerEntityByCode(buyerCode);
+  const buyerFallback = getContractBuyerEntity(buyerCode);
+  const buyer = buyerDb?.isActive ? buyerDb : buyerFallback;
   const poData: PrintablePOData = {
     header: {
       companyName: buyer.legalName,
@@ -47,8 +49,8 @@ export default async function SupplyChainContractPrintPage({ params }: PageProps
     bluetoothId: contract.bluetoothId,
     buyerInfo: {
       name: buyer.legalName,
-      contact: session.username || "-",
-      phone: "-",
+      contact: buyerDb?.contactName?.trim() || session.username || "-",
+      phone: buyerDb?.contactPhone?.trim() || "-",
       address: buyer.address,
     },
     vendorInfo: {

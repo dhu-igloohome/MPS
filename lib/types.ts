@@ -88,6 +88,22 @@ export type SupplierEntry = {
   updatedAt: string;
 };
 
+export type BuyerEntityCode = "shenzhen" | "singapore";
+
+export type BuyerEntityEntry = {
+  code: BuyerEntityCode;
+  legalName: string;
+  address: string;
+  contactName: string;
+  contactPhone: string;
+  email: string;
+  companyRegNo?: string;
+  gstRegNo?: string;
+  isActive: boolean;
+  updatedBy: string;
+  updatedAt: string;
+};
+
 export type ContractStatus = "draft" | "approved" | "sent";
 
 export type BomStatus = "draft" | "released" | "obsolete";

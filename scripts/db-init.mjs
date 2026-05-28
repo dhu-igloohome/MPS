@@ -552,6 +552,22 @@ async function main() {
   await sql`alter table forecast_cash_flow_settings add column if not exists unit_price_usd_snapshot numeric(14, 4);`;
 
   await sql`
+    create table if not exists buyer_entities (
+      code text primary key check (code in ('shenzhen', 'singapore')),
+      legal_name text not null default '',
+      address text not null default '',
+      contact_name text not null default '',
+      contact_phone text not null default '',
+      email text not null default '',
+      company_reg_no text not null default '',
+      gst_reg_no text not null default '',
+      is_active boolean not null default true,
+      updated_by text not null references users(username),
+      updated_at timestamptz not null default now()
+    );
+  `;
+
+  await sql`
     create table if not exists logistics_landed_cost_consolidate (
       id bigserial primary key,
       po_number text not null,

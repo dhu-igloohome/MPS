@@ -8,6 +8,7 @@ import { normalizeLanguage } from "@/lib/i18n";
 import { getContractBuyerEntity } from "@/lib/contract-buyer-entities";
 import {
   getContractById,
+  getBuyerEntityByCode,
   getOrderProgressById,
   sessionCanAccessContract,
 } from "@/lib/repositories";
@@ -36,9 +37,10 @@ export default async function SupplyChainContractDetailPage({ params }: PageProp
     notFound();
   }
   const order = contract.orderProgressId ? await getOrderProgressById(contract.orderProgressId) : null;
-  const buyer = getContractBuyerEntity(
-    contract.buyerEntityCode === "singapore" ? "singapore" : "shenzhen",
-  );
+  const buyerCode = contract.buyerEntityCode === "singapore" ? "singapore" : "shenzhen";
+  const buyerDb = await getBuyerEntityByCode(buyerCode);
+  const buyerFallback = getContractBuyerEntity(buyerCode);
+  const buyer = buyerDb?.isActive ? buyerDb : buyerFallback;
 
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   const canPrint = contract.status === "approved" || contract.status === "sent";
