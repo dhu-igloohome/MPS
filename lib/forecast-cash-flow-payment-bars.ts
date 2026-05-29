@@ -19,6 +19,16 @@ export function normalizeForecastMonthKey(raw: string): string | null {
   return null;
 }
 
+/** Distinct YYYY-MM forecast months present in rows (sorted). */
+export function uniqueForecastMonthKeysFromRows(rows: { month: string }[]): string[] {
+  const set = new Set<string>();
+  for (const r of rows) {
+    const mk = normalizeForecastMonthKey(r.month);
+    if (mk) set.add(mk);
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+
 /** X-axis months spanning all forecast rows (sorted); empty → null. */
 export function forecastMonthKeysFromRows(rows: { month: string }[]): string[] | null {
   const set = new Set<string>();

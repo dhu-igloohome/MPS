@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 
 import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
+import { uniqueForecastMonthKeysFromRows } from "@/lib/forecast-cash-flow-payment-bars";
 import {
   Bar,
   BarChart,
@@ -132,6 +133,11 @@ export function CockpitVisualizations({
   const [lGrain, setLGrain] = useState<Grain>("month");
 
   const [drill, setDrill] = useState<DrillState>(null);
+  const [fcFilterForecastMonth, setFcFilterForecastMonth] = useState("");
+  const fcForecastMonthOptions = useMemo(
+    () => uniqueForecastMonthKeysFromRows(forecastCashFlowRows),
+    [forecastCashFlowRows],
+  );
 
   const oDateRange = useMemo(() => getDateRangePreset(oPreset, oFrom, oTo), [oPreset, oFrom, oTo]);
   const oFiltered = useMemo(() => {
@@ -209,6 +215,18 @@ export function CockpitVisualizations({
     if (key) openLogDrill(key);
   };
 
+  function formatFcMonthOption(ym: string): string {
+    const m = /^(\d{4})-(\d{2})$/.exec(ym.trim());
+    if (!m) return ym;
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    if (mo < 1 || mo > 12) return ym;
+    if (en) {
+      return new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    }
+    return `${y}年${mo}月`;
+  }
+
   return (
     <div className="min-w-0 space-y-10">
       <ForecastExecutiveOverview
@@ -233,12 +251,32 @@ export function CockpitVisualizations({
               {en ? "Forecast Cash flow analysis" : "Forecast 现金流分析"}
             </h3>
           </div>
-          <Link
-            href="/supply-chain/cost-control?tab=cashflow"
-            className="app-button-secondary shrink-0 px-3 py-2 text-sm font-medium"
-          >
-            {en ? "Open Forecast cash flow analysis" : "打开 Forecast 现金流分析"}
-          </Link>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            <label className="flex items-center gap-2 text-sm text-[#4B5563]">
+              <span className="whitespace-nowrap font-medium">
+                {en ? "Cash flow By Forecast month" : "按 Forecast 月份"}
+              </span>
+              <select
+                className="app-control-sm min-w-[9rem] bg-white px-2 py-2 text-sm dark:bg-slate-800"
+                value={fcFilterForecastMonth}
+                onChange={(e) => setFcFilterForecastMonth(e.target.value)}
+                aria-label={en ? "Filter by Forecast month" : "按 Forecast 月份筛选"}
+              >
+                <option value="">{en ? "All months" : "全部月份"}</option>
+                {fcForecastMonthOptions.map((ym) => (
+                  <option key={ym} value={ym}>
+                    {formatFcMonthOption(ym)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Link
+              href="/supply-chain/cost-control?tab=cashflow"
+              className="app-button-secondary px-3 py-2 text-sm font-medium"
+            >
+              {en ? "Open Forecast cash flow analysis" : "打开 Forecast 现金流分析"}
+            </Link>
+          </div>
         </div>
         <CashFlowDashboard
           language={language}
@@ -250,6 +288,7 @@ export function CockpitVisualizations({
           showForecastCashFlowSummary
           forecastSummaryOnly
           dashboardChartsOnly
+          fcFilterForecastMonth={fcFilterForecastMonth}
         />
       </section>
 

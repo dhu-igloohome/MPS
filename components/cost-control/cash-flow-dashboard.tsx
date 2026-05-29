@@ -26,6 +26,7 @@ import {
 import {
   buildForecastCashPaymentBarData,
   forecastMonthKeysFromRows,
+  normalizeForecastMonthKey,
   type FcPaymentBarBucketMode,
 } from "@/lib/forecast-cash-flow-payment-bars";
 import {
@@ -93,6 +94,8 @@ type Props = {
   forecastSummaryOnly?: boolean;
   /** When true with forecastSummaryOnly: hide editable tables; show chart strip for Dashboard embed. */
   dashboardChartsOnly?: boolean;
+  /** Dashboard: filter KPI + chart to one Forecast month (YYYY-MM); empty = all months. */
+  fcFilterForecastMonth?: string;
 };
 
 /** English display for stored YYYY-MM-DD (avoids TZ shift around midnight). */
@@ -188,6 +191,7 @@ function labels(language: Language) {
     dashForecastTotal: en ? "Computable forecast total (USD)" : "Forecast 可算合计 (USD)",
     dashDepositDue: en ? "Deposits due (Σ)" : "订金应付 (Σ)",
     dashBalanceDue: en ? "Balances due (Σ)" : "尾款应付 (Σ)",
+    dashFilteredNote: en ? "Showing selected Forecast month only." : "仅显示所选 Forecast 月份。",
     fcNoRows: en
       ? 'No forecast cash flow rows (set Ops action = "Ok to issue PO" on the Forecast page).'
       : '暂无 Forecast 现金流数据（请在 Forecast 页将 Ops action 设为「Ok to issue PO」）。',
@@ -625,6 +629,7 @@ export function CashFlowDashboard({
   onForecastCashFlowSettingsError,
   forecastSummaryOnly = false,
   dashboardChartsOnly = false,
+  fcFilterForecastMonth = "",
 }: Props) {
   const t = labels(language);
   const publishedLandedRows = useMemo(
@@ -715,29 +720,40 @@ export function CashFlowDashboard({
     });
   }, [forecastCashFlowRows, fcSuppliers, supplierTermsIndex]);
 
+  const fcFilterMonthKey = useMemo(() => {
+    const raw = fcFilterForecastMonth.trim();
+    if (!raw) return null;
+    return normalizeForecastMonthKey(raw) ?? raw;
+  }, [fcFilterForecastMonth]);
+
+  const fcScopedRows = useMemo(() => {
+    if (!fcFilterMonthKey) return fcDashboardRows;
+    return fcDashboardRows.filter((x) => normalizeForecastMonthKey(x.row.month) === fcFilterMonthKey);
+  }, [fcDashboardRows, fcFilterMonthKey]);
+
   const fcSumComputable = useMemo(
-    () => fcDashboardRows.reduce((s, x) => s + (x.lineTotal ?? 0), 0),
-    [fcDashboardRows],
+    () => fcScopedRows.reduce((s, x) => s + (x.lineTotal ?? 0), 0),
+    [fcScopedRows],
   );
 
   const fcSumDeposits = useMemo(
     () =>
-      fcDashboardRows.reduce((s, x) => {
+      fcScopedRows.reduce((s, x) => {
         const sch = x.schedule;
         if (!sch || sch.parseFailed) return s;
         return s + (sch.deposit?.amountUsd ?? 0);
       }, 0),
-    [fcDashboardRows],
+    [fcScopedRows],
   );
 
   const fcSumBalances = useMemo(
     () =>
-      fcDashboardRows.reduce((s, x) => {
+      fcScopedRows.reduce((s, x) => {
         const sch = x.schedule;
         if (!sch || sch.parseFailed) return s;
         return s + (sch.balance?.amountUsd ?? 0);
       }, 0),
-    [fcDashboardRows],
+    [fcScopedRows],
   );
 
   const fcPaymentBar = useMemo(() => {
@@ -748,17 +764,24 @@ export function CashFlowDashboard({
       }
       return `${y}年${m}月`;
     };
-    const inputs = fcDashboardRows.map(({ row, lineTotal, schedule }) => ({
+    const inputs = fcScopedRows.map(({ row, lineTotal, schedule }) => ({
       row: { cashFlowSupplierName: row.cashFlowSupplierName, month: row.month },
       lineTotal,
       schedule,
     }));
-    const monthKeys =
-      fcBarBucketMode === "forecastMonth"
-        ? forecastMonthKeysFromRows(forecastCashFlowRows) ?? paymentMonthWindowAroundToday(6, 6)
-        : paymentMonthWindowAroundToday(6, 6);
+    const scopedForecastRows = fcFilterMonthKey
+      ? forecastCashFlowRows.filter((r) => normalizeForecastMonthKey(r.month) === fcFilterMonthKey)
+      : forecastCashFlowRows;
+    let monthKeys: string[];
+    if (fcFilterMonthKey && fcBarBucketMode === "forecastMonth") {
+      monthKeys = [fcFilterMonthKey];
+    } else if (fcBarBucketMode === "forecastMonth") {
+      monthKeys = forecastMonthKeysFromRows(scopedForecastRows) ?? paymentMonthWindowAroundToday(6, 6);
+    } else {
+      monthKeys = paymentMonthWindowAroundToday(6, 6);
+    }
     return buildForecastCashPaymentBarData(inputs, monthKeys, monthLabelFn, fcBarBucketMode);
-  }, [fcDashboardRows, forecastCashFlowRows, fcBarBucketMode, language]);
+  }, [fcScopedRows, forecastCashFlowRows, fcFilterMonthKey, fcBarBucketMode, language]);
 
   const fcBarHasAnyAmount = useMemo(
     () => fcPaymentBar.chartData.some((r) => Number(r.depositTotal) > 0 || Number(r.balanceTotal) > 0),
@@ -774,7 +797,7 @@ export function CashFlowDashboard({
     let parseFailed = 0;
     let schedulable = 0;
 
-    for (const x of fcDashboardRows) {
+    for (const x of fcScopedRows) {
       total += 1;
       const hasSupplier = Boolean(x.row.cashFlowSupplierName.trim());
       if (!hasSupplier) {
@@ -803,7 +826,7 @@ export function CashFlowDashboard({
     }
 
     return { total, missingSupplier, unknownSupplier, missingPoDate, missingUnitCost, parseFailed, schedulable };
-  }, [fcDashboardRows]);
+  }, [fcScopedRows]);
 
   const lcPaymentBar = useMemo(() => {
     const monthKeys = paymentMonthWindowAroundToday(6, 6);
@@ -967,6 +990,15 @@ export function CashFlowDashboard({
     return (
       <div className={dashboardChartsOnly ? "space-y-6" : "app-card p-4"}>
         {dashboardChartsOnly ? (
+          <>
+          {fcFilterMonthKey ? (
+            <p className="text-xs text-[#9CA3AF]">
+              {t.dashFilteredNote}{" "}
+              <span className="font-medium text-slate-600 dark:text-slate-300">
+                {formatForecastMonthCell(fcFilterMonthKey, language)}
+              </span>
+            </p>
+          ) : null}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <article className="min-w-0 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
               <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.dashForecastTotal}</p>
@@ -987,6 +1019,7 @@ export function CashFlowDashboard({
               </p>
             </article>
           </div>
+          </>
         ) : null}
         {!dashboardChartsOnly ? (
           <>
