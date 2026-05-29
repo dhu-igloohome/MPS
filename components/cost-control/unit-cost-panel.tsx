@@ -13,7 +13,10 @@ import {
 } from "@/components/cost-control/cost-control-form-controls";
 import { TableCellLongText } from "@/components/shared/table-cell-long-text";
 import type { Language } from "@/lib/i18n";
+import { supplierNamesFuzzyMatch } from "@/lib/supplier-name-lookup";
 import type { ProductItem, SupplierEntry, UnitCostQuoteEntry } from "@/lib/types";
+
+type HistoryFilterDimension = "" | "sku" | "supplier";
 
 type Props = {
   language: Language;
@@ -57,8 +60,11 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     save: en ? "Save quotation" : "保存报价",
     saving: en ? "Saving…" : "保存中…",
     empty: en ? "No quotations yet." : "暂无报价记录。",
-    filterSku: en ? "Filter by SKU" : "按 SKU 筛选",
-    allSkus: en ? "All SKUs" : "全部 SKU",
+    filterBy: en ? "Filter by" : "筛选",
+    filterAll: en ? "All" : "全部",
+    filterDimSku: "SKU",
+    filterDimSupplier: en ? "Supplier name" : "供应商名称",
+    filterValueAll: en ? "All" : "全部",
     yes: en ? "Yes" : "是",
     no: en ? "No" : "否",
     by: en ? "By" : "录入人",
@@ -109,6 +115,14 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     return [...new Set(names)].sort((a, b) => a.localeCompare(b));
   }, [suppliers]);
 
+  const historySupplierOptions = useMemo(() => {
+    const set = new Set(activeSupplierNames);
+    for (const e of initialEntries) {
+      if (e.supplierName?.trim()) set.add(e.supplierName.trim());
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [activeSupplierNames, initialEntries]);
+
   const [sku, setSku] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
   const [taxIncluded, setTaxIncluded] = useState(false);
@@ -120,7 +134,8 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [checkingDuplicateSku, setCheckingDuplicateSku] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [filterSku, setFilterSku] = useState("");
+  const [historyFilterDim, setHistoryFilterDim] = useState<HistoryFilterDimension>("");
+  const [historyFilterValue, setHistoryFilterValue] = useState("");
 
   const [editRow, setEditRow] = useState<UnitCostQuoteEntry | null>(null);
   const [eSku, setEsku] = useState("");
@@ -260,9 +275,18 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   }
 
   const filteredHistory = useMemo(() => {
-    if (!filterSku.trim()) return initialEntries;
-    return initialEntries.filter((e) => e.sku.trim() === filterSku.trim());
-  }, [initialEntries, filterSku]);
+    if (!historyFilterDim || !historyFilterValue.trim()) return initialEntries;
+    const v = historyFilterValue.trim();
+    if (historyFilterDim === "sku") {
+      return initialEntries.filter((e) => e.sku.trim() === v);
+    }
+    return initialEntries.filter((e) => supplierNamesFuzzyMatch(e.supplierName, v));
+  }, [initialEntries, historyFilterDim, historyFilterValue]);
+
+  function onHistoryFilterDimChange(dim: HistoryFilterDimension) {
+    setHistoryFilterDim(dim);
+    setHistoryFilterValue("");
+  }
 
   async function checkSkuDuplicate(skuValue = sku.trim()): Promise<boolean> {
     const value = skuValue.trim();
@@ -668,21 +692,55 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
       <section>
         <div className="mb-3 flex flex-wrap items-end gap-x-3 gap-y-2">
           <h3 className="shrink-0 text-base font-semibold text-foreground">{t.history}</h3>
-          <label className="flex shrink-0 items-end gap-2">
-            <span className={ccLabel}>{t.filterSku}</span>
-            <select
-              value={filterSku}
-              onChange={(e) => setFilterSku(e.target.value)}
-              className={ccSelectSm}
-            >
-              <option value="">{t.allSkus}</option>
-              {skuOptions.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="flex shrink-0 flex-wrap items-end gap-2">
+            <label className="flex items-end gap-2">
+              <span className={ccLabel}>{t.filterBy}</span>
+              <select
+                value={historyFilterDim}
+                onChange={(e) => onHistoryFilterDimChange(e.target.value as HistoryFilterDimension)}
+                className={ccSelectSm}
+                aria-label={t.filterBy}
+              >
+                <option value="">{t.filterAll}</option>
+                <option value="sku">{t.filterDimSku}</option>
+                <option value="supplier">{t.filterDimSupplier}</option>
+              </select>
+            </label>
+            {historyFilterDim ? (
+              <label className="flex items-end gap-2">
+                <span className="sr-only">
+                  {historyFilterDim === "sku" ? t.filterDimSku : t.filterDimSupplier}
+                </span>
+                <select
+                  value={historyFilterValue}
+                  onChange={(e) => setHistoryFilterValue(e.target.value)}
+                  className={ccSelectSm}
+                  aria-label={
+                    historyFilterDim === "sku"
+                      ? en
+                        ? "SKU filter value"
+                        : "SKU 筛选值"
+                      : en
+                        ? "Supplier filter value"
+                        : "供应商筛选值"
+                  }
+                >
+                  <option value="">{t.filterValueAll}</option>
+                  {historyFilterDim === "sku"
+                    ? skuOptions.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))
+                    : historySupplierOptions.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                </select>
+              </label>
+            ) : null}
+          </div>
         </div>
         <div className="app-table-shell overflow-x-auto">
           <table className="w-full min-w-[840px] border-collapse text-sm">

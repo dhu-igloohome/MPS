@@ -63,3 +63,20 @@ export function lookupSupplierTerms(
   }
   return found;
 }
+
+/**
+ * Whether a quotation/history row supplier matches a filter value (case/space/punctuation tolerant; substring fallback).
+ */
+export function supplierNamesFuzzyMatch(rowSupplier: string, filterSupplier: string): boolean {
+  const b = normalizeSupplierLookupKey(filterSupplier);
+  if (!b) return true;
+  const a = normalizeSupplierLookupKey(rowSupplier);
+  if (!a) return false;
+  if (a === b) return true;
+  const sa = supplierLookupStrippedKey(rowSupplier);
+  const sb = supplierLookupStrippedKey(filterSupplier);
+  if (sa === sb) return true;
+  if (a.includes(b) || b.includes(a)) return true;
+  if (sa.includes(sb) || sb.includes(sa)) return true;
+  return false;
+}
