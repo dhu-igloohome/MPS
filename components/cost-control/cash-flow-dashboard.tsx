@@ -23,7 +23,11 @@ import {
   paymentMonthWindowAroundToday,
   type RangePreset,
 } from "@/lib/cash-flow-dashboard-agg";
-import { buildForecastCashPaymentBarData } from "@/lib/forecast-cash-flow-payment-bars";
+import {
+  buildForecastCashPaymentBarData,
+  forecastMonthKeysFromRows,
+  type FcPaymentBarBucketMode,
+} from "@/lib/forecast-cash-flow-payment-bars";
 import {
   buildLandedCostBarRowInputs,
   buildLandedCostPaymentBarData,
@@ -197,6 +201,16 @@ function labels(language: Language) {
     fcBarHintDash: en
       ? 'Same schedule logic as Cost control → Cash flow analysis (Ops action = "Ok to issue PO", supplier, unit cost, PO date). Stacked by supplier; 13‑month rolling window.'
       : '与供应链成本控制中「现金流分析」相同逻辑（Ops action="Ok to issue PO"、供应商、单价、PO 日）。按供应商堆叠；13 个月滚动窗口。',
+    fcBarBucketDue: en ? "By due month" : "按应付月份",
+    fcBarBucketForecast: en ? "By Forecast month" : "按 Forecast month",
+    fcBarTitleForecast: en ? "Scheduled amounts by Forecast month" : "按 Forecast 月份的订金与尾款",
+    fcBarHintForecast: en
+      ? "Deposit and balance amounts grouped by each row's Forecast month (not payment due date). Bars stack by supplier."
+      : "将各行订金/尾款金额按 Forecast 月份汇总（非应付日）。柱形按供应商堆叠。",
+    fcBarHintForecastDash: en
+      ? 'Same deposit/balance amounts as above, grouped by Forecast month on each row. Stacked by supplier; X-axis spans Forecast months in the dataset.'
+      : "与上方相同逻辑的订金/尾款金额，按每行 Forecast 月份汇总；柱形按供应商堆叠；横轴为数据中的 Forecast 月份范围。",
+    fcBarNoDataForecast: en ? "No schedulable amounts in the Forecast month range." : "当前 Forecast 月份范围内无可统计金额。",
     lcTitle: en ? "Landed cost cash flow" : "Landed cost 现金流",
     lcHint: en
       ? 'Same rows as the forecast table above (Ops action = "Ok to issue PO"), but only lines you have published from Logistics → Landed cost consolidate (Save next to Landed cost (USD)) appear here. Amounts and payment timing follow the Logistics table (tariff on line total + per-unit freight × qty; departure from PO issue + manufacturer country + shipping mode; payment due = departure + 30 days).'
@@ -632,6 +646,7 @@ export function CashFlowDashboard({
   const [finMax, setFinMax] = useState("");
   const [fcPoSavingId, setFcPoSavingId] = useState<string | null>(null);
   const [fcShippingSavingId, setFcShippingSavingId] = useState<string | null>(null);
+  const [fcBarBucketMode, setFcBarBucketMode] = useState<FcPaymentBarBucketMode>("dueMonth");
   const fcDestinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
 
   const enriched = useMemo(() => enrichCashFlowRows(entries, costAnalysisEntries), [entries, costAnalysisEntries]);
@@ -726,7 +741,6 @@ export function CashFlowDashboard({
   );
 
   const fcPaymentBar = useMemo(() => {
-    const monthKeys = paymentMonthWindowAroundToday(6, 6);
     const monthLabelFn = (mk: string) => {
       const [y, m] = mk.split("-").map(Number);
       if (language === "en") {
@@ -734,9 +748,17 @@ export function CashFlowDashboard({
       }
       return `${y}年${m}月`;
     };
-    const inputs = fcDashboardRows.map(({ row, lineTotal, schedule }) => ({ row, lineTotal, schedule }));
-    return buildForecastCashPaymentBarData(inputs, monthKeys, monthLabelFn);
-  }, [fcDashboardRows, language]);
+    const inputs = fcDashboardRows.map(({ row, lineTotal, schedule }) => ({
+      row: { cashFlowSupplierName: row.cashFlowSupplierName, month: row.month },
+      lineTotal,
+      schedule,
+    }));
+    const monthKeys =
+      fcBarBucketMode === "forecastMonth"
+        ? forecastMonthKeysFromRows(forecastCashFlowRows) ?? paymentMonthWindowAroundToday(6, 6)
+        : paymentMonthWindowAroundToday(6, 6);
+    return buildForecastCashPaymentBarData(inputs, monthKeys, monthLabelFn, fcBarBucketMode);
+  }, [fcDashboardRows, forecastCashFlowRows, fcBarBucketMode, language]);
 
   const fcBarHasAnyAmount = useMemo(
     () => fcPaymentBar.chartData.some((r) => Number(r.depositTotal) > 0 || Number(r.balanceTotal) > 0),
@@ -1151,12 +1173,56 @@ export function CashFlowDashboard({
                 : "mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700"
             }
           >
-            <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcBarTitle}</h6>
-            <p className="mt-1 text-xs text-[#9CA3AF]">{dashboardChartsOnly ? t.fcBarHintDash : t.fcBarHint}</p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  {fcBarBucketMode === "forecastMonth" ? t.fcBarTitleForecast : t.fcBarTitle}
+                </h6>
+                <p className="mt-1 text-xs text-[#9CA3AF]">
+                  {fcBarBucketMode === "forecastMonth"
+                    ? dashboardChartsOnly
+                      ? t.fcBarHintForecastDash
+                      : t.fcBarHintForecast
+                    : dashboardChartsOnly
+                      ? t.fcBarHintDash
+                      : t.fcBarHint}
+                </p>
+              </div>
+              <div
+                className="inline-flex shrink-0 rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-600 dark:bg-slate-800/80"
+                role="group"
+                aria-label={language === "en" ? "Chart grouping" : "图表汇总方式"}
+              >
+                <button
+                  type="button"
+                  onClick={() => setFcBarBucketMode("dueMonth")}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                    fcBarBucketMode === "dueMonth"
+                      ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:ring-slate-600"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+                  }`}
+                >
+                  {t.fcBarBucketDue}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFcBarBucketMode("forecastMonth")}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                    fcBarBucketMode === "forecastMonth"
+                      ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:ring-slate-600"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+                  }`}
+                >
+                  {t.fcBarBucketForecast}
+                </button>
+              </div>
+            </div>
             <div className="mt-3 h-80 w-full min-w-0">
               {!fcBarHasAnyAmount ? (
                 <div className="py-10">
-                  <p className="text-center text-sm text-slate-400">{t.fcBarNoData}</p>
+                  <p className="text-center text-sm text-slate-400">
+                    {fcBarBucketMode === "forecastMonth" ? t.fcBarNoDataForecast : t.fcBarNoData}
+                  </p>
                   {fcBarDiagnostics.total > 0 && fcBarDiagnostics.schedulable === 0 ? (
                     <div className="mx-auto mt-4 max-w-3xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
                       <p className="font-medium">

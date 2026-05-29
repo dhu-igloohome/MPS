@@ -1,10 +1,36 @@
+import { monthKeysBetween } from "@/lib/cash-flow-dashboard-agg";
 import type { ForecastPaySchedule } from "@/lib/forecast-supplier-payment-schedule";
 
+export type FcPaymentBarBucketMode = "dueMonth" | "forecastMonth";
+
 export type FcPaymentBarRowInput = {
-  row: { cashFlowSupplierName: string };
+  row: { cashFlowSupplierName: string; month: string };
   schedule: ForecastPaySchedule | null;
   lineTotal: number | null;
 };
+
+/** Normalize stored forecast_month (YYYY-MM) for chart bucketing. */
+export function normalizeForecastMonthKey(raw: string): string | null {
+  const s = raw.trim();
+  const m = /^(\d{4})-(\d{2})$/.exec(s);
+  if (m) return `${m[1]}-${m[2]}`;
+  const m2 = /^(\d{4})-(\d{2})-/.exec(s);
+  if (m2) return `${m2[1]}-${m2[2]}`;
+  return null;
+}
+
+/** X-axis months spanning all forecast rows (sorted); empty → null. */
+export function forecastMonthKeysFromRows(rows: { month: string }[]): string[] | null {
+  const set = new Set<string>();
+  for (const r of rows) {
+    const mk = normalizeForecastMonthKey(r.month);
+    if (mk) set.add(mk);
+  }
+  if (set.size === 0) return null;
+  const sorted = Array.from(set).sort((a, b) => a.localeCompare(b));
+  if (sorted.length === 1) return sorted;
+  return monthKeysBetween(`${sorted[0]}-01`, `${sorted[sorted.length - 1]}-01`);
+}
 
 /**
  * Bucket deposit / balance due amounts by calendar month (YYYY-MM) and supplier name.
@@ -32,6 +58,7 @@ export function buildForecastCashPaymentBarData(
   items: FcPaymentBarRowInput[],
   monthKeys: string[],
   monthLabelFn: (monthKey: string) => string,
+  bucketMode: FcPaymentBarBucketMode = "dueMonth",
 ): {
   chartData: Record<string, string | number>[];
   suppliers: string[];
@@ -44,6 +71,20 @@ export function buildForecastCashPaymentBarData(
     const sch = it.schedule;
     if (!sch || sch.parseFailed || it.lineTotal == null) continue;
     const sup = it.row.cashFlowSupplierName.trim() || "—";
+    const forecastMk = normalizeForecastMonthKey(it.row.month);
+
+    if (bucketMode === "forecastMonth") {
+      if (!forecastMk) continue;
+      if (sch.deposit) {
+        addTo(depositByMonth, forecastMk, sup, sch.deposit.amountUsd);
+        supplierSet.add(sup);
+      }
+      if (sch.balance) {
+        addTo(balanceByMonth, forecastMk, sup, sch.balance.amountUsd);
+        supplierSet.add(sup);
+      }
+      continue;
+    }
 
     if (sch.deposit) {
       const mk = sch.deposit.dateYmd.slice(0, 7);
