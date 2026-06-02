@@ -20,7 +20,7 @@ const sql = connectionString
   : null;
 
 /** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
-const CURRENT_SCHEMA_VERSION = 7;
+const CURRENT_SCHEMA_VERSION = 5;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -1187,51 +1187,6 @@ async function setupSchema() {
     );
   `;
 
-  await setupSkuProductRequestsSchema(db);
-}
-
-/** Isolated SKU-request DDL — failures must not abort the global schema bootstrap. */
-async function setupSkuProductRequestsSchema(db: NonNullable<typeof sql>) {
-  try {
-    await db`
-      create table if not exists sku_product_requests (
-        id bigserial primary key,
-        product_name text not null,
-        sku text not null,
-        variant text not null default '1',
-        article_number text not null default '',
-        unit_cost numeric(12, 2) not null default 0,
-        request_note text not null default '',
-        status text not null default 'pending'
-          check (status in ('pending', 'approved', 'rejected')),
-        requested_by text not null references users(username),
-        requested_at timestamptz not null default now(),
-        reviewed_by text references users(username),
-        reviewed_at timestamptz,
-        review_comment text not null default '',
-        created_product_id bigint references products(id) on delete set null
-      );
-    `;
-    await db`
-      create index if not exists idx_sku_product_requests_status
-      on sku_product_requests (status, requested_at desc);
-    `;
-    await db`
-      delete from sku_product_requests a
-      using sku_product_requests b
-      where a.id > b.id
-        and a.status = 'pending'
-        and b.status = 'pending'
-        and lower(trim(a.sku)) = lower(trim(b.sku));
-    `;
-    await db`
-      create unique index if not exists idx_sku_product_requests_pending_sku
-      on sku_product_requests (lower(trim(sku)))
-      where status = 'pending';
-    `;
-  } catch (err) {
-    console.error("[setupSkuProductRequestsSchema] non-fatal:", err);
-  }
 }
 
 async function seedUsers() {
@@ -1295,6 +1250,16 @@ async function seedOffices() {
   }
 }
 
+async function coreSchemaAlreadyPresent(): Promise<boolean> {
+  const db = getSql();
+  const rows = await db<{ users: string | null; products: string | null }[]>`
+    select
+      to_regclass('public.users')::text as users,
+      to_regclass('public.products')::text as products;
+  `;
+  return Boolean(rows[0]?.users && rows[0]?.products);
+}
+
 export async function ensureDatabase() {
   if (!sql) {
     throw new Error(
@@ -1309,6 +1274,12 @@ export async function ensureDatabase() {
   // Opt-out for dev: skip the ~150 idempotent CREATE/ALTER statements on cold start.
   // Run `npm run db:init` deliberately when you pull a branch that changes schema.
   if (process.env.SKIP_RUNTIME_BOOTSTRAP === "1") {
+    appliedSchemaVersion = CURRENT_SCHEMA_VERSION;
+    return;
+  }
+
+  // Production DB already provisioned: avoid re-running full bootstrap on every schema version bump.
+  if (await coreSchemaAlreadyPresent()) {
     appliedSchemaVersion = CURRENT_SCHEMA_VERSION;
     return;
   }

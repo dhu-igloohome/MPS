@@ -9,9 +9,11 @@ import type { SkuProductRequest } from "@/lib/types";
 type Props = {
   language: Language;
   initialPending: SkuProductRequest[];
+  /** Refetch queue after approve/reject (client-loaded pages). */
+  onQueueChanged?: () => void;
 };
 
-export function SkuProductRequestPanel({ language, initialPending }: Props) {
+export function SkuProductRequestPanel({ language, initialPending, onQueueChanged }: Props) {
   const router = useRouter();
   const en = language === "en";
   const t = {
@@ -55,6 +57,7 @@ export function SkuProductRequestPanel({ language, initialPending }: Props) {
       return;
     }
     setPending((prev) => prev.filter((r) => r.id !== id));
+    onQueueChanged?.();
     router.refresh();
   }
 
@@ -77,6 +80,7 @@ export function SkuProductRequestPanel({ language, initialPending }: Props) {
     setRejecting(null);
     setRejectComment("");
     setPending((prev) => prev.filter((r) => r.id !== rejecting.id));
+    onQueueChanged?.();
     router.refresh();
   }
 

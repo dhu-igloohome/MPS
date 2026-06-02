@@ -22,7 +22,6 @@ import { ForecastEntry, ProductItem, Region, SkuProductRequest } from "@/lib/typ
 type ForecastFormProps = {
   allowedRegions: Region[];
   products: ProductItem[];
-  pendingSkuRequests?: SkuProductRequest[];
   entries: ForecastEntry[];
   language: Language;
   canDelete: boolean;
@@ -127,7 +126,6 @@ function formatForecastMonthDisplay(ym: string, language: Language): string {
 export function ForecastForm({
   allowedRegions,
   products,
-  pendingSkuRequests = [],
   entries,
   language,
   canDelete,
@@ -282,6 +280,23 @@ export function ForecastForm({
     () => [...new Set(products.map((item) => item.sku).filter(Boolean))].sort(),
     [products],
   );
+
+  const [pendingSkuRequests, setPendingSkuRequests] = useState<SkuProductRequest[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/sku-product-requests?pending=1", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : { entries: [] }))
+      .then((data: { entries?: SkuProductRequest[] }) => {
+        if (!cancelled) setPendingSkuRequests(data.entries ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setPendingSkuRequests([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const pendingSkuOptions = useMemo(() => {
     const active = new Set(skuOptions.map((s) => s.toLowerCase()));

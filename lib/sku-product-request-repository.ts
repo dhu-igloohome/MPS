@@ -1,4 +1,5 @@
 import { ensureDatabase, getSql } from "@/lib/db";
+import { ensureSkuProductRequestsTable } from "@/lib/ensure-sku-product-requests-table";
 import { isUppercaseSku, isValidVariant } from "@/lib/product-sku-rules";
 import type { SkuProductRequest, SkuProductRequestStatus } from "@/lib/types";
 
@@ -16,6 +17,8 @@ function isSkuProductRequestsUnavailable(err: unknown): boolean {
 async function withSkuRequestsTable<T>(fallback: T, run: () => Promise<T>): Promise<T> {
   try {
     await ensureDatabase();
+    const ready = await ensureSkuProductRequestsTable();
+    if (!ready) return fallback;
     return await run();
   } catch (err) {
     if (isSkuProductRequestsUnavailable(err)) return fallback;
