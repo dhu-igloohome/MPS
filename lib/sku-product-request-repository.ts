@@ -1,11 +1,5 @@
-import {
-  createAdminAuditLog,
-  createProduct,
-  findProductBySkuAndVariant,
-  isUppercaseSku,
-  isValidVariant,
-} from "@/lib/repositories";
 import { ensureDatabase, getSql } from "@/lib/db";
+import { isUppercaseSku, isValidVariant } from "@/lib/product-sku-rules";
 import type { SkuProductRequest, SkuProductRequestStatus } from "@/lib/types";
 
 type SkuProductRequestRow = {
@@ -145,6 +139,7 @@ export async function createSkuProductRequest(input: {
     throw new Error("A pending request already exists for this SKU");
   }
 
+  const { findProductBySkuAndVariant } = await import("@/lib/repositories");
   const existing = await findProductBySkuAndVariant(parsed.sku, parsed.variant);
   if (existing?.isActive) {
     throw new Error("This SKU and variant already exist in the product database");
@@ -192,6 +187,10 @@ export async function approveSkuProductRequest(
   id: string,
   reviewerUsername: string,
 ): Promise<SkuProductRequest> {
+  const { createProduct, createAdminAuditLog, findProductBySkuAndVariant } = await import(
+    "@/lib/repositories"
+  );
+
   const req = await getSkuProductRequestById(id);
   if (!req) throw new Error("Request not found");
   if (req.status !== "pending") throw new Error("Request is not pending");
@@ -251,6 +250,8 @@ export async function rejectSkuProductRequest(
   reviewerUsername: string,
   reviewComment: string,
 ): Promise<SkuProductRequest> {
+  const { createAdminAuditLog } = await import("@/lib/repositories");
+
   const req = await getSkuProductRequestById(id);
   if (!req) throw new Error("Request not found");
   if (req.status !== "pending") throw new Error("Request is not pending");
