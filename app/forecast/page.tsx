@@ -18,7 +18,7 @@ export default async function ForecastPage() {
   const [products, entries, pendingSkuRequests, cookieStore] = await Promise.all([
     listActiveProducts(),
     getForecastsByRegions(session.regions),
-    listPendingSkuProductRequests(),
+    listPendingSkuProductRequests().catch(() => []),
     cookies(),
   ]);
   const language = normalizeLanguage(cookieStore.get("lang")?.value);

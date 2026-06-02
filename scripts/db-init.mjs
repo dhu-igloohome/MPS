@@ -591,6 +591,14 @@ async function main() {
     on sku_product_requests (status, requested_at desc);
   `;
   await sql`
+    delete from sku_product_requests a
+    using sku_product_requests b
+    where a.id > b.id
+      and a.status = 'pending'
+      and b.status = 'pending'
+      and lower(trim(a.sku)) = lower(trim(b.sku));
+  `;
+  await sql`
     create unique index if not exists idx_sku_product_requests_pending_sku
     on sku_product_requests (lower(trim(sku)))
     where status = 'pending';

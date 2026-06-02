@@ -2,6 +2,27 @@ import { ensureDatabase, getSql } from "@/lib/db";
 import { isUppercaseSku, isValidVariant } from "@/lib/product-sku-rules";
 import type { SkuProductRequest, SkuProductRequestStatus } from "@/lib/types";
 
+const SKU_REQUESTS_UNAVAILABLE =
+  "SKU request service is not available yet. Please try again after deploy completes or ask admin to add the SKU in Product Database.";
+
+function isSkuProductRequestsUnavailable(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const code = (err as { code?: string }).code;
+  if (code === "42P01") return true;
+  const msg = String((err as { message?: string }).message ?? "");
+  return /sku_product_requests/i.test(msg);
+}
+
+async function withSkuRequestsTable<T>(fallback: T, run: () => Promise<T>): Promise<T> {
+  try {
+    await ensureDatabase();
+    return await run();
+  } catch (err) {
+    if (isSkuProductRequestsUnavailable(err)) return fallback;
+    throw err;
+  }
+}
+
 type SkuProductRequestRow = {
   id: number;
   product_name: string;
@@ -67,23 +88,24 @@ export function normalizeSkuProductRequestInput(input: {
 export async function listSkuProductRequests(options?: {
   status?: SkuProductRequestStatus;
 }): Promise<SkuProductRequest[]> {
-  await ensureDatabase();
-  const db = getSql();
-  const status = options?.status;
-  const rows = status
-    ? await db<SkuProductRequestRow[]>`
-        select *
-        from sku_product_requests
-        where status = ${status}
-        order by requested_at desc, id desc;
-      `
-    : await db<SkuProductRequestRow[]>`
-        select *
-        from sku_product_requests
-        order by requested_at desc, id desc
-        limit 500;
-      `;
-  return rows.map(mapRow);
+  return withSkuRequestsTable([], async () => {
+    const db = getSql();
+    const status = options?.status;
+    const rows = status
+      ? await db<SkuProductRequestRow[]>`
+          select *
+          from sku_product_requests
+          where status = ${status}
+          order by requested_at desc, id desc;
+        `
+      : await db<SkuProductRequestRow[]>`
+          select *
+          from sku_product_requests
+          order by requested_at desc, id desc
+          limit 500;
+        `;
+    return rows.map(mapRow);
+  });
 }
 
 export async function listPendingSkuProductRequests(): Promise<SkuProductRequest[]> {
@@ -93,16 +115,17 @@ export async function listPendingSkuProductRequests(): Promise<SkuProductRequest
 export async function skuProductRequestPendingExists(sku: string): Promise<boolean> {
   const sk = sku.trim();
   if (!sk) return false;
-  await ensureDatabase();
-  const db = getSql();
-  const rows = await db<{ exists: boolean }[]>`
-    select exists(
-      select 1 from sku_product_requests
-      where lower(trim(sku)) = lower(${sk}) and status = 'pending'
-      limit 1
-    ) as exists;
-  `;
-  return Boolean(rows[0]?.exists);
+  return withSkuRequestsTable(false, async () => {
+    const db = getSql();
+    const rows = await db<{ exists: boolean }[]>`
+      select exists(
+        select 1 from sku_product_requests
+        where lower(trim(sku)) = lower(${sk}) and status = 'pending'
+        limit 1
+      ) as exists;
+    `;
+    return Boolean(rows[0]?.exists);
+  });
 }
 
 export async function activeProductExistsForSku(sku: string): Promise<boolean> {
@@ -145,42 +168,46 @@ export async function createSkuProductRequest(input: {
     throw new Error("This SKU and variant already exist in the product database");
   }
 
-  await ensureDatabase();
-  const db = getSql();
   const unitCost = Number.isFinite(input.unitCost) && input.unitCost! >= 0 ? input.unitCost! : 0;
-  const rows = await db<SkuProductRequestRow[]>`
-    insert into sku_product_requests (
-      product_name,
-      sku,
-      variant,
-      article_number,
-      unit_cost,
-      request_note,
-      requested_by
-    )
-    values (
-      ${parsed.productName},
-      ${parsed.sku},
-      ${parsed.variant},
-      ${String(input.articleNumber ?? "").trim()},
-      ${unitCost},
-      ${String(input.requestNote ?? "").trim()},
-      ${input.requestedBy}
-    )
-    returning *;
-  `;
-  return mapRow(rows[0]);
+  const created = await withSkuRequestsTable<SkuProductRequest | null>(null, async () => {
+    const db = getSql();
+    const rows = await db<SkuProductRequestRow[]>`
+      insert into sku_product_requests (
+        product_name,
+        sku,
+        variant,
+        article_number,
+        unit_cost,
+        request_note,
+        requested_by
+      )
+      values (
+        ${parsed.productName},
+        ${parsed.sku},
+        ${parsed.variant},
+        ${String(input.articleNumber ?? "").trim()},
+        ${unitCost},
+        ${String(input.requestNote ?? "").trim()},
+        ${input.requestedBy}
+      )
+      returning *;
+    `;
+    return mapRow(rows[0]);
+  });
+  if (!created) throw new Error(SKU_REQUESTS_UNAVAILABLE);
+  return created;
 }
 
 export async function getSkuProductRequestById(id: string): Promise<SkuProductRequest | null> {
   const idNum = Number(id);
   if (!Number.isFinite(idNum) || idNum < 1) return null;
-  await ensureDatabase();
-  const db = getSql();
-  const rows = await db<SkuProductRequestRow[]>`
-    select * from sku_product_requests where id = ${idNum} limit 1;
-  `;
-  return rows[0] ? mapRow(rows[0]) : null;
+  return withSkuRequestsTable(null, async () => {
+    const db = getSql();
+    const rows = await db<SkuProductRequestRow[]>`
+      select * from sku_product_requests where id = ${idNum} limit 1;
+    `;
+    return rows[0] ? mapRow(rows[0]) : null;
+  });
 }
 
 export async function approveSkuProductRequest(
