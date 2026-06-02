@@ -427,7 +427,13 @@ export function sessionCanAccessOrderProgressRegion(
   return orderProgressRegionsForSession(sessionRegions).includes(rowRegion);
 }
 
-export { isUppercaseSku, isValidVariant } from "@/lib/product-sku-rules";
+export function isUppercaseSku(input: string) {
+  return /^[A-Z][A-Z0-9]*$/.test(input);
+}
+
+export function isValidVariant(input: string) {
+  return /^[0-9]+[A-Z]*$/.test(input);
+}
 
 export async function authenticateUser(username: string, password: string) {
   await ensureDatabase();

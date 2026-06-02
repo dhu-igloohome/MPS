@@ -1186,7 +1186,6 @@ async function setupSchema() {
       unique (request_id, approver_username)
     );
   `;
-
 }
 
 async function seedUsers() {
@@ -1251,13 +1250,17 @@ async function seedOffices() {
 }
 
 async function coreSchemaAlreadyPresent(): Promise<boolean> {
-  const db = getSql();
-  const rows = await db<{ users: string | null; products: string | null }[]>`
-    select
-      to_regclass('public.users')::text as users,
-      to_regclass('public.products')::text as products;
-  `;
-  return Boolean(rows[0]?.users && rows[0]?.products);
+  try {
+    const db = getSql();
+    const rows = await db<{ users: string | null; products: string | null }[]>`
+      select
+        to_regclass('public.users')::text as users,
+        to_regclass('public.products')::text as products;
+    `;
+    return Boolean(rows[0]?.users && rows[0]?.products);
+  } catch {
+    return false;
+  }
 }
 
 export async function ensureDatabase() {
@@ -1278,7 +1281,7 @@ export async function ensureDatabase() {
     return;
   }
 
-  // Production DB already provisioned: avoid re-running full bootstrap on every schema version bump.
+  // Existing production DB: do not re-run full bootstrap (avoids serverless timeout).
   if (await coreSchemaAlreadyPresent()) {
     appliedSchemaVersion = CURRENT_SCHEMA_VERSION;
     return;
@@ -1292,6 +1295,11 @@ export async function ensureDatabase() {
         await seedOffices();
         appliedSchemaVersion = CURRENT_SCHEMA_VERSION;
       } catch (err) {
+        console.error("[ensureDatabase] bootstrap failed:", err);
+        if (await coreSchemaAlreadyPresent()) {
+          appliedSchemaVersion = CURRENT_SCHEMA_VERSION;
+          return;
+        }
         bootstrapPromise = null;
         throw err;
       }

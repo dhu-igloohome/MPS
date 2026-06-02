@@ -70,25 +70,6 @@ export type ProductItem = {
   createdAt: string;
 };
 
-export type SkuProductRequestStatus = "pending" | "approved" | "rejected";
-
-export type SkuProductRequest = {
-  id: string;
-  productName: string;
-  sku: string;
-  variant: string;
-  articleNumber: string;
-  unitCost: number;
-  requestNote: string;
-  status: SkuProductRequestStatus;
-  requestedBy: string;
-  requestedAt: string;
-  reviewedBy: string | null;
-  reviewedAt: string | null;
-  reviewComment: string;
-  createdProductId: string | null;
-};
-
 export type SupplierEntry = {
   id: string;
   name: string;

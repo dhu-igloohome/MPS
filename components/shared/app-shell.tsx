@@ -99,13 +99,7 @@ export async function AppShell({ session, title, description, headerMeta, module
         { href: "/npi/ecn", label: language === "en" ? "ECN Management" : "ECN 管理" },
         { href: "/npi/sop", label: language === "en" ? "SOP Management" : "SOP 管理" },
         ...(session.role === "super_admin"
-          ? [
-              { href: "/admin/products", label: navText.productDatabase },
-              {
-                href: "/admin/sku-requests",
-                label: language === "en" ? "SKU requests" : "SKU 申请审批",
-              },
-            ]
+          ? [{ href: "/admin/products", label: navText.productDatabase }]
           : []),
       ],
     },

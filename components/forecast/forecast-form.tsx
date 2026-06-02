@@ -14,10 +14,9 @@ import {
   forecastIncotermHint,
   type ForecastIncoterm,
 } from "@/lib/forecast-incoterm";
-import { RequestSkuModal } from "@/components/forecast/request-sku-modal";
 import { TableCellLongText } from "@/components/shared/table-cell-long-text";
 import { Language } from "@/lib/i18n";
-import { ForecastEntry, ProductItem, Region, SkuProductRequest } from "@/lib/types";
+import { ForecastEntry, ProductItem, Region } from "@/lib/types";
 
 type ForecastFormProps = {
   allowedRegions: Region[];
@@ -187,9 +186,6 @@ export function ForecastForm({
         ? "CSV: header required; forecast # auto-generated; incoterm optional (EXW default, or EXW/FOB/DAP/DDP).\nAPI: pulls SKU Tracker sales for selected month & region into BTO; forecast # auto-generated."
         : "CSV：需表头；forecast number 自动生成；incoterm 可选（默认 EXW，或 EXW/FOB/DAP/DDP）。\nAPI：按所选月份与区域从 SKU Tracker 写入 BTO；forecast number 自动生成。",
     skuLines: language === "en" ? "SKU lines" : "SKU 明细",
-    requestNewSku: language === "en" ? "Request new SKU" : "申请新 SKU",
-    pendingSkuGroup: language === "en" ? "Awaiting approval" : "审批中",
-    pendingSkuOption: language === "en" ? "(pending approval)" : "（审批中）",
     addLine: language === "en" ? "Add line" : "加一行",
     addLineHint:
       language === "en"
@@ -280,32 +276,6 @@ export function ForecastForm({
     () => [...new Set(products.map((item) => item.sku).filter(Boolean))].sort(),
     [products],
   );
-
-  const [pendingSkuRequests, setPendingSkuRequests] = useState<SkuProductRequest[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/sku-product-requests?pending=1", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : { entries: [] }))
-      .then((data: { entries?: SkuProductRequest[] }) => {
-        if (!cancelled) setPendingSkuRequests(data.entries ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setPendingSkuRequests([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const pendingSkuOptions = useMemo(() => {
-    const active = new Set(skuOptions.map((s) => s.toLowerCase()));
-    return pendingSkuRequests
-      .filter((r) => r.status === "pending" && !active.has(r.sku.toLowerCase()))
-      .sort((a, b) => a.sku.localeCompare(b.sku));
-  }, [pendingSkuRequests, skuOptions]);
-
-  const [requestSkuOpen, setRequestSkuOpen] = useState(false);
   const regionPoOptions = useMemo(
     () =>
       [...new Set(entries.filter((e) => e.region === region).map((e) => e.poNumber).filter(Boolean))].sort(),
@@ -841,25 +811,15 @@ export function ForecastForm({
                 <span className="text-xs font-semibold uppercase tracking-wide text-foreground/80">{t.skuLines}</span>
                 <p className="mt-0.5 text-[11px] text-app-muted">{t.addLineHint}</p>
               </div>
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRequestSkuOpen(true)}
-                  className="app-button-secondary inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium"
-                >
-                  <Plus size={16} strokeWidth={2} />
-                  {t.requestNewSku}
-                </button>
-                <button
-                  type="button"
-                  onClick={addSkuLine}
-                  disabled={products.length === 0 && pendingSkuOptions.length === 0}
-                  className="app-button-primary inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold shadow-sm transition duration-150 ease-out hover:-translate-y-px hover:shadow-md active:translate-y-0 disabled:opacity-50"
-                >
-                  <Plus size={16} strokeWidth={2} />
-                  {t.addLine}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={addSkuLine}
+                disabled={products.length === 0}
+                className="app-button-primary inline-flex shrink-0 items-center gap-1.5 px-3.5 py-2 text-sm font-semibold shadow-sm transition duration-150 ease-out hover:-translate-y-px hover:shadow-md active:translate-y-0 disabled:opacity-50"
+              >
+                <Plus size={16} strokeWidth={2} />
+                {t.addLine}
+              </button>
             </div>
             <div className="app-table-shell overflow-hidden rounded-xl border border-app-border/90">
               <div className="overflow-x-auto">
@@ -909,15 +869,6 @@ export function ForecastForm({
                                 {item}
                               </option>
                             ))}
-                            {pendingSkuOptions.length > 0 ? (
-                              <optgroup label={t.pendingSkuGroup}>
-                                {pendingSkuOptions.map((req) => (
-                                  <option key={`pending-${req.id}`} value="" disabled>
-                                    {req.sku} {t.pendingSkuOption}
-                                  </option>
-                                ))}
-                              </optgroup>
-                            ) : null}
                           </select>
                         </td>
                         <td className="max-w-[8rem]">
@@ -1448,12 +1399,6 @@ export function ForecastForm({
           </div>
         </div>
       </section>
-
-      <RequestSkuModal
-        language={language}
-        open={requestSkuOpen}
-        onClose={() => setRequestSkuOpen(false)}
-      />
     </div>
   );
 }
