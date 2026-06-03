@@ -21,6 +21,7 @@ function isRegion(value: string): value is Region {
 const FORECAST_OPS_ACTION_OPTIONS = [
   "",
   "Ok to issue PO",
+  "Review the demand by next MP build",
   "Not build new lot because of MOQ",
   "Consider stock transfer from other region",
 ] as const;
