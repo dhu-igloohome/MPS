@@ -166,17 +166,68 @@ export function uniqueForecastEntryMonths(rows: ForecastCashFlowRow[]): string[]
 
 export function filterRowsForSupplierReport(
   rows: ForecastCashFlowRow[],
-  supplierName: string,
+  supplierNames: string[],
   forecastMonth: string,
 ): ForecastCashFlowRow[] {
-  const sup = supplierName.trim();
+  const selected = new Set(supplierNames.map((s) => s.trim()).filter(Boolean));
+  if (selected.size === 0) return [];
   return rows.filter((r) => {
-    if (sup && r.cashFlowSupplierName.trim() !== sup) return false;
+    if (!selected.has(r.cashFlowSupplierName.trim())) return false;
     if (forecastMonth !== "all") {
       const mk = r.month.trim().slice(0, 7);
       if (mk !== forecastMonth) return false;
     }
     return true;
+  });
+}
+
+export function sumMatrixRows(
+  rows: PaymentScheduleMatrixRow[],
+  monthKeys: string[],
+): PaymentScheduleMatrixTotals {
+  const totals: PaymentScheduleMatrixTotals = {
+    lineTotalUsd: 0,
+    depositByMonth: emptyMonthMap(monthKeys),
+    balanceByMonth: emptyMonthMap(monthKeys),
+  };
+  for (const r of rows) {
+    if (r.lineTotalUsd != null) totals.lineTotalUsd += r.lineTotalUsd;
+    for (const mk of monthKeys) {
+      totals.depositByMonth[mk] += r.depositByMonth[mk] ?? 0;
+      totals.balanceByMonth[mk] += r.balanceByMonth[mk] ?? 0;
+    }
+  }
+  return totals;
+}
+
+export type PaymentScheduleSupplierGroup = {
+  supplierName: string;
+  rows: PaymentScheduleMatrixRow[];
+  subtotal: PaymentScheduleMatrixTotals;
+};
+
+export function groupMatrixBySupplier(
+  matrix: PaymentScheduleMatrix,
+  supplierOrder: string[],
+): PaymentScheduleSupplierGroup[] {
+  const byName = new Map<string, PaymentScheduleMatrixRow[]>();
+  for (const row of matrix.rows) {
+    const list = byName.get(row.supplierName) ?? [];
+    list.push(row);
+    byName.set(row.supplierName, list);
+  }
+  const order =
+    supplierOrder.length > 0
+      ? supplierOrder.filter((name) => byName.has(name))
+      : [...byName.keys()].sort((a, b) => a.localeCompare(b));
+
+  return order.map((supplierName) => {
+    const groupRows = byName.get(supplierName) ?? [];
+    return {
+      supplierName,
+      rows: groupRows,
+      subtotal: sumMatrixRows(groupRows, matrix.monthKeys),
+    };
   });
 }
 

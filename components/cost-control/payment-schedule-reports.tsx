@@ -3,11 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { PaymentScheduleMatrixTable } from "@/components/cost-control/payment-schedule-matrix-table";
-import {
-  ccLabel,
-  ccSelectMd,
-  ccSelectSm,
-} from "@/components/cost-control/cost-control-form-controls";
+import { ccLabel, ccSelectSm } from "@/components/cost-control/cost-control-form-controls";
 import type { Language } from "@/lib/i18n";
 import {
   buildPaymentScheduleMatrix,
@@ -29,15 +25,16 @@ const COPY = {
     pageTitle: "Payment schedule reports",
     skuSection: "By SKU (payment due months)",
     skuHint:
-      "Each row is one Forecast cash-flow SKU line. Month columns span the earliest deposit due month through the latest balance due month in the dataset (empty months show —). Amounts follow supplier Payment terms + Lead time.",
+      "Each row is one Forecast cash-flow SKU line. Month columns span the earliest deposit due month through the latest balance due month in the dataset (empty months show $0.00). Amounts follow supplier Payment terms + Lead time.",
     supplierSection: "By supplier + Forecast month",
     supplierHint:
-      "Filter by supplier and Forecast entry month (the month set when the forecast was created). Shows each SKU’s deposit and balance due amounts across the same unified month columns, plus supplier totals.",
-    supplier: "Supplier",
+      "Check one or more suppliers and pick a Forecast entry month. Each supplier block lists SKU lines, then a supplier subtotal; the last row is the grand total across all checked suppliers.",
+    supplier: "Suppliers",
     forecastMonth: "Forecast month",
     allMonths: "All months",
-    selectSupplier: "Select supplier…",
-    supplierRequired: "Select a supplier to view this report.",
+    selectAll: "Select all",
+    clearAll: "Clear",
+    supplierRequired: "Check at least one supplier to view this report.",
     sku: "SKU",
     bto: "Build to Order",
     bts: "Build to Stock",
@@ -46,22 +43,25 @@ const COPY = {
     depositSection: "Deposit due in",
     balanceSection: "Balance due in",
     empty: "No rows with schedulable payments in scope.",
-    totalRow: "Total",
+    totalRow: "Grand total",
+    supplierSubtotal: "Subtotal",
     forecastMonthCol: "Forecast month",
+    selectedCount: (n: number) => `${n} selected`,
   },
   zh: {
     pageTitle: "付款计划报表",
     skuSection: "按 SKU（应付月份）",
     skuHint:
-      "每行对应一条 Forecast 现金流 SKU。月份列为数据集中最早订金应付月至最晚尾款应付月（无款月份显示 —）。金额按供应商 Payment terms + Lead time 计算。",
+      "每行对应一条 Forecast 现金流 SKU。月份列为数据集中最早订金应付月至最晚尾款应付月（无款月份显示 $0.00）。金额按供应商 Payment terms + Lead time 计算。",
     supplierSection: "按供应商 + Forecast 录入月",
     supplierHint:
-      "按供应商与 Forecast 录入月（创建 Forecast 时填写的月份）筛选。展示各 SKU 订金/尾款在各月的应付金额（统一月份列），并汇总供应商合计。",
+      "可勾选一家或多家供应商，并选择 Forecast 录入月。每个供应商下列出各 SKU，随后一行供应商小计；最后一行为已选供应商总合计。",
     supplier: "供应商",
     forecastMonth: "Forecast 录入月",
     allMonths: "全部月份",
-    selectSupplier: "选择供应商…",
-    supplierRequired: "请先选择供应商。",
+    selectAll: "全选",
+    clearAll: "清空",
+    supplierRequired: "请至少勾选一个供应商。",
     sku: "SKU",
     bto: "按单生产",
     bts: "备货生产",
@@ -70,14 +70,16 @@ const COPY = {
     depositSection: "订金应付",
     balanceSection: "尾款应付",
     empty: "当前范围内没有可排期的付款行。",
-    totalRow: "合计",
+    totalRow: "总合计",
+    supplierSubtotal: "小计",
     forecastMonthCol: "Forecast 录入月",
+    selectedCount: (n: number) => `已选 ${n} 家`,
   },
 };
 
 export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
   const t = COPY[language];
-  const [supplierFilter, setSupplierFilter] = useState("");
+  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
   const [forecastMonthFilter, setForecastMonthFilter] = useState("all");
 
   const supplierOptions = useMemo(() => uniqueSuppliersFromRows(rows), [rows]);
@@ -89,14 +91,25 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
   );
 
   const supplierScopedRows = useMemo(
-    () => filterRowsForSupplierReport(rows, supplierFilter, forecastMonthFilter),
-    [rows, supplierFilter, forecastMonthFilter],
+    () => filterRowsForSupplierReport(rows, selectedSuppliers, forecastMonthFilter),
+    [rows, selectedSuppliers, forecastMonthFilter],
   );
 
   const supplierMatrix = useMemo(
     () => buildPaymentScheduleMatrix(supplierScopedRows, suppliers),
     [supplierScopedRows, suppliers],
   );
+
+  const supplierOrder = useMemo(() => {
+    const set = new Set(selectedSuppliers);
+    return supplierOptions.filter((name) => set.has(name));
+  }, [selectedSuppliers, supplierOptions]);
+
+  function toggleSupplier(name: string) {
+    setSelectedSuppliers((prev) =>
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
+    );
+  }
 
   const tableLabels = {
     supplier: t.supplier,
@@ -109,6 +122,7 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
     balanceSection: t.balanceSection,
     empty: t.empty,
     totalRow: t.totalRow,
+    supplierSubtotal: t.supplierSubtotal,
   };
 
   return (
@@ -132,22 +146,8 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
           </summary>
           <p className="mt-1 max-w-3xl leading-relaxed">{t.supplierHint}</p>
         </details>
+
         <div className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
-          <label className="shrink-0">
-            <span className={ccLabel}>{t.supplier} *</span>
-            <select
-              className={ccSelectMd}
-              value={supplierFilter}
-              onChange={(e) => setSupplierFilter(e.target.value)}
-            >
-              <option value="">{t.selectSupplier}</option>
-              {supplierOptions.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
           <label className="shrink-0">
             <span className={ccLabel}>{t.forecastMonth}</span>
             <select
@@ -163,8 +163,45 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
               ))}
             </select>
           </label>
+          <span className="pb-0.5 text-xs text-app-muted">{t.selectedCount(selectedSuppliers.length)}</span>
         </div>
-        {!supplierFilter ? (
+
+        <div className="mt-2 rounded-xl border border-app-border/80 bg-app-surface/50 p-3">
+          <div className="mb-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded border border-app-border px-2 py-0.5 text-xs hover:bg-app-accent-soft"
+              onClick={() => setSelectedSuppliers([...supplierOptions])}
+            >
+              {t.selectAll}
+            </button>
+            <button
+              type="button"
+              className="rounded border border-app-border px-2 py-0.5 text-xs hover:bg-app-accent-soft"
+              onClick={() => setSelectedSuppliers([])}
+            >
+              {t.clearAll}
+            </button>
+          </div>
+          <div className="max-h-44 space-y-1 overflow-y-auto pr-1">
+            {supplierOptions.map((name) => (
+              <label
+                key={name}
+                className="flex cursor-pointer items-start gap-2 rounded-md px-1 py-1 hover:bg-app-accent-soft/40"
+              >
+                <input
+                  type="checkbox"
+                  className="mt-0.5 shrink-0"
+                  checked={selectedSuppliers.includes(name)}
+                  onChange={() => toggleSupplier(name)}
+                />
+                <span className="min-w-0 text-sm leading-snug text-foreground">{name}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {selectedSuppliers.length === 0 ? (
           <p className="mt-3 text-sm text-app-muted">{t.supplierRequired}</p>
         ) : (
           <PaymentScheduleMatrixTable
@@ -173,6 +210,8 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
             labels={tableLabels}
             showForecastMonth={forecastMonthFilter === "all"}
             forecastMonthLabel={t.forecastMonthCol}
+            groupBySupplier
+            supplierOrder={supplierOrder}
           />
         )}
       </section>
