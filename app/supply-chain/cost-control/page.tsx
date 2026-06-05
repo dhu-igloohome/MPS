@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
+import { CostControlSubnav } from "@/components/cost-control/cost-control-subnav";
 import { CostControlPanel } from "@/components/cost-control/cost-control-panel";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
@@ -20,12 +21,18 @@ import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function SupplyChainCostControlPage() {
+export default async function SupplyChainCostControlPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
+  const { tab } = await searchParams;
+  const subnavActive = tab === "cashflow" ? "cashflow" : "cost";
   // Kick off forecasts first so the dependent enrich step can overlap with the other 4 queries.
   const forecastRecordsPromise = getForecastsByRegions(session.regions);
   const [cashFlowEntries, costAnalysisEntries, forecastRecords, suppliers, unitCostQuotes, forecastCashFlowRows, contracts] =
@@ -52,6 +59,7 @@ export default async function SupplyChainCostControlPage() {
       description={language === "en" ? "Suppliers, contracts and cost control in one module." : "将供应商、合同、成本控制整合到同一模块。"}
       moduleTabs={<SupplyChainSubnav language={language} />}
     >
+      <CostControlSubnav language={language} active={subnavActive} />
       <Suspense
         fallback={
           <div className="mt-4 h-40 animate-pulse rounded-2xl border border-app-border/80 bg-app-surface/80" />

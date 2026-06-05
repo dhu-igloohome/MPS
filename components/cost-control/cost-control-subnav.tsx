@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, Coins, Landmark } from "lucide-react";
+import { BarChart3, CalendarRange, Coins, Landmark } from "lucide-react";
 
 import type { Language } from "@/lib/i18n";
 
@@ -10,15 +10,17 @@ const COPY = {
     costAnalysis: "Cost analysis",
     cashFlow: "Cash flow analysis",
     unitCost: "Unit cost",
+    paymentSchedule: "Payment schedule",
   },
   zh: {
     costAnalysis: "成本分析",
     cashFlow: "现金流分析",
     unitCost: "单位成本",
+    paymentSchedule: "付款计划",
   },
 };
 
-export type CostControlSubnavActive = "cost" | "cashflow" | "unit";
+export type CostControlSubnavActive = "cost" | "cashflow" | "unit" | "payment-schedule";
 
 type Props = {
   language: Language;
@@ -30,6 +32,12 @@ export function CostControlSubnav({ language, active }: Props) {
   const tabs = [
     { key: "unit" as const, href: "/supply-chain/cost-control/unit-cost", label: t.unitCost, Icon: Coins },
     { key: "cashflow" as const, href: "/supply-chain/cost-control?tab=cashflow", label: t.cashFlow, Icon: Landmark },
+    {
+      key: "payment-schedule" as const,
+      href: "/supply-chain/cost-control/payment-schedule",
+      label: t.paymentSchedule,
+      Icon: CalendarRange,
+    },
     { key: "cost" as const, href: "/supply-chain/cost-control", label: t.costAnalysis, Icon: BarChart3 },
   ];
 
