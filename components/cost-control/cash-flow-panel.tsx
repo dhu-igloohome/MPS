@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
+import { ccLabel, ccSelectSm } from "@/components/cost-control/cost-control-form-controls";
 import { ForecastCashFlowTable } from "@/components/cost-control/forecast-cash-flow-table";
 import type { ForecastContractCoverageSummary } from "@/lib/contract-forecast-coverage";
 import type { Language } from "@/lib/i18n";
@@ -36,6 +37,18 @@ function formatForecastMonthCell(ym: string, language: Language): string {
     return new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
   }
   return `${y}年${mo}月`;
+}
+
+type FcMonthSort = "desc" | "asc";
+
+function sortForecastCashFlowByMonth(rows: ForecastCashFlowRow[], order: FcMonthSort): ForecastCashFlowRow[] {
+  const dir = order === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const ma = (a.month || "").trim();
+    const mb = (b.month || "").trim();
+    if (ma === mb) return 0;
+    return ma < mb ? -dir : dir;
+  });
 }
 
 function csvEscape(cell: string): string {
@@ -136,6 +149,9 @@ const LABELS = {
     fcCreateContract: "Create contract",
     fcFilterPending: "Only SKUs with pending contract qty",
     fcRowRemaining: "Remaining",
+    fcSortByMonth: "Sort by forecast month",
+    fcSortLatest: "Latest month first",
+    fcSortEarliest: "Earliest month first",
   },
   zh: {
     fcTitle: "Forecast 现金流",
@@ -168,6 +184,9 @@ const LABELS = {
     fcCreateContract: "创建合同",
     fcFilterPending: "仅显示待建合同 SKU",
     fcRowRemaining: "待建",
+    fcSortByMonth: "按 Forecast 月份排序",
+    fcSortLatest: "最新月份在前",
+    fcSortEarliest: "最早月份在前",
   },
 };
 
@@ -182,8 +201,14 @@ export function CashFlowPanel({
 }: CashFlowPanelProps) {
   const t = LABELS[language];
   const [fcRows, setFcRows] = useState(forecastCashFlowRows);
+  const [fcMonthSort, setFcMonthSort] = useState<FcMonthSort>("desc");
   const [fcRowSavingId, setFcRowSavingId] = useState<string | null>(null);
   const [fcMessage, setFcMessage] = useState("");
+
+  const sortedFcRows = useMemo(
+    () => sortForecastCashFlowByMonth(fcRows, fcMonthSort),
+    [fcRows, fcMonthSort],
+  );
 
   useEffect(() => {
     setFcRows(forecastCashFlowRows);
@@ -246,17 +271,31 @@ export function CashFlowPanel({
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-app-border/80 bg-app-surface/70 p-4 shadow-sm">
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-          <h4 className="min-w-0 text-base font-semibold text-foreground">{t.fcTitle}</h4>
-          <button
-            type="button"
-            disabled={fcRows.length === 0}
-            title={fcRows.length === 0 ? t.fcExportEmpty : t.fcExportReport}
-            onClick={() => exportForecastCashFlowReport(fcRows, language, t)}
-            className="app-button-primary inline-flex shrink-0 items-center justify-center px-4 py-2.5 text-sm font-semibold shadow-md ring-1 ring-[var(--app-accent)]/25 transition hover:shadow-lg disabled:pointer-events-none disabled:opacity-45"
-          >
-            {t.fcExportReport}
-          </button>
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+          <h4 className="min-w-0 text-base font-semibold text-foreground sm:pb-0.5">{t.fcTitle}</h4>
+          <div className="flex shrink-0 flex-wrap items-end justify-end gap-x-3 gap-y-2">
+            <label className="shrink-0">
+              <span className={ccLabel}>{t.fcSortByMonth}</span>
+              <select
+                className={ccSelectSm}
+                value={fcMonthSort}
+                onChange={(e) => setFcMonthSort(e.target.value as FcMonthSort)}
+                aria-label={t.fcSortByMonth}
+              >
+                <option value="desc">{t.fcSortLatest}</option>
+                <option value="asc">{t.fcSortEarliest}</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              disabled={fcRows.length === 0}
+              title={fcRows.length === 0 ? t.fcExportEmpty : t.fcExportReport}
+              onClick={() => exportForecastCashFlowReport(sortedFcRows, language, t)}
+              className="app-button-primary inline-flex shrink-0 items-center justify-center px-4 py-2.5 text-sm font-semibold shadow-md ring-1 ring-[var(--app-accent)]/25 transition hover:shadow-lg disabled:pointer-events-none disabled:opacity-45"
+            >
+              {t.fcExportReport}
+            </button>
+          </div>
         </div>
         <details className="mt-1 text-xs text-app-muted">
           <summary className="cursor-pointer select-none font-medium text-foreground/80">
@@ -266,7 +305,7 @@ export function CashFlowPanel({
         </details>
         <ForecastCashFlowTable
           language={language}
-          rows={fcRows}
+          rows={sortedFcRows}
           coverage={forecastContractCoverage}
           fcSupplierNames={fcSupplierNames}
           suppliers={fcSuppliers}
@@ -283,7 +322,7 @@ export function CashFlowPanel({
         language={language}
         entries={[]}
         costAnalysisEntries={[]}
-        forecastCashFlowRows={fcRows}
+        forecastCashFlowRows={sortedFcRows}
         landedCostConsolidateSnapshots={landedCostConsolidateSnapshots}
         unitCostQuotes={unitCostQuotes}
         fcSuppliers={fcSuppliers}
