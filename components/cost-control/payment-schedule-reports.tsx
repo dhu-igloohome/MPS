@@ -6,6 +6,11 @@ import { PaymentScheduleMatrixTable } from "@/components/cost-control/payment-sc
 import { ccLabel, ccSelectSm } from "@/components/cost-control/cost-control-form-controls";
 import type { Language } from "@/lib/i18n";
 import {
+  exportPaymentScheduleSkuCsv,
+  exportPaymentScheduleSupplierCsv,
+  paymentScheduleMatrixExportable,
+} from "@/lib/payment-schedule-csv";
+import {
   buildPaymentScheduleMatrix,
   filterRowsForSupplierReport,
   formatForecastMonthLabel,
@@ -25,7 +30,9 @@ const COPY = {
     pageTitle: "Payment schedule reports",
     skuSection: "By SKU (payment due months)",
     skuHint:
-      "Each row is one Forecast cash-flow SKU line. Month columns span the earliest deposit due month through the latest balance due month in the dataset (empty months show $0.00). Amounts follow supplier Payment terms + Lead time.",
+      "Each row is one Forecast cash-flow SKU line. Month columns span the earliest deposit due month through the latest balance due month in the dataset (months with no payment are left blank). Amounts follow supplier Payment terms + Lead time.",
+    exportCsv: "Export CSV",
+    exportEmpty: "No rows to export",
     supplierSection: "By supplier + Forecast month",
     supplierHint:
       "Check one or more suppliers and pick a Forecast entry month. Each supplier block lists SKU lines, then a supplier subtotal; the last row is the grand total across all checked suppliers.",
@@ -52,7 +59,9 @@ const COPY = {
     pageTitle: "付款计划报表",
     skuSection: "按 SKU（应付月份）",
     skuHint:
-      "每行对应一条 Forecast 现金流 SKU。月份列为数据集中最早订金应付月至最晚尾款应付月（无款月份显示 $0.00）。金额按供应商 Payment terms + Lead time 计算。",
+      "每行对应一条 Forecast 现金流 SKU。月份列为数据集中最早订金应付月至最晚尾款应付月（无款月份留空）。金额按供应商 Payment terms + Lead time 计算。",
+    exportCsv: "导出 CSV",
+    exportEmpty: "没有可导出的行",
     supplierSection: "按供应商 + Forecast 录入月",
     supplierHint:
       "可勾选一家或多家供应商，并选择 Forecast 录入月。每个供应商下列出各 SKU，随后一行供应商小计；最后一行为已选供应商总合计。",
@@ -125,10 +134,33 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
     supplierSubtotal: t.supplierSubtotal,
   };
 
+  const csvLabels = {
+    ...tableLabels,
+    forecastMonthCol: t.forecastMonthCol,
+  };
+
+  const skuExportable = paymentScheduleMatrixExportable(skuMatrix);
+  const supplierExportable =
+    selectedSuppliers.length > 0 && paymentScheduleMatrixExportable(supplierMatrix);
+
+  const exportBtnClass =
+    "app-button-primary inline-flex shrink-0 items-center justify-center px-4 py-2.5 text-sm font-semibold shadow-md ring-1 ring-[var(--app-accent)]/25 transition hover:shadow-lg disabled:pointer-events-none disabled:opacity-45";
+
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-app-border/80 bg-app-surface/70 p-4 shadow-sm">
-        <h3 className="text-base font-semibold text-foreground">{t.skuSection}</h3>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <h3 className="text-base font-semibold text-foreground">{t.skuSection}</h3>
+          <button
+            type="button"
+            disabled={!skuExportable}
+            title={skuExportable ? t.exportCsv : t.exportEmpty}
+            onClick={() => exportPaymentScheduleSkuCsv(skuMatrix, language, csvLabels)}
+            className={exportBtnClass}
+          >
+            {t.exportCsv}
+          </button>
+        </div>
         <details className="mt-1 text-xs text-app-muted">
           <summary className="cursor-pointer select-none font-medium text-foreground/80">
             {language === "en" ? "Notes" : "说明"}
@@ -139,7 +171,26 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
       </section>
 
       <section className="rounded-2xl border border-app-border/80 bg-app-surface/70 p-4 shadow-sm">
-        <h3 className="text-base font-semibold text-foreground">{t.supplierSection}</h3>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <h3 className="text-base font-semibold text-foreground">{t.supplierSection}</h3>
+          <button
+            type="button"
+            disabled={!supplierExportable}
+            title={supplierExportable ? t.exportCsv : t.exportEmpty}
+            onClick={() =>
+              exportPaymentScheduleSupplierCsv(
+                supplierMatrix,
+                language,
+                csvLabels,
+                forecastMonthFilter,
+                supplierOrder,
+              )
+            }
+            className={exportBtnClass}
+          >
+            {t.exportCsv}
+          </button>
+        </div>
         <details className="mt-1 text-xs text-app-muted">
           <summary className="cursor-pointer select-none font-medium text-foreground/80">
             {language === "en" ? "Notes" : "说明"}

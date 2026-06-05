@@ -39,7 +39,7 @@ type Props = {
 };
 
 function cellAmount(amount: number): string {
-  if (amount === 0) return formatUsd(0, 2);
+  if (amount === 0) return "";
   return formatUsd(amount, 2);
 }
 
