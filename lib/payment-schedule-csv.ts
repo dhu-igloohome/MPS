@@ -144,10 +144,14 @@ export function exportPaymentScheduleSkuCsv(
   matrix: PaymentScheduleMatrix,
   language: Language,
   labels: PaymentScheduleCsvLabels,
+  forecastMonthFilter: string,
 ): void {
-  const lines = matrixToLines(matrix, language, labels, {});
+  const lines = matrixToLines(matrix, language, labels, {
+    showForecastMonth: forecastMonthFilter === "all",
+  });
   const stamp = new Date().toISOString().slice(0, 10);
-  downloadCsvLines(lines, `payment-schedule-by-sku-${stamp}.csv`);
+  const monthPart = forecastMonthFilter === "all" ? "all-months" : forecastMonthFilter;
+  downloadCsvLines(lines, `payment-schedule-by-sku-${monthPart}-${stamp}.csv`);
 }
 
 export function exportPaymentScheduleSupplierCsv(

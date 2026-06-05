@@ -12,6 +12,7 @@ import {
 } from "@/lib/payment-schedule-csv";
 import {
   buildPaymentScheduleMatrix,
+  filterRowsByForecastMonth,
   filterRowsForSupplierReport,
   formatForecastMonthLabel,
   uniqueForecastEntryMonths,
@@ -30,7 +31,7 @@ const COPY = {
     pageTitle: "Payment schedule reports",
     skuSection: "By SKU (payment due months)",
     skuHint:
-      "Each row is one Forecast cash-flow SKU line. Month columns span the earliest deposit due month through the latest balance due month in the dataset (months with no payment are left blank). Amounts follow supplier Payment terms + Lead time.",
+      "Each row is one Forecast cash-flow SKU line. Filter by Forecast entry month to narrow rows; month columns span the earliest deposit due month through the latest balance due month in the filtered set (months with no payment are left blank). Amounts follow supplier Payment terms + Lead time.",
     exportCsv: "Export CSV",
     exportEmpty: "No rows to export",
     supplierSection: "By supplier + Forecast month",
@@ -59,7 +60,7 @@ const COPY = {
     pageTitle: "付款计划报表",
     skuSection: "按 SKU（应付月份）",
     skuHint:
-      "每行对应一条 Forecast 现金流 SKU。月份列为数据集中最早订金应付月至最晚尾款应付月（无款月份留空）。金额按供应商 Payment terms + Lead time 计算。",
+      "每行对应一条 Forecast 现金流 SKU。可按 Forecast 录入月筛选；月份列为筛选结果中最早订金应付月至最晚尾款应付月（无款月份留空）。金额按供应商 Payment terms + Lead time 计算。",
     exportCsv: "导出 CSV",
     exportEmpty: "没有可导出的行",
     supplierSection: "按供应商 + Forecast 录入月",
@@ -89,19 +90,25 @@ const COPY = {
 export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
   const t = COPY[language];
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
-  const [forecastMonthFilter, setForecastMonthFilter] = useState("all");
+  const [skuForecastMonthFilter, setSkuForecastMonthFilter] = useState("all");
+  const [supplierForecastMonthFilter, setSupplierForecastMonthFilter] = useState("all");
 
   const supplierOptions = useMemo(() => uniqueSuppliersFromRows(rows), [rows]);
   const forecastMonthOptions = useMemo(() => uniqueForecastEntryMonths(rows), [rows]);
 
+  const skuScopedRows = useMemo(
+    () => filterRowsByForecastMonth(rows, skuForecastMonthFilter),
+    [rows, skuForecastMonthFilter],
+  );
+
   const skuMatrix = useMemo(
-    () => buildPaymentScheduleMatrix(rows, suppliers),
-    [rows, suppliers],
+    () => buildPaymentScheduleMatrix(skuScopedRows, suppliers),
+    [skuScopedRows, suppliers],
   );
 
   const supplierScopedRows = useMemo(
-    () => filterRowsForSupplierReport(rows, selectedSuppliers, forecastMonthFilter),
-    [rows, selectedSuppliers, forecastMonthFilter],
+    () => filterRowsForSupplierReport(rows, selectedSuppliers, supplierForecastMonthFilter),
+    [rows, selectedSuppliers, supplierForecastMonthFilter],
   );
 
   const supplierMatrix = useMemo(
@@ -149,17 +156,37 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-app-border/80 bg-app-surface/70 p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-          <h3 className="text-base font-semibold text-foreground">{t.skuSection}</h3>
-          <button
-            type="button"
-            disabled={!skuExportable}
-            title={skuExportable ? t.exportCsv : t.exportEmpty}
-            onClick={() => exportPaymentScheduleSkuCsv(skuMatrix, language, csvLabels)}
-            className={exportBtnClass}
-          >
-            {t.exportCsv}
-          </button>
+        <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+          <h3 className="min-w-0 text-base font-semibold text-foreground sm:pb-0.5">{t.skuSection}</h3>
+          <div className="flex shrink-0 flex-wrap items-end justify-end gap-x-3 gap-y-2">
+            <label className="shrink-0">
+              <span className={ccLabel}>{t.forecastMonth}</span>
+              <select
+                className={ccSelectSm}
+                value={skuForecastMonthFilter}
+                onChange={(e) => setSkuForecastMonthFilter(e.target.value)}
+                aria-label={t.forecastMonth}
+              >
+                <option value="all">{t.allMonths}</option>
+                {forecastMonthOptions.map((mk) => (
+                  <option key={mk} value={mk}>
+                    {formatForecastMonthLabel(mk, language)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              disabled={!skuExportable}
+              title={skuExportable ? t.exportCsv : t.exportEmpty}
+              onClick={() =>
+                exportPaymentScheduleSkuCsv(skuMatrix, language, csvLabels, skuForecastMonthFilter)
+              }
+              className={exportBtnClass}
+            >
+              {t.exportCsv}
+            </button>
+          </div>
         </div>
         <details className="mt-1 text-xs text-app-muted">
           <summary className="cursor-pointer select-none font-medium text-foreground/80">
@@ -167,7 +194,13 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
           </summary>
           <p className="mt-1 max-w-3xl leading-relaxed">{t.skuHint}</p>
         </details>
-        <PaymentScheduleMatrixTable matrix={skuMatrix} language={language} labels={tableLabels} />
+        <PaymentScheduleMatrixTable
+          matrix={skuMatrix}
+          language={language}
+          labels={tableLabels}
+          showForecastMonth={skuForecastMonthFilter === "all"}
+          forecastMonthLabel={t.forecastMonthCol}
+        />
       </section>
 
       <section className="rounded-2xl border border-app-border/80 bg-app-surface/70 p-4 shadow-sm">
@@ -182,7 +215,7 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
                 supplierMatrix,
                 language,
                 csvLabels,
-                forecastMonthFilter,
+                supplierForecastMonthFilter,
                 supplierOrder,
               )
             }
@@ -203,8 +236,8 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
             <span className={ccLabel}>{t.forecastMonth}</span>
             <select
               className={ccSelectSm}
-              value={forecastMonthFilter}
-              onChange={(e) => setForecastMonthFilter(e.target.value)}
+              value={supplierForecastMonthFilter}
+              onChange={(e) => setSupplierForecastMonthFilter(e.target.value)}
             >
               <option value="all">{t.allMonths}</option>
               {forecastMonthOptions.map((mk) => (
@@ -259,7 +292,7 @@ export function PaymentScheduleReports({ language, rows, suppliers }: Props) {
             matrix={supplierMatrix}
             language={language}
             labels={tableLabels}
-            showForecastMonth={forecastMonthFilter === "all"}
+            showForecastMonth={supplierForecastMonthFilter === "all"}
             forecastMonthLabel={t.forecastMonthCol}
             groupBySupplier
             supplierOrder={supplierOrder}

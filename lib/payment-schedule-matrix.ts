@@ -164,6 +164,14 @@ export function uniqueForecastEntryMonths(rows: ForecastCashFlowRow[]): string[]
   return [...set].sort((a, b) => b.localeCompare(a));
 }
 
+export function filterRowsByForecastMonth(
+  rows: ForecastCashFlowRow[],
+  forecastMonth: string,
+): ForecastCashFlowRow[] {
+  if (forecastMonth === "all") return rows;
+  return rows.filter((r) => r.month.trim().slice(0, 7) === forecastMonth);
+}
+
 export function filterRowsForSupplierReport(
   rows: ForecastCashFlowRow[],
   supplierNames: string[],
