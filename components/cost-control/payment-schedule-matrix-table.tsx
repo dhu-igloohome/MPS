@@ -124,7 +124,8 @@ export function PaymentScheduleMatrixTable({
   supplierOrder = [],
 }: Props) {
   const { monthKeys, rows, totals } = matrix;
-  const colSpan = 6 + (showForecastMonth ? 1 : 0);
+  /** Label spans Supplier → PO date only; Total amount (USD) is its own column. */
+  const colSpan = 5 + (showForecastMonth ? 1 : 0);
   const minWidth = Math.max(900, 520 + monthKeys.length * 88 * 2);
   const groups = groupBySupplier ? groupMatrixBySupplier(matrix, supplierOrder) : null;
   const subtotalLabel = (name: string) =>

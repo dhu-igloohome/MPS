@@ -80,7 +80,7 @@ function matrixToLines(
   if (rows.length === 0 || monthKeys.length === 0) return [];
 
   const showForecastMonth = options.showForecastMonth ?? false;
-  const identifierColCount = 6 + (showForecastMonth ? 1 : 0);
+  const identifierColCount = 5 + (showForecastMonth ? 1 : 0);
   const lines: string[] = [toCsvLine(buildHeader(monthKeys, language, labels, showForecastMonth))];
 
   const pushDataRow = (row: (typeof rows)[number]) => {
