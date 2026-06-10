@@ -492,6 +492,7 @@ export function ContractManagement({
               value={serialCode}
               onChange={(e) => setSerialCode(e.target.value)}
               autoComplete="off"
+              required
               className={ccInputSm}
             />
           </label>
@@ -501,6 +502,7 @@ export function ContractManagement({
               value={bluetoothId}
               onChange={(e) => setBluetoothId(e.target.value)}
               autoComplete="off"
+              required
               className={ccInputSm}
             />
           </label>
@@ -512,7 +514,9 @@ export function ContractManagement({
               !orderHint?.ready ||
               !batch.trim() ||
               !currency.trim() ||
-              !deliveryAddress.trim()
+              !deliveryAddress.trim() ||
+              !serialCode.trim() ||
+              !bluetoothId.trim()
             }
             className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
           >

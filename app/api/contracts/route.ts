@@ -24,8 +24,11 @@ export async function POST(request: Request) {
   const serialCode = String(body.serialCode || "").trim();
   const bluetoothId = String(body.bluetoothId || "").trim();
 
-  if (!orderProgressId || !batch || !currency || !deliveryAddress) {
-    return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+  if (!orderProgressId || !batch || !currency || !deliveryAddress || !serialCode || !bluetoothId) {
+    return NextResponse.json(
+      { message: "Missing required fields (batch, serial code, and Bluetooth ID are required)" },
+      { status: 400 },
+    );
   }
 
   try {

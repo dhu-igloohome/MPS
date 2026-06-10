@@ -365,11 +365,21 @@ export function CreateContractFromForecastModal({
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
               <span className={ccLabel}>{en ? "Serial code" : "序列号"}</span>
-              <input value={serialCode} onChange={(e) => setSerialCode(e.target.value)} className={ccInputSm} />
+              <input
+                value={serialCode}
+                onChange={(e) => setSerialCode(e.target.value)}
+                required
+                className={ccInputSm}
+              />
             </label>
             <label className="block">
               <span className={ccLabel}>Bluetooth ID</span>
-              <input value={bluetoothId} onChange={(e) => setBluetoothId(e.target.value)} className={ccInputSm} />
+              <input
+                value={bluetoothId}
+                onChange={(e) => setBluetoothId(e.target.value)}
+                required
+                className={ccInputSm}
+              />
             </label>
           </div>
 
@@ -378,7 +388,14 @@ export function CreateContractFromForecastModal({
           <div className="flex flex-wrap gap-2">
             <button
               type="submit"
-              disabled={loading || !batch.trim() || !deliveryAddress.trim() || totalAlloc <= 0}
+              disabled={
+                loading ||
+                !batch.trim() ||
+                !deliveryAddress.trim() ||
+                !serialCode.trim() ||
+                !bluetoothId.trim() ||
+                totalAlloc <= 0
+              }
               className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
             >
               {loading ? (en ? "Creating…" : "创建中…") : en ? "Create contract(s)" : "创建合同"}

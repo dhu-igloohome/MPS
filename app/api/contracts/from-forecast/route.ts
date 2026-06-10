@@ -26,8 +26,11 @@ export async function POST(request: Request) {
   const bluetoothId = String(body.bluetoothId || "").trim();
   const language = body.language === "zh" ? "zh" : "en";
 
-  if (!batch || !deliveryAddress) {
-    return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+  if (!batch || !deliveryAddress || !serialCode || !bluetoothId) {
+    return NextResponse.json(
+      { message: "Missing required fields (batch, serial code, and Bluetooth ID are required)" },
+      { status: 400 },
+    );
   }
 
   try {
