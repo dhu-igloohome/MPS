@@ -464,7 +464,7 @@ export type OrderProgressEntry = {
   poSerialCode?: string;
   poBluetoothId?: string;
 
-  /** Logistics — order fulfillments fields (editable on Logistics Progress → Order fulfillments). */
+  /** Logistics — legacy order fulfillments fields (module replaced; kept for DB compatibility). */
   fulfillmentTargetCompletion?: string;
   fulfillmentSalesOrderNumber?: string;
   fulfillmentShipFrom?: string;
@@ -475,6 +475,60 @@ export type OrderProgressEntry = {
   fulfillmentDeliveryStatus?: string;
   fulfillmentMpBatch?: string;
   fulfillmentBalanceQty?: number;
+};
+
+export type FulfillmentFreightMode = "" | "sea" | "air" | "rail" | "road";
+
+export type FulfillmentDeliveryStatus =
+  | ""
+  | "Delivered"
+  | "In transit"
+  | "Pending trigger SO"
+  | "In preparation";
+
+/** Logistics → Order fulfillments: one shipment of a Forecast # + SKU group. */
+export type FulfillmentShipmentEntry = {
+  id: string;
+  /** Forecast # (forecast PO number, e.g. DBX1). */
+  forecastPoNumber: string;
+  sku: string;
+  /** YYYY-MM month key of the forecast group. */
+  forecastMonth: string;
+  estimatedReadyDate: string | null;
+  soNumber: string;
+  soUrl: string;
+  soQuantity: number;
+  freightMode: FulfillmentFreightMode;
+  shipTo: string;
+  etd: string | null;
+  eta: string | null;
+  trackingLink: string;
+  deliveryStatus: FulfillmentDeliveryStatus;
+  attachment: { id: string; fileName: string; fileSize: number } | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Logistics → Order fulfillments: derived (read-only) group built from
+ * Forecast cash flow lines that already have created contracts (approved/sent).
+ */
+export type FulfillmentGroup = {
+  /** Forecast # (forecast PO number, e.g. DBX1). */
+  forecastPoNumber: string;
+  sku: string;
+  /** YYYY-MM month key. */
+  forecastMonth: string;
+  productName: string;
+  /** Full forecast quantity (BTO + BTS) summed over the group's forecast lines. */
+  forecastQty: number;
+  /** Quantity already covered by approved/sent contracts. */
+  contractedQty: number;
+  /** Distinct MP batches from the group's contracts. */
+  mpBatches: string[];
+  /** Distinct CM (supplier) names from the group's contracts. */
+  shipFroms: string[];
 };
 
 /**

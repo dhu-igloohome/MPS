@@ -20,6 +20,9 @@ import {
   ForecastCashFlowShippingMode,
   ForecastEntry,
   ForecastIncoterm,
+  FulfillmentDeliveryStatus,
+  FulfillmentFreightMode,
+  FulfillmentShipmentEntry,
   LogisticsLocation,
   LogisticsMovementType,
   LogisticsShipmentEntry,
@@ -7068,4 +7071,294 @@ export async function listLogisticsLandedCostConsolidateSnapshots(
     limit ${lim}
   `;
   return rows.map(mapLogisticsLccRow);
+}
+
+/* ------------------------------------------------------------------ */
+/* Logistics → Order fulfillments (shipments per Forecast # + SKU)     */
+/* ------------------------------------------------------------------ */
+
+type FulfillmentShipmentRow = {
+  id: number;
+  forecast_po_number: string;
+  sku: string;
+  forecast_month: string;
+  estimated_ready_date: string | null;
+  so_number: string;
+  so_url: string;
+  so_quantity: number;
+  freight_mode: string;
+  ship_to: string;
+  etd: string | null;
+  eta: string | null;
+  tracking_link: string;
+  delivery_status: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  attachment_id: number | null;
+  attachment_file_name: string | null;
+  attachment_file_size: number | null;
+};
+
+const FULFILLMENT_SHIPMENT_COLUMNS = `
+  s.id,
+  s.forecast_po_number,
+  s.sku,
+  s.forecast_month,
+  s.estimated_ready_date::text,
+  s.so_number,
+  s.so_url,
+  s.so_quantity,
+  s.freight_mode,
+  s.ship_to,
+  s.etd::text,
+  s.eta::text,
+  s.tracking_link,
+  s.delivery_status,
+  s.created_by,
+  s.created_at::text,
+  s.updated_at::text,
+  f.id as attachment_id,
+  f.file_name as attachment_file_name,
+  f.file_size as attachment_file_size
+`;
+
+function mapFulfillmentShipmentRow(row: FulfillmentShipmentRow): FulfillmentShipmentEntry {
+  return {
+    id: String(row.id),
+    forecastPoNumber: row.forecast_po_number,
+    sku: row.sku,
+    forecastMonth: row.forecast_month,
+    estimatedReadyDate: row.estimated_ready_date
+      ? formatPgDateOnly(row.estimated_ready_date)
+      : null,
+    soNumber: row.so_number ?? "",
+    soUrl: row.so_url ?? "",
+    soQuantity: Number(row.so_quantity ?? 0),
+    freightMode: (row.freight_mode ?? "") as FulfillmentFreightMode,
+    shipTo: row.ship_to ?? "",
+    etd: row.etd ? formatPgDateOnly(row.etd) : null,
+    eta: row.eta ? formatPgDateOnly(row.eta) : null,
+    trackingLink: row.tracking_link ?? "",
+    deliveryStatus: (row.delivery_status ?? "") as FulfillmentDeliveryStatus,
+    attachment:
+      row.attachment_id != null
+        ? {
+            id: String(row.attachment_id),
+            fileName: row.attachment_file_name ?? "",
+            fileSize: Number(row.attachment_file_size ?? 0),
+          }
+        : null,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listFulfillmentShipments(): Promise<FulfillmentShipmentEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<FulfillmentShipmentRow[]>`
+    select ${db.unsafe(FULFILLMENT_SHIPMENT_COLUMNS)}
+    from fulfillment_shipments s
+    left join lateral (
+      select id, file_name, file_size
+      from fulfillment_shipment_files
+      where shipment_id = s.id
+      order by created_at desc, id desc
+      limit 1
+    ) f on true
+    order by s.forecast_month, s.forecast_po_number, s.sku, s.id
+  `;
+  return rows.map(mapFulfillmentShipmentRow);
+}
+
+export async function getFulfillmentShipmentById(
+  id: string,
+): Promise<FulfillmentShipmentEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<FulfillmentShipmentRow[]>`
+    select ${db.unsafe(FULFILLMENT_SHIPMENT_COLUMNS)}
+    from fulfillment_shipments s
+    left join lateral (
+      select id, file_name, file_size
+      from fulfillment_shipment_files
+      where shipment_id = s.id
+      order by created_at desc, id desc
+      limit 1
+    ) f on true
+    where s.id = ${Number(id)}
+  `;
+  return rows.length > 0 ? mapFulfillmentShipmentRow(rows[0]) : null;
+}
+
+export type FulfillmentShipmentFieldsInput = {
+  estimatedReadyDate: string | null;
+  soNumber: string;
+  soUrl: string;
+  soQuantity: number;
+  freightMode: FulfillmentFreightMode;
+  shipTo: string;
+  etd: string | null;
+  eta: string | null;
+  trackingLink: string;
+  deliveryStatus: FulfillmentDeliveryStatus;
+};
+
+export async function createFulfillmentShipment(
+  input: FulfillmentShipmentFieldsInput & {
+    forecastPoNumber: string;
+    sku: string;
+    forecastMonth: string;
+    createdBy: string;
+  },
+): Promise<FulfillmentShipmentEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ id: number }[]>`
+    insert into fulfillment_shipments (
+      forecast_po_number,
+      sku,
+      forecast_month,
+      estimated_ready_date,
+      so_number,
+      so_url,
+      so_quantity,
+      freight_mode,
+      ship_to,
+      etd,
+      eta,
+      tracking_link,
+      delivery_status,
+      created_by
+    )
+    values (
+      ${input.forecastPoNumber.trim()},
+      ${input.sku.trim()},
+      ${input.forecastMonth.trim().slice(0, 7)},
+      ${input.estimatedReadyDate},
+      ${input.soNumber.trim().slice(0, 160)},
+      ${input.soUrl.trim().slice(0, 600)},
+      ${Math.max(0, Math.trunc(input.soQuantity))},
+      ${input.freightMode},
+      ${input.shipTo.trim().slice(0, 160)},
+      ${input.etd},
+      ${input.eta},
+      ${input.trackingLink.trim().slice(0, 600)},
+      ${input.deliveryStatus},
+      ${input.createdBy}
+    )
+    returning id
+  `;
+  const entry = await getFulfillmentShipmentById(String(rows[0].id));
+  if (!entry) throw new Error("Create shipment failed");
+  return entry;
+}
+
+export async function updateFulfillmentShipment(
+  id: string,
+  input: FulfillmentShipmentFieldsInput,
+): Promise<FulfillmentShipmentEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ id: number }[]>`
+    update fulfillment_shipments set
+      estimated_ready_date = ${input.estimatedReadyDate},
+      so_number = ${input.soNumber.trim().slice(0, 160)},
+      so_url = ${input.soUrl.trim().slice(0, 600)},
+      so_quantity = ${Math.max(0, Math.trunc(input.soQuantity))},
+      freight_mode = ${input.freightMode},
+      ship_to = ${input.shipTo.trim().slice(0, 160)},
+      etd = ${input.etd},
+      eta = ${input.eta},
+      tracking_link = ${input.trackingLink.trim().slice(0, 600)},
+      delivery_status = ${input.deliveryStatus},
+      updated_at = now()
+    where id = ${Number(id)}
+    returning id
+  `;
+  if (rows.length === 0) return null;
+  return getFulfillmentShipmentById(id);
+}
+
+export async function deleteFulfillmentShipment(id: string): Promise<boolean> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ id: number }[]>`
+    delete from fulfillment_shipments where id = ${Number(id)} returning id
+  `;
+  return rows.length > 0;
+}
+
+/** Distinct previously-saved Ship to values (memory dropdown). */
+export async function listFulfillmentShipToOptions(): Promise<string[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ ship_to: string }[]>`
+    select distinct ship_to
+    from fulfillment_shipments
+    where ship_to <> ''
+    order by ship_to
+    limit 200
+  `;
+  return rows.map((r) => r.ship_to);
+}
+
+/** Replaces the shipment's SO attachment (single-file model: latest wins). */
+export async function setFulfillmentShipmentFile(input: {
+  shipmentId: string;
+  fileName: string;
+  mimeType: string;
+  fileData: Buffer;
+  uploadedBy: string;
+}): Promise<FulfillmentShipmentEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const exists = await db<{ id: number }[]>`
+    select id from fulfillment_shipments where id = ${Number(input.shipmentId)}
+  `;
+  if (exists.length === 0) return null;
+  await db`delete from fulfillment_shipment_files where shipment_id = ${Number(input.shipmentId)}`;
+  await db`
+    insert into fulfillment_shipment_files (shipment_id, file_name, mime_type, file_size, file_data, uploaded_by)
+    values (
+      ${Number(input.shipmentId)},
+      ${input.fileName},
+      ${input.mimeType},
+      ${input.fileData.length},
+      ${input.fileData},
+      ${input.uploadedBy}
+    )
+  `;
+  return getFulfillmentShipmentById(input.shipmentId);
+}
+
+export async function deleteFulfillmentShipmentFile(shipmentId: string): Promise<boolean> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ id: number }[]>`
+    delete from fulfillment_shipment_files where shipment_id = ${Number(shipmentId)} returning id
+  `;
+  return rows.length > 0;
+}
+
+export async function getFulfillmentShipmentFileDownload(
+  shipmentId: string,
+): Promise<{ fileName: string; mimeType: string; fileData: Buffer } | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ file_name: string; mime_type: string; file_data: Buffer }[]>`
+    select file_name, mime_type, file_data
+    from fulfillment_shipment_files
+    where shipment_id = ${Number(shipmentId)}
+    order by created_at desc, id desc
+    limit 1
+  `;
+  if (rows.length === 0) return null;
+  return {
+    fileName: rows[0].file_name,
+    mimeType: rows[0].mime_type,
+    fileData: Buffer.from(rows[0].file_data),
+  };
 }

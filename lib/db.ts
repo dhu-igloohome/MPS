@@ -20,7 +20,7 @@ const sql = connectionString
   : null;
 
 /** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
-const CURRENT_SCHEMA_VERSION = 6;
+const CURRENT_SCHEMA_VERSION = 7;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -361,6 +361,8 @@ async function setupSchema() {
     create index if not exists idx_contract_file_uploads_created
     on contract_file_uploads (created_at desc);
   `;
+
+  await createFulfillmentShipmentTables();
 
   await db`
     create table if not exists order_progress_delivery_plans (
@@ -1274,6 +1276,54 @@ async function applyIncrementalMigrations() {
   const db = getSql();
   await db`alter table unit_cost_quotes add column if not exists quote_currency text not null default 'USD';`;
   await db`alter table unit_cost_quotes add column if not exists unit_price_cny numeric(14, 4);`;
+  await createFulfillmentShipmentTables();
+}
+
+/** Order fulfillments (logistics): one row per shipment of a Forecast # + SKU group. */
+async function createFulfillmentShipmentTables() {
+  const db = getSql();
+  await db`
+    create table if not exists fulfillment_shipments (
+      id bigserial primary key,
+      forecast_po_number text not null,
+      sku text not null,
+      forecast_month text not null,
+      estimated_ready_date date,
+      so_number text not null default '',
+      so_url text not null default '',
+      so_quantity integer not null default 0 check (so_quantity >= 0),
+      freight_mode text not null default '' check (freight_mode in ('', 'sea', 'air', 'rail', 'road')),
+      ship_to text not null default '',
+      etd date,
+      eta date,
+      tracking_link text not null default '',
+      delivery_status text not null default ''
+        check (delivery_status in ('', 'Delivered', 'In transit', 'Pending trigger SO', 'In preparation')),
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_fulfillment_shipments_group
+    on fulfillment_shipments (forecast_po_number, sku);
+  `;
+  await db`
+    create table if not exists fulfillment_shipment_files (
+      id bigserial primary key,
+      shipment_id bigint not null references fulfillment_shipments(id) on delete cascade,
+      file_name text not null,
+      mime_type text not null,
+      file_size integer not null check (file_size > 0 and file_size <= 5242880),
+      file_data bytea not null,
+      uploaded_by text not null references users(username),
+      created_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_fulfillment_shipment_files_shipment
+    on fulfillment_shipment_files (shipment_id);
+  `;
 }
 
 export async function ensureDatabase() {
