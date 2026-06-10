@@ -60,6 +60,20 @@ function groupKeyOf(g: { forecastMonth: string; forecastPoNumber: string; sku: s
   return `${g.forecastMonth}|${g.forecastPoNumber}|${g.sku}`;
 }
 
+/** Forecast PO prefix encodes the market: POA → APAC, POE → EU, POU → US. */
+const REGION_PO_PREFIXES = [
+  { value: "APAC", prefix: "POA" },
+  { value: "EU", prefix: "POE" },
+  { value: "US", prefix: "POU" },
+] as const;
+
+function matchesRegionFilter(forecastPoNumber: string, regionFilter: string): boolean {
+  if (regionFilter === "all") return true;
+  const entry = REGION_PO_PREFIXES.find((r) => r.value === regionFilter);
+  if (!entry) return true;
+  return forecastPoNumber.toUpperCase().startsWith(entry.prefix);
+}
+
 function labels(language: Language) {
   const en = language === "en";
   return {
@@ -68,8 +82,10 @@ function labels(language: Language) {
       ? "Rows come from Forecast cash flow lines with created contracts (approved/sent). Auto fields stay in sync with Cash flow analysis; fill shipping fields per shipment."
       : "数据来自 Cash flow analysis 中已创建合同（已批准/已发送）的 forecast 行。自动字段与现金流分析保持同步，每次发货补充发运字段。",
     filterMonth: en ? "Forecast month" : "Forecast 月份",
+    filterRegion: en ? "Region" : "区域",
     filterSku: "SKU",
     allMonths: en ? "All months" : "全部月份",
+    allRegions: en ? "All regions" : "全部区域",
     allSkus: en ? "All SKUs" : "全部 SKU",
     forecastPo: en ? "Forecast PO number" : "Forecast PO 号",
     forecastMonth: en ? "Forecast month" : "Forecast 月份",
@@ -135,6 +151,7 @@ export function OrderFulfillmentsPanel({
   const [rowFields, setRowFields] = useState<Record<string, RowFields>>({});
   const [busyRowId, setBusyRowId] = useState<string | null>(null);
   const [monthFilter, setMonthFilter] = useState("all");
+  const [regionFilter, setRegionFilter] = useState("all");
   const [skuFilter, setSkuFilter] = useState("all");
 
   const monthOptions = useMemo(
@@ -166,9 +183,10 @@ export function OrderFulfillmentsPanel({
       groups.filter(
         (g) =>
           (monthFilter === "all" || g.forecastMonth === monthFilter) &&
+          matchesRegionFilter(g.forecastPoNumber, regionFilter) &&
           (skuFilter === "all" || g.sku === skuFilter),
       ),
-    [groups, monthFilter, skuFilter],
+    [groups, monthFilter, regionFilter, skuFilter],
   );
 
   const rows = useMemo<DisplayRow[]>(() => {
@@ -418,6 +436,21 @@ export function OrderFulfillmentsPanel({
                 {monthOptions.map((m) => (
                   <option key={m} value={m}>
                     {formatForecastMonthLabel(m, language)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="shrink-0">
+              <span className="block text-xs font-medium text-foreground/70">{t.filterRegion}</span>
+              <select
+                value={regionFilter}
+                onChange={(e) => setRegionFilter(e.target.value)}
+                className="app-control-sm mt-1 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent focus:ring-2"
+              >
+                <option value="all">{t.allRegions}</option>
+                {REGION_PO_PREFIXES.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.value}
                   </option>
                 ))}
               </select>
