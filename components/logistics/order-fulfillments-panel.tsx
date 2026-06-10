@@ -74,6 +74,32 @@ function matchesRegionFilter(forecastPoNumber: string, regionFilter: string): bo
   return forecastPoNumber.toUpperCase().startsWith(entry.prefix);
 }
 
+function regionOfPo(forecastPoNumber: string): "APAC" | "EU" | "US" | null {
+  const po = forecastPoNumber.toUpperCase();
+  for (const r of REGION_PO_PREFIXES) {
+    if (po.startsWith(r.prefix)) return r.value;
+  }
+  return null;
+}
+
+/** Region-tinted chip for the Forecast PO number (POA/POE/POU). */
+const PO_BADGE_BY_REGION: Record<string, string> = {
+  APAC: "bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/30",
+  EU: "bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/30",
+  US: "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30",
+};
+
+const PO_BADGE_DEFAULT =
+  "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:ring-slate-500/30";
+
+/** Status dot color next to the Delivery status select. */
+const STATUS_DOT: Record<string, string> = {
+  Delivered: "bg-emerald-500",
+  "In transit": "bg-sky-500",
+  "Pending trigger SO": "bg-amber-400",
+  "In preparation": "bg-slate-400",
+};
+
 function labels(language: Language) {
   const en = language === "en";
   return {
@@ -130,12 +156,19 @@ function labels(language: Language) {
 }
 
 const inputCls =
-  "w-full min-w-0 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent focus:ring-2";
+  "w-full min-w-0 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent transition duration-150 focus:ring-2";
 
-const autoCellCls = "px-3 py-2 align-top text-sm text-foreground/90";
+const autoCellCls =
+  "bg-slate-50/70 px-3 py-2.5 align-top text-sm text-foreground/90 dark:bg-transparent";
 
 const thCls =
-  "sticky top-0 z-10 border-b border-app-border bg-slate-50 px-3 py-2.5 text-left text-xs font-semibold text-foreground dark:bg-app-surface";
+  "sticky top-0 z-10 border-b border-app-border bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-foreground/65 dark:bg-app-surface";
+
+const chipCls =
+  "inline-flex max-w-full items-center truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:ring-slate-500/30";
+
+const filterSelectCls =
+  "app-control-sm mt-1 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent transition duration-150 focus:ring-2";
 
 export function OrderFulfillmentsPanel({
   language,
@@ -419,18 +452,19 @@ export function OrderFulfillmentsPanel({
       <div className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
+            <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight text-foreground sm:text-lg">
+              <span aria-hidden className="h-4 w-1 shrink-0 rounded-full bg-app-accent" />
               {t.title}
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-foreground/70">{t.intro}</p>
           </div>
-          <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2 rounded-xl border border-app-border/70 bg-slate-50 px-3 py-2.5 dark:bg-transparent">
             <label className="shrink-0">
               <span className="block text-xs font-medium text-foreground/70">{t.filterMonth}</span>
               <select
                 value={monthFilter}
                 onChange={(e) => setMonthFilter(e.target.value)}
-                className="app-control-sm mt-1 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent focus:ring-2"
+                className={filterSelectCls}
               >
                 <option value="all">{t.allMonths}</option>
                 {monthOptions.map((m) => (
@@ -445,7 +479,7 @@ export function OrderFulfillmentsPanel({
               <select
                 value={regionFilter}
                 onChange={(e) => setRegionFilter(e.target.value)}
-                className="app-control-sm mt-1 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent focus:ring-2"
+                className={filterSelectCls}
               >
                 <option value="all">{t.allRegions}</option>
                 {REGION_PO_PREFIXES.map((r) => (
@@ -460,7 +494,7 @@ export function OrderFulfillmentsPanel({
               <select
                 value={skuFilter}
                 onChange={(e) => setSkuFilter(e.target.value)}
-                className="app-control-sm mt-1 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent focus:ring-2"
+                className={filterSelectCls}
               >
                 <option value="all">{t.allSkus}</option>
                 {skuOptions.map((s) => (
@@ -507,20 +541,54 @@ export function OrderFulfillmentsPanel({
                   const busy = busyRowId === row.rowId;
                   const balance =
                     balanceByMonthSku.get(`${row.group.forecastMonth}|${row.group.sku}`) ?? 0;
+                  const region = regionOfPo(row.group.forecastPoNumber);
+                  const poBadge = region ? PO_BADGE_BY_REGION[region] : PO_BADGE_DEFAULT;
                   return (
                     <tr
                       key={row.rowId}
-                      className={`border-b border-app-border/60 align-top ${
-                        row.isFirstOfGroup ? "" : "bg-slate-50/50 dark:bg-transparent"
-                      } hover:bg-app-accent-soft/20`}
+                      className="group border-b border-app-border/60 align-top transition-colors duration-150 hover:bg-app-accent-soft/20"
                     >
-                      <td className={`${autoCellCls} font-medium`}>{row.group.forecastPoNumber}</td>
                       <td className={`${autoCellCls} whitespace-nowrap`}>
+                        {row.isFirstOfGroup ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span
+                              className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${poBadge}`}
+                            >
+                              {row.group.forecastPoNumber}
+                            </span>
+                            {region ? (
+                              <span className="text-[10px] font-medium uppercase tracking-wide text-foreground/45">
+                                {region}
+                              </span>
+                            ) : null}
+                          </span>
+                        ) : (
+                          <span
+                            className="pl-1 text-xs text-foreground/40"
+                            title={row.group.forecastPoNumber}
+                          >
+                            ↳ {row.group.forecastPoNumber}
+                          </span>
+                        )}
+                      </td>
+                      <td className={`${autoCellCls} whitespace-nowrap text-foreground/70`}>
                         {formatForecastMonthLabel(row.group.forecastMonth, language)}
                       </td>
-                      <td className={`${autoCellCls} whitespace-nowrap`}>{row.group.sku}</td>
+                      <td className={`${autoCellCls} whitespace-nowrap font-medium`}>
+                        {row.group.sku}
+                      </td>
                       <td className={autoCellCls}>
-                        {row.group.mpBatches.length > 0 ? row.group.mpBatches.join(" / ") : "—"}
+                        {row.group.mpBatches.length > 0 ? (
+                          <span className="flex flex-wrap gap-1">
+                            {row.group.mpBatches.map((b) => (
+                              <span key={b} className={chipCls} title={b}>
+                                {b}
+                              </span>
+                            ))}
+                          </span>
+                        ) : (
+                          <span className="text-foreground/40">—</span>
+                        )}
                       </td>
                       <td className="px-2 py-2">
                         <input
@@ -531,7 +599,7 @@ export function OrderFulfillmentsPanel({
                           className={`${inputCls} min-w-[9.5rem]`}
                         />
                       </td>
-                      <td className={`${autoCellCls} text-right tabular-nums`}>
+                      <td className={`${autoCellCls} text-right font-medium tabular-nums`}>
                         {row.group.forecastQty.toLocaleString()}
                       </td>
                       <td className="px-2 py-2">
@@ -640,7 +708,17 @@ export function OrderFulfillmentsPanel({
                         </select>
                       </td>
                       <td className={autoCellCls}>
-                        {row.group.shipFroms.length > 0 ? row.group.shipFroms.join(" / ") : "—"}
+                        {row.group.shipFroms.length > 0 ? (
+                          <span className="flex flex-wrap gap-1">
+                            {row.group.shipFroms.map((s) => (
+                              <span key={s} className={`${chipCls} max-w-[12rem]`} title={s}>
+                                {s}
+                              </span>
+                            ))}
+                          </span>
+                        ) : (
+                          <span className="text-foreground/40">—</span>
+                        )}
                       </td>
                       <td className="px-2 py-2">
                         <input
@@ -682,25 +760,39 @@ export function OrderFulfillmentsPanel({
                         />
                       </td>
                       <td className="px-2 py-2">
-                        <select
-                          value={f.deliveryStatus}
-                          onChange={(e) => setField(row, { deliveryStatus: e.target.value })}
-                          aria-label={t.deliveryStatus}
-                          className={`${inputCls} min-w-[11rem]`}
-                        >
-                          <option value="">{t.selectStatus}</option>
-                          <option value="In preparation">In preparation</option>
-                          <option value="Pending trigger SO">Pending trigger SO</option>
-                          <option value="In transit">In transit</option>
-                          <option value="Delivered">Delivered</option>
-                        </select>
+                        <div className="flex min-w-[11.5rem] items-center gap-2">
+                          <span
+                            aria-hidden
+                            className={`h-2 w-2 shrink-0 rounded-full transition-colors duration-150 ${
+                              STATUS_DOT[f.deliveryStatus] ?? "bg-slate-200 dark:bg-slate-600"
+                            }`}
+                          />
+                          <select
+                            value={f.deliveryStatus}
+                            onChange={(e) => setField(row, { deliveryStatus: e.target.value })}
+                            aria-label={t.deliveryStatus}
+                            className={inputCls}
+                          >
+                            <option value="">{t.selectStatus}</option>
+                            <option value="In preparation">In preparation</option>
+                            <option value="Pending trigger SO">Pending trigger SO</option>
+                            <option value="In transit">In transit</option>
+                            <option value="Delivered">Delivered</option>
+                          </select>
+                        </div>
                       </td>
-                      <td
-                        className={`${autoCellCls} text-right tabular-nums ${
-                          balance < 0 ? "font-semibold text-red-600" : ""
-                        }`}
-                      >
-                        {balance.toLocaleString()}
+                      <td className={`${autoCellCls} text-right`}>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset ${
+                            balance < 0
+                              ? "bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30"
+                              : balance === 0
+                                ? "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30"
+                                : "bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30"
+                          }`}
+                        >
+                          {balance.toLocaleString()}
+                        </span>
                       </td>
                       <td className="px-2 py-2">
                         <div className="flex min-w-[15rem] flex-wrap items-center gap-1.5">
