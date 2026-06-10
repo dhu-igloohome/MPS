@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import {
   ccDate,
@@ -149,7 +150,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [remoteDuplicateSku, setRemoteDuplicateSku] = useState<boolean | null>(null);
   const [checkingDuplicateSku, setCheckingDuplicateSku] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [historyFilterDim, setHistoryFilterDim] = useState<HistoryFilterDimension>("");
   const [historyFilterValue, setHistoryFilterValue] = useState("");
 
@@ -161,12 +161,10 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const [eQuoteDate, setEQuoteDate] = useState("");
   const [eManufacturerCountry, setEManufacturerCountry] = useState("");
   const [editLoading, setEditLoading] = useState(false);
-  const [editMessage, setEditMessage] = useState("");
 
   const [deleteRow, setDeleteRow] = useState<UnitCostQuoteEntry | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteMessage, setDeleteMessage] = useState("");
 
   const supplierOptionsForEdit = useMemo(() => {
     const set = new Set(activeSupplierNames);
@@ -202,25 +200,21 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     setESupplierName(row.supplierName);
     setEQuoteDate(row.quoteDate);
     setEManufacturerCountry(row.manufacturerCountry);
-    setEditMessage("");
   }
 
   function closeEdit() {
     setEditRow(null);
-    setEditMessage("");
   }
 
   function openDelete(row: UnitCostQuoteEntry) {
     closeEdit();
     setDeleteRow(row);
     setDeleteReason("");
-    setDeleteMessage("");
   }
 
   function closeDelete() {
     setDeleteRow(null);
     setDeleteReason("");
-    setDeleteMessage("");
   }
 
   async function onConfirmDelete(e: React.FormEvent) {
@@ -228,11 +222,10 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     if (!deleteRow) return;
     const reason = deleteReason.trim();
     if (!reason) {
-      setDeleteMessage(t.deleteReasonRequired);
+      toast.error(t.deleteReasonRequired);
       return;
     }
     setDeleteLoading(true);
-    setDeleteMessage("");
     const res = await fetch(`/api/cost-control/unit-cost/${deleteRow.id}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -241,9 +234,14 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     setDeleteLoading(false);
     if (!res.ok) {
-      setDeleteMessage(data.message || (en ? "Delete failed." : "删除失败。"));
+      toast.error(data.message || (en ? "Delete failed." : "删除失败。"));
       return;
     }
+    toast.success(
+      en
+        ? `Quotation deleted: ${deleteRow.sku} · ${deleteRow.supplierName}`
+        : `已删除报价：${deleteRow.sku} · ${deleteRow.supplierName}`,
+    );
     closeDelete();
     router.refresh();
   }
@@ -252,20 +250,19 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     e.preventDefault();
     if (!editRow) return;
     setEditLoading(true);
-    setEditMessage("");
     const up = Number(eUnitPrice);
     if (!eSku.trim()) {
-      setEditMessage(en ? "SKU is required." : "请填写 SKU。");
+      toast.error(en ? "SKU is required." : "请填写 SKU。");
       setEditLoading(false);
       return;
     }
     if (!Number.isFinite(up) || up < 0) {
-      setEditMessage(en ? "Invalid unit price." : "单价无效。");
+      toast.error(en ? "Invalid unit price." : "单价无效。");
       setEditLoading(false);
       return;
     }
     if (!eSupplierName.trim()) {
-      setEditMessage(en ? "Supplier is required." : "请选择供应商。");
+      toast.error(en ? "Supplier is required." : "请选择供应商。");
       setEditLoading(false);
       return;
     }
@@ -291,9 +288,15 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     setEditLoading(false);
     if (!res.ok) {
-      setEditMessage(data.message || (en ? "Save failed." : "保存失败。"));
+      toast.error(data.message || (en ? "Save failed." : "保存失败。"));
       return;
     }
+    const editPriceText = isDomesticSupplier(eSupplierName) ? `¥${up}` : `$${up}`;
+    toast.success(
+      en
+        ? `Changes saved: ${eSku.trim()} ${editPriceText} · ${eSupplierName.trim()}`
+        : `修改已保存：${eSku.trim()} ${editPriceText} · ${eSupplierName.trim()}`,
+    );
     closeEdit();
     router.refresh();
   }
@@ -341,26 +344,25 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
     const up = Number(unitPrice);
     if (!sku.trim()) {
-      setMessage(en ? "SKU is required." : "请填写 SKU。");
+      toast.error(en ? "SKU is required." : "请填写 SKU。");
       setLoading(false);
       return;
     }
     if (!Number.isFinite(up) || up < 0) {
-      setMessage(en ? "Invalid unit price." : "单价无效。");
+      toast.error(en ? "Invalid unit price." : "单价无效。");
       setLoading(false);
       return;
     }
     if (!supplierName.trim()) {
-      setMessage(en ? "Supplier is required." : "请选择供应商。");
+      toast.error(en ? "Supplier is required." : "请选择供应商。");
       setLoading(false);
       return;
     }
     const skuExists = duplicateSku || (await checkSkuDuplicate(sku.trim()));
     if (skuExists && !creationReason.trim()) {
-      setMessage(en ? "Reason is required for duplicate SKU." : "SKU 已存在，请填写创建单价的理由。");
+      toast.error(en ? "Reason is required for duplicate SKU." : "SKU 已存在，请填写创建单价的理由。");
       setLoading(false);
       return;
     }
@@ -387,10 +389,15 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     setLoading(false);
     if (!res.ok) {
-      setMessage(data.message || (en ? "Save failed." : "保存失败。"));
+      toast.error(data.message || (en ? "Save failed." : "保存失败。"));
       return;
     }
-    setMessage(en ? "Saved." : "已保存。");
+    const savedPriceText = isDomesticSupplier(supplierName) ? `¥${up}` : `$${up}`;
+    toast.success(
+      en
+        ? `Quotation saved: ${sku.trim()} ${savedPriceText} · ${supplierName.trim()}`
+        : `报价已保存：${sku.trim()} ${savedPriceText} · ${supplierName.trim()}`,
+    );
     setUnitPrice("");
     setManufacturerCountry("");
     setCreationReason("");
@@ -538,7 +545,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
             {loading ? t.saving : t.save}
           </button>
         </form>
-        {message ? <p className="mt-2 text-sm text-app-muted">{message}</p> : null}
       </section>
 
       {editRow ? (
@@ -649,7 +655,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   ))}
                 </select>
               </label>
-              {editMessage ? <p className="w-full shrink-0 basis-full text-sm text-red-600">{editMessage}</p> : null}
               <div className="flex w-full shrink-0 basis-full flex-wrap gap-2">
                 <button
                   type="submit"
@@ -711,7 +716,6 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   autoFocus
                 />
               </label>
-              {deleteMessage ? <p className="text-sm text-red-600">{deleteMessage}</p> : null}
               <div className="flex flex-wrap gap-2 pt-1">
                 <button
                   type="submit"
