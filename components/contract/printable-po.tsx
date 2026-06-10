@@ -160,9 +160,8 @@ export function PrintablePO({ poData }: PrintablePOProps) {
         <p className="mb-1 text-xs font-semibold">Terms & Remarks</p>
         <p>付款方式 Payment Terms: {poData.terms.paymentTerms || "-"}</p>
         <p className="break-words">收货地址 Delivery Address: {poData.terms.deliveryAddress || "-"}</p>
-        <p className="break-words">
-          备注 Remark: {poData.terms.remark || "-"}
-        </p>
+        <p className="mb-0.5">备注 Remark:</p>
+        <p className="whitespace-pre-line break-words">{poData.terms.remark || "-"}</p>
       </section>
 
       <section className="mt-12 grid grid-cols-2 gap-12">
