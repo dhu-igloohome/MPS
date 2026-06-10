@@ -20,7 +20,7 @@ const sql = connectionString
   : null;
 
 /** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
-const CURRENT_SCHEMA_VERSION = 5;
+const CURRENT_SCHEMA_VERSION = 6;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -1265,6 +1265,17 @@ async function coreSchemaAlreadyPresent(): Promise<boolean> {
   }
 }
 
+/**
+ * Fast, idempotent ALTERs applied even when the full bootstrap is skipped (existing DB).
+ * Add statements here whenever `setupSchema` gains a column/table that existing
+ * production databases need; keep each statement `if not exists`-safe.
+ */
+async function applyIncrementalMigrations() {
+  const db = getSql();
+  await db`alter table unit_cost_quotes add column if not exists quote_currency text not null default 'USD';`;
+  await db`alter table unit_cost_quotes add column if not exists unit_price_cny numeric(14, 4);`;
+}
+
 export async function ensureDatabase() {
   if (!sql) {
     throw new Error(
@@ -1283,8 +1294,10 @@ export async function ensureDatabase() {
     return;
   }
 
-  // Existing production DB: do not re-run full bootstrap (avoids serverless timeout).
+  // Existing production DB: do not re-run full bootstrap (avoids serverless timeout),
+  // but always apply lightweight incremental migrations so new columns ship with code.
   if (await coreSchemaAlreadyPresent()) {
+    await applyIncrementalMigrations();
     appliedSchemaVersion = CURRENT_SCHEMA_VERSION;
     return;
   }
