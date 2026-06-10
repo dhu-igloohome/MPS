@@ -66,6 +66,10 @@ function contractHintHelp(language: Language, hint: OrderContractCreateHint | un
       return en
         ? `Cash flow supplier "${hint.cashFlowSupplierName}" is missing in Suppliers (or inactive).`
         : `现金流中的供应商「${hint.cashFlowSupplierName}」在「供应商」主数据中不存在或未启用。`;
+    case "domestic_cny_quote_missing":
+      return en
+        ? `Supplier "${hint.cashFlowSupplierName}" bills domestic contracts in CNY, but the latest Unit cost quote has no CNY price. Add a new CNY quotation under Cost control → Unit cost first.`
+        : `供应商「${hint.cashFlowSupplierName}」为国内合同（人民币计价），但最新 Unit cost 报价缺少人民币原价。请先在「成本控制 → Unit cost」为该 SKU 新录一条 CNY 报价。`;
     case "resolution_error":
       return en
         ? "Could not load supplier link (temporary error). Refresh the page or try again."
@@ -207,10 +211,11 @@ export function ContractManagement({
   );
   const orderHint = orderContractHints[orderProgressId];
   const selectedSupplierName = (orderHint?.cashFlowSupplierName ?? "").trim();
-  const quoteUnitPriceUsd =
+  const latestQuoteForOrder =
     selectedOrder?.sku && selectedSupplierName
-      ? latestUnitCostBySkuSupplier.get(`${selectedOrder.sku.trim()}::${selectedSupplierName}`)?.unitPrice ?? null
+      ? latestUnitCostBySkuSupplier.get(`${selectedOrder.sku.trim()}::${selectedSupplierName}`) ?? null
       : null;
+  const quoteUnitPriceUsd = latestQuoteForOrder?.unitPrice ?? null;
   const snapshot = selectedOrder?.unitCostSnapshot ?? null;
   const selectedUnitPriceUsd =
     snapshot != null && Number.isFinite(snapshot) && snapshot > 0
@@ -218,14 +223,20 @@ export function ContractManagement({
       : quoteUnitPriceUsd;
 
   const displayContractUnit = useMemo(() => {
+    if (orderHint?.domesticContractBilling) {
+      // Domestic contracts bill the supplier-quoted CNY original (exact); derived CNY only as legacy fallback.
+      const cny = latestQuoteForOrder?.unitPriceCny;
+      if (cny != null && Number.isFinite(cny) && cny > 0) return Math.round(cny * 100) / 100;
+      if (selectedUnitPriceUsd != null && Number.isFinite(selectedUnitPriceUsd) && selectedUnitPriceUsd > 0) {
+        return domesticCnyContractUnitFromUsdBasis(selectedUnitPriceUsd);
+      }
+      return null;
+    }
     if (selectedUnitPriceUsd == null || !Number.isFinite(selectedUnitPriceUsd) || selectedUnitPriceUsd <= 0) {
       return null;
     }
-    if (orderHint?.domesticContractBilling) {
-      return domesticCnyContractUnitFromUsdBasis(selectedUnitPriceUsd);
-    }
     return selectedUnitPriceUsd;
-  }, [orderHint?.domesticContractBilling, selectedUnitPriceUsd]);
+  }, [orderHint?.domesticContractBilling, latestQuoteForOrder?.unitPriceCny, selectedUnitPriceUsd]);
 
   useEffect(() => {
     if (!orderHint?.ready) return;

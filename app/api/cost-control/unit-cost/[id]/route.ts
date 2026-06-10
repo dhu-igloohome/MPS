@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { usdBasisFromDomesticCnyUnit } from "@/lib/contract-domestic-pricing";
 import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
 import { softDeleteUnitCostQuote, updateUnitCostQuote } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
-import type { UnitCostQuoteIncoterm } from "@/lib/types";
+import type { UnitCostQuoteCurrency, UnitCostQuoteIncoterm } from "@/lib/types";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const INCOTERMS: UnitCostQuoteIncoterm[] = ["EXW", "FOB", "DAP", "DDP"];
@@ -41,8 +42,12 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const sku = String(body.sku ?? "").trim();
-  const unitPrice = Number(body.unitPrice);
-  const taxIncluded = Boolean(body.taxIncluded);
+  const quoteCurrency: UnitCostQuoteCurrency =
+    String(body.quoteCurrency ?? "USD").trim().toUpperCase() === "CNY" ? "CNY" : "USD";
+  const unitPriceCnyRaw = Number(body.unitPriceCny);
+  const unitPrice =
+    quoteCurrency === "CNY" ? usdBasisFromDomesticCnyUnit(unitPriceCnyRaw) : Number(body.unitPrice);
+  const taxIncluded = quoteCurrency === "CNY" ? true : Boolean(body.taxIncluded);
   const supplierName = String(body.supplierName ?? "").trim();
   const quoteDate = String(body.quoteDate ?? "").trim();
   const manufacturerCountry = String(body.manufacturerCountry ?? "").trim();
@@ -54,6 +59,9 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
 
   if (!sku) {
     return NextResponse.json({ message: "SKU is required" }, { status: 400 });
+  }
+  if (quoteCurrency === "CNY" && (!Number.isFinite(unitPriceCnyRaw) || unitPriceCnyRaw <= 0)) {
+    return NextResponse.json({ message: "Invalid CNY unit price" }, { status: 400 });
   }
   if (!Number.isFinite(unitPrice) || unitPrice < 0) {
     return NextResponse.json({ message: "Invalid unit price" }, { status: 400 });
@@ -100,6 +108,8 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
       id: idTrim,
       sku,
       unitPrice,
+      quoteCurrency,
+      unitPriceCny: quoteCurrency === "CNY" ? unitPriceCnyRaw : null,
       taxIncluded,
       supplierName,
       quoteDate,

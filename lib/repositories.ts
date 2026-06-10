@@ -28,6 +28,7 @@ import {
   CostFreightMode,
   CashFlowEntry,
   UnitCostQuoteEntry,
+  UnitCostQuoteCurrency,
   UnitCostQuoteIncoterm,
   ContractEntry,
   ContractFileUploadEntry,
@@ -867,6 +868,8 @@ function orderContractHintMessage(reasonKey: OrderContractCreateHint["reasonKey"
       return "Choose a supplier in Supply Chain → Cost control → Cash flow analysis (Forecast cash flow) for this forecast.";
     case "supplier_not_in_master":
       return `Cash flow supplier "${cashFlowName}" is not found in Suppliers (or is inactive). Add or activate it under Supply Chain → Suppliers.`;
+    case "domestic_cny_quote_missing":
+      return `Supplier "${cashFlowName}" bills domestic contracts in CNY, but the latest Unit cost quote has no CNY price. Add a new CNY quotation under Cost control → Unit cost first.`;
     case "resolution_error":
       return "Could not resolve supplier for this order (temporary error). Retry or contact admin.";
     default:
@@ -883,6 +886,7 @@ type ContractHintBatchRow = {
   supplier_id: number | null;
   payment_terms: string | null;
   supplier_is_domestic_contract: boolean | null;
+  latest_quote_cny: string | number | null;
 };
 
 function mapBatchRowToHint(row: ContractHintBatchRow): OrderContractCreateHint {
@@ -936,6 +940,18 @@ function mapBatchRowToHint(row: ContractHintBatchRow): OrderContractCreateHint {
   }
   const pt = (row.payment_terms ?? "").trim();
   const domestic = Boolean(row.supplier_is_domestic_contract);
+  const cny = Number(row.latest_quote_cny);
+  if (domestic && (!Number.isFinite(cny) || cny <= 0)) {
+    return {
+      cashFlowSupplierName: fcName,
+      supplierId: String(row.supplier_id),
+      paymentTerms: pt || "Cash",
+      forecastId: fid,
+      domesticContractBilling: true,
+      ready: false,
+      reasonKey: "domestic_cny_quote_missing",
+    };
+  }
   return {
     cashFlowSupplierName: fcName,
     supplierId: String(row.supplier_id),
@@ -970,7 +986,8 @@ export async function listOrderContractCreateHintsFromOrderIds(
       nullif(trim(fc.supplier_name), '') as fc_supplier,
       sup.id as supplier_id,
       sup.payment_terms,
-      sup.is_domestic_contract as supplier_is_domestic_contract
+      sup.is_domestic_contract as supplier_is_domestic_contract,
+      lq.unit_price_cny as latest_quote_cny
     from order_progress op
     left join lateral (
       select f.id
@@ -994,6 +1011,17 @@ export async function listOrderContractCreateHintsFromOrderIds(
       order by s.id asc
       limit 1
     ) sup on true
+    left join lateral (
+      select q.unit_price_cny
+      from unit_cost_quotes q
+      where
+        sup.id is not null
+        and lower(trim(q.sku)) = lower(trim(op.sku))
+        and lower(trim(q.supplier_name)) = lower(trim(fc.supplier_name))
+        and q.deleted_at is null
+      order by q.quote_date desc, q.id desc
+      limit 1
+    ) lq on true
     where op.id = any(${ids})
   `;
 
@@ -4970,6 +4998,24 @@ export async function createContractsFromForecast(input: {
       throw new Error(`Forecast row for ${row.sku} needs a PO number`);
     }
 
+    if (sup.is_domestic_contract) {
+      const cnyRows = await db<{ unit_price_cny: string | null }[]>`
+        select unit_price_cny::text
+        from unit_cost_quotes
+        where lower(trim(sku)) = lower(trim(${row.sku.trim()}))
+          and lower(trim(supplier_name)) = lower(trim(${sup.name}))
+          and deleted_at is null
+        order by quote_date desc, id desc
+        limit 1;
+      `;
+      const cny = Number(cnyRows[0]?.unit_price_cny);
+      if (!Number.isFinite(cny) || cny <= 0) {
+        throw new Error(
+          `Supplier "${sup.name}" bills domestic contracts in CNY, but the latest Unit cost quote for ${row.sku} has no CNY price. Add a new CNY quotation under Cost control → Unit cost first.`,
+        );
+      }
+    }
+
     const poIssue = row.poIssueDate && /^\d{4}-\d{2}-\d{2}$/.test(row.poIssueDate) ? row.poIssueDate : null;
     const signedDate = poIssue ?? row.createdAt.slice(0, 10);
     const deliveryDate = addCalendarDaysToYmd(signedDate, 56);
@@ -4993,13 +5039,16 @@ export async function createContractsFromForecast(input: {
           coalesce(${Boolean(sup.is_domestic_contract)}, false) as is_domestic_contract,
           case
             when coalesce(${Boolean(sup.is_domestic_contract)}, false) then round(
-              (
-                coalesce(
-                  nullif(uc.unit_price::numeric, 0),
-                  uc.unit_price::numeric,
-                  0
-                )
-              )::numeric * ${DOMESTIC_CONTRACT_USD_TO_CNY} * ${DOMESTIC_CONTRACT_VAT_MULTIPLIER},
+              coalesce(
+                nullif(uc.unit_price_cny::numeric, 0),
+                (
+                  coalesce(
+                    nullif(uc.unit_price::numeric, 0),
+                    uc.unit_price::numeric,
+                    0
+                  )
+                )::numeric * ${DOMESTIC_CONTRACT_USD_TO_CNY} * ${DOMESTIC_CONTRACT_VAT_MULTIPLIER}
+              ),
               2
             )
             else coalesce(
@@ -5015,7 +5064,7 @@ export async function createContractsFromForecast(input: {
           uc.id as unit_cost_quote_id_snapshot,
           uc.quote_date::date as unit_cost_quote_date_snapshot
         from lateral (
-          select id, quote_date, unit_price
+          select id, quote_date, unit_price, unit_price_cny
           from unit_cost_quotes
           where lower(trim(sku)) = lower(trim(${row.sku.trim()}))
             and lower(trim(supplier_name)) = lower(trim(${sup.name}))
@@ -5158,14 +5207,17 @@ export async function createContractFromOrder(input: {
         coalesce(s.is_domestic_contract, false) as is_domestic_contract,
         case
           when coalesce(s.is_domestic_contract, false) then round(
-            (
-              coalesce(
-                nullif(op.unit_cost_snapshot::numeric, 0),
-                uc.unit_cost,
-                p.unit_cost::numeric,
-                0
-              )
-            )::numeric * ${DOMESTIC_CONTRACT_USD_TO_CNY} * ${DOMESTIC_CONTRACT_VAT_MULTIPLIER},
+            coalesce(
+              nullif(uc.unit_price_cny, 0),
+              (
+                coalesce(
+                  nullif(op.unit_cost_snapshot::numeric, 0),
+                  uc.unit_cost,
+                  p.unit_cost::numeric,
+                  0
+                )
+              )::numeric * ${DOMESTIC_CONTRACT_USD_TO_CNY} * ${DOMESTIC_CONTRACT_VAT_MULTIPLIER}
+            ),
             2
           )
           else coalesce(
@@ -5186,7 +5238,8 @@ export async function createContractFromOrder(input: {
         select
           id as unit_cost_quote_id_snapshot,
           quote_date::date as unit_cost_quote_date_snapshot,
-          unit_price::numeric as unit_cost
+          unit_price::numeric as unit_cost,
+          unit_price_cny::numeric as unit_price_cny
         from unit_cost_quotes
         where lower(trim(sku)) = lower(trim(op.sku))
           and lower(trim(supplier_name)) = lower(trim(s.name))
@@ -5908,6 +5961,8 @@ type UnitCostQuoteRow = {
   cm_unit_price_tax_rate_pct: string | number | null;
   sea_freight_unit_price: string | number | null;
   air_freight_unit_price: string | number | null;
+  quote_currency: string | null;
+  unit_price_cny: string | number | null;
   incoterm: string | null;
   creation_reason: string | null;
   created_by: string;
@@ -5939,6 +5994,8 @@ function mapUnitCostQuote(row: UnitCostQuoteRow): UnitCostQuoteEntry {
     destinationTariffPct: quoteNullableNum(row.destination_tariff_pct),
     seaFreightUnitPrice: quoteNullableNum(row.sea_freight_unit_price),
     airFreightUnitPrice: quoteNullableNum(row.air_freight_unit_price),
+    quoteCurrency: (row.quote_currency || "").trim().toUpperCase() === "CNY" ? "CNY" : "USD",
+    unitPriceCny: quoteNullableNum(row.unit_price_cny),
     incoterm: normalizeUnitCostIncoterm(row.incoterm),
     creationReason: row.creation_reason ?? "",
     createdBy: row.created_by,
@@ -5979,6 +6036,8 @@ export async function listUnitCostQuotes(): Promise<UnitCostQuoteEntry[]> {
       cm_unit_price_tax_rate_pct::text,
       sea_freight_unit_price::text,
       air_freight_unit_price::text,
+      quote_currency,
+      unit_price_cny::text,
       incoterm,
       creation_reason,
       created_by,
@@ -5994,6 +6053,8 @@ export async function listUnitCostQuotes(): Promise<UnitCostQuoteEntry[]> {
 export async function createUnitCostQuote(input: {
   sku: string;
   unitPrice: number;
+  quoteCurrency?: UnitCostQuoteCurrency;
+  unitPriceCny?: number | null;
   taxIncluded: boolean;
   supplierName: string;
   quoteDate: string;
@@ -6013,6 +6074,8 @@ export async function createUnitCostQuote(input: {
     insert into unit_cost_quotes (
       sku,
       unit_price,
+      quote_currency,
+      unit_price_cny,
       tax_included,
       supplier_name,
       quote_date,
@@ -6029,6 +6092,8 @@ export async function createUnitCostQuote(input: {
     values (
       ${input.sku.trim()},
       ${input.unitPrice},
+      ${input.quoteCurrency === "CNY" ? "CNY" : "USD"},
+      ${input.quoteCurrency === "CNY" ? input.unitPriceCny ?? null : null},
       ${input.taxIncluded},
       ${input.supplierName.trim()},
       ${input.quoteDate},
@@ -6055,6 +6120,8 @@ export async function createUnitCostQuote(input: {
       cm_unit_price_tax_rate_pct::text,
       sea_freight_unit_price::text,
       air_freight_unit_price::text,
+      quote_currency,
+      unit_price_cny::text,
       incoterm,
       creation_reason,
       created_by,
@@ -6069,6 +6136,8 @@ export async function updateUnitCostQuote(input: {
   id: string;
   sku: string;
   unitPrice: number;
+  quoteCurrency?: UnitCostQuoteCurrency;
+  unitPriceCny?: number | null;
   taxIncluded: boolean;
   supplierName: string;
   quoteDate: string;
@@ -6088,6 +6157,8 @@ export async function updateUnitCostQuote(input: {
     update unit_cost_quotes set
       sku = ${input.sku.trim()},
       unit_price = ${input.unitPrice},
+      quote_currency = ${input.quoteCurrency === "CNY" ? "CNY" : "USD"},
+      unit_price_cny = ${input.quoteCurrency === "CNY" ? input.unitPriceCny ?? null : null},
       tax_included = ${input.taxIncluded},
       supplier_name = ${input.supplierName.trim()},
       quote_date = ${input.quoteDate},
@@ -6112,6 +6183,8 @@ export async function updateUnitCostQuote(input: {
       cm_unit_price_tax_rate_pct::text,
       sea_freight_unit_price::text,
       air_freight_unit_price::text,
+      quote_currency,
+      unit_price_cny::text,
       incoterm,
       creation_reason,
       created_by,
@@ -6150,6 +6223,8 @@ export async function getLatestUnitCostQuoteBySkuSupplier(
       cm_unit_price_tax_rate_pct::text,
       sea_freight_unit_price::text,
       air_freight_unit_price::text,
+      quote_currency,
+      unit_price_cny::text,
       incoterm,
       creation_reason,
       created_by,
@@ -6180,6 +6255,8 @@ export async function getLatestUnitCostQuoteBySkuSupplier(
       cm_unit_price_tax_rate_pct::text,
       sea_freight_unit_price::text,
       air_freight_unit_price::text,
+      quote_currency,
+      unit_price_cny::text,
       incoterm,
       creation_reason,
       created_by,
@@ -6302,6 +6379,8 @@ export async function syncLandedConsolidateSnapshotToUnitCostQuotes(input: {
       cm_unit_price_tax_rate_pct::text,
       sea_freight_unit_price::text,
       air_freight_unit_price::text,
+      quote_currency,
+      unit_price_cny::text,
       incoterm,
       creation_reason,
       created_by,

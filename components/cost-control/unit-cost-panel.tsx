@@ -12,6 +12,7 @@ import {
   ccSelectSm,
 } from "@/components/cost-control/cost-control-form-controls";
 import { TableCellLongText } from "@/components/shared/table-cell-long-text";
+import { usdBasisFromDomesticCnyUnit } from "@/lib/contract-domestic-pricing";
 import type { Language } from "@/lib/i18n";
 import { supplierNamesFuzzyMatch } from "@/lib/supplier-name-lookup";
 import type { ProductItem, SupplierEntry, UnitCostQuoteEntry } from "@/lib/types";
@@ -54,6 +55,11 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     history: en ? "Quotation history" : "历史报价",
     sku: "SKU",
     unitPrice: en ? "Unit price (USD)" : "单价 (USD)",
+    unitPriceCny: en ? "Unit price (CNY, tax incl.)" : "单价 (CNY 含税)",
+    domesticQuoteHint: en
+      ? "Domestic-contract supplier: enter the supplier's tax-included CNY price. USD for reports is derived (÷1.13÷7)."
+      : "国内合同供应商：请录入供应商认可的人民币含税原价；报表用 USD 自动换算（÷1.13÷7）。",
+    derivedUsd: en ? "≈ USD (reports)" : "≈ USD（报表用）",
     taxIncluded: en ? "Tax included" : "是否含税",
     supplier: en ? "Supplier name" : "供应商名称",
     quoteDate: en ? "Quote date" : "报价日期",
@@ -115,6 +121,16 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
     return [...new Set(names)].sort((a, b) => a.localeCompare(b));
   }, [suppliers]);
 
+  const domesticSupplierNames = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of suppliers) {
+      if (s.isDomesticContract && s.name.trim()) set.add(s.name.trim().toLowerCase());
+    }
+    return set;
+  }, [suppliers]);
+
+  const isDomesticSupplier = (name: string) => domesticSupplierNames.has(name.trim().toLowerCase());
+
   const historySupplierOptions = useMemo(() => {
     const set = new Set(activeSupplierNames);
     for (const e of initialEntries) {
@@ -175,7 +191,13 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   function openEdit(row: UnitCostQuoteEntry) {
     setEditRow(row);
     setEsku(row.sku);
-    setEUnitPrice(String(row.unitPrice));
+    // Domestic suppliers edit in CNY: prefill the CNY original, or blank for legacy USD quotes
+    // so a USD figure is never silently re-saved as CNY.
+    if (isDomesticSupplier(row.supplierName)) {
+      setEUnitPrice(row.quoteCurrency === "CNY" && row.unitPriceCny != null ? String(row.unitPriceCny) : "");
+    } else {
+      setEUnitPrice(String(row.unitPrice));
+    }
     setETaxIncluded(row.taxIncluded);
     setESupplierName(row.supplierName);
     setEQuoteDate(row.quoteDate);
@@ -252,7 +274,9 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         sku: eSku.trim(),
+        quoteCurrency: isDomesticSupplier(eSupplierName) ? "CNY" : "USD",
         unitPrice: up,
+        unitPriceCny: isDomesticSupplier(eSupplierName) ? up : null,
         taxIncluded: eTaxIncluded,
         supplierName: eSupplierName.trim(),
         quoteDate: eQuoteDate.trim(),
@@ -345,7 +369,9 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         sku: sku.trim(),
+        quoteCurrency: isDomesticSupplier(supplierName) ? "CNY" : "USD",
         unitPrice: up,
+        unitPriceCny: isDomesticSupplier(supplierName) ? up : null,
         taxIncluded,
         supplierName: supplierName.trim(),
         quoteDate: quoteDate.trim(),
@@ -374,6 +400,11 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
   const skuInputClass = duplicateSku
     ? `${ccInputSm} border-amber-300 bg-amber-50/60`
     : `${ccInputSm} border-app-border`;
+
+  const createCnyMode = isDomesticSupplier(supplierName);
+  const createDerivedUsd = createCnyMode ? usdBasisFromDomesticCnyUnit(Number(unitPrice)) : null;
+  const editCnyMode = isDomesticSupplier(eSupplierName);
+  const editDerivedUsd = editCnyMode ? usdBasisFromDomesticCnyUnit(Number(eUnitPrice)) : null;
 
   return (
     <div className="space-y-8">
@@ -431,7 +462,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
             </label>
           ) : null}
           <label className="shrink-0">
-            <span className={ccLabel}>{t.unitPrice}</span>
+            <span className={ccLabel}>{createCnyMode ? t.unitPriceCny : t.unitPrice}</span>
             <input
               type="number"
               min={0}
@@ -440,12 +471,19 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
               onChange={(e) => setUnitPrice(e.target.value)}
               required
               className={ccNum}
+              title={createCnyMode ? t.domesticQuoteHint : undefined}
             />
+            {createCnyMode && createDerivedUsd != null && createDerivedUsd > 0 ? (
+              <p className="mt-1 text-xs tabular-nums text-app-muted">
+                {t.derivedUsd}: ${createDerivedUsd.toFixed(4)}
+              </p>
+            ) : null}
           </label>
           <label className="flex shrink-0 items-end gap-2 pb-1">
             <input
               type="checkbox"
-              checked={taxIncluded}
+              checked={createCnyMode ? true : taxIncluded}
+              disabled={createCnyMode}
               onChange={(e) => setTaxIncluded(e.target.checked)}
               className="h-4 w-4 rounded border-app-border"
             />
@@ -543,7 +581,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                 </datalist>
               </label>
               <label className="shrink-0">
-                <span className={ccLabel}>{t.unitPrice}</span>
+                <span className={ccLabel}>{editCnyMode ? t.unitPriceCny : t.unitPrice}</span>
                 <input
                   type="number"
                   min={0}
@@ -552,12 +590,19 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   onChange={(ev) => setEUnitPrice(ev.target.value)}
                   required
                   className={ccNum}
+                  title={editCnyMode ? t.domesticQuoteHint : undefined}
                 />
+                {editCnyMode && editDerivedUsd != null && editDerivedUsd > 0 ? (
+                  <p className="mt-1 text-xs tabular-nums text-app-muted">
+                    {t.derivedUsd}: ${editDerivedUsd.toFixed(4)}
+                  </p>
+                ) : null}
               </label>
               <label className="flex shrink-0 items-end gap-2 pb-1">
                 <input
                   type="checkbox"
-                  checked={eTaxIncluded}
+                  checked={editCnyMode ? true : eTaxIncluded}
+                  disabled={editCnyMode}
                   onChange={(ev) => setETaxIncluded(ev.target.checked)}
                   className="h-4 w-4 rounded border-app-border"
                 />
@@ -770,7 +815,16 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                   <tr key={row.id} className="border-b border-app-border/60">
                     <td className="whitespace-nowrap px-2 py-2 tabular-nums">{row.quoteDate}</td>
                     <td className="whitespace-nowrap px-2 py-2 font-medium">{row.sku}</td>
-                    <td className="whitespace-nowrap px-2 py-2 tabular-nums">{row.unitPrice.toFixed(4)}</td>
+                    <td className="whitespace-nowrap px-2 py-2 tabular-nums">
+                      {row.quoteCurrency === "CNY" && row.unitPriceCny != null ? (
+                        <span title={t.domesticQuoteHint}>
+                          ¥{row.unitPriceCny.toFixed(4)}
+                          <span className="ml-1 text-xs text-app-muted">(${row.unitPrice.toFixed(4)})</span>
+                        </span>
+                      ) : (
+                        row.unitPrice.toFixed(4)
+                      )}
+                    </td>
                     <td className="whitespace-nowrap px-2 py-2">{row.taxIncluded ? t.yes : t.no}</td>
                     <td className="max-w-[10rem] truncate px-2 py-2">{row.supplierName}</td>
                     <td className="max-w-[8rem] truncate px-2 py-2">{row.manufacturerCountry || "—"}</td>

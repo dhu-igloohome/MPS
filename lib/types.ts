@@ -488,7 +488,7 @@ export type OrderContractCreateHint = {
   /** Payment terms from Suppliers master when supplier resolves. */
   paymentTerms: string;
   forecastId: string | null;
-  /** Resolved supplier: domestic billing (CNY contract unit from USD×7×1.13). */
+  /** Resolved supplier: domestic billing (contract unit from supplier-quoted CNY). */
   domesticContractBilling: boolean;
   ready: boolean;
   reasonKey:
@@ -497,6 +497,8 @@ export type OrderContractCreateHint = {
     | "forecast_not_found"
     | "cash_flow_supplier_empty"
     | "supplier_not_in_master"
+    /** Domestic supplier but latest Unit cost quote has no CNY original price. */
+    | "domestic_cny_quote_missing"
     /** Unexpected DB/runtime failure while resolving hint (page still loads). */
     | "resolution_error";
 };
@@ -719,11 +721,19 @@ export type CostAnalysisEntry = {
 /** 单位成本报价 Incoterm（与报价行一致） */
 export type UnitCostQuoteIncoterm = "EXW" | "FOB" | "DAP" | "DDP";
 
+/** 报价币种：国内合同供应商录 CNY 含税原价，其余 USD */
+export type UnitCostQuoteCurrency = "USD" | "CNY";
+
 /** 成本控制 — 单位成本报价（历史记录多条按时间保留） */
 export type UnitCostQuoteEntry = {
   id: string;
   sku: string;
+  /** 报表用 USD 单价（CNY 报价时为换算值 ÷1.13÷7） */
   unitPrice: number;
+  /** 报价原始币种 */
+  quoteCurrency: UnitCostQuoteCurrency;
+  /** 供应商认可的含税人民币原价；USD 报价为 null */
+  unitPriceCny: number | null;
   /** 报价是否含税 */
   taxIncluded: boolean;
   supplierName: string;

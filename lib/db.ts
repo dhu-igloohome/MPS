@@ -709,6 +709,8 @@ async function setupSchema() {
   await db`alter table unit_cost_quotes add column if not exists deleted_at timestamptz;`;
   await db`alter table unit_cost_quotes add column if not exists deletion_reason text not null default '';`;
   await db`alter table unit_cost_quotes add column if not exists deleted_by text;`;
+  await db`alter table unit_cost_quotes add column if not exists quote_currency text not null default 'USD';`;
+  await db`alter table unit_cost_quotes add column if not exists unit_price_cny numeric(14, 4);`;
 
   await db`
     create table if not exists forecast_cash_flow_settings (
