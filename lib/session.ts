@@ -1,7 +1,20 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
+import { REGIONS } from "@/lib/accounts";
 import { SessionPayload } from "@/lib/types";
+
+/**
+ * regional_admin: full business data access (all regions). Region checkboxes in Admin
+ * remain stored for reference; enforcement is lifted here. Admin Users/Products/templates,
+ * buyer-entity edits, contract approval, and ECN rules stay super_admin-only elsewhere.
+ */
+function normalizeSessionPayload(payload: SessionPayload): SessionPayload {
+  if (payload.role === "regional_admin") {
+    return { ...payload, regions: [...REGIONS] };
+  }
+  return payload;
+}
 
 export const SESSION_COOKIE_NAME = "mps_session";
 
@@ -46,7 +59,7 @@ export function verifySessionToken(token: string): SessionPayload | null {
 
   try {
     const payload = JSON.parse(fromBase64(encodedPayload)) as SessionPayload;
-    return payload;
+    return normalizeSessionPayload(payload);
   } catch {
     return null;
   }
