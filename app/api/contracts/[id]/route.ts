@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { canDeleteDraftContract } from "@/lib/contract-draft-delete";
 import {
+  deleteDraftContractById,
   getContractById,
   sessionCanAccessContract,
   updateContractStatusById,
@@ -49,4 +51,35 @@ export async function PATCH(request: Request, context: RouteContext) {
   const updated = await updateContractStatusById(id, status);
   if (!updated) return NextResponse.json({ message: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true, contract: updated });
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+  const { id } = await context.params;
+  if (!id) return NextResponse.json({ message: "Missing id" }, { status: 400 });
+
+  const contract = await getContractById(id);
+  if (!contract) return NextResponse.json({ message: "Not found" }, { status: 404 });
+
+  if (!(await sessionCanAccessContract(session.regions, contract))) {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  }
+
+  if (!canDeleteDraftContract(session.role, session.username, contract)) {
+    const message =
+      contract.status !== "draft"
+        ? "Only draft contracts can be deleted."
+        : session.role === "regional_admin"
+          ? "Only draft contracts you created can be deleted."
+          : "Delete not allowed.";
+    return NextResponse.json({ message }, { status: 403 });
+  }
+
+  const ok = await deleteDraftContractById(id);
+  if (!ok) {
+    return NextResponse.json({ message: "Only draft contracts can be deleted." }, { status: 400 });
+  }
+  return NextResponse.json({ ok: true });
 }

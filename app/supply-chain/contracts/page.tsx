@@ -48,6 +48,7 @@ export default async function SupplyChainContractsPage() {
         contractFileUploads={contractFileUploads}
         language={language}
         role={session.role}
+        username={session.username}
       />
     </AppShell>
   );

@@ -5406,6 +5406,18 @@ export async function getContractById(id: string): Promise<ContractEntry | null>
   return rows[0] ? mapContract(rows[0]) : null;
 }
 
+/** Deletes a contract only when status is draft. Returns false if not found or not draft. */
+export async function deleteDraftContractById(id: string): Promise<boolean> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ id: number }[]>`
+    delete from contracts
+    where id = ${Number(id)} and status = 'draft'
+    returning id
+  `;
+  return rows.length > 0;
+}
+
 export async function updateContractStatusById(
   id: string,
   status: ContractStatus,

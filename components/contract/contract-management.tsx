@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { ContractDraftDeleteButton } from "@/components/contract/contract-draft-delete-button";
 import { ContractOfflineUploads } from "@/components/contract/contract-offline-uploads";
 import {
   ccInputMd,
@@ -44,6 +45,7 @@ type ContractManagementProps = {
   contractFileUploads: ContractFileUploadEntry[];
   language: Language;
   role: UserRole;
+  username: string;
 };
 
 function contractHintHelp(language: Language, hint: OrderContractCreateHint | undefined): string {
@@ -119,6 +121,7 @@ export function ContractManagement({
   contractFileUploads,
   language,
   role,
+  username,
 }: ContractManagementProps) {
   const router = useRouter();
   const en = language === "en";
@@ -599,6 +602,12 @@ export function ContractManagement({
                           {action.label}
                         </button>
                       ))}
+                      <ContractDraftDeleteButton
+                        contract={c}
+                        role={role}
+                        username={username}
+                        language={language}
+                      />
                     </div>
                   </td>
                 </tr>

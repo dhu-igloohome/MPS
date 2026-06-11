@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
+import { ContractDraftDeleteButton } from "@/components/contract/contract-draft-delete-button";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
@@ -55,8 +56,16 @@ export default async function SupplyChainContractDetailPage({ params }: PageProp
       <section className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-lg font-semibold text-foreground">Contract Detail</h3>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link className="rounded border border-app-border px-3 py-1.5 text-sm hover:bg-app-accent-soft" href="/supply-chain/contracts">Back to list</Link>
+            <ContractDraftDeleteButton
+              contract={contract}
+              role={session.role}
+              username={session.username}
+              language={language}
+              redirectTo="/supply-chain/contracts"
+              className="inline-flex items-center gap-1.5 rounded border border-red-200 px-3 py-1.5 text-sm text-red-600 transition duration-150 ease-out hover:bg-red-50 disabled:opacity-50"
+            />
             {canPrint ? (
               <>
                 <Link
