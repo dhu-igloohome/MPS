@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
+import { IntegrationApiKeysPanel } from "@/components/admin/integration-api-keys-panel";
 import { UserManagement } from "@/components/admin/user-management";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
-import { listAdminAuditLogs, listUsersWithRegions } from "@/lib/repositories";
+import { listAdminAuditLogs, listIntegrationApiKeys, listUsersWithRegions } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -19,12 +20,18 @@ export default async function AdminUsersPage() {
     redirect("/dashboard");
   }
 
-  const [users, auditLogs, cookieStore] = await Promise.all([
+  const [users, auditLogs, integrationKeys, cookieStore] = await Promise.all([
     listUsersWithRegions(),
     listAdminAuditLogs(80),
+    listIntegrationApiKeys(),
     cookies(),
   ]);
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
+  const siteOrigin =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL.replace(/^https?:\/\//, "")}`
+      : "http://localhost:3000");
 
   return (
     <AppShell
@@ -35,6 +42,7 @@ export default async function AdminUsersPage() {
       }
     >
       <UserManagement users={users} auditLogs={auditLogs} language={language} />
+      <IntegrationApiKeysPanel keys={integrationKeys} language={language} siteOrigin={siteOrigin} />
     </AppShell>
   );
 }

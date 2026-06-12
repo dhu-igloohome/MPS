@@ -53,6 +53,7 @@ import {
   SopEntry,
   SopStatus,
   ShippingReportEntry,
+  IntegrationApiKeyEntry,
   InventoryGlobalEntry,
   LogisticsLandedCostConsolidateLineItem,
   LogisticsLandedCostConsolidateSnapshot,
@@ -7373,4 +7374,130 @@ export async function getFulfillmentShipmentFileDownload(
     mimeType: rows[0].mime_type,
     fileData: Buffer.from(rows[0].file_data),
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Integration API keys (external partner access)                        */
+/* ------------------------------------------------------------------ */
+
+type IntegrationApiKeyRow = {
+  id: number;
+  label: string;
+  key_prefix: string;
+  key_hash: string;
+  scopes: string[];
+  is_active: boolean;
+  created_by: string;
+  created_at: string;
+  last_used_at: string | null;
+};
+
+function mapIntegrationApiKeyRow(row: IntegrationApiKeyRow): IntegrationApiKeyEntry {
+  return {
+    id: String(row.id),
+    label: row.label,
+    keyPrefix: row.key_prefix,
+    scopes: row.scopes ?? [],
+    isActive: row.is_active,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    lastUsedAt: row.last_used_at,
+  };
+}
+
+export async function listIntegrationApiKeys(): Promise<IntegrationApiKeyEntry[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<IntegrationApiKeyRow[]>`
+    select
+      id,
+      label,
+      key_prefix,
+      key_hash,
+      scopes,
+      is_active,
+      created_by,
+      created_at::text,
+      last_used_at::text
+    from integration_api_keys
+    order by created_at desc, id desc
+  `;
+  return rows.map(mapIntegrationApiKeyRow);
+}
+
+export async function getIntegrationApiKeyByHash(
+  keyHash: string,
+): Promise<IntegrationApiKeyEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<IntegrationApiKeyRow[]>`
+    select
+      id,
+      label,
+      key_prefix,
+      key_hash,
+      scopes,
+      is_active,
+      created_by,
+      created_at::text,
+      last_used_at::text
+    from integration_api_keys
+    where key_hash = ${keyHash}
+    limit 1
+  `;
+  return rows[0] ? mapIntegrationApiKeyRow(rows[0]) : null;
+}
+
+export async function createIntegrationApiKey(input: {
+  label: string;
+  keyPrefix: string;
+  keyHash: string;
+  scopes: string[];
+  createdBy: string;
+}): Promise<IntegrationApiKeyEntry> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<IntegrationApiKeyRow[]>`
+    insert into integration_api_keys (label, key_prefix, key_hash, scopes, created_by)
+    values (
+      ${input.label.trim().slice(0, 120)},
+      ${input.keyPrefix.trim().slice(0, 16)},
+      ${input.keyHash},
+      ${input.scopes},
+      ${input.createdBy}
+    )
+    returning
+      id,
+      label,
+      key_prefix,
+      key_hash,
+      scopes,
+      is_active,
+      created_by,
+      created_at::text,
+      last_used_at::text
+  `;
+  return mapIntegrationApiKeyRow(rows[0]);
+}
+
+export async function revokeIntegrationApiKeyById(id: string): Promise<boolean> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ id: number }[]>`
+    update integration_api_keys
+    set is_active = false
+    where id = ${Number(id)} and is_active = true
+    returning id
+  `;
+  return rows.length > 0;
+}
+
+export async function touchIntegrationApiKeyLastUsed(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    update integration_api_keys
+    set last_used_at = now()
+    where id = ${Number(id)}
+  `;
 }

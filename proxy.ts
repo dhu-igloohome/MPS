@@ -8,13 +8,14 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isApiAuth = pathname.startsWith("/api/auth/");
+  const isIntegrationApi = pathname.startsWith("/api/integrations/");
   const isPublic = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
   const isStaticAsset =
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
     pathname.startsWith("/public");
 
-  if (isApiAuth || isStaticAsset) {
+  if (isApiAuth || isIntegrationApi || isStaticAsset) {
     return NextResponse.next();
   }
 

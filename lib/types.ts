@@ -41,6 +41,18 @@ export type AdminAuditLog = {
   createdAt: string;
 };
 
+export type IntegrationApiKeyEntry = {
+  id: string;
+  label: string;
+  /** First 8 chars of the secret (after `mps_`) for display; full key shown only at creation. */
+  keyPrefix: string;
+  scopes: string[];
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+};
+
 export type ForecastEntry = {
   id: string;
   month: string;

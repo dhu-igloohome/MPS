@@ -20,7 +20,7 @@ const sql = connectionString
   : null;
 
 /** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
-const CURRENT_SCHEMA_VERSION = 7;
+const CURRENT_SCHEMA_VERSION = 8;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -363,6 +363,7 @@ async function setupSchema() {
   `;
 
   await createFulfillmentShipmentTables();
+  await createIntegrationApiKeysTable();
 
   await db`
     create table if not exists order_progress_delivery_plans (
@@ -1277,6 +1278,7 @@ async function applyIncrementalMigrations() {
   await db`alter table unit_cost_quotes add column if not exists quote_currency text not null default 'USD';`;
   await db`alter table unit_cost_quotes add column if not exists unit_price_cny numeric(14, 4);`;
   await createFulfillmentShipmentTables();
+  await createIntegrationApiKeysTable();
 }
 
 /** Order fulfillments (logistics): one row per shipment of a Forecast # + SKU group. */
@@ -1323,6 +1325,28 @@ async function createFulfillmentShipmentTables() {
   await db`
     create index if not exists idx_fulfillment_shipment_files_shipment
     on fulfillment_shipment_files (shipment_id);
+  `;
+}
+
+/** External integrations (partner systems) — long-lived API keys, hashed at rest. */
+async function createIntegrationApiKeysTable() {
+  const db = getSql();
+  await db`
+    create table if not exists integration_api_keys (
+      id bigserial primary key,
+      label text not null,
+      key_prefix text not null,
+      key_hash text not null unique,
+      scopes text[] not null default '{}',
+      is_active boolean not null default true,
+      created_by text not null references users(username),
+      created_at timestamptz not null default now(),
+      last_used_at timestamptz
+    );
+  `;
+  await db`
+    create index if not exists idx_integration_api_keys_active
+    on integration_api_keys (is_active, id desc);
   `;
 }
 
