@@ -44,7 +44,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof document === "undefined") {
-      return "zh";
+      return "en";
     }
     const cookieText = document.cookie
       .split("; ")

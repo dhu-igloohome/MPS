@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { authenticateUser } from "@/lib/repositories";
 import { createSessionToken, SESSION_COOKIE_NAME } from "@/lib/session";
 
+const LANG_COOKIE_NAME = "lang";
+
 export async function POST(request: Request) {
   let body: unknown;
   try {
@@ -37,6 +39,15 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: 60 * 60 * 12,
     });
+
+    if (!cookieStore.get(LANG_COOKIE_NAME)?.value) {
+      cookieStore.set(LANG_COOKIE_NAME, "en", {
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+      });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
