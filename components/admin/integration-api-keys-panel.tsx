@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Copy, KeyRound, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { INTEGRATION_API_SCOPES } from "@/lib/integration-api-key";
+import { INTEGRATION_API_SCOPES } from "@/lib/integration-api-scopes";
 import type { Language } from "@/lib/i18n";
 import type { IntegrationApiKeyEntry } from "@/lib/types";
 

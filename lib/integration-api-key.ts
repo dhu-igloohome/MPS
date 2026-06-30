@@ -1,16 +1,16 @@
 import { createHash, randomBytes } from "node:crypto";
 
+import {
+  INTEGRATION_API_SCOPES,
+  isIntegrationApiScope,
+  type IntegrationApiScope,
+} from "@/lib/integration-api-scopes";
 import { getSessionSecret } from "@/lib/session";
 
 export const INTEGRATION_API_KEY_PREFIX = "mps_";
 
-export const INTEGRATION_API_SCOPES = ["inventory:read", "fulfillment:read"] as const;
-
-export type IntegrationApiScope = (typeof INTEGRATION_API_SCOPES)[number];
-
-export function isIntegrationApiScope(value: string): value is IntegrationApiScope {
-  return (INTEGRATION_API_SCOPES as readonly string[]).includes(value);
-}
+export { INTEGRATION_API_SCOPES, isIntegrationApiScope };
+export type { IntegrationApiScope };
 
 /** Generate a new plaintext API key (show once to the operator). */
 export function generateIntegrationApiKeyPlaintext(): string {
