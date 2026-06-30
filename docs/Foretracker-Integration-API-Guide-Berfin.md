@@ -113,6 +113,75 @@ Each object in `entries` includes warehouse quantities, batch info, and cost fie
 
 ---
 
+### 3.3 Order fulfillments (read-only)
+
+Returns **Order Fulfillments** data from Foretracker: forecast groups with created contracts, plus shipment rows (SO, ETD/ETA, delivery status, etc.).
+
+Requires scope: **`fulfillment:read`**
+
+```
+GET /api/integrations/v1/order-fulfillments
+```
+
+**Optional filters**
+
+| Query param | Example | Description |
+|-------------|---------|-------------|
+| `forecastMonth` | `2026-09` | YYYY-MM |
+| `sku` | `DAX6E` | SKU |
+| `forecastPoNumber` | `POU202606020002` | Forecast PO # |
+
+**Example (curl)**
+
+```bash
+curl -H "Authorization: Bearer mps_YOUR_API_KEY_HERE" \
+  "https://YOUR-SITE-URL/api/integrations/v1/order-fulfillments?sku=DAX6E"
+```
+
+**Success response (structure)**
+
+```json
+{
+  "ok": true,
+  "groupCount": 3,
+  "shipmentCount": 5,
+  "fetchedAt": "2026-06-12T09:00:00.000Z",
+  "groups": [
+    {
+      "forecastPoNumber": "POU202606020002",
+      "sku": "DAX6E",
+      "forecastMonth": "2026-09",
+      "productName": "Deadbolt Dash",
+      "forecastQty": 500,
+      "contractedQty": 500,
+      "mpBatches": ["B001"],
+      "shipFroms": ["TAIWAN FU HSING"]
+    }
+  ],
+  "shipments": [
+    {
+      "id": "12",
+      "forecastPoNumber": "POU202606020002",
+      "sku": "DAX6E",
+      "forecastMonth": "2026-09",
+      "soNumber": "SO-12345",
+      "soQuantity": 200,
+      "freightMode": "sea",
+      "shipTo": "Singapore",
+      "etd": "2026-08-01",
+      "eta": "2026-08-15",
+      "deliveryStatus": "In transit",
+      "trackingLink": "https://..."
+    }
+  ]
+}
+```
+
+- **`groups`** — one row per Forecast # + SKU (auto-derived from cash flow + contracts)  
+- **`shipments`** — one row per shipment entry (SO, dates, status); multiple shipments can share the same group  
+
+---
+
 ## 4. Example: Node.js / server-side JavaScript
 
 ```javascript
@@ -144,7 +213,14 @@ console.log("Connected as:", health.label);
 
 // Pull all inventory
 const { count, entries } = await fetchForetrackerInventory();
-console.log(`Loaded ${count} rows`);
+console.log(`Loaded ${count} inventory rows`);
+
+// Pull order fulfillments (requires fulfillment:read on your key)
+const fulfillRes = await fetch(`${BASE}/api/integrations/v1/order-fulfillments`, {
+  headers: { Authorization: `Bearer ${API_KEY}` },
+});
+const fulfill = await fulfillRes.json();
+console.log(`Loaded ${fulfill.groupCount} groups, ${fulfill.shipmentCount} shipments`);
 ```
 
 ---
@@ -152,8 +228,8 @@ console.log(`Loaded ${count} rows`);
 ## 5. Recommended integration pattern
 
 1. Call **health** once when your app starts or when you save settings.  
-2. Call **inventory-global** on a schedule (e.g. every 15–60 minutes) or when your dashboard refreshes — from your **backend only**.  
-3. Map `entries` into your inventory database or cache.  
+2. Call **inventory-global** and/or **order-fulfillments** on a schedule (e.g. every 15–60 minutes) or when your dashboard refreshes — from your **backend only**.  
+3. Map `entries` / `groups` / `shipments` into your database or cache.  
 4. Use `fetchedAt` to show “last synced” in your UI.
 
 ---
@@ -178,11 +254,12 @@ console.log(`Loaded ${count} rows`);
 
 ## 8. Current permissions
 
-Your key is scoped to:
+Your key may include one or both scopes:
 
-- `inventory:read` — read global inventory only
+- `inventory:read` — read global inventory (`/api/integrations/v1/inventory-global`)
+- `fulfillment:read` — read order fulfillments (`/api/integrations/v1/order-fulfillments`)
 
-Other data (orders, contracts, forecasts, etc.) is not available through this API unless your administrator adds more scopes in the future.
+If you receive **401** on an endpoint, your key may not have the required scope. Ask your administrator to add it (no new key required — scopes can be updated on the existing key).
 
 ---
 
@@ -196,4 +273,4 @@ Contact your Foretracker administrator for:
 
 ---
 
-*Document version: June 2026 · Foretracker (MPS) Integration API v1*
+*Document version: June 2026 (updated) · Foretracker (MPS) Integration API v1*

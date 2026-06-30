@@ -4,7 +4,7 @@ import { getSessionSecret } from "@/lib/session";
 
 export const INTEGRATION_API_KEY_PREFIX = "mps_";
 
-export const INTEGRATION_API_SCOPES = ["inventory:read"] as const;
+export const INTEGRATION_API_SCOPES = ["inventory:read", "fulfillment:read"] as const;
 
 export type IntegrationApiScope = (typeof INTEGRATION_API_SCOPES)[number];
 

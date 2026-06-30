@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   const scopes = rawScopes.map((s) => String(s).trim()).filter(Boolean);
   if (scopes.length === 0 || scopes.some((s) => !isIntegrationApiScope(s))) {
     return NextResponse.json(
-      { message: "Invalid scopes. Allowed: inventory:read" },
+      { message: "Invalid scopes. Allowed: inventory:read, fulfillment:read" },
       { status: 400 },
     );
   }

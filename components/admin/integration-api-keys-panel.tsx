@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Copy, KeyRound, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { INTEGRATION_API_SCOPES } from "@/lib/integration-api-key";
 import type { Language } from "@/lib/i18n";
 import type { IntegrationApiKeyEntry } from "@/lib/types";
 
@@ -18,6 +19,10 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
   const router = useRouter();
   const en = language === "en";
   const [label, setLabel] = useState("");
+  const [createScopes, setCreateScopes] = useState<string[]>([
+    "inventory:read",
+    "fulfillment:read",
+  ]);
   const [busy, setBusy] = useState(false);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
 
@@ -44,6 +49,10 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
     baseUrl: en ? "Base URL" : "接口地址",
     health: en ? "Health check" : "连通测试",
     inventory: en ? "Global inventory (read)" : "全球库存（只读）",
+    fulfillment: en ? "Order fulfillments (read)" : "订单履约（只读）",
+    editScopes: en ? "Save scopes" : "保存权限",
+    scopesUpdated: en ? "Scopes updated." : "权限已更新。",
+    scopesFailed: en ? "Scope update failed." : "权限更新失败。",
     empty: en ? "No integration keys yet." : "暂无集成密钥。",
     createFailed: en ? "Create failed." : "创建失败。",
     revokeFailed: en ? "Revoke failed." : "吊销失败。",
@@ -63,7 +72,7 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
       const res = await fetch("/api/admin/integration-keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label: trimmed, scopes: ["inventory:read"] }),
+        body: JSON.stringify({ label: trimmed, scopes: createScopes }),
       });
       const data = (await res.json().catch(() => ({}))) as { message?: string; apiKey?: string };
       if (!res.ok || !data.apiKey) {
@@ -100,6 +109,33 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
     }
   }
 
+  async function onUpdateScopes(id: string, scopes: string[]) {
+    if (scopes.length === 0) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/integration-keys/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scopes }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { message?: string };
+      if (!res.ok) {
+        toast.error(data.message || t.scopesFailed);
+        return;
+      }
+      toast.success(t.scopesUpdated);
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function toggleCreateScope(scope: string) {
+    setCreateScopes((prev) =>
+      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope],
+    );
+  }
+
   return (
     <section className="mt-8 rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
       <div className="flex items-start gap-3">
@@ -120,6 +156,9 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
           <li>
             GET {base}/api/integrations/v1/inventory-global
           </li>
+          <li>
+            GET {base}/api/integrations/v1/order-fulfillments
+          </li>
           <li className="text-foreground/55">
             Header: Authorization: Bearer mps_…
           </li>
@@ -136,9 +175,24 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
             className="app-control-md mt-1 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent focus:ring-2"
           />
         </label>
+        <fieldset className="shrink-0">
+          <legend className="text-xs font-medium text-foreground/70">{t.scopes}</legend>
+          <div className="mt-1 flex flex-wrap gap-3">
+            {INTEGRATION_API_SCOPES.map((scope) => (
+              <label key={scope} className="inline-flex items-center gap-1.5 text-xs">
+                <input
+                  type="checkbox"
+                  checked={createScopes.includes(scope)}
+                  onChange={() => toggleCreateScope(scope)}
+                />
+                {scope}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <button
           type="button"
-          disabled={busy || !label.trim()}
+          disabled={busy || !label.trim() || createScopes.length === 0}
           onClick={() => void onCreate()}
           className="app-button-primary shrink-0 px-4 py-2 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
         >
@@ -193,7 +247,19 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
                 <tr key={k.id} className="border-b border-app-border/50">
                   <td className="px-2 py-2 font-medium">{k.label}</td>
                   <td className="px-2 py-2 font-mono text-xs">mps_{k.keyPrefix}…</td>
-                  <td className="px-2 py-2 text-xs">{k.scopes.join(", ")}</td>
+                  <td className="px-2 py-2">
+                    {k.isActive ? (
+                      <ScopeEditor
+                        key={`${k.id}-${k.scopes.join(",")}`}
+                        scopes={k.scopes}
+                        disabled={busy}
+                        onSave={(scopes) => void onUpdateScopes(k.id, scopes)}
+                        saveLabel={t.editScopes}
+                      />
+                    ) : (
+                      <span className="text-xs text-app-muted">{k.scopes.join(", ")}</span>
+                    )}
+                  </td>
                   <td className="px-2 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs ring-1 ${
@@ -233,5 +299,55 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
         </table>
       </div>
     </section>
+  );
+}
+
+function ScopeEditor({
+  scopes: initialScopes,
+  disabled,
+  onSave,
+  saveLabel,
+}: {
+  scopes: string[];
+  disabled: boolean;
+  onSave: (scopes: string[]) => void;
+  saveLabel: string;
+}) {
+  const [scopes, setScopes] = useState(initialScopes);
+
+  function toggle(scope: string) {
+    setScopes((prev) =>
+      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope],
+    );
+  }
+
+  const changed =
+    scopes.length !== initialScopes.length ||
+    scopes.some((s) => !initialScopes.includes(s));
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {INTEGRATION_API_SCOPES.map((scope) => (
+        <label key={scope} className="inline-flex items-center gap-1 text-xs">
+          <input
+            type="checkbox"
+            checked={scopes.includes(scope)}
+            disabled={disabled}
+            onChange={() => toggle(scope)}
+          />
+          {scope}
+        </label>
+      ))}
+      {changed ? (
+        <button
+          type="button"
+          disabled={disabled || scopes.length === 0}
+          onClick={() => onSave(scopes)}
+          className="self-start rounded border border-app-border px-2 py-0.5 text-xs hover:bg-app-accent-soft disabled:opacity-50"
+        >
+          {saveLabel}
+        </button>
+      ) : null}
+    </div>
   );
 }

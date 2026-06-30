@@ -7492,6 +7492,30 @@ export async function revokeIntegrationApiKeyById(id: string): Promise<boolean> 
   return rows.length > 0;
 }
 
+export async function updateIntegrationApiKeyScopes(
+  id: string,
+  scopes: string[],
+): Promise<IntegrationApiKeyEntry | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<IntegrationApiKeyRow[]>`
+    update integration_api_keys
+    set scopes = ${scopes}
+    where id = ${Number(id)} and is_active = true
+    returning
+      id,
+      label,
+      key_prefix,
+      key_hash,
+      scopes,
+      is_active,
+      created_by,
+      created_at::text,
+      last_used_at::text
+  `;
+  return rows[0] ? mapIntegrationApiKeyRow(rows[0]) : null;
+}
+
 export async function touchIntegrationApiKeyLastUsed(id: string): Promise<void> {
   await ensureDatabase();
   const db = getSql();
