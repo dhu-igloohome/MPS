@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleHelp, CloudDownload, Download, Plus, Trash2, Upload } from "lucide-react";
+import { CircleHelp, CloudDownload, Download, Filter, Plus, Trash2, Upload, X } from "lucide-react";
 
 import {
   buildForecastDestinationOptions,
@@ -123,6 +123,162 @@ function formatForecastMonthDisplay(ym: string, language: Language): string {
   return `${y}年${mo}月`;
 }
 
+function ForecastCheckboxFilterPanel({
+  options,
+  selected,
+  onChange,
+  searchPlaceholder,
+  selectAllLabel,
+  clearLabel,
+  noOptionsLabel,
+  searchable,
+}: {
+  options: { value: string; label: string }[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  searchPlaceholder: string;
+  selectAllLabel: string;
+  clearLabel: string;
+  noOptionsLabel: string;
+  searchable?: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const filteredOptions = searchable
+    ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  function toggleValue(value: string) {
+    onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value]);
+  }
+
+  return (
+    <div className="absolute left-0 top-full z-20 mt-1 w-52 rounded-xl border border-app-border bg-white p-2 text-left text-xs font-normal normal-case text-foreground shadow-lg">
+      {searchable ? (
+        <input
+          type="text"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={searchPlaceholder}
+          className="mb-2 w-full rounded-lg border border-app-border px-2 py-1 text-xs"
+        />
+      ) : null}
+      <div className="mb-1 flex items-center justify-between">
+        <button
+          type="button"
+          className="text-app-accent hover:underline"
+          onClick={() => onChange(options.map((o) => o.value))}
+        >
+          {selectAllLabel}
+        </button>
+        <button type="button" className="text-app-muted hover:underline" onClick={() => onChange([])}>
+          {clearLabel}
+        </button>
+      </div>
+      <div className="max-h-56 overflow-auto">
+        {filteredOptions.length === 0 ? (
+          <p className="py-2 text-center text-app-muted">{noOptionsLabel}</p>
+        ) : (
+          filteredOptions.map((o) => (
+            <label
+              key={o.value}
+              className="flex items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-slate-50"
+            >
+              <input
+                type="checkbox"
+                className="h-3.5 w-3.5 rounded border-app-border"
+                checked={selected.includes(o.value)}
+                onChange={() => toggleValue(o.value)}
+              />
+              <span className="truncate">{o.label}</span>
+            </label>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ForecastDateRangeFilterPanel({
+  from,
+  to,
+  onChangeFrom,
+  onChangeTo,
+  fromLabel,
+  toLabel,
+  clearLabel,
+}: {
+  from: string;
+  to: string;
+  onChangeFrom: (value: string) => void;
+  onChangeTo: (value: string) => void;
+  fromLabel: string;
+  toLabel: string;
+  clearLabel: string;
+}) {
+  return (
+    <div className="absolute left-0 top-full z-20 mt-1 w-52 rounded-xl border border-app-border bg-white p-2 text-left text-xs font-normal normal-case text-foreground shadow-lg">
+      <label className="mb-1.5 block">
+        <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-app-muted">{fromLabel}</span>
+        <input
+          type="date"
+          value={from}
+          onChange={(event) => onChangeFrom(event.target.value)}
+          className="w-full rounded-lg border border-app-border px-2 py-1 text-xs"
+        />
+      </label>
+      <label className="mb-2 block">
+        <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-app-muted">{toLabel}</span>
+        <input
+          type="date"
+          value={to}
+          onChange={(event) => onChangeTo(event.target.value)}
+          className="w-full rounded-lg border border-app-border px-2 py-1 text-xs"
+        />
+      </label>
+      <button
+        type="button"
+        className="text-app-muted hover:underline"
+        onClick={() => {
+          onChangeFrom("");
+          onChangeTo("");
+        }}
+      >
+        {clearLabel}
+      </button>
+    </div>
+  );
+}
+
+function ForecastFilterableHeader({
+  label,
+  isActive,
+  isOpen,
+  onToggle,
+  panelRef,
+  children,
+}: {
+  label: React.ReactNode;
+  isActive: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative inline-flex items-center gap-1" ref={isOpen ? panelRef : undefined}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`inline-flex items-center gap-1 whitespace-nowrap ${isActive ? "text-app-accent" : ""}`}
+      >
+        {label}
+        <Filter size={12} strokeWidth={1.75} className={isActive ? "fill-current" : ""} />
+      </button>
+      {isOpen ? children : null}
+    </div>
+  );
+}
+
 export function ForecastForm({
   allowedRegions,
   products,
@@ -238,6 +394,17 @@ export function ForecastForm({
     comment: language === "en" ? "Comment" : "评论",
     commentSaved: language === "en" ? "Comment saved." : "评论已保存。",
     commentSaveFailed: language === "en" ? "Could not save comment." : "评论保存失败。",
+    filterSearchPlaceholder: language === "en" ? "Search…" : "搜索…",
+    filterSelectAll: language === "en" ? "Select all" : "全选",
+    filterClear: language === "en" ? "Clear" : "清除",
+    filterNoOptions: language === "en" ? "No values." : "暂无可选值。",
+    filterDateFrom: language === "en" ? "From" : "起",
+    filterDateTo: language === "en" ? "To" : "止",
+    clearAllFilters: language === "en" ? "Clear filters" : "清除筛选",
+    filteredCount: (shown: number, total: number) =>
+      language === "en" ? `${shown} / ${total} rows` : `${shown} / ${total} 条`,
+    noFilterMatches:
+      language === "en" ? "No rows match the current filters." : "没有符合当前筛选条件的记录。",
   };
   const defaultRegion = allowedRegions[0];
 
@@ -289,8 +456,104 @@ export function ForecastForm({
     setSelectedForecastIds((prev) => prev.filter((id) => entryIdSet.has(id)));
   }, [entryIdSet]);
 
+  const [openFilterColumn, setOpenFilterColumn] = useState<
+    "month" | "region" | "sku" | "opsAction" | "created" | null
+  >(null);
+  const [filterMonths, setFilterMonths] = useState<string[]>([]);
+  const [filterRegions, setFilterRegions] = useState<Region[]>([]);
+  const [filterSkus, setFilterSkus] = useState<string[]>([]);
+  const [filterOpsActions, setFilterOpsActions] = useState<string[]>([]);
+  const [filterCreatedFrom, setFilterCreatedFrom] = useState("");
+  const [filterCreatedTo, setFilterCreatedTo] = useState("");
+
+  const filterMonthOptions = useMemo(
+    () =>
+      [...new Set(entries.map((e) => e.month))]
+        .sort()
+        .map((value) => ({ value, label: formatForecastMonthDisplay(value, language) })),
+    [entries, language],
+  );
+  const filterRegionOptions = useMemo(
+    () =>
+      [...new Set(entries.map((e) => e.region))].map((value) => ({
+        value,
+        label: forecastRegionSelectLabel(value, language),
+      })),
+    [entries, language],
+  );
+  const filterSkuOptions = useMemo(
+    () =>
+      [...new Set(entries.map((e) => e.sku).filter(Boolean))]
+        .sort()
+        .map((value) => ({ value, label: value })),
+    [entries],
+  );
+  const filterOpsActionOptions = useMemo(
+    () =>
+      FORECAST_OPS_ACTION_OPTIONS.filter((value) => value !== "").map((value) => ({
+        value,
+        label: value,
+      })),
+    [],
+  );
+
+  const hasActiveForecastFilters =
+    filterMonths.length > 0 ||
+    filterRegions.length > 0 ||
+    filterSkus.length > 0 ||
+    filterOpsActions.length > 0 ||
+    Boolean(filterCreatedFrom) ||
+    Boolean(filterCreatedTo);
+
+  const visibleForecastEntries = useMemo(() => {
+    if (!hasActiveForecastFilters) return entries;
+    return entries.filter((e) => {
+      if (filterMonths.length > 0 && !filterMonths.includes(e.month)) return false;
+      if (filterRegions.length > 0 && !filterRegions.includes(e.region)) return false;
+      if (filterSkus.length > 0 && !filterSkus.includes(e.sku)) return false;
+      if (filterOpsActions.length > 0 && !filterOpsActions.includes(e.opsAction)) return false;
+      if (filterCreatedFrom || filterCreatedTo) {
+        const createdDate = e.createdAt.slice(0, 10);
+        if (filterCreatedFrom && createdDate < filterCreatedFrom) return false;
+        if (filterCreatedTo && createdDate > filterCreatedTo) return false;
+      }
+      return true;
+    });
+  }, [
+    entries,
+    hasActiveForecastFilters,
+    filterMonths,
+    filterRegions,
+    filterSkus,
+    filterOpsActions,
+    filterCreatedFrom,
+    filterCreatedTo,
+  ]);
+
+  function clearAllForecastFilters() {
+    setFilterMonths([]);
+    setFilterRegions([]);
+    setFilterSkus([]);
+    setFilterOpsActions([]);
+    setFilterCreatedFrom("");
+    setFilterCreatedTo("");
+  }
+
+  const openFilterPanelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!openFilterColumn) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (openFilterPanelRef.current && !openFilterPanelRef.current.contains(event.target as Node)) {
+        setOpenFilterColumn(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openFilterColumn]);
+
   const allForecastRowsSelected =
-    entries.length > 0 && entries.every((e) => selectedForecastIds.includes(e.id));
+    visibleForecastEntries.length > 0 &&
+    visibleForecastEntries.every((e) => selectedForecastIds.includes(e.id));
   async function onBatchFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -475,11 +738,16 @@ export function ForecastForm({
   }
 
   function toggleSelectAllForecasts() {
-    if (entries.length === 0) return;
+    if (visibleForecastEntries.length === 0) return;
     if (allForecastRowsSelected) {
-      setSelectedForecastIds([]);
+      setSelectedForecastIds((prev) =>
+        prev.filter((id) => !visibleForecastEntries.some((e) => e.id === id)),
+      );
     } else {
-      setSelectedForecastIds(entries.map((e) => e.id));
+      setSelectedForecastIds((prev) => [
+        ...prev,
+        ...visibleForecastEntries.filter((e) => !prev.includes(e.id)).map((e) => e.id),
+      ]);
     }
   }
 
@@ -1200,22 +1468,39 @@ export function ForecastForm({
           >
             {t.allForecasts}
           </h3>
-          {canDelete && entries.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            {entries.length > 0 ? (
               <span className="text-xs tabular-nums text-app-muted">
-                {language === "en" ? `${selectedForecastIds.length} selected` : `已选 ${selectedForecastIds.length} 条`}
+                {t.filteredCount(visibleForecastEntries.length, entries.length)}
               </span>
+            ) : null}
+            {hasActiveForecastFilters ? (
               <button
                 type="button"
-                disabled={batchDeleting || selectedForecastIds.length === 0}
-                onClick={onBatchDeleteForecasts}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm text-red-700 transition duration-150 ease-out hover:-translate-y-px hover:bg-red-50 active:translate-y-0 disabled:opacity-50"
+                onClick={clearAllForecastFilters}
+                className="inline-flex items-center gap-1 text-xs text-app-accent hover:underline"
               >
-                <Trash2 size={15} strokeWidth={1.5} />
-                {batchDeleting ? (language === "en" ? "Deleting…" : "删除中…") : t.deleteSelected}
+                <X size={12} strokeWidth={2} />
+                {t.clearAllFilters}
               </button>
-            </div>
-          ) : null}
+            ) : null}
+            {canDelete && entries.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs tabular-nums text-app-muted">
+                  {language === "en" ? `${selectedForecastIds.length} selected` : `已选 ${selectedForecastIds.length} 条`}
+                </span>
+                <button
+                  type="button"
+                  disabled={batchDeleting || selectedForecastIds.length === 0}
+                  onClick={onBatchDeleteForecasts}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm text-red-700 transition duration-150 ease-out hover:-translate-y-px hover:bg-red-50 active:translate-y-0 disabled:opacity-50"
+                >
+                  <Trash2 size={15} strokeWidth={1.5} />
+                  {batchDeleting ? (language === "en" ? "Deleting…" : "删除中…") : t.deleteSelected}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <div className="px-4 py-4 sm:px-5">
@@ -1252,13 +1537,68 @@ export function ForecastForm({
                         />
                       </th>
                     ) : null}
-                    <th className="whitespace-nowrap">{t.forecastMonth}</th>
+                    <th className="whitespace-nowrap">
+                      <ForecastFilterableHeader
+                        label={t.forecastMonth}
+                        isActive={filterMonths.length > 0}
+                        isOpen={openFilterColumn === "month"}
+                        onToggle={() => setOpenFilterColumn(openFilterColumn === "month" ? null : "month")}
+                        panelRef={openFilterPanelRef}
+                      >
+                        <ForecastCheckboxFilterPanel
+                          options={filterMonthOptions}
+                          selected={filterMonths}
+                          onChange={setFilterMonths}
+                          searchPlaceholder={t.filterSearchPlaceholder}
+                          selectAllLabel={t.filterSelectAll}
+                          clearLabel={t.filterClear}
+                          noOptionsLabel={t.filterNoOptions}
+                        />
+                      </ForecastFilterableHeader>
+                    </th>
                     <th className="whitespace-nowrap">{language === "en" ? "Forecast #" : "Forecast #"}</th>
-                    <th className="whitespace-nowrap">{t.region}</th>
+                    <th className="whitespace-nowrap">
+                      <ForecastFilterableHeader
+                        label={t.region}
+                        isActive={filterRegions.length > 0}
+                        isOpen={openFilterColumn === "region"}
+                        onToggle={() => setOpenFilterColumn(openFilterColumn === "region" ? null : "region")}
+                        panelRef={openFilterPanelRef}
+                      >
+                        <ForecastCheckboxFilterPanel
+                          options={filterRegionOptions}
+                          selected={filterRegions}
+                          onChange={(next) => setFilterRegions(next as Region[])}
+                          searchPlaceholder={t.filterSearchPlaceholder}
+                          selectAllLabel={t.filterSelectAll}
+                          clearLabel={t.filterClear}
+                          noOptionsLabel={t.filterNoOptions}
+                        />
+                      </ForecastFilterableHeader>
+                    </th>
                     <th>{t.destination}</th>
                     <th className="whitespace-nowrap">{t.incoterm}</th>
                     <th>{t.productName}</th>
-                    <th className="whitespace-nowrap">{t.sku}</th>
+                    <th className="whitespace-nowrap">
+                      <ForecastFilterableHeader
+                        label={t.sku}
+                        isActive={filterSkus.length > 0}
+                        isOpen={openFilterColumn === "sku"}
+                        onToggle={() => setOpenFilterColumn(openFilterColumn === "sku" ? null : "sku")}
+                        panelRef={openFilterPanelRef}
+                      >
+                        <ForecastCheckboxFilterPanel
+                          options={filterSkuOptions}
+                          selected={filterSkus}
+                          onChange={setFilterSkus}
+                          searchPlaceholder={t.filterSearchPlaceholder}
+                          selectAllLabel={t.filterSelectAll}
+                          clearLabel={t.filterClear}
+                          noOptionsLabel={t.filterNoOptions}
+                          searchable
+                        />
+                      </ForecastFilterableHeader>
+                    </th>
                     <th className="whitespace-nowrap px-1.5 text-right" title={t.bto}>
                       {t.btoHeader}
                     </th>
@@ -1266,11 +1606,45 @@ export function ForecastForm({
                       {t.btsHeader}
                     </th>
                     <th className="whitespace-nowrap px-1.5" title={t.createdAt}>
-                      {t.createdHeader}
+                      <ForecastFilterableHeader
+                        label={t.createdHeader}
+                        isActive={Boolean(filterCreatedFrom || filterCreatedTo)}
+                        isOpen={openFilterColumn === "created"}
+                        onToggle={() => setOpenFilterColumn(openFilterColumn === "created" ? null : "created")}
+                        panelRef={openFilterPanelRef}
+                      >
+                        <ForecastDateRangeFilterPanel
+                          from={filterCreatedFrom}
+                          to={filterCreatedTo}
+                          onChangeFrom={setFilterCreatedFrom}
+                          onChangeTo={setFilterCreatedTo}
+                          fromLabel={t.filterDateFrom}
+                          toLabel={t.filterDateTo}
+                          clearLabel={t.filterClear}
+                        />
+                      </ForecastFilterableHeader>
                     </th>
                     <th>{t.actions}</th>
                     <th>{t.comment}</th>
-                    <th>Ops action</th>
+                    <th>
+                      <ForecastFilterableHeader
+                        label="Ops action"
+                        isActive={filterOpsActions.length > 0}
+                        isOpen={openFilterColumn === "opsAction"}
+                        onToggle={() => setOpenFilterColumn(openFilterColumn === "opsAction" ? null : "opsAction")}
+                        panelRef={openFilterPanelRef}
+                      >
+                        <ForecastCheckboxFilterPanel
+                          options={filterOpsActionOptions}
+                          selected={filterOpsActions}
+                          onChange={setFilterOpsActions}
+                          searchPlaceholder={t.filterSearchPlaceholder}
+                          selectAllLabel={t.filterSelectAll}
+                          clearLabel={t.filterClear}
+                          noOptionsLabel={t.filterNoOptions}
+                        />
+                      </ForecastFilterableHeader>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1280,8 +1654,17 @@ export function ForecastForm({
                         {t.noRecords}
                       </td>
                     </tr>
+                  ) : visibleForecastEntries.length === 0 ? (
+                    <tr>
+                      <td colSpan={canDelete ? 14 : 13} className="py-10 text-center text-app-muted">
+                        {t.noFilterMatches}{" "}
+                        <button type="button" className="text-app-accent hover:underline" onClick={clearAllForecastFilters}>
+                          {t.clearAllFilters}
+                        </button>
+                      </td>
+                    </tr>
                   ) : (
-                    entries.map((item, rowIdx) => {
+                    visibleForecastEntries.map((item, rowIdx) => {
                       const selected = selectedForecastIds.includes(item.id);
                       const editing = editDraft?.id === item.id;
                       const base =
