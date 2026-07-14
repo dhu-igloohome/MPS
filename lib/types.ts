@@ -533,6 +533,8 @@ export type FulfillmentGroup = {
   /** YYYY-MM month key. */
   forecastMonth: string;
   productName: string;
+  /** Region of the underlying forecast line(s) this group was built from. */
+  region: Region;
   /** Full forecast quantity (BTO + BTS) summed over the group's forecast lines. */
   forecastQty: number;
   /** Quantity already covered by approved/sent contracts. */

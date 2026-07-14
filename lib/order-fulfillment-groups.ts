@@ -36,6 +36,7 @@ export function buildFulfillmentGroups(
         sku: f.sku.trim(),
         forecastMonth: monthKey(f.month),
         productName: f.productName,
+        region: f.region,
         forecastQty: 0,
         contractedQty: 0,
         mpBatches: [],

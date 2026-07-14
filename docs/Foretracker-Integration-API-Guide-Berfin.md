@@ -127,9 +127,12 @@ GET /api/integrations/v1/order-fulfillments
 
 | Query param | Example | Description |
 |-------------|---------|-------------|
+| `region` | `EU` | `APAC`, `EU`, or `USA` (case-insensitive). Unrecognized values are ignored (no filter applied). |
 | `forecastMonth` | `2026-09` | YYYY-MM |
 | `sku` | `DAX6E` | SKU |
 | `forecastPoNumber` | `POU202606020002` | Forecast PO # |
+
+Every object in `groups` and `shipments` now also includes a `"region"` field (`"APAC"`, `"EU"`, or `"USA"`) so you can filter or label rows client-side even without the `region` param.
 
 **Example (curl)**
 
@@ -152,6 +155,7 @@ curl -H "Authorization: Bearer mps_YOUR_API_KEY_HERE" \
       "sku": "DAX6E",
       "forecastMonth": "2026-09",
       "productName": "Deadbolt Dash",
+      "region": "USA",
       "forecastQty": 500,
       "contractedQty": 500,
       "mpBatches": ["B001"],
@@ -164,6 +168,7 @@ curl -H "Authorization: Bearer mps_YOUR_API_KEY_HERE" \
       "forecastPoNumber": "POU202606020002",
       "sku": "DAX6E",
       "forecastMonth": "2026-09",
+      "region": "USA",
       "soNumber": "SO-12345",
       "soQuantity": 200,
       "freightMode": "sea",
