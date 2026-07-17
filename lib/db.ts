@@ -20,7 +20,7 @@ const sql = connectionString
   : null;
 
 /** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
-const CURRENT_SCHEMA_VERSION = 8;
+const CURRENT_SCHEMA_VERSION = 9;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -84,6 +84,8 @@ async function setupSchema() {
   await db`alter table forecasts add column if not exists po_number text not null default '';`;
   await db`alter table forecasts add column if not exists incoterm text not null default 'EXW';`;
   await db`alter table forecasts add column if not exists ops_action text not null default '';`;
+  await db`alter table forecasts add column if not exists demand_type text not null default 'regular';`;
+  await addForecastDemandTypeCheckConstraint(db);
   await db`alter table forecasts drop column if exists office;`;
 
   await db`
@@ -1277,8 +1279,31 @@ async function applyIncrementalMigrations() {
   const db = getSql();
   await db`alter table unit_cost_quotes add column if not exists quote_currency text not null default 'USD';`;
   await db`alter table unit_cost_quotes add column if not exists unit_price_cny numeric(14, 4);`;
+  await db`alter table forecasts add column if not exists demand_type text not null default 'regular';`;
+  await addForecastDemandTypeCheckConstraint(db);
   await createFulfillmentShipmentTables();
   await createIntegrationApiKeysTable();
+}
+
+/**
+ * Adds the forecasts.demand_type CHECK constraint if missing. Uses exception-swallowing
+ * instead of `drop ... if exists` + `add constraint` because `ensureDatabase` can run this
+ * incremental-migration path concurrently (no mutex, unlike the full `setupSchema` bootstrap)
+ * whenever several repository calls race on cold start — a drop+recreate pair is not safe
+ * under that race (one session's drop can no-op after another session already re-added it,
+ * producing a spurious "constraint already exists" error).
+ */
+async function addForecastDemandTypeCheckConstraint(db: ReturnType<typeof getSql>) {
+  await db.unsafe(`
+    DO $add_forecasts_demand_type_check$
+    BEGIN
+      ALTER TABLE forecasts
+      ADD CONSTRAINT forecasts_demand_type_check
+      CHECK (demand_type IN ('regular', 'buffer'));
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $add_forecasts_demand_type_check$;
+  `);
 }
 
 /** Order fulfillments (logistics): one row per shipment of a Forecast # + SKU group. */

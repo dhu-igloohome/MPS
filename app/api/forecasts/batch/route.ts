@@ -6,7 +6,7 @@ import { parseForecastIncoterm } from "@/lib/forecast-incoterm";
 import { createForecast, findActiveProductByNameAndSku } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import type { ForecastIncoterm } from "@/lib/forecast-incoterm";
-import type { Region } from "@/lib/types";
+import type { ForecastDemandType, Region } from "@/lib/types";
 const MONTH_RE = /^\d{4}-\d{2}$/;
 const MAX_ROWS = 500;
 
@@ -19,7 +19,8 @@ type BatchKey =
   | "sku"
   | "build_to_order"
   | "build_to_stock"
-  | "remark";
+  | "remark"
+  | "demand_type";
 
 function isRegion(value: string): value is Region {
   return value === "APAC" || value === "EU" || value === "USA";
@@ -39,6 +40,8 @@ function resolveHeaderKey(normalized: string): BatchKey | null {
     build_to_stock: "build_to_stock",
     bts: "build_to_stock",
     remark: "remark",
+    demand_type: "demand_type",
+    buffer: "demand_type",
   };
   return map[normalized] ?? null;
 }
@@ -129,6 +132,15 @@ export async function POST(request: Request) {
       }
       incoterm = p;
     }
+    const demandTypeRaw = cell(row, col, "demand_type").trim().toLowerCase();
+    let demandType: ForecastDemandType = "regular";
+    if (demandTypeRaw) {
+      if (demandTypeRaw !== "regular" && demandTypeRaw !== "buffer") {
+        errors.push({ row: rowNum, message: "Invalid demand_type (use regular or buffer)" });
+        continue;
+      }
+      demandType = demandTypeRaw;
+    }
 
     if (!MONTH_RE.test(month)) {
       errors.push({ row: rowNum, message: "Invalid month (YYYY-MM)" });
@@ -175,6 +187,7 @@ export async function POST(request: Request) {
         productName,
         sku,
         remark,
+        demandType,
         buildToOrder,
         buildToStock,
         createdBy: session.username,

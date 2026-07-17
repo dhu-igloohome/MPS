@@ -8,10 +8,14 @@ import {
   forecastPoExistsInRegion,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
-import { Region } from "@/lib/types";
+import { ForecastDemandType, Region } from "@/lib/types";
 
 function isRegion(value: string): value is Region {
   return value === "APAC" || value === "EU" || value === "USA";
+}
+
+function parseForecastDemandType(input: unknown): ForecastDemandType {
+  return String(input ?? "").trim() === "buffer" ? "buffer" : "regular";
 }
 
 const FORECAST_OPS_ACTION_OPTIONS = [
@@ -55,6 +59,7 @@ export async function POST(request: Request) {
   const buildToOrder = Number(body.buildToOrder || 0);
   const buildToStock = Number(body.buildToStock || 0);
   const incoterm = parseForecastIncoterm(body.incoterm);
+  const demandType = parseForecastDemandType((body as Record<string, unknown>).demandType);
 
   if (!month || !productName.trim() || !sku.trim() || !destination) {
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
@@ -101,6 +106,7 @@ export async function POST(request: Request) {
     sku,
     remark,
     opsAction,
+    demandType,
     buildToOrder,
     buildToStock,
     createdBy: session.username,

@@ -18,6 +18,7 @@ import {
   BomStatus,
   ForecastCashFlowRow,
   ForecastCashFlowShippingMode,
+  ForecastDemandType,
   ForecastEntry,
   ForecastIncoterm,
   FulfillmentDeliveryStatus,
@@ -480,6 +481,7 @@ export async function createForecast(input: {
   sku: string;
   remark: string;
   opsAction?: string;
+  demandType?: ForecastDemandType;
   buildToOrder: number;
   buildToStock: number;
   createdBy: string;
@@ -488,6 +490,7 @@ export async function createForecast(input: {
   const db = getSql();
   const manualPo = String(input.poNumber || "").trim();
   const opsAction = String(input.opsAction || "").trim();
+  const demandType: ForecastDemandType = input.demandType === "buffer" ? "buffer" : "regular";
   if (manualPo) {
     const rows = await db<
       {
@@ -501,6 +504,7 @@ export async function createForecast(input: {
         sku: string;
         remark: string;
         ops_action: string;
+        demand_type: ForecastDemandType | null;
         build_to_order: number;
         build_to_stock: number;
         created_by: string;
@@ -517,6 +521,7 @@ export async function createForecast(input: {
         sku,
         remark,
         ops_action,
+        demand_type,
         build_to_order,
         build_to_stock,
         created_by
@@ -531,6 +536,7 @@ export async function createForecast(input: {
         ${input.sku.trim()},
         ${input.remark.trim()},
         ${opsAction},
+        ${demandType},
         ${input.buildToOrder},
         ${input.buildToStock},
         ${input.createdBy}
@@ -546,6 +552,7 @@ export async function createForecast(input: {
         sku,
         remark,
         ops_action,
+        demand_type,
         build_to_order,
         build_to_stock,
         created_by,
@@ -568,6 +575,7 @@ export async function createForecast(input: {
       sku: string;
       remark: string;
       ops_action: string;
+      demand_type: ForecastDemandType | null;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -591,6 +599,7 @@ export async function createForecast(input: {
       sku,
       remark,
       ops_action,
+      demand_type,
       build_to_order,
       build_to_stock,
       created_by
@@ -605,6 +614,7 @@ export async function createForecast(input: {
       ${input.sku.trim()},
       ${input.remark.trim()},
       ${opsAction},
+      ${demandType},
       ${input.buildToOrder},
       ${input.buildToStock},
       ${input.createdBy}
@@ -620,6 +630,7 @@ export async function createForecast(input: {
       sku,
       remark,
       ops_action,
+      demand_type,
       build_to_order,
       build_to_stock,
       created_by,
@@ -776,6 +787,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       sku: string;
       remark: string;
       ops_action: string;
+      demand_type: ForecastDemandType | null;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -793,6 +805,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       sku,
       remark,
       ops_action,
+      demand_type,
       build_to_order,
       build_to_stock,
       created_by,
@@ -828,6 +841,7 @@ export async function findLatestForecastByPoAndSku(
       sku: string;
       remark: string;
       ops_action: string;
+      demand_type: ForecastDemandType | null;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -845,6 +859,7 @@ export async function findLatestForecastByPoAndSku(
       sku,
       remark,
       ops_action,
+      demand_type,
       build_to_order,
       build_to_stock,
       created_by,
@@ -1141,6 +1156,7 @@ export async function getForecastById(id: string): Promise<ForecastEntry | null>
       sku: string;
       remark: string;
       ops_action: string;
+      demand_type: ForecastDemandType | null;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -1158,6 +1174,7 @@ export async function getForecastById(id: string): Promise<ForecastEntry | null>
       sku,
       remark,
       ops_action,
+      demand_type,
       build_to_order,
       build_to_stock,
       created_by,
@@ -1179,6 +1196,7 @@ export async function updateForecast(input: {
   sku: string;
   remark: string;
   opsAction?: string;
+  demandType?: ForecastDemandType;
   buildToOrder: number;
   buildToStock: number;
 }): Promise<ForecastEntry | null> {
@@ -1186,6 +1204,7 @@ export async function updateForecast(input: {
   const db = getSql();
   const pid = Number(input.id);
   const opsAction = String(input.opsAction || "").trim();
+  const demandType: ForecastDemandType = input.demandType === "buffer" ? "buffer" : "regular";
   const rows = await db<
     {
       id: number;
@@ -1198,6 +1217,7 @@ export async function updateForecast(input: {
       sku: string;
       remark: string;
       ops_action: string;
+      demand_type: ForecastDemandType | null;
       build_to_order: number;
       build_to_stock: number;
       created_by: string;
@@ -1214,6 +1234,7 @@ export async function updateForecast(input: {
       sku = ${input.sku.trim()},
       remark = ${input.remark.trim()},
       ops_action = ${opsAction},
+      demand_type = ${demandType},
       build_to_order = ${input.buildToOrder},
       build_to_stock = ${input.buildToStock}
     where id = ${pid}
@@ -1228,6 +1249,7 @@ export async function updateForecast(input: {
       sku,
       remark,
       ops_action,
+      demand_type,
       build_to_order,
       build_to_stock,
       created_by,
@@ -1427,6 +1449,7 @@ function mapForecast(row: {
   sku: string;
   remark: string;
   ops_action: string;
+  demand_type: ForecastDemandType | null;
   build_to_order: number;
   build_to_stock: number;
   created_by: string;
@@ -1443,6 +1466,7 @@ function mapForecast(row: {
     sku: row.sku,
     remark: row.remark || "",
     opsAction: row.ops_action || "",
+    demandType: row.demand_type === "buffer" ? "buffer" : "regular",
     buildToOrder: Number(row.build_to_order || 0),
     buildToStock: Number(row.build_to_stock || 0),
     createdBy: row.created_by,

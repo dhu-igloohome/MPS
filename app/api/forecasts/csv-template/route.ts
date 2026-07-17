@@ -13,9 +13,21 @@ const HEADER = [
   "build_to_order",
   "build_to_stock",
   "remark",
+  "demand_type",
 ];
 
-const EXAMPLE = ["2026-03", "APAC", "Singapore", "EXW", "Example Product", "SKU001", "120", "30", "sample"];
+const EXAMPLE = [
+  "2026-03",
+  "APAC",
+  "Singapore",
+  "EXW",
+  "Example Product",
+  "SKU001",
+  "120",
+  "30",
+  "sample",
+  "regular",
+];
 
 export async function GET() {
   const session = await getSession();

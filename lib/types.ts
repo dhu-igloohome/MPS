@@ -4,6 +4,9 @@ export type { ForecastIncoterm };
 
 export type Region = "APAC" | "EU" | "USA";
 
+/** "buffer" = extra stock held against forecast inaccuracy, not a normal monthly sales forecast line. */
+export type ForecastDemandType = "regular" | "buffer";
+
 /** Persisted on forecast_cash_flow_settings for landed cost / departure logic. */
 export type ForecastCashFlowShippingMode = "ocean" | "air";
 
@@ -65,6 +68,7 @@ export type ForecastEntry = {
   sku: string;
   remark: string;
   opsAction: string;
+  demandType: ForecastDemandType;
   buildToOrder: number;
   buildToStock: number;
   createdBy: string;

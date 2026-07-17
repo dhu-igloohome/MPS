@@ -10,7 +10,7 @@ import {
   updateForecast,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
-import type { Region } from "@/lib/types";
+import type { ForecastDemandType, Region } from "@/lib/types";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -87,6 +87,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   ) {
     opsAction = existing.opsAction;
   }
+  const rawDemandType = (body as Record<string, unknown>).demandType;
+  const demandType: ForecastDemandType =
+    rawDemandType == null ? existing.demandType : String(rawDemandType).trim() === "buffer" ? "buffer" : "regular";
 
   if (!isRegion(region)) {
     return NextResponse.json({ message: "Invalid region" }, { status: 400 });
@@ -125,6 +128,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     sku: sku.trim(),
     remark: remark.trim(),
     opsAction: opsAction ?? "",
+    demandType,
     buildToOrder,
     buildToStock,
   });

@@ -16,7 +16,7 @@ import {
 } from "@/lib/forecast-incoterm";
 import { TableCellLongText } from "@/components/shared/table-cell-long-text";
 import { Language } from "@/lib/i18n";
-import { ForecastEntry, ProductItem, Region } from "@/lib/types";
+import { ForecastDemandType, ForecastEntry, ProductItem, Region } from "@/lib/types";
 
 type ForecastFormProps = {
   allowedRegions: Region[];
@@ -35,6 +35,7 @@ type DraftForecastLine = {
   buildToOrder: string;
   buildToStock: string;
   remark: string;
+  isBuffer: boolean;
 };
 
 type ForecastEditDraft = {
@@ -47,6 +48,7 @@ type ForecastEditDraft = {
   productName: string;
   remark: string;
   opsAction: string;
+  isBuffer: boolean;
   buildToOrder: string;
   buildToStock: string;
   poNumber: string;
@@ -79,6 +81,7 @@ function newDraftForecastLine(products: ProductItem[]): DraftForecastLine {
     buildToOrder: "0",
     buildToStock: "0",
     remark: "",
+    isBuffer: false,
   };
 }
 
@@ -316,6 +319,14 @@ export function ForecastForm({
     btoHeader: language === "en" ? "BTO" : "按单",
     btsHeader: language === "en" ? "BTS" : "备货",
     createdHeader: language === "en" ? "Created" : "创建",
+    bufferHeader: language === "en" ? "Buffer" : "缓冲",
+    bufferLabel: language === "en" ? "Buffer stock" : "缓冲库存",
+    bufferHint:
+      language === "en"
+        ? "Extra stock held against forecast inaccuracy, not a normal monthly sales forecast."
+        : "为应付 forecast 不准时的紧急需求而预留的缓冲库存，不是常规月度销售预测。",
+    bufferYes: language === "en" ? "Buffer" : "缓冲",
+    bufferNo: language === "en" ? "Regular" : "常规",
     saveFailed:
       language === "en"
         ? "Save failed. Please check fields and permissions."
@@ -457,7 +468,7 @@ export function ForecastForm({
   }, [entryIdSet]);
 
   const [openFilterColumn, setOpenFilterColumn] = useState<
-    "month" | "region" | "sku" | "opsAction" | "created" | null
+    "month" | "region" | "sku" | "opsAction" | "created" | "demandType" | null
   >(null);
   const [filterMonths, setFilterMonths] = useState<string[]>([]);
   const [filterRegions, setFilterRegions] = useState<Region[]>([]);
@@ -465,6 +476,7 @@ export function ForecastForm({
   const [filterOpsActions, setFilterOpsActions] = useState<string[]>([]);
   const [filterCreatedFrom, setFilterCreatedFrom] = useState("");
   const [filterCreatedTo, setFilterCreatedTo] = useState("");
+  const [filterDemandTypes, setFilterDemandTypes] = useState<ForecastDemandType[]>([]);
 
   const filterMonthOptions = useMemo(
     () =>
@@ -496,12 +508,20 @@ export function ForecastForm({
       })),
     [],
   );
+  const filterDemandTypeOptions = useMemo(
+    () => [
+      { value: "regular" as ForecastDemandType, label: t.bufferNo },
+      { value: "buffer" as ForecastDemandType, label: t.bufferYes },
+    ],
+    [t.bufferNo, t.bufferYes],
+  );
 
   const hasActiveForecastFilters =
     filterMonths.length > 0 ||
     filterRegions.length > 0 ||
     filterSkus.length > 0 ||
     filterOpsActions.length > 0 ||
+    filterDemandTypes.length > 0 ||
     Boolean(filterCreatedFrom) ||
     Boolean(filterCreatedTo);
 
@@ -512,6 +532,7 @@ export function ForecastForm({
       if (filterRegions.length > 0 && !filterRegions.includes(e.region)) return false;
       if (filterSkus.length > 0 && !filterSkus.includes(e.sku)) return false;
       if (filterOpsActions.length > 0 && !filterOpsActions.includes(e.opsAction)) return false;
+      if (filterDemandTypes.length > 0 && !filterDemandTypes.includes(e.demandType)) return false;
       if (filterCreatedFrom || filterCreatedTo) {
         const createdDate = e.createdAt.slice(0, 10);
         if (filterCreatedFrom && createdDate < filterCreatedFrom) return false;
@@ -526,6 +547,7 @@ export function ForecastForm({
     filterRegions,
     filterSkus,
     filterOpsActions,
+    filterDemandTypes,
     filterCreatedFrom,
     filterCreatedTo,
   ]);
@@ -535,6 +557,7 @@ export function ForecastForm({
     setFilterRegions([]);
     setFilterSkus([]);
     setFilterOpsActions([]);
+    setFilterDemandTypes([]);
     setFilterCreatedFrom("");
     setFilterCreatedTo("");
   }
@@ -685,6 +708,7 @@ export function ForecastForm({
           productName: line.productName,
           sku: line.sku,
           remark: line.remark,
+          demandType: line.isBuffer ? "buffer" : "regular",
           buildToOrder: Number(line.buildToOrder || 0),
           buildToStock: Number(line.buildToStock || 0),
         }),
@@ -763,6 +787,7 @@ export function ForecastForm({
       productName: item.productName,
       remark: inlineRemarkById[item.id] ?? item.remark,
       opsAction: inlineOpsActionById[item.id] ?? item.opsAction,
+      isBuffer: item.demandType === "buffer",
       buildToOrder: String(item.buildToOrder),
       buildToStock: String(item.buildToStock),
       poNumber: item.poNumber || "",
@@ -799,6 +824,7 @@ export function ForecastForm({
         productName: editDraft.productName,
         sku: editDraft.sku,
         remark: editDraft.remark,
+        demandType: editDraft.isBuffer ? "buffer" : "regular",
         buildToOrder: Number(editDraft.buildToOrder || 0),
         buildToStock: Number(editDraft.buildToStock || 0),
       }),
@@ -1101,6 +1127,7 @@ export function ForecastForm({
                     <col className="w-[4.75rem]" />
                     <col className="w-[5rem]" />
                     <col className="w-[5rem]" />
+                    <col className="w-[4.5rem]" />
                     <col className="w-[14rem]" />
                     <col className="w-9" />
                   </colgroup>
@@ -1116,6 +1143,9 @@ export function ForecastForm({
                       </th>
                       <th className="whitespace-nowrap px-1.5 text-right" title={t.bts}>
                         {t.btsHeader}
+                      </th>
+                      <th className="whitespace-nowrap px-1.5 text-center" title={t.bufferHint}>
+                        {t.bufferHeader}
                       </th>
                       <th>{t.remark}</th>
                       <th aria-hidden />
@@ -1229,6 +1259,22 @@ export function ForecastForm({
                             }
                             className="app-control-num px-2 py-1.5 text-sm"
                             aria-label={t.bts}
+                          />
+                        </td>
+                        <td className="text-center">
+                          <input
+                            type="checkbox"
+                            checked={line.isBuffer}
+                            onChange={(event) =>
+                              setLines((prev) =>
+                                prev.map((x) =>
+                                  x.key === line.key ? { ...x, isBuffer: event.target.checked } : x,
+                                ),
+                              )
+                            }
+                            title={t.bufferHint}
+                            aria-label={t.bufferLabel}
+                            className="h-4 w-4 rounded border-app-border"
                           />
                         </td>
                         <td className="min-w-[14rem]">
@@ -1423,6 +1469,23 @@ export function ForecastForm({
                 className="app-control-num px-3 py-2 text-sm"
               />
             </label>
+            <label className="block shrink-0">
+              <span className="mb-1 block text-xs text-foreground/85">{t.bufferHeader}</span>
+              <span
+                className="flex h-[38px] items-center rounded-lg border border-app-border px-3"
+                title={t.bufferHint}
+              >
+                <input
+                  type="checkbox"
+                  checked={editDraft.isBuffer}
+                  onChange={(e) =>
+                    setEditDraft((d) => (d ? { ...d, isBuffer: e.target.checked } : d))
+                  }
+                  className="h-4 w-4 rounded border-app-border"
+                  aria-label={t.bufferLabel}
+                />
+              </span>
+            </label>
             <label className="block max-w-[12rem] shrink-0">
               <span className="mb-1 block text-xs text-foreground/85">{t.remark}</span>
               <input
@@ -1518,6 +1581,7 @@ export function ForecastForm({
                   <col className="w-[5.5rem]" />
                   <col className="w-[5.25rem]" />
                   <col className="w-[5.25rem]" />
+                  <col className="w-[4.5rem]" />
                   <col className="w-[7.25rem]" />
                   <col className="w-[8.5rem]" />
                   <col className="w-[12rem]" />
@@ -1605,6 +1669,27 @@ export function ForecastForm({
                     <th className="whitespace-nowrap px-1.5 text-right" title={t.bts}>
                       {t.btsHeader}
                     </th>
+                    <th className="whitespace-nowrap px-1.5 text-center" title={t.bufferHint}>
+                      <ForecastFilterableHeader
+                        label={t.bufferHeader}
+                        isActive={filterDemandTypes.length > 0}
+                        isOpen={openFilterColumn === "demandType"}
+                        onToggle={() =>
+                          setOpenFilterColumn(openFilterColumn === "demandType" ? null : "demandType")
+                        }
+                        panelRef={openFilterPanelRef}
+                      >
+                        <ForecastCheckboxFilterPanel
+                          options={filterDemandTypeOptions}
+                          selected={filterDemandTypes}
+                          onChange={(next) => setFilterDemandTypes(next as ForecastDemandType[])}
+                          searchPlaceholder={t.filterSearchPlaceholder}
+                          selectAllLabel={t.filterSelectAll}
+                          clearLabel={t.filterClear}
+                          noOptionsLabel={t.filterNoOptions}
+                        />
+                      </ForecastFilterableHeader>
+                    </th>
                     <th className="whitespace-nowrap px-1.5" title={t.createdAt}>
                       <ForecastFilterableHeader
                         label={t.createdHeader}
@@ -1650,13 +1735,13 @@ export function ForecastForm({
                 <tbody>
                   {entries.length === 0 ? (
                     <tr>
-                      <td colSpan={canDelete ? 14 : 13} className="py-10 text-center text-app-muted">
+                      <td colSpan={canDelete ? 15 : 14} className="py-10 text-center text-app-muted">
                         {t.noRecords}
                       </td>
                     </tr>
                   ) : visibleForecastEntries.length === 0 ? (
                     <tr>
-                      <td colSpan={canDelete ? 14 : 13} className="py-10 text-center text-app-muted">
+                      <td colSpan={canDelete ? 15 : 14} className="py-10 text-center text-app-muted">
                         {t.noFilterMatches}{" "}
                         <button type="button" className="text-app-accent hover:underline" onClick={clearAllForecastFilters}>
                           {t.clearAllFilters}
@@ -1712,6 +1797,16 @@ export function ForecastForm({
                           <td className="whitespace-nowrap font-medium">{item.sku}</td>
                           <td className="text-right tabular-nums">{item.buildToOrder}</td>
                           <td className="text-right tabular-nums">{item.buildToStock}</td>
+                          <td className="text-center">
+                            {item.demandType === "buffer" ? (
+                              <span
+                                className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                                title={t.bufferHint}
+                              >
+                                {t.bufferYes}
+                              </span>
+                            ) : null}
+                          </td>
                           <td className="whitespace-nowrap tabular-nums text-app-muted">{item.createdAt.slice(0, 10)}</td>
                           <td className="align-top">
                             <div className="flex flex-wrap gap-1.5">
