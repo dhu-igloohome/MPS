@@ -6,7 +6,24 @@
 
 ---
 
-## 2026-07-17 — Forecast 支持"缓冲库存 (Buffer stock)"标记
+## 2026-07-17（返工）— Buffer stock 改为从 Region 下拉菜单直接选择
+
+**背景**：下面这条 2026-07-17 的记录里，最初把 Buffer stock 做成了"SKU 明细行里的一个勾选框"。David 反馈这完全误解了需求——他要的是**直接在 Region 下拉菜单里加一个"Buffer Stock"选项**，和 APAC/EU/North America 并列，而不是另外单独一个勾选框。
+
+**返工后的方案**：
+- Region `<select>` 现在显示 4 个选项：APAC / EU / North America / **Buffer Stock**。选中 "Buffer Stock" 时前端设一个内部 `demandTypeMode` 状态为 buffer，不影响真实的 `region` 字段的 CHECK 约束/RBAC/PO 编号规则（技术上这些顾虑没变，见下面一条记录）。
+- 由于 `forecasts.region` 数据库列仍然只能是 APAC/EU/USA 之一（不会真的塞入 "BUFFER" 这个值），选中 Buffer Stock 后：
+  - 如果账号只有 1 个 region 权限（大部分 regional_admin）→ 直接静默用那个 region，不需要用户多选。
+  - 如果账号有多个 region 权限（比如 David 的 super_admin）→ 在 Region 下拉旁边多弹出一个"缓冲库存归属地区"小下拉，二选一/三选一具体归到哪个真实地区（默认 `allowedRegions[0]`）。
+- 编辑面板（"全部 Forecast 记录"点"编辑"）的 Region 下拉做了同样的合并处理，去掉了返工前加的那个独立勾选框。
+- 因为 Buffer 现在是"新建这一批 SKU 明细行"共享的一个状态（跟 Forecast Month/Region 同一个层级），不再是逐行勾选——所以把 SKU 明细行里那个 Buffer 勾选框列整个删掉了。
+- "全部 Forecast 记录"表格的 Buffer 列 + 筛选、CSV 导入的可选 `demand_type` 列、后端 schema/API（`demand_type` 字段本身）都不用动，因为这些都是作用在已保存的单条记录上，跟"新建时怎么录入"是两回事。
+
+**验证**：`tsc --noEmit`、`npm run lint` 全干净。本地实测：Region 下拉里能看到 4 个选项；选 "Buffer Stock" 后（David 账号是 3 region）正确弹出"Buffer belongs to region"二级下拉；提交后 API 返回 `region:"APAC", demandType:"buffer"`；测试数据已删除，数据库确认无残留。
+
+---
+
+## 2026-07-17（第一版，已废弃上面提到的 UI 做法）— Forecast 支持"缓冲库存 (Buffer stock)"标记
 
 **需求背景**：Region 目前只有 APAC/EU/USA 三个真实地理区域，但业务上有时需要为某个 SKU 单独囤一笔"缓冲库存"，用来应付 forecast 不准时的紧急需求。
 

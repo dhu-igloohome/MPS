@@ -35,7 +35,6 @@ type DraftForecastLine = {
   buildToOrder: string;
   buildToStock: string;
   remark: string;
-  isBuffer: boolean;
 };
 
 type ForecastEditDraft = {
@@ -62,6 +61,9 @@ const FORECAST_OPS_ACTION_OPTIONS = [
   "Consider stock transfer from other region",
 ] as const;
 
+/** Sentinel `<option>` value for "Buffer Stock" inside the Region select — never persisted. */
+const BUFFER_REGION_SENTINEL = "__BUFFER__";
+
 /** Stored value stays `USA`; dropdown / table show North America (EN) or 北美 (ZH). */
 function forecastRegionSelectLabel(region: Region, language: Language): string {
   if (region === "USA") {
@@ -81,7 +83,6 @@ function newDraftForecastLine(products: ProductItem[]): DraftForecastLine {
     buildToOrder: "0",
     buildToStock: "0",
     remark: "",
-    isBuffer: false,
   };
 }
 
@@ -327,6 +328,9 @@ export function ForecastForm({
         : "为应付 forecast 不准时的紧急需求而预留的缓冲库存，不是常规月度销售预测。",
     bufferYes: language === "en" ? "Buffer" : "缓冲",
     bufferNo: language === "en" ? "Regular" : "常规",
+    bufferStockOption: language === "en" ? "Buffer Stock" : "缓冲库存",
+    bufferRegionPickerLabel:
+      language === "en" ? "Buffer belongs to region" : "缓冲库存归属地区",
     saveFailed:
       language === "en"
         ? "Save failed. Please check fields and permissions."
@@ -426,6 +430,7 @@ export function ForecastForm({
 
   const [month, setMonth] = useState(forecastMonthPicker.defaultValue);
   const [region, setRegion] = useState<Region>(defaultRegion);
+  const [demandTypeMode, setDemandTypeMode] = useState<ForecastDemandType>("regular");
   const [lines, setLines] = useState<DraftForecastLine[]>([newDraftForecastLine(products)]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -708,7 +713,7 @@ export function ForecastForm({
           productName: line.productName,
           sku: line.sku,
           remark: line.remark,
-          demandType: line.isBuffer ? "buffer" : "regular",
+          demandType: demandTypeMode,
           buildToOrder: Number(line.buildToOrder || 0),
           buildToStock: Number(line.buildToStock || 0),
         }),
@@ -1048,8 +1053,16 @@ export function ForecastForm({
             <label className="block shrink-0">
               <span className="mb-1 block text-xs text-foreground/85">{t.region}</span>
               <select
-                value={region}
-                onChange={(event) => onRegionChange(event.target.value as Region)}
+                value={demandTypeMode === "buffer" ? BUFFER_REGION_SENTINEL : region}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  if (next === BUFFER_REGION_SENTINEL) {
+                    setDemandTypeMode("buffer");
+                  } else {
+                    setDemandTypeMode("regular");
+                    onRegionChange(next as Region);
+                  }
+                }}
                 className="app-control-sm px-3 py-2 text-sm"
               >
                 {allowedRegions.map((item) => (
@@ -1057,8 +1070,26 @@ export function ForecastForm({
                     {forecastRegionSelectLabel(item, language)}
                   </option>
                 ))}
+                <option value={BUFFER_REGION_SENTINEL}>{t.bufferStockOption}</option>
               </select>
             </label>
+
+            {demandTypeMode === "buffer" && allowedRegions.length > 1 ? (
+              <label className="block shrink-0">
+                <span className="mb-1 block text-xs text-foreground/85">{t.bufferRegionPickerLabel}</span>
+                <select
+                  value={region}
+                  onChange={(event) => onRegionChange(event.target.value as Region)}
+                  className="app-control-sm px-3 py-2 text-sm"
+                >
+                  {allowedRegions.map((item) => (
+                    <option key={item} value={item}>
+                      {forecastRegionSelectLabel(item, language)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
 
             <label
               className="flex min-h-[38px] shrink-0 items-center gap-2 rounded-xl border border-app-border bg-white px-3 py-2 text-sm"
@@ -1127,7 +1158,6 @@ export function ForecastForm({
                     <col className="w-[4.75rem]" />
                     <col className="w-[5rem]" />
                     <col className="w-[5rem]" />
-                    <col className="w-[4.5rem]" />
                     <col className="w-[14rem]" />
                     <col className="w-9" />
                   </colgroup>
@@ -1143,9 +1173,6 @@ export function ForecastForm({
                       </th>
                       <th className="whitespace-nowrap px-1.5 text-right" title={t.bts}>
                         {t.btsHeader}
-                      </th>
-                      <th className="whitespace-nowrap px-1.5 text-center" title={t.bufferHint}>
-                        {t.bufferHeader}
                       </th>
                       <th>{t.remark}</th>
                       <th aria-hidden />
@@ -1261,22 +1288,6 @@ export function ForecastForm({
                             aria-label={t.bts}
                           />
                         </td>
-                        <td className="text-center">
-                          <input
-                            type="checkbox"
-                            checked={line.isBuffer}
-                            onChange={(event) =>
-                              setLines((prev) =>
-                                prev.map((x) =>
-                                  x.key === line.key ? { ...x, isBuffer: event.target.checked } : x,
-                                ),
-                              )
-                            }
-                            title={t.bufferHint}
-                            aria-label={t.bufferLabel}
-                            className="h-4 w-4 rounded border-app-border"
-                          />
-                        </td>
                         <td className="min-w-[14rem]">
                           <textarea
                             rows={2}
@@ -1373,10 +1384,15 @@ export function ForecastForm({
             <label className="block shrink-0">
               <span className="mb-1 block text-xs text-foreground/85">{t.region}</span>
               <select
-                value={editDraft.region}
-                onChange={(e) =>
-                  setEditDraft((d) => (d ? { ...d, region: e.target.value as Region } : d))
-                }
+                value={editDraft.isBuffer ? BUFFER_REGION_SENTINEL : editDraft.region}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setEditDraft((d) => {
+                    if (!d) return d;
+                    if (next === BUFFER_REGION_SENTINEL) return { ...d, isBuffer: true };
+                    return { ...d, isBuffer: false, region: next as Region };
+                  });
+                }}
                 className="app-control-sm px-3 py-2 text-sm"
               >
                 {allowedRegions.map((item) => (
@@ -1384,8 +1400,27 @@ export function ForecastForm({
                     {forecastRegionSelectLabel(item, language)}
                   </option>
                 ))}
+                <option value={BUFFER_REGION_SENTINEL}>{t.bufferStockOption}</option>
               </select>
             </label>
+            {editDraft.isBuffer && allowedRegions.length > 1 ? (
+              <label className="block shrink-0">
+                <span className="mb-1 block text-xs text-foreground/85">{t.bufferRegionPickerLabel}</span>
+                <select
+                  value={editDraft.region}
+                  onChange={(e) =>
+                    setEditDraft((d) => (d ? { ...d, region: e.target.value as Region } : d))
+                  }
+                  className="app-control-sm px-3 py-2 text-sm"
+                >
+                  {allowedRegions.map((item) => (
+                    <option key={item} value={item}>
+                      {forecastRegionSelectLabel(item, language)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label className="block shrink-0">
               <span className="mb-1 block text-xs text-foreground/85">{t.destination}</span>
               <select
@@ -1468,23 +1503,6 @@ export function ForecastForm({
                 }
                 className="app-control-num px-3 py-2 text-sm"
               />
-            </label>
-            <label className="block shrink-0">
-              <span className="mb-1 block text-xs text-foreground/85">{t.bufferHeader}</span>
-              <span
-                className="flex h-[38px] items-center rounded-lg border border-app-border px-3"
-                title={t.bufferHint}
-              >
-                <input
-                  type="checkbox"
-                  checked={editDraft.isBuffer}
-                  onChange={(e) =>
-                    setEditDraft((d) => (d ? { ...d, isBuffer: e.target.checked } : d))
-                  }
-                  className="h-4 w-4 rounded border-app-border"
-                  aria-label={t.bufferLabel}
-                />
-              </span>
             </label>
             <label className="block max-w-[12rem] shrink-0">
               <span className="mb-1 block text-xs text-foreground/85">{t.remark}</span>
