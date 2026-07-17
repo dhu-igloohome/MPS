@@ -21,6 +21,7 @@ import {
   ForecastDemandType,
   ForecastEntry,
   ForecastIncoterm,
+  ForecastRegion,
   FulfillmentDeliveryStatus,
   FulfillmentFreightMode,
   FulfillmentShipmentEntry,
@@ -473,7 +474,7 @@ export async function authenticateUser(username: string, password: string) {
 
 export async function createForecast(input: {
   month: string;
-  region: Region;
+  region: ForecastRegion;
   destination: string;
   incoterm: ForecastIncoterm;
   poNumber?: string;
@@ -496,7 +497,7 @@ export async function createForecast(input: {
       {
         id: number;
         forecast_month: string;
-        region: Region;
+        region: ForecastRegion;
         destination: string;
         incoterm: string;
         po_number: string;
@@ -567,7 +568,7 @@ export async function createForecast(input: {
     {
       id: number;
       forecast_month: string;
-      region: Region;
+      region: ForecastRegion;
       destination: string;
       incoterm: string;
       po_number: string;
@@ -779,7 +780,7 @@ export async function getForecastsByRegions(regions: Region[]) {
     {
       id: number;
       forecast_month: string;
-      region: Region;
+      region: ForecastRegion;
       destination: string;
       incoterm: string;
       po_number: string;
@@ -811,7 +812,7 @@ export async function getForecastsByRegions(regions: Region[]) {
       created_by,
       created_at::text
     from forecasts
-    where region = any(${regions})
+    where region = any(${regions}) or region = 'OPS Department'
     order by created_at desc
     limit 200;
   `;
@@ -833,7 +834,7 @@ export async function findLatestForecastByPoAndSku(
     {
       id: number;
       forecast_month: string;
-      region: Region;
+      region: ForecastRegion;
       destination: string;
       incoterm: string;
       po_number: string;
@@ -1012,7 +1013,7 @@ export async function listOrderContractCreateHintsFromOrderIds(
       select f.id
       from forecasts f
       where
-        f.region = any(${sessionRegions})
+        (f.region = any(${sessionRegions}) or f.region = 'OPS Department')
         and lower(trim(f.po_number)) = lower(trim(coalesce(op.po_number, '')))
         and lower(trim(f.sku)) = lower(trim(op.sku))
       order by f.created_at desc, f.id desc
@@ -1127,7 +1128,7 @@ export async function listOrderContractCreateHints(
   }
 }
 
-export async function forecastPoExistsInRegion(region: Region, poNumber: string): Promise<boolean> {
+export async function forecastPoExistsInRegion(region: ForecastRegion, poNumber: string): Promise<boolean> {
   await ensureDatabase();
   const db = getSql();
   const po = poNumber.trim();
@@ -1148,7 +1149,7 @@ export async function getForecastById(id: string): Promise<ForecastEntry | null>
     {
       id: number;
       forecast_month: string;
-      region: Region;
+      region: ForecastRegion;
       destination: string;
       incoterm: string;
       po_number: string;
@@ -1189,7 +1190,7 @@ export async function getForecastById(id: string): Promise<ForecastEntry | null>
 export async function updateForecast(input: {
   id: string;
   month: string;
-  region: Region;
+  region: ForecastRegion;
   destination: string;
   incoterm: ForecastIncoterm;
   productName: string;
@@ -1209,7 +1210,7 @@ export async function updateForecast(input: {
     {
       id: number;
       forecast_month: string;
-      region: Region;
+      region: ForecastRegion;
       destination: string;
       incoterm: string;
       po_number: string;
@@ -1271,7 +1272,7 @@ export async function createForecastDeletionLog(input: {
   forecastId: string;
   poNumber: string;
   sku: string;
-  region: Region;
+  region: ForecastRegion;
   reason: string;
   deletedBy: string;
 }): Promise<void> {
@@ -1329,7 +1330,7 @@ export async function deleteForecastsBatch(input: {
     if (!row) {
       throw new Error(`Forecast not found: ${id}`);
     }
-    if (!input.sessionRegions.includes(row.region)) {
+    if (row.region !== "OPS Department" && !input.sessionRegions.includes(row.region)) {
       throw new Error(`No access to forecast ${id}`);
     }
     await createForecastDeletionLog({
@@ -1371,7 +1372,7 @@ export async function getSummaryByMonthAndRegion(regions: Region[]) {
   const rows = await db<
     {
       month: string;
-      region: Region;
+      region: ForecastRegion;
       build_to_order: number;
       build_to_stock: number;
     }[]
@@ -1382,7 +1383,7 @@ export async function getSummaryByMonthAndRegion(regions: Region[]) {
       sum(build_to_order) as build_to_order,
       sum(build_to_stock) as build_to_stock
     from forecasts
-    where region = any(${regions})
+    where region = any(${regions}) or region = 'OPS Department'
     group by forecast_month, region
     order by forecast_month desc, region asc;
   `;
@@ -1401,7 +1402,7 @@ export async function getSummaryByQuarterAndRegion(regions: Region[]) {
   const rows = await db<
     {
       quarter: string;
-      region: Region;
+      region: ForecastRegion;
       build_to_order: number;
       build_to_stock: number;
       sku_count: number;
@@ -1418,7 +1419,7 @@ export async function getSummaryByQuarterAndRegion(regions: Region[]) {
       sum(build_to_stock) as build_to_stock,
       count(distinct sku) as sku_count
     from forecasts
-    where region = any(${regions})
+    where region = any(${regions}) or region = 'OPS Department'
     group by
       split_part(forecast_month, '-', 1),
       (((split_part(forecast_month, '-', 2)::int - 1) / 3) + 1)::int,
@@ -1441,7 +1442,7 @@ export async function getSummaryByQuarterAndRegion(regions: Region[]) {
 function mapForecast(row: {
   id: number;
   forecast_month: string;
-  region: Region;
+  region: ForecastRegion;
   destination: string;
   incoterm: string;
   po_number: string;
@@ -4876,7 +4877,7 @@ export async function listContractsBySessionRegions(regions: Region[]): Promise<
     left join forecasts f on f.id = c.forecast_id
     where
       (op.id is not null and op.region = any(${allowed}))
-      or (f.id is not null and f.region = any(${regions}))
+      or (f.id is not null and (f.region = any(${regions}) or f.region = 'OPS Department'))
     order by c.created_at desc, c.id desc;
   `;
   return rows.map(mapContract);
@@ -4926,7 +4927,7 @@ export async function listContractsByPoNumberInSessionRegions(
       c.po_number = ${normalizedPo}
       and (
         (op.id is not null and op.region = any(${allowed}))
-        or (f.id is not null and f.region = any(${regions}))
+        or (f.id is not null and (f.region = any(${regions}) or f.region = 'OPS Department'))
       )
     order by c.sku asc, c.id asc;
   `;
@@ -5389,7 +5390,7 @@ export async function sessionCanAccessContract(regions: Region[], contract: Cont
   }
   if (contract.forecastId) {
     const forecast = await getForecastById(contract.forecastId);
-    return forecast != null && regions.includes(forecast.region);
+    return forecast != null && (forecast.region === "OPS Department" || regions.includes(forecast.region));
   }
   return false;
 }
@@ -6639,14 +6640,14 @@ export async function patchForecastCashFlowSettings(input: {
   if (!Number.isFinite(fid) || fid < 1) {
     throw new Error("Invalid forecast id");
   }
-  const fr = await db<{ region: Region; sku: string }[]>`
+  const fr = await db<{ region: ForecastRegion; sku: string }[]>`
     select region, sku from forecasts where id = ${fid} limit 1;
   `;
   const row = fr[0];
   if (!row) {
     throw new Error("Forecast not found");
   }
-  if (!input.sessionRegions.includes(row.region)) {
+  if (row.region !== "OPS Department" && !input.sessionRegions.includes(row.region)) {
     throw new Error("Forbidden");
   }
 
@@ -7041,7 +7042,7 @@ export async function createUserLccDraftForPo(input: {
     throw new Error("No forecast cash-flow lines for this PO in your regions");
   }
   for (const r of group) {
-    if (!input.sessionRegions.includes(r.region)) {
+    if (r.region !== "OPS Department" && !input.sessionRegions.includes(r.region)) {
       throw new Error("Forbidden: line region not in your scope");
     }
   }

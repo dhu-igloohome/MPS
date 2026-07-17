@@ -6,6 +6,21 @@
 
 ---
 
+## 2026-07-17（第二次返工）— 选 Buffer Stock 时默认归到 "OPS Department"，而不是某个真实地区
+
+**背景**：上一条记录（下面）把 Buffer Stock 做成 Region 下拉的第 4 个选项后，David 指出一个问题：选 Buffer Stock 时，用户往往还不知道这批缓冲库存最终会用在哪个地区，之前"二级下拉默认选第一个地区（APAC）"的做法不对——应该默认是一个"还没分配"的中间状态，取名 "OPS Department"。
+
+**方案**：让 "OPS Department" 变成 `forecasts.region` 真正能存的第 4 个值（不再只是 UI sentinel），流程：
+- `lib/db.ts`：`forecasts` 和 `forecast_deletion_logs` 的 region CHECK 约束从 `('APAC','EU','USA')` 拓宽到 `('APAC','EU','USA','OPS Department')`（schema version 9→10）。新建表用的 CREATE TABLE 内联约束直接改了；已有生产库走 `widenForecastRegionCheckConstraints()`——沿用上一条记录里那个"异常吞掉"的写法防并发报错。
+- `lib/types.ts`：新增 `ForecastRegion = Region | "OPS Department"`，只用在 `ForecastEntry.region`、`FulfillmentGroup.region`、`LogisticsLandedCostConsolidateLineItem.region` 这几个来自 forecasts 表的字段上。**其他表（user_regions/order_progress/logistics_shipments/mass_production_kanban）的 region 一律保持严格的 `Region`，不受影响**——这几张表代表的是"已经落地的真实业务"，OPS Department 只在"还没分配地区的 forecast"这个阶段存在。
+- `lib/forecast-po.ts`：加 PO 前缀映射，OPS Department → `POO`（跟 APAC→POA / EU→POE / USA→POU 一致的模式）。
+- **可见性（David 拍板）**：所有登录账号都能看到/管理 OPS Department 的记录，不受各自 region 权限限制。这意味着 `lib/repositories.ts` 里所有"按 session region 过滤 forecasts"的查询（`getForecastsByRegions`、`findLatestForecastByPoAndSku`、月度/季度汇总、合同可见性判断、到岸成本汇总的权限检查等，一共 7 处）都加了 `or region = 'OPS Department'` 或等价的旁路判断，确保 OPS Department 的 forecast、以及由它生成的合同/后续数据，不会因为落在"没人的地区"而对谁都不可见。
+- **UI**：Region 下拉选 "Buffer Stock" 时，自动把底层真实 `region` 设成 "OPS Department"；旁边"缓冲库存归属地区"二级下拉现在**永远显示**（不再只对多地区账号显示），列表第一项就是 "OPS Department"（默认选中），后面跟 APAC/EU/North America，方便日后知道具体地区了随时改过去。编辑面板做了同样处理。
+
+**验证**：`tsc --noEmit`、`npm run lint` 全干净。本地实测：选 Buffer Stock → 二级下拉默认显示 "OPS Department" → 提交后 API 返回 `region:"OPS Department", demandType:"buffer"`，PO 号是 `POO202607170001`（前缀验证正确）→ 表格正确显示 "OPS Department" + Buffer 徽标 → 测试数据删除干净 → 数据库层面确认两处 CHECK 约束都已正确拓宽为 4 个值，其余 99 条真实数据的 region 全部还是 APAC/EU/USA，没有被迁移弄脏。
+
+---
+
 ## 2026-07-17（返工）— Buffer stock 改为从 Region 下拉菜单直接选择
 
 **背景**：下面这条 2026-07-17 的记录里，最初把 Buffer stock 做成了"SKU 明细行里的一个勾选框"。David 反馈这完全误解了需求——他要的是**直接在 Region 下拉菜单里加一个"Buffer Stock"选项**，和 APAC/EU/North America 并列，而不是另外单独一个勾选框。

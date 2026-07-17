@@ -16,7 +16,7 @@ import {
 } from "@/lib/forecast-incoterm";
 import { TableCellLongText } from "@/components/shared/table-cell-long-text";
 import { Language } from "@/lib/i18n";
-import { ForecastDemandType, ForecastEntry, ProductItem, Region } from "@/lib/types";
+import { ForecastDemandType, ForecastEntry, ForecastRegion, ProductItem, Region } from "@/lib/types";
 
 type ForecastFormProps = {
   allowedRegions: Region[];
@@ -40,7 +40,7 @@ type DraftForecastLine = {
 type ForecastEditDraft = {
   id: string;
   month: string;
-  region: Region;
+  region: ForecastRegion;
   destination: string;
   incoterm: ForecastIncoterm;
   sku: string;
@@ -65,7 +65,7 @@ const FORECAST_OPS_ACTION_OPTIONS = [
 const BUFFER_REGION_SENTINEL = "__BUFFER__";
 
 /** Stored value stays `USA`; dropdown / table show North America (EN) or 北美 (ZH). */
-function forecastRegionSelectLabel(region: Region, language: Language): string {
+function forecastRegionSelectLabel(region: ForecastRegion, language: Language): string {
   if (region === "USA") {
     return language === "en" ? "North America" : "北美";
   }
@@ -429,7 +429,7 @@ export function ForecastForm({
   }, []);
 
   const [month, setMonth] = useState(forecastMonthPicker.defaultValue);
-  const [region, setRegion] = useState<Region>(defaultRegion);
+  const [region, setRegion] = useState<ForecastRegion>(defaultRegion);
   const [demandTypeMode, setDemandTypeMode] = useState<ForecastDemandType>("regular");
   const [lines, setLines] = useState<DraftForecastLine[]>([newDraftForecastLine(products)]);
   const [loading, setLoading] = useState(false);
@@ -476,7 +476,7 @@ export function ForecastForm({
     "month" | "region" | "sku" | "opsAction" | "created" | "demandType" | null
   >(null);
   const [filterMonths, setFilterMonths] = useState<string[]>([]);
-  const [filterRegions, setFilterRegions] = useState<Region[]>([]);
+  const [filterRegions, setFilterRegions] = useState<ForecastRegion[]>([]);
   const [filterSkus, setFilterSkus] = useState<string[]>([]);
   const [filterOpsActions, setFilterOpsActions] = useState<string[]>([]);
   const [filterCreatedFrom, setFilterCreatedFrom] = useState("");
@@ -661,7 +661,7 @@ export function ForecastForm({
     router.refresh();
   }
 
-  function onRegionChange(nextRegion: Region) {
+  function onRegionChange(nextRegion: ForecastRegion) {
     setRegion(nextRegion);
     if (useExistingPo) {
       const first = entries.find((e) => e.region === nextRegion && e.poNumber)?.poNumber || "";
@@ -1058,6 +1058,7 @@ export function ForecastForm({
                   const next = event.target.value;
                   if (next === BUFFER_REGION_SENTINEL) {
                     setDemandTypeMode("buffer");
+                    onRegionChange("OPS Department");
                   } else {
                     setDemandTypeMode("regular");
                     onRegionChange(next as Region);
@@ -1074,14 +1075,15 @@ export function ForecastForm({
               </select>
             </label>
 
-            {demandTypeMode === "buffer" && allowedRegions.length > 1 ? (
+            {demandTypeMode === "buffer" ? (
               <label className="block shrink-0">
                 <span className="mb-1 block text-xs text-foreground/85">{t.bufferRegionPickerLabel}</span>
                 <select
                   value={region}
-                  onChange={(event) => onRegionChange(event.target.value as Region)}
+                  onChange={(event) => onRegionChange(event.target.value as ForecastRegion)}
                   className="app-control-sm px-3 py-2 text-sm"
                 >
+                  <option value="OPS Department">{t.bufferStockOption}</option>
                   {allowedRegions.map((item) => (
                     <option key={item} value={item}>
                       {forecastRegionSelectLabel(item, language)}
@@ -1389,7 +1391,9 @@ export function ForecastForm({
                   const next = e.target.value;
                   setEditDraft((d) => {
                     if (!d) return d;
-                    if (next === BUFFER_REGION_SENTINEL) return { ...d, isBuffer: true };
+                    if (next === BUFFER_REGION_SENTINEL) {
+                      return { ...d, isBuffer: true, region: "OPS Department" };
+                    }
                     return { ...d, isBuffer: false, region: next as Region };
                   });
                 }}
@@ -1403,16 +1407,17 @@ export function ForecastForm({
                 <option value={BUFFER_REGION_SENTINEL}>{t.bufferStockOption}</option>
               </select>
             </label>
-            {editDraft.isBuffer && allowedRegions.length > 1 ? (
+            {editDraft.isBuffer ? (
               <label className="block shrink-0">
                 <span className="mb-1 block text-xs text-foreground/85">{t.bufferRegionPickerLabel}</span>
                 <select
                   value={editDraft.region}
                   onChange={(e) =>
-                    setEditDraft((d) => (d ? { ...d, region: e.target.value as Region } : d))
+                    setEditDraft((d) => (d ? { ...d, region: e.target.value as ForecastRegion } : d))
                   }
                   className="app-control-sm px-3 py-2 text-sm"
                 >
+                  <option value="OPS Department">{t.bufferStockOption}</option>
                   {allowedRegions.map((item) => (
                     <option key={item} value={item}>
                       {forecastRegionSelectLabel(item, language)}

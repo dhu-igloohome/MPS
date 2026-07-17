@@ -104,7 +104,7 @@ export async function POST(request: Request) {
   const consolidatedUsd = optNum(body.consolidatedUsd);
 
   for (const li of lineItems) {
-    if (!session.regions.includes(li.region)) {
+    if (li.region !== "OPS Department" && !session.regions.includes(li.region)) {
       return NextResponse.json({ message: "Forbidden: line item region not in your scope" }, { status: 403 });
     }
   }

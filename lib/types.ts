@@ -7,6 +7,14 @@ export type Region = "APAC" | "EU" | "USA";
 /** "buffer" = extra stock held against forecast inaccuracy, not a normal monthly sales forecast line. */
 export type ForecastDemandType = "regular" | "buffer";
 
+/**
+ * `forecasts.region` only: a buffer-stock line can be created before anyone knows which real
+ * region it will end up serving, so it's parked under "OPS Department" until reassigned. Every
+ * other table's `region` column (user_regions, order_progress, logistics_shipments, etc.) stays
+ * strictly `Region` — this wider type must not leak into RBAC grants or those other enums.
+ */
+export type ForecastRegion = Region | "OPS Department";
+
 /** Persisted on forecast_cash_flow_settings for landed cost / departure logic. */
 export type ForecastCashFlowShippingMode = "ocean" | "air";
 
@@ -59,7 +67,7 @@ export type IntegrationApiKeyEntry = {
 export type ForecastEntry = {
   id: string;
   month: string;
-  region: Region;
+  region: ForecastRegion;
   destination: string;
   /** EXW / FOB / DAP / DDP — trade term for the forecast line */
   incoterm: ForecastIncoterm;
@@ -538,7 +546,7 @@ export type FulfillmentGroup = {
   forecastMonth: string;
   productName: string;
   /** Region of the underlying forecast line(s) this group was built from. */
-  region: Region;
+  region: ForecastRegion;
   /** Full forecast quantity (BTO + BTS) summed over the group's forecast lines. */
   forecastQty: number;
   /** Quantity already covered by approved/sent contracts. */
@@ -678,7 +686,7 @@ export type LogisticsLandedCostConsolidateLineItem = {
   buildToOrder: number;
   buildToStock: number;
   quantity: number;
-  region: Region;
+  region: ForecastRegion;
   month: string;
   productName: string;
 };

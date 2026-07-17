@@ -10,12 +10,18 @@ import {
   updateForecast,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
-import type { ForecastDemandType, Region } from "@/lib/types";
+import type { ForecastDemandType, ForecastRegion, Region } from "@/lib/types";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-function isRegion(value: string): value is Region {
-  return value === "APAC" || value === "EU" || value === "USA";
+function isRegion(value: string): value is ForecastRegion {
+  return value === "APAC" || value === "EU" || value === "USA" || value === "OPS Department";
+}
+
+/** OPS Department (unassigned buffer stock) is visible/editable by every logged-in user. */
+function canAccessForecastRegion(sessionRegions: Region[], region: ForecastRegion): boolean {
+  if (region === "OPS Department") return true;
+  return sessionRegions.includes(region);
 }
 
 const FORECAST_OPS_ACTION_OPTIONS = [
@@ -47,7 +53,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!existing) {
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
-  if (!session.regions.includes(existing.region)) {
+  if (!canAccessForecastRegion(session.regions, existing.region)) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
@@ -94,7 +100,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!isRegion(region)) {
     return NextResponse.json({ message: "Invalid region" }, { status: 400 });
   }
-  if (!session.regions.includes(region)) {
+  if (!canAccessForecastRegion(session.regions, region)) {
     return NextResponse.json({ message: "Forbidden region" }, { status: 403 });
   }
   if (!month || !MONTH_RE.test(month) || !productName.trim() || !sku.trim() || !destination) {
@@ -151,7 +157,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   if (!row) {
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
-  if (!session.regions.includes(row.region)) {
+  if (!canAccessForecastRegion(session.regions, row.region)) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
   const body = await request.json().catch(() => ({}));

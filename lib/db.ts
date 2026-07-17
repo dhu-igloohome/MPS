@@ -20,7 +20,7 @@ const sql = connectionString
   : null;
 
 /** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
-const CURRENT_SCHEMA_VERSION = 9;
+const CURRENT_SCHEMA_VERSION = 10;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -66,7 +66,7 @@ async function setupSchema() {
     create table if not exists forecasts (
       id bigserial primary key,
       forecast_month text not null,
-      region text not null check (region in ('APAC', 'EU', 'USA')),
+      region text not null check (region in ('APAC', 'EU', 'USA', 'OPS Department')),
       destination text not null default '',
       po_number text not null default '',
       product_name text not null,
@@ -603,7 +603,7 @@ async function setupSchema() {
       forecast_id bigint not null,
       po_number text not null,
       sku text not null,
-      region text not null check (region in ('APAC', 'EU', 'USA')),
+      region text not null check (region in ('APAC', 'EU', 'USA', 'OPS Department')),
       reason text not null,
       deleted_by text not null references users(username),
       deleted_at timestamptz not null default now()
@@ -1281,6 +1281,7 @@ async function applyIncrementalMigrations() {
   await db`alter table unit_cost_quotes add column if not exists unit_price_cny numeric(14, 4);`;
   await db`alter table forecasts add column if not exists demand_type text not null default 'regular';`;
   await addForecastDemandTypeCheckConstraint(db);
+  await widenForecastRegionCheckConstraints(db);
   await createFulfillmentShipmentTables();
   await createIntegrationApiKeysTable();
 }
@@ -1303,6 +1304,37 @@ async function addForecastDemandTypeCheckConstraint(db: ReturnType<typeof getSql
     EXCEPTION
       WHEN duplicate_object THEN NULL;
     END $add_forecasts_demand_type_check$;
+  `);
+}
+
+/**
+ * Widens forecasts.region / forecast_deletion_logs.region to also allow 'OPS Department'
+ * (buffer-stock lines not yet assigned to a real region). The DROP is safe under concurrent
+ * `applyIncrementalMigrations` races on its own (`IF EXISTS`); the re-ADD uses the same
+ * exception-swallowing pattern as `addForecastDemandTypeCheckConstraint` for the same reason.
+ */
+async function widenForecastRegionCheckConstraints(db: ReturnType<typeof getSql>) {
+  await db`alter table forecasts drop constraint if exists forecasts_region_check;`;
+  await db.unsafe(`
+    DO $widen_forecasts_region_check$
+    BEGIN
+      ALTER TABLE forecasts
+      ADD CONSTRAINT forecasts_region_check
+      CHECK (region IN ('APAC', 'EU', 'USA', 'OPS Department'));
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $widen_forecasts_region_check$;
+  `);
+  await db`alter table forecast_deletion_logs drop constraint if exists forecast_deletion_logs_region_check;`;
+  await db.unsafe(`
+    DO $widen_forecast_deletion_logs_region_check$
+    BEGIN
+      ALTER TABLE forecast_deletion_logs
+      ADD CONSTRAINT forecast_deletion_logs_region_check
+      CHECK (region IN ('APAC', 'EU', 'USA', 'OPS Department'));
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $widen_forecast_deletion_logs_region_check$;
   `);
 }
 

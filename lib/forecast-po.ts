@@ -1,9 +1,10 @@
-import type { Region } from "@/lib/types";
+import type { ForecastRegion } from "@/lib/types";
 
-/** PO 前缀：与 Forecast 填报 region 一致（USA → POU）。 */
-export function forecastPoPrefixForRegion(region: Region): string {
+/** PO 前缀：与 Forecast 填报 region 一致（USA → POU，OPS Department → POO）。 */
+export function forecastPoPrefixForRegion(region: ForecastRegion): string {
   if (region === "APAC") return "POA";
   if (region === "EU") return "POE";
+  if (region === "OPS Department") return "POO";
   return "POU";
 }
 
