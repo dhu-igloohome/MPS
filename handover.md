@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-07-20 — 合同"品名及规格"按供应商国内/国外自动切换中英文
+
+**需求**：创建合同时，供应商在国内（境内合同计价）就用中文品名，供应商在国外就用英文品名——PO 单据的"品名及规格"要跟着自动切换。David 确认：(1) 已有的 52 条老合同也要跟着改，不是只影响新建的；(2) 我截图里 SKU 编号跟系统实际 SKU 对不上（比如 "IGP1-01"系统里其实是 "IGP1"，"SP3B/R/G/Y" 系统里是分开的 SP3B/SP3R 两条），不敢直接照抄导入，所以只加"中文名称"这个输入框，由 David 自己对着真实 SKU 填。
+
+**方案**：
+- 判断"国内/国外"用的是 `suppliers.is_domestic_contract`——本来就是给境内合同走人民币计价用的那个开关，正好复用，没加新字段。
+- `products` 表加 `product_name_cn` 列（默认空字符串），NPI 管理 → 产品数据库页面加了"中文名称"输入框（单条创建/编辑 + CSV 批量导入都支持，CSV 表头 `chinese name` 是可选列，不填不影响老的 CSV 模板）。
+- 两条创建合同的路径（"从 Forecast 现金流创建" `lib/repositories.ts` 的 `createContractsFromForecastPo`，"从 Order Progress 直接创建" 的 `createContractFromOrder`）现在都会在写入 `contracts.product_name` 时判断：供应商 `is_domestic_contract=true` 且该 SKU 填了中文名称 → 用中文；否则 → 用英文。
+- **已有合同同步**：新增 `syncContractProductNamesForSku(sku)`，在产品数据库"创建/编辑/批量导入"任意一次保存后自动触发——按 SKU 找到所有引用它的合同（不区分新老），逐条按各自供应商的 is_domestic_contract 重新算一遍该用哪个名称，跟当前存的不一样才更新。**这样 David 以后在产品数据库里把某个 SKU 的中文名称填上并保存的那一刻，所有引用这个 SKU 的老合同就会自动跟着改过来，不需要额外点什么"批量修复"按钮。**
+
+**验证**：`tsc --noEmit`、`npm run lint` 全干净。用脚本直接跑了真实代码路径（不是凭空验证逻辑）：挑了 SKU=DBX2（10 条已有合同，供应商都是境内），给它设一个临时中文名称→ 10 条合同的 `product_name` 全部自动变成那个中文名称；改回空字符串 → 10 条全部自动变回原来的英文名 "Deadbolt Go Matt black"，一个不差。另外单独测了 `resolveContractProductName`（新建合同用的解析函数）：`domestic=true` 返回中文，`domestic=false` 返回英文，跟预期一致。测试用的临时中文名称和数据全部还原干净，数据库里确认没有残留（45 个产品的 `product_name_cn` 全部还是空字符串，没有名字带 "TEST" 的合同）。
+
+---
+
 ## 2026-07-20 — 合同 PDF 真实文件下载 + 批量打包下载
 
 **背景**：David 反馈 Supply Chain → Contracts 页面下载合同"很痛苦"——两个具体痛点：(1) 只能一个一个点进详情页"Print PO"再下载；(2) "Print PO" 走的是浏览器 `window.print()` 原生打印对话框选"另存为 PDF"，每次都要手动输入文件名，无法绕过。

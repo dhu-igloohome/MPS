@@ -110,6 +110,7 @@ type AdminAuditLogRow = {
 type ProductRow = {
   id: number;
   product_name: string;
+  product_name_cn: string | null;
   sku: string;
   variant: string;
   unit_cost: string | number;
@@ -648,6 +649,7 @@ export async function listActiveProducts() {
     select
       id,
       product_name,
+      product_name_cn,
       sku,
       variant,
       unit_cost::text,
@@ -668,6 +670,7 @@ export async function findProductBySkuAndVariant(sku: string, variant: string) {
     select
       id,
       product_name,
+      product_name_cn,
       sku,
       variant,
       unit_cost::text,
@@ -688,6 +691,7 @@ export async function findProductById(id: string) {
     select
       id,
       product_name,
+      product_name_cn,
       sku,
       variant,
       unit_cost::text,
@@ -720,6 +724,7 @@ export async function findActiveProductByNameAndSku(productName: string, sku: st
     select
       id,
       product_name,
+      product_name_cn,
       sku,
       variant,
       unit_cost::text,
@@ -741,6 +746,7 @@ export async function findActiveProductBySku(sku: string) {
     select
       id,
       product_name,
+      product_name_cn,
       sku,
       variant,
       unit_cost::text,
@@ -1624,6 +1630,7 @@ export async function listProducts(limit = 5000) {
     select
       id,
       product_name,
+      product_name_cn,
       sku,
       variant,
       unit_cost::text,
@@ -1643,6 +1650,7 @@ export async function listProducts(limit = 5000) {
 
 export async function createProduct(input: {
   productName: string;
+  productNameCn?: string;
   sku: string;
   variant: string;
   unitCost: number;
@@ -1651,9 +1659,10 @@ export async function createProduct(input: {
   await ensureDatabase();
   const db = getSql();
   await db`
-    insert into products (product_name, sku, variant, unit_cost, article_number, is_active)
+    insert into products (product_name, product_name_cn, sku, variant, unit_cost, article_number, is_active)
     values (
       ${input.productName.trim()},
+      ${(input.productNameCn ?? "").trim()},
       ${input.sku.trim()},
       ${input.variant.trim()},
       ${input.unitCost},
@@ -1661,11 +1670,13 @@ export async function createProduct(input: {
       true
     );
   `;
+  await syncContractProductNamesForSku(input.sku.trim());
 }
 
 export async function upsertProductsBulk(
   items: Array<{
     productName: string;
+    productNameCn?: string;
     sku: string;
     variant: string;
     unitCost: number;
@@ -1678,6 +1689,7 @@ export async function upsertProductsBulk(
   if (items.length === 0) return;
   const rows = items.map((item) => ({
     product_name: item.productName.trim(),
+    product_name_cn: (item.productNameCn ?? "").trim(),
     sku: item.sku.trim(),
     variant: item.variant.trim(),
     unit_cost: item.unitCost,
@@ -1685,20 +1697,26 @@ export async function upsertProductsBulk(
     is_active: true,
   }));
   await db`
-    insert into products ${db(rows, "product_name", "sku", "variant", "unit_cost", "article_number", "is_active")}
+    insert into products ${db(rows, "product_name", "product_name_cn", "sku", "variant", "unit_cost", "article_number", "is_active")}
     on conflict (sku, variant) do update
     set
       product_name = excluded.product_name,
+      product_name_cn = excluded.product_name_cn,
       unit_cost = excluded.unit_cost,
       article_number = excluded.article_number,
       is_active = true
   `;
+  const skus = [...new Set(rows.map((r) => r.sku))];
+  for (const sku of skus) {
+    await syncContractProductNamesForSku(sku);
+  }
 }
 
 export async function updateProduct(input: {
   id: string;
   sku: string;
   productName: string;
+  productNameCn?: string;
   variant: string;
   unitCost: number;
   articleNumber: string;
@@ -1711,12 +1729,83 @@ export async function updateProduct(input: {
     set
       sku = ${input.sku.trim()},
       product_name = ${input.productName.trim()},
+      product_name_cn = ${(input.productNameCn ?? "").trim()},
       variant = ${input.variant.trim()},
       unit_cost = ${input.unitCost},
       article_number = ${input.articleNumber.trim()},
       is_active = ${input.isActive}
     where id = ${Number(input.id)};
   `;
+  await syncContractProductNamesForSku(input.sku.trim());
+}
+
+/**
+ * Chinese name for domestic (China) suppliers, English name otherwise — falls back to
+ * `englishFallback` (the caller's own snapshot of the name) when no active product row or no
+ * Chinese name is on file for the SKU.
+ */
+export async function resolveContractProductName(
+  sku: string,
+  englishFallback: string,
+  isDomesticContract: boolean,
+): Promise<string> {
+  const trimmed = sku.trim();
+  if (!trimmed) return englishFallback.trim();
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ product_name: string; product_name_cn: string | null }[]>`
+    select product_name, product_name_cn
+    from products
+    where lower(trim(sku)) = lower(trim(${trimmed})) and is_active = true
+    order by id asc
+    limit 1;
+  `;
+  const product = rows[0];
+  if (!product) return englishFallback.trim();
+  if (isDomesticContract && product.product_name_cn && product.product_name_cn.trim()) {
+    return product.product_name_cn.trim();
+  }
+  return product.product_name.trim() || englishFallback.trim();
+}
+
+/**
+ * Keeps contracts.product_name in sync with the product's language rule: domestic (China)
+ * suppliers get the Chinese name (when set), everyone else gets the English name. Runs after
+ * every product create/update/bulk-import so both new AND pre-existing contracts for that SKU
+ * (across all suppliers) stay correct — not just contracts created going forward.
+ */
+export async function syncContractProductNamesForSku(sku: string): Promise<number> {
+  const trimmed = sku.trim();
+  if (!trimmed) return 0;
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ id: number }[]>`
+    with prod as (
+      select product_name, product_name_cn
+      from products
+      where lower(trim(sku)) = lower(trim(${trimmed})) and is_active = true
+      order by id asc
+      limit 1
+    )
+    update contracts c
+    set
+      product_name = case
+        when s.is_domestic_contract and trim(coalesce(prod.product_name_cn, '')) <> '' then prod.product_name_cn
+        else prod.product_name
+      end,
+      updated_at = now()
+    from suppliers s, prod
+    where c.supplier_id = s.id
+      and lower(trim(c.sku)) = lower(trim(${trimmed}))
+      and c.product_name is distinct from (
+        case
+          when s.is_domestic_contract and trim(coalesce(prod.product_name_cn, '')) <> '' then prod.product_name_cn
+          else prod.product_name
+        end
+      )
+    returning c.id;
+  `;
+  return rows.length;
 }
 
 export async function deleteProductById(id: string) {
@@ -3543,6 +3632,7 @@ function mapProduct(row: ProductRow): ProductItem {
   return {
     id: String(row.id),
     productName: row.product_name,
+    productNameCn: row.product_name_cn || "",
     sku: row.sku,
     variant: row.variant,
     unitCost: Number(row.unit_cost || 0),
@@ -5048,6 +5138,11 @@ export async function createContractsFromForecast(input: {
     const poIssue = row.poIssueDate && /^\d{4}-\d{2}-\d{2}$/.test(row.poIssueDate) ? row.poIssueDate : null;
     const signedDate = poIssue ?? row.createdAt.slice(0, 10);
     const deliveryDate = addCalendarDaysToYmd(signedDate, 56);
+    const contractProductName = await resolveContractProductName(
+      row.sku,
+      row.productName,
+      Boolean(sup.is_domestic_contract),
+    );
 
     const insRows = await db<ContractRow[]>`
       with src as (
@@ -5058,7 +5153,7 @@ export async function createContractsFromForecast(input: {
           ${poNumber}::text as po_number,
           ${signedDate}::date as signed_date,
           ${row.sku.trim()}::text as sku,
-          ${row.productName.trim()}::text as product_name,
+          ${contractProductName}::text as product_name,
           ${alloc.quantity}::int as quantity,
           coalesce(
             nullif(uc.unit_price::numeric, 0),
@@ -5218,7 +5313,11 @@ export async function createContractFromOrder(input: {
       select
         op.id as order_progress_id,
         op.po_number,
-        op.product_name,
+        case
+          when coalesce(s.is_domestic_contract, false) and trim(coalesce(p.product_name_cn, '')) <> ''
+            then p.product_name_cn
+          else op.product_name
+        end as product_name,
         op.sku,
         op.quantity,
         op.created_at::date as signed_date,

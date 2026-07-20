@@ -21,6 +21,11 @@ export function ProductManagement({ products, language }: ProductManagementProps
   const t = {
     createProduct: language === "en" ? "Create Product" : "创建产品",
     productName: language === "en" ? "Product Name" : "产品名称",
+    productNameCn: language === "en" ? "Chinese Name" : "中文名称",
+    productNameCnHint:
+      language === "en"
+        ? "Used as the PO line description for domestic (China) suppliers; English name is used for everyone else."
+        : "国内供应商的合同 PO 会用这个中文名称作为品名，其他供应商仍然用英文名称。",
     sku: "SKU",
     variant: language === "en" ? "Variant" : "型号",
     unitCost: language === "en" ? "Unit Cost (optional)" : "单价（可选）",
@@ -30,8 +35,8 @@ export function ProductManagement({ products, language }: ProductManagementProps
       language === "en" ? "Batch Create / Update via Attachment (CSV)" : "通过附件（CSV）批量创建 / 更新",
     headers:
       language === "en"
-        ? "Headers: product name, SKU, variant, unit cost, article number"
-        : "表头：product name, SKU, variant, unit cost, article number",
+        ? "Headers: product name, chinese name, SKU, variant, unit cost, article number"
+        : "表头：product name, chinese name, SKU, variant, unit cost, article number",
     downloadTemplate: language === "en" ? "Download CSV template" : "下载 CSV 模板",
     tableTitle: language === "en" ? "Product Database" : "产品数据库",
     active: language === "en" ? "Active" : "启用",
@@ -72,6 +77,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
   };
   const [editable, setEditable] = useState<ProductItem[]>(products);
   const [productName, setProductName] = useState("");
+  const [productNameCn, setProductNameCn] = useState("");
   const [sku, setSku] = useState("");
   const [variant, setVariant] = useState("");
   const [unitCost, setUnitCost] = useState("");
@@ -85,9 +91,9 @@ export function ProductManagement({ products, language }: ProductManagementProps
   const [templateBusy, setTemplateBusy] = useState(false);
 
   function downloadCsvTemplate() {
-    const headers = "product name,SKU,variant,unit cost,article number";
+    const headers = "product name,chinese name,SKU,variant,unit cost,article number";
     const sample =
-      "Deadbolt 2S,IGB4,Default,120,ART-1001\nEntry Level DB,DBX1,Default,180,ART-1002\nKeybox 3,IGK3,Default,95,ART-2001";
+      "Deadbolt 2S,智能横闩锁,IGB4,Default,120,ART-1001\nEntry Level DB,,DBX1,Default,180,ART-1002\nKeybox 3,智能钥匙盒,IGK3,Default,95,ART-2001";
     const csv = `${headers}\n${sample}`;
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -101,6 +107,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
   function mapHeader(input: string) {
     const normalized = input.trim().toLowerCase().replaceAll("_", " ");
     if (normalized === "product name") return "productName";
+    if (normalized === "chinese name" || normalized === "product name cn") return "productNameCn";
     if (normalized === "sku") return "sku";
     if (normalized === "variant") return "variant";
     if (normalized === "unit cost") return "unitCost";
@@ -145,6 +152,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
       });
       return {
         productName: String(payload.productName || ""),
+        productNameCn: String(payload.productNameCn || ""),
         sku: String(payload.sku || ""),
         variant: String(payload.variant || ""),
         unitCost: Number(payload.unitCost || 0),
@@ -180,6 +188,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         productName,
+        productNameCn,
         sku,
         variant,
         unitCost: Number(unitCost || 0),
@@ -192,6 +201,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
     }
     setMessage(t.productCreated);
     setProductName("");
+    setProductNameCn("");
     setSku("");
     setVariant("");
     setUnitCost("");
@@ -206,6 +216,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
       body: JSON.stringify({
         sku: item.sku,
         productName: item.productName,
+        productNameCn: item.productNameCn,
         variant: item.variant,
         unitCost: item.unitCost,
         articleNumber: item.articleNumber,
@@ -302,6 +313,13 @@ export function ProductManagement({ products, language }: ProductManagementProps
             required
           />
           <input
+            className={ccInputMd}
+            placeholder={t.productNameCn}
+            title={t.productNameCnHint}
+            value={productNameCn}
+            onChange={(event) => setProductNameCn(event.target.value)}
+          />
+          <input
             className={ccInputSm}
             placeholder={t.sku}
             value={sku}
@@ -366,6 +384,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
             <thead>
               <tr>
                 <th>{t.productName}</th>
+                <th title={t.productNameCnHint}>{t.productNameCn}</th>
                 <th>{t.sku}</th>
                 <th>{t.variant}</th>
                 <th>{language === "en" ? "Unit Cost" : "单价"}</th>
@@ -383,6 +402,14 @@ export function ProductManagement({ products, language }: ProductManagementProps
                       value={item.productName}
                       onChange={(event) => updateRow(item.id, { productName: event.target.value })}
                       className={`${ccInputMd} max-w-[14rem] py-1`}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={item.productNameCn}
+                      onChange={(event) => updateRow(item.id, { productNameCn: event.target.value })}
+                      title={t.productNameCnHint}
+                      className={`${ccInputMd} max-w-[12rem] py-1`}
                     />
                   </td>
                   <td>

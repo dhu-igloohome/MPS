@@ -26,6 +26,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const body = await request.json();
   const nextSku = String(body.sku || "").trim();
   const productName = String(body.productName || "").trim();
+  const productNameCn = String(body.productNameCn || "").trim();
   const variant = String(body.variant || "").trim();
   const articleNumber = String(body.articleNumber || "").trim();
   const unitCostRaw = Number(body.unitCost);
@@ -64,6 +65,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     id,
     sku: nextSku,
     productName,
+    productNameCn,
     variant,
     articleNumber,
     unitCost,

@@ -28,6 +28,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const productName = String(body.productName || "").trim();
+  const productNameCn = String(body.productNameCn || "").trim();
   const sku = String(body.sku || "").trim();
   const variant = String(body.variant || "").trim();
   const articleNumber = String(body.articleNumber || "").trim();
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await createProduct({ productName, sku, variant, articleNumber, unitCost });
+    await createProduct({ productName, productNameCn, sku, variant, articleNumber, unitCost });
     await createAdminAuditLog({
       actorUsername: session.username,
       action: "create_product",

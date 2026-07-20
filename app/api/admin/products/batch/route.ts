@@ -10,6 +10,7 @@ import { getSession } from "@/lib/session";
 
 type BatchProductInput = {
   productName: string;
+  productNameCn?: string;
   sku: string;
   variant: string;
   unitCost: number;
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
   const sanitized: BatchProductInput[] = items
     .map((item) => ({
       productName: String(item.productName || "").trim(),
+      productNameCn: String(item.productNameCn || "").trim(),
       sku: String(item.sku || "").trim(),
       variant: String(item.variant || "").trim().toUpperCase(),
       unitCost: Number.isFinite(Number(item.unitCost)) ? Number(item.unitCost) : 0,

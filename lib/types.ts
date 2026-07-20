@@ -86,6 +86,8 @@ export type ForecastEntry = {
 export type ProductItem = {
   id: string;
   productName: string;
+  /** Chinese product name; used as the contract PO line description for domestic (China) suppliers. */
+  productNameCn: string;
   sku: string;
   variant: string;
   unitCost: number;

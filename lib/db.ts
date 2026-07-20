@@ -20,7 +20,7 @@ const sql = connectionString
   : null;
 
 /** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
-const CURRENT_SCHEMA_VERSION = 10;
+const CURRENT_SCHEMA_VERSION = 11;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -577,9 +577,11 @@ async function setupSchema() {
       unit_cost numeric(12, 2) not null default 0,
       article_number text not null,
       is_active boolean not null default true,
-      created_at timestamptz not null default now()
+      created_at timestamptz not null default now(),
+      product_name_cn text not null default ''
     );
   `;
+  await db`alter table products add column if not exists product_name_cn text not null default '';`;
 
   await db`alter table products drop constraint if exists products_sku_key;`;
   await db`
@@ -1282,6 +1284,7 @@ async function applyIncrementalMigrations() {
   await db`alter table forecasts add column if not exists demand_type text not null default 'regular';`;
   await addForecastDemandTypeCheckConstraint(db);
   await widenForecastRegionCheckConstraints(db);
+  await db`alter table products add column if not exists product_name_cn text not null default '';`;
   await createFulfillmentShipmentTables();
   await createIntegrationApiKeysTable();
 }
