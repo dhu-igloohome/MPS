@@ -157,6 +157,15 @@ export function ContractManagement({
     create: "Create contract",
     listTitle: "Contracts",
     download: "Download PDF",
+    downloadSelected: (n: number) => (en ? `Download selected (${n})` : `批量下载所选 (${n})`),
+    downloading: en ? "Preparing…" : "打包中…",
+    downloadFailed: en ? "Download failed." : "下载失败。",
+    downloadPartial: (skipped: number) =>
+      en
+        ? `${skipped} contract(s) skipped (not approved or no access).`
+        : `${skipped} 个合同被跳过（未审批或无权限）。`,
+    selectAllRows: en ? "Select all rows" : "全选当前列表",
+    selectRow: en ? "Select row" : "选择该行",
     details: "Details",
     empty: "No contracts yet.",
     status: "Status",
@@ -184,6 +193,8 @@ export function ContractManagement({
   const [supplierFilter, setSupplierFilter] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [selectedContractIds, setSelectedContractIds] = useState<string[]>([]);
+  const [batchDownloading, setBatchDownloading] = useState(false);
   /** Create form only: green on success, red on error (avoid showing success in red). */
   const [createFeedback, setCreateFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -317,6 +328,66 @@ export function ContractManagement({
       return;
     }
     router.refresh();
+  }
+
+  const filteredContractIdSet = useMemo(() => new Set(filteredContracts.map((c) => c.id)), [filteredContracts]);
+  useEffect(() => {
+    setSelectedContractIds((prev) => prev.filter((id) => filteredContractIdSet.has(id)));
+  }, [filteredContractIdSet]);
+
+  const allFilteredSelected =
+    filteredContracts.length > 0 && filteredContracts.every((c) => selectedContractIds.includes(c.id));
+
+  function toggleSelectAllContracts() {
+    if (allFilteredSelected) {
+      setSelectedContractIds((prev) => prev.filter((id) => !filteredContractIdSet.has(id)));
+    } else {
+      setSelectedContractIds((prev) => [
+        ...prev,
+        ...filteredContracts.filter((c) => !prev.includes(c.id)).map((c) => c.id),
+      ]);
+    }
+  }
+
+  function toggleSelectContract(id: string) {
+    setSelectedContractIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  async function onBatchDownload() {
+    if (selectedContractIds.length === 0) return;
+    setBatchDownloading(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/supply-chain/contracts/batch-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedContractIds }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { message?: string };
+        setMessage(data.message || t.downloadFailed);
+        return;
+      }
+      const skipped = Number(res.headers.get("X-Skipped-Count") || 0);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const match = /filename="([^"]+)"/.exec(disposition);
+      a.download = match?.[1] || "Contracts.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      if (skipped > 0) {
+        setMessage(t.downloadPartial(skipped));
+      }
+    } catch {
+      setMessage(t.downloadFailed);
+    } finally {
+      setBatchDownloading(false);
+    }
   }
 
   return (
@@ -570,15 +641,40 @@ export function ContractManagement({
               ))}
             </select>
           </label>
+          <div className="flex shrink-0 items-center gap-2">
+            {selectedContractIds.length > 0 ? (
+              <span className="text-xs tabular-nums text-app-muted">
+                {en ? `${selectedContractIds.length} selected` : `已选 ${selectedContractIds.length} 条`}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              disabled={selectedContractIds.length === 0 || batchDownloading}
+              onClick={onBatchDownload}
+              className="inline-flex items-center gap-1.5 rounded border border-app-border px-3 py-1.5 text-sm transition duration-150 ease-out hover:-translate-y-px hover:bg-app-accent-soft active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {batchDownloading ? t.downloading : t.downloadSelected(selectedContractIds.length)}
+            </button>
+          </div>
         </div>
+        {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
         <div className="app-table-shell mt-3 overflow-x-auto">
           <table className="w-full min-w-[1220px] border-collapse text-sm">
-            <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="px-2 py-2">PO</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">Product</th><th className="px-2 py-2">Supplier</th><th className="px-2 py-2">Qty</th><th className="px-2 py-2">Total</th><th className="px-2 py-2">{t.status}</th><th className="px-2 py-2">Action</th></tr></thead>
+            <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="w-8 px-2 py-2"><input type="checkbox" className="h-4 w-4 rounded border-app-border" checked={allFilteredSelected} onChange={toggleSelectAllContracts} title={t.selectAllRows} aria-label={t.selectAllRows} /></th><th className="px-2 py-2">PO</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">Product</th><th className="px-2 py-2">Supplier</th><th className="px-2 py-2">Qty</th><th className="px-2 py-2">Total</th><th className="px-2 py-2">{t.status}</th><th className="px-2 py-2">Action</th></tr></thead>
             <tbody>
               {filteredContracts.length === 0 ? (
-                <tr><td colSpan={8} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr>
+                <tr><td colSpan={9} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr>
               ) : filteredContracts.map((c) => (
                 <tr key={c.id}>
+                  <td className="px-2 py-2">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-app-border"
+                      checked={selectedContractIds.includes(c.id)}
+                      onChange={() => toggleSelectContract(c.id)}
+                      aria-label={t.selectRow}
+                    />
+                  </td>
                   <td className="px-2 py-2 font-medium">{c.poNumber}</td>
                   <td className="px-2 py-2">{c.sku}</td>
                   <td className="px-2 py-2">{c.productName}</td>
@@ -591,6 +687,14 @@ export function ContractManagement({
                   <td className="px-2 py-2">
                     <div className="flex flex-wrap gap-2">
                       <Link className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft" href={`/supply-chain/contracts/${encodeURIComponent(c.id)}`}>{t.details}</Link>
+                      {c.status === "approved" || c.status === "sent" ? (
+                        <a
+                          className="rounded border border-app-border px-2 py-1 text-xs hover:bg-app-accent-soft"
+                          href={`/api/supply-chain/contracts/${encodeURIComponent(c.id)}/pdf`}
+                        >
+                          {t.download}
+                        </a>
+                      ) : null}
                       {getAvailableActions(role, c.status).map((action) => (
                         <button
                           key={action.key}

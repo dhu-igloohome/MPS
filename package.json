@@ -13,6 +13,8 @@
     "sync:vercel": "node scripts/sync-vercel.mjs"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.5.1",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.0.1",
     "next": "16.2.1",
     "postgres": "^3.4.8",

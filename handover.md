@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-07-20 — 合同 PDF 真实文件下载 + 批量打包下载
+
+**背景**：David 反馈 Supply Chain → Contracts 页面下载合同"很痛苦"——两个具体痛点：(1) 只能一个一个点进详情页"Print PO"再下载；(2) "Print PO" 走的是浏览器 `window.print()` 原生打印对话框选"另存为 PDF"，每次都要手动输入文件名，无法绕过。
+
+**根因**：合同 PO 单据一直是"网页 + 浏览器打印"，不是真正的服务端文件下载，所以文件名对话框没法消除；也没有任何批量选择/下载机制。
+
+**方案**：
+1. 新增服务端真实 PDF 生成：`lib/printable-po-pdf.tsx` 用 `@react-pdf/renderer`（不依赖浏览器内核，Vercel 部署友好）把 `PrintablePOData` 渲染成 PDF Buffer，中文字体用项目里已经存在但一直没人用的 `public/fonts/NotoSansSC-VF.ttf`（孤儿资源，正好用上）。数据组装逻辑从原来的 `[id]/print/page.tsx` 抽成共享的 `lib/printable-po-data.ts`（`buildPrintablePODataForContract` + `printablePOFileName`），两处复用，避免重复。
+2. 单个下载：`GET /api/supply-chain/contracts/[id]/pdf`，`Content-Disposition: attachment; filename="PO_<po号>_<sku>.pdf"`，点击直接下载，不再弹任何对话框。
+3. 批量下载：`POST /api/supply-chain/contracts/batch-pdf`（用 `jszip` 打包，单次最多 200 个），把选中的合同各自渲染成 PDF 后打成一个 `Contracts_<日期>.zip`，跳过未审批/无权限的会在响应头 `X-Skipped-Count` 里报告数量（前端用 `t.downloadPartial` 提示）。
+4. UI（`components/contract/contract-management.tsx`）：合同列表加了勾选框列（复用之前 Forecast 表和 Buffer stock 那套"全选/单选 + 过滤后 pruning"模式）、每行新增直接的"Download PDF"链接（不用再进详情页）、顶部加"批量下载所选 (N)"按钮（用 blob + 临时 `<a download>` 触发保存）。**顺带发现并修了一个已有 bug**：这个组件的 `message` 状态一直只 `setMessage(...)` 没有任何地方 `{message}` 渲染出来，之前 `onSetStatus` 的报错就一直是静默失败——现在补了一行 `{message ? <p>...</p> : null}`，我自己新加的下载失败/部分跳过提示才用得上，顺便让老的状态切换报错也终于能被看到了。
+
+**新增依赖**：`@react-pdf/renderer`、`jszip`（此前项目里两个都没有）。
+
+**验证**：`tsc --noEmit`、`npm run lint` 全干净（新增/改动的文件零问题）。本地实测：单个下载 fetch 返回 `%PDF-1.3` 魔数、正确 `Content-Disposition` 文件名、57KB；用 Node 脱离浏览器直接渲染了一份含中文的示例 PO 并用 PDF 阅读器看过，版式、中英文字段都正常显示。批量下载勾选 3 条不同的合同，返回 `PK\x03\x04`（合法 ZIP）、`Contracts_2026-07-20.zip`、0 个跳过、173KB。全程没有创建/删除任何数据（纯读取），不需要清理测试数据。
+
+（过程中遇到一次数据库连接瞬时 `ECONNRESET`，跟这次改动无关，刷新页面后自动恢复，不是新引入的问题。）
+
+---
+
 ## 2026-07-17（第二次返工）— 选 Buffer Stock 时默认归到 "OPS Department"，而不是某个真实地区
 
 **背景**：上一条记录（下面）把 Buffer Stock 做成 Region 下拉的第 4 个选项后，David 指出一个问题：选 Buffer Stock 时，用户往往还不知道这批缓冲库存最终会用在哪个地区，之前"二级下拉默认选第一个地区（APAC）"的做法不对——应该默认是一个"还没分配"的中间状态，取名 "OPS Department"。
