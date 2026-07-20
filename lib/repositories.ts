@@ -5024,6 +5024,51 @@ export async function listContractsByPoNumberInSessionRegions(
   return rows.map(mapContract);
 }
 
+/**
+ * All contracts sharing a PO number, ignoring session region scoping — used only to compute a
+ * stable "-001/-002" supplier-facing PO suffix when one PO number covers multiple SKUs (see
+ * `resolvePrintablePONumber`). Numbering must be the same no matter who prints/downloads the
+ * document, so it can't be scoped to the current viewer's regions like the function above.
+ */
+export async function listContractsByPoNumberGlobal(poNumber: string): Promise<ContractEntry[]> {
+  const normalizedPo = poNumber.trim();
+  if (!normalizedPo) return [];
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<ContractRow[]>`
+    select
+      c.id,
+      c.order_progress_id,
+      c.forecast_id,
+      c.buyer_entity_code,
+      c.supplier_id,
+      c.supplier_name,
+      c.po_number,
+      c.signed_date::text,
+      c.sku,
+      c.product_name,
+      c.batch,
+      c.quantity,
+      c.unit_cost::text,
+      c.total_amount::text,
+      c.delivery_date::text,
+      c.currency,
+      c.payment_terms,
+      c.remark,
+      c.delivery_address,
+      c.serial_code,
+      c.bluetooth_id,
+      c.status,
+      c.created_by,
+      c.created_at::text,
+      c.updated_at::text
+    from contracts c
+    where c.po_number = ${normalizedPo}
+    order by c.id asc;
+  `;
+  return rows.map(mapContract);
+}
+
 export type ForecastContractAllocation = {
   forecastId: string;
   supplierName: string;

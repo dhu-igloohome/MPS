@@ -2,7 +2,11 @@ import JSZip from "jszip";
 import { NextResponse } from "next/server";
 
 import { getContractById, sessionCanAccessContract } from "@/lib/repositories";
-import { buildPrintablePODataForContract, printablePOFileName } from "@/lib/printable-po-data";
+import {
+  buildPrintablePODataForContract,
+  printablePOFileName,
+  resolvePrintablePONumber,
+} from "@/lib/printable-po-data";
 import { renderPrintablePOToPdfBuffer } from "@/lib/printable-po-pdf";
 import { getSession } from "@/lib/session";
 
@@ -43,10 +47,11 @@ export async function POST(request: Request) {
       errors.push({ id, message: "Forbidden" });
       continue;
     }
-    const poData = await buildPrintablePODataForContract(contract, session.username);
+    const displayPoNumber = await resolvePrintablePONumber(contract);
+    const poData = await buildPrintablePODataForContract(contract, session.username, displayPoNumber);
     const pdfBuffer = await renderPrintablePOToPdfBuffer(poData);
 
-    let fileName = printablePOFileName(contract);
+    let fileName = printablePOFileName(contract, displayPoNumber);
     if (usedNames.has(fileName)) {
       fileName = fileName.replace(/\.pdf$/, `_${contract.id}.pdf`);
     }

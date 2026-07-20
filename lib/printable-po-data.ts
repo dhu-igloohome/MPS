@@ -3,14 +3,32 @@ import { getContractBuyerEntity } from "@/lib/contract-buyer-entities";
 import {
   getBuyerEntityByCode,
   getOrderProgressById,
+  listContractsByPoNumberGlobal,
   listSuppliers,
 } from "@/lib/repositories";
 import type { ContractEntry } from "@/lib/types";
+
+/**
+ * Supplier-facing PO number: when one PO number covers multiple SKUs (multiple contracts), each
+ * gets a "-001", "-002", ... suffix (in the order the contracts were created) so suppliers can
+ * tell otherwise-identical PO documents apart. Does NOT touch the stored `contracts.po_number` —
+ * every internal flow (forecasts, cash flow, integration API, filters) keeps using the real
+ * value; this is purely a display/filename computation for the printed/downloaded document.
+ * Single-SKU POs (the common case) are unaffected — no suffix is added.
+ */
+export async function resolvePrintablePONumber(contract: ContractEntry): Promise<string> {
+  const siblings = await listContractsByPoNumberGlobal(contract.poNumber);
+  if (siblings.length <= 1) return contract.poNumber;
+  const index = siblings.findIndex((c) => c.id === contract.id);
+  const seq = index >= 0 ? index + 1 : 1;
+  return `${contract.poNumber}-${String(seq).padStart(3, "0")}`;
+}
 
 /** Shared by the HTML print page and the PDF download route so both render identical data. */
 export async function buildPrintablePODataForContract(
   contract: ContractEntry,
   sessionUsername: string,
+  displayPoNumber?: string,
 ): Promise<PrintablePOData> {
   const [order, suppliers] = await Promise.all([
     contract.orderProgressId ? getOrderProgressById(contract.orderProgressId) : Promise.resolve(null),
@@ -25,7 +43,7 @@ export async function buildPrintablePODataForContract(
   return {
     header: {
       companyName: buyer.legalName,
-      poNumber: contract.poNumber,
+      poNumber: displayPoNumber ?? contract.poNumber,
       date: contract.signedDate || contract.createdAt?.slice(0, 10) || "-",
     },
     serialCode: contract.serialCode,
@@ -68,9 +86,9 @@ export async function buildPrintablePODataForContract(
 }
 
 /** Sanitized, filesystem-safe PDF filename for a contract's PO. */
-export function printablePOFileName(contract: ContractEntry): string {
+export function printablePOFileName(contract: ContractEntry, displayPoNumber?: string): string {
   const safe = (s: string) => s.trim().replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
-  const po = safe(contract.poNumber) || `contract-${contract.id}`;
+  const po = safe(displayPoNumber ?? contract.poNumber) || `contract-${contract.id}`;
   const sku = safe(contract.sku);
   return sku ? `PO_${po}_${sku}.pdf` : `PO_${po}.pdf`;
 }
