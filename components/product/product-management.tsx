@@ -401,7 +401,8 @@ export function ProductManagement({ products, language }: ProductManagementProps
                     <input
                       value={item.productName}
                       onChange={(event) => updateRow(item.id, { productName: event.target.value })}
-                      className={`${ccInputMd} max-w-[14rem] py-1`}
+                      title={item.productName}
+                      className={`${ccInputMd} !w-[28rem] !max-w-[28rem] py-1`}
                     />
                   </td>
                   <td>
@@ -409,7 +410,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
                       value={item.productNameCn}
                       onChange={(event) => updateRow(item.id, { productNameCn: event.target.value })}
                       title={t.productNameCnHint}
-                      className={`${ccInputMd} max-w-[12rem] py-1`}
+                      className={`${ccInputMd} !w-[16rem] !max-w-[16rem] py-1`}
                     />
                   </td>
                   <td>

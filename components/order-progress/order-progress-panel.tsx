@@ -787,7 +787,7 @@ export function OrderProgressPanel({
               value={resolvedProductName}
               readOnly
               title={resolvedProductName}
-              className={`${ccReadOnly} app-control-md max-w-[14rem]`}
+              className={`${ccReadOnly} app-control-md !w-[20rem] max-w-[20rem]`}
             />
           </label>
 

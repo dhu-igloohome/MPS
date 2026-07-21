@@ -1608,7 +1608,7 @@ export function ForecastForm({
                   <col className="w-[7.25rem]" />
                   <col className="w-[8.5rem]" />
                   <col className="w-[12rem]" />
-                  <col className="w-[14rem]" />
+                  <col className="w-[19rem]" />
                 </colgroup>
                 <thead>
                   <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:bg-slate-50">
@@ -1880,7 +1880,7 @@ export function ForecastForm({
                                 savingEdit ||
                                 deletingId === item.id
                               }
-                              className="app-control-md max-w-[14rem] rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
+                              className="app-control-md max-w-[19rem] rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
                               aria-label="Ops action"
                             >
                               <option value="">{language === "en" ? "—" : "—"}</option>

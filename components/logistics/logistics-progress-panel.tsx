@@ -386,7 +386,7 @@ export function LogisticsProgressPanel({
               onChange={(e) => onProductNameChange(e.target.value)}
               required
               disabled={products.length === 0}
-              className={ccSelectMd}
+              className={`${ccSelectMd} !max-w-[20rem]`}
             >
               {productNameOptions.map((name) => (
                 <option key={name} value={name}>
