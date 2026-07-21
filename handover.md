@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-07-21 — Contracts 加创建日期列 + 全站说明文字改成默认收起
+
+**需求 1**：Contracts 列表加一列"创建日期"，方便追溯合同是哪天建的。
+- `components/contract/contract-management.tsx`：表格加 `Created` 列，显示 `contract.createdAt` 的日期部分（`title` 悬停显示完整时间戳）。列表本来就是按 `created_at desc` 排序，不用额外加排序 UI。
+
+**需求 2**：David 反馈很多页面顶部的说明文字（比如"Order fulfillments"页面同时有页面级和模块级两段几乎一样的话）对新用户有用，但老用户天天看着占地方。David 认可"做成默认收起、点开才展开"的思路，而不是直接删掉（怕以后招新人或者David自己忘了某个隐藏规则时找不到说明）。
+
+**方案与改动**：
+- **页面级说明**（`AppShell` 的 `description` 参数，全站 28 个页面共用这一个组件）：改成 `<details>`/`<summary>` 收起，默认只显示"About this page / 页面说明"一行，点开才展开原文。**只改了 `components/shared/app-shell.tsx` 这一处，28 个页面全部自动生效**，不用逐个页面改。
+- **模块级说明**（各功能面板自己的 `intro`/`subtitle` 文案，散落在 13 个组件文件里）：逐个检查后发现大部分（BOM/工装/ECN/SOP/质量管理 4 个模块/线下合同上传，共 8 处）Cursor 当时就已经用了同样的 `<details>` 收起写法，不用改。真正还是"always-visible 大段文字"的只有 3 处：
+  1. `components/logistics/order-fulfillments-panel.tsx` —— 这个正是 David 截图指出的那个页面，模块说明跟页面说明几乎重复。做法：**删掉页面级的重复说明**（`app/logistics-progress/order-fulfillments/page.tsx` 的 `description` 直接去掉），模块级说明改成收起（更详细，值得保留）。
+  2. `components/admin/integration-api-keys-panel.tsx` —— 说明的是"密钥只在创建时显示一次，之后只存前缀"这种容易忘的系统行为，不是纯新手教程，保留内容但改成收起。
+  3. `components/dashboard/cash-flow-overview.tsx` —— Dashboard 卡片说明现金流数字怎么算的，同样改成收起。
+- `components/forecast/forecast-form.tsx` 里有个从未被渲染过的 `subtitle` 字段（死代码，不影响界面），没有处理，不在这次范围内。
+- `components/cost-control/cash-flow-dashboard.tsx` 有一处很短的一行说明（"Overview — data refreshes with your filters"），判断为信息密度低、没必要额外加一次点击才能看到，保持原样。
+
+**验证**：`tsc --noEmit`、`npm run lint` 全干净。实机验证：Contracts 列表新列显示正确的创建日期；Order fulfillments 页面原来两段重复说明现在只剩一个"About this module"收起项，点开内容完整无丢失；随机抽查 NPI BOM 页面确认"About this page"（页面级）+"About BOM"（模块级）两个收起项都正常，无页面级溢出。
+
+---
+
 ## 2026-07-21 — 全站字体/输入框可读性检查与修复
 
 **背景**：David 要求检查全站字体大小是否合适阅读，以及是否有输入框被撑爆或其他 UI bug。

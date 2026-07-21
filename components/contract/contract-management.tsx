@@ -168,6 +168,7 @@ export function ContractManagement({
     selectRow: en ? "Select row" : "选择该行",
     details: "Details",
     empty: "No contracts yet.",
+    created: en ? "Created" : "创建日期",
     status: "Status",
     filterStatus: "Filter by status",
     filterSupplier: "Filter by supplier",
@@ -660,10 +661,10 @@ export function ContractManagement({
         {message ? <p className="mt-2 text-sm text-red-600">{message}</p> : null}
         <div className="app-table-shell mt-3 overflow-x-auto">
           <table className="w-full min-w-[1220px] border-collapse text-sm">
-            <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="w-8 px-2 py-2"><input type="checkbox" className="h-4 w-4 rounded border-app-border" checked={allFilteredSelected} onChange={toggleSelectAllContracts} title={t.selectAllRows} aria-label={t.selectAllRows} /></th><th className="px-2 py-2">PO</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">Product</th><th className="px-2 py-2">Supplier</th><th className="px-2 py-2">Qty</th><th className="px-2 py-2">Total</th><th className="px-2 py-2">{t.status}</th><th className="px-2 py-2">Action</th></tr></thead>
+            <thead><tr className="border-b border-app-border/80 text-left text-app-muted"><th className="w-8 px-2 py-2"><input type="checkbox" className="h-4 w-4 rounded border-app-border" checked={allFilteredSelected} onChange={toggleSelectAllContracts} title={t.selectAllRows} aria-label={t.selectAllRows} /></th><th className="px-2 py-2">PO</th><th className="px-2 py-2">SKU</th><th className="px-2 py-2">Product</th><th className="px-2 py-2">Supplier</th><th className="px-2 py-2">Qty</th><th className="px-2 py-2">Total</th><th className="px-2 py-2">{t.created}</th><th className="px-2 py-2">{t.status}</th><th className="px-2 py-2">Action</th></tr></thead>
             <tbody>
               {filteredContracts.length === 0 ? (
-                <tr><td colSpan={9} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr>
+                <tr><td colSpan={10} className="px-2 py-6 text-center text-app-muted">{t.empty}</td></tr>
               ) : filteredContracts.map((c) => (
                 <tr key={c.id}>
                   <td className="px-2 py-2">
@@ -681,6 +682,9 @@ export function ContractManagement({
                   <td className="px-2 py-2">{c.supplierName}</td>
                   <td className="px-2 py-2">{c.quantity}</td>
                   <td className="px-2 py-2">{c.totalAmount.toFixed(2)}</td>
+                  <td className="px-2 py-2 whitespace-nowrap tabular-nums text-app-muted" title={c.createdAt}>
+                    {c.createdAt.slice(0, 10)}
+                  </td>
                   <td className="px-2 py-2">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ring-1 ${statusBadgeClass(c.status)}`}>{c.status}</span>
                   </td>

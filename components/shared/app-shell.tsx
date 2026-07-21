@@ -171,7 +171,12 @@ export async function AppShell({ session, title, description, headerMeta, module
                 ) : null}
               </div>
               {description?.trim() ? (
-                <p className="mt-1.5 text-sm leading-relaxed text-[#4B5563]">{description}</p>
+                <details className="mt-1.5 text-xs text-app-muted">
+                  <summary className="cursor-pointer select-none font-medium text-foreground/70">
+                    {language === "en" ? "About this page" : "页面说明"}
+                  </summary>
+                  <p className="mt-1 text-sm leading-relaxed text-[#4B5563]">{description}</p>
+                </details>
               ) : null}
             </div>
             {moduleTabs ? (

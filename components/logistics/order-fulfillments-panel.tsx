@@ -104,6 +104,7 @@ function labels(language: Language) {
   const en = language === "en";
   return {
     title: en ? "Order fulfillments" : "订单履约",
+    introLabel: en ? "About this module" : "模块说明",
     intro: en
       ? "Rows come from Forecast cash flow lines with created contracts (approved/sent). Auto fields stay in sync with Cash flow analysis; fill shipping fields per shipment."
       : "数据来自 Cash flow analysis 中已创建合同（已批准/已发送）的 forecast 行。自动字段与现金流分析保持同步，每次发货补充发运字段。",
@@ -456,7 +457,12 @@ export function OrderFulfillmentsPanel({
               <span aria-hidden className="h-4 w-1 shrink-0 rounded-full bg-app-accent" />
               {t.title}
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-foreground/70">{t.intro}</p>
+            <details className="mt-1.5 text-xs text-app-muted">
+              <summary className="cursor-pointer select-none font-medium text-foreground/70">
+                {t.introLabel}
+              </summary>
+              <p className="mt-1 max-w-3xl text-sm leading-relaxed text-foreground/70">{t.intro}</p>
+            </details>
           </div>
           <div className="flex flex-wrap items-end gap-2 rounded-xl border border-app-border/70 bg-slate-50 px-3 py-2.5 dark:bg-transparent">
             <label className="shrink-0">

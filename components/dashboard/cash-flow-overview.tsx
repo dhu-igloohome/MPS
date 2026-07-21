@@ -54,6 +54,7 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
 
   const t = {
     title: language === "en" ? "Cash flow overview" : "现金流概览",
+    subtitleLabel: language === "en" ? "About this chart" : "图表说明",
     subtitle:
       language === "en"
         ? "Expected cash-out by period (advance on order date, final after payment term). SKU region & supplier from Order progress."
@@ -92,7 +93,12 @@ export function CashFlowOverview({ language, monthly, quarterly }: Props) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <h3 className="text-lg font-semibold tracking-tight text-[#111827]">{t.title}</h3>
-            <p className="mt-1 max-w-3xl text-sm text-[#4B5563]">{t.subtitle}</p>
+            <details className="mt-1 text-xs text-app-muted">
+              <summary className="cursor-pointer select-none font-medium text-foreground/70">
+                {t.subtitleLabel}
+              </summary>
+              <p className="mt-1 max-w-3xl text-sm text-[#4B5563]">{t.subtitle}</p>
+            </details>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex rounded-xl border border-app-border bg-white p-1">

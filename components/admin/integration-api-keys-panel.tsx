@@ -28,6 +28,7 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
 
   const t = {
     title: en ? "Integration API keys" : "集成 API 密钥",
+    introLabel: en ? "About API keys" : "密钥说明",
     intro: en
       ? "Long-lived keys for partner systems (e.g. external inventory apps). Keys are shown once at creation; only a prefix is stored for reference."
       : "供外部系统（如同事自建的库存网站）长期调用的 API 密钥。完整密钥仅在创建时显示一次，之后只保留前缀供识别。",
@@ -142,7 +143,12 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
         <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-app-accent" strokeWidth={1.5} />
         <div className="min-w-0 flex-1">
           <h3 className="text-lg font-semibold text-foreground">{t.title}</h3>
-          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-foreground/70">{t.intro}</p>
+          <details className="mt-1 text-xs text-app-muted">
+            <summary className="cursor-pointer select-none font-medium text-foreground/80">
+              {t.introLabel}
+            </summary>
+            <p className="mt-1 max-w-3xl text-sm leading-relaxed text-foreground/70">{t.intro}</p>
+          </details>
         </div>
       </div>
 

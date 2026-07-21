@@ -34,11 +34,6 @@ export default async function OrderFulfillmentsPage() {
     <AppShell
       session={session}
       title={language === "en" ? "Logistics Progress · Order fulfillments" : "物流进度 · 订单履约"}
-      description={
-        language === "en"
-          ? "Track shipments for forecast lines with created contracts. Auto fields stay in sync with Cash flow analysis."
-          : "跟踪已创建合同的 forecast 行的发运情况，自动字段与 Cash flow analysis 保持同步。"
-      }
     >
       <div className="space-y-4">
         <LogisticsSubnav language={language} />
