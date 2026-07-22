@@ -334,7 +334,6 @@ export function ProductManagement({ products, language }: ProductManagementProps
             placeholder={t.variant}
             value={variant}
             onChange={(event) => setVariant(event.target.value.toUpperCase())}
-            required
           />
           <input
             type="number"

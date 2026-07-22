@@ -33,7 +33,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const unitCost = Number.isFinite(unitCostRaw) && unitCostRaw >= 0 ? unitCostRaw : 0;
   const isActive = Boolean(body.isActive);
 
-  if (!id || !nextSku || !productName || !variant) {
+  if (!id || !nextSku || !productName) {
     return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
   }
   if (!isUppercaseSku(nextSku)) {
@@ -42,7 +42,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       { status: 400 },
     );
   }
-  if (!isValidVariant(variant)) {
+  if (variant && !isValidVariant(variant)) {
     return NextResponse.json(
       { message: "Variant must be numbers only, or numbers followed by uppercase letters." },
       { status: 400 },

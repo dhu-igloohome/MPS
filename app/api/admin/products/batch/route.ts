@@ -18,12 +18,12 @@ type BatchProductInput = {
 };
 
 function isValidItem(item: BatchProductInput) {
+  const variant = item.variant?.trim() ?? "";
   return (
     Boolean(item.productName?.trim()) &&
     Boolean(item.sku?.trim()) &&
     isUppercaseSku(item.sku.trim()) &&
-    Boolean(item.variant?.trim()) &&
-    isValidVariant(item.variant.trim()) &&
+    (!variant || isValidVariant(variant)) &&
     Number.isFinite(item.unitCost) &&
     item.unitCost >= 0
   );

@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-07-22 — 产品数据库 Variant（型号）字段改为非必填
+
+**需求**：David 要求把 Product Database 的 Variant 字段定义为非必填。
+
+**改动**：
+- `components/product/product-management.tsx`：创建产品表单的 Variant 输入框去掉 `required`。
+- `app/api/admin/products/route.ts`（创建）、`app/api/admin/products/[sku]/route.ts`（更新）：必填校验去掉 variant；格式校验（"只能是数字，或数字+大写字母"）改成只有填了值才校验，留空直接放行。
+- `app/api/admin/products/batch/route.ts`（CSV 批量导入）：同样的逻辑，variant 列可以留空。
+- 数据库层面 `products.variant` 本来就是 `not null default` 之外没有非空限制（空字符串合法），`(sku, variant)` 唯一索引不受影响——同一 SKU 下最多一条 variant 为空的记录，逻辑上相当于"该 SKU 的默认款"。
+
+**验证**：`tsc --noEmit`、`npm run lint` 全干净（24 个已知历史问题，无新增）。实机验证：Variant 留空直接创建成功；测试数据已删除。
+
+---
+
 ## 2026-07-22 — 修复"创建产品失败"无错误提示的问题（NPI 产品数据库）
 
 **问题**：David 反馈 NPI Management → Product Database 创建新产品失败，请查根本原因。

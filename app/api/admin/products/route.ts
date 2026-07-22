@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   const unitCostRaw = Number(body.unitCost);
   const unitCost = Number.isFinite(unitCostRaw) && unitCostRaw >= 0 ? unitCostRaw : 0;
 
-  if (!productName || !sku || !variant) {
+  if (!productName || !sku) {
     return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
   }
   if (!isUppercaseSku(sku)) {
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  if (!isValidVariant(variant)) {
+  if (variant && !isValidVariant(variant)) {
     return NextResponse.json(
       { message: "Variant must be numbers only, or numbers followed by uppercase letters." },
       { status: 400 },
