@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-07-22 — 修复"创建产品失败"无错误提示的问题（NPI 产品数据库）
+
+**问题**：David 反馈 NPI Management → Product Database 创建新产品失败，请查根本原因。
+
+**根本原因**：`components/product/product-management.tsx` 的 `createItem()`（以及 `saveItem()`/`deleteItem()`）在请求失败时，无论后端 API 实际返回什么错误，一律只显示写死的通用文案"创建产品失败。"/"Create product failed."，把后端返回的具体原因（比如 Variant 格式不对、SKU 格式不对、SKU+Variant 已存在等）完全丢弃了。所以用户看到的永远是"失败了"，但不知道具体是哪个字段填错了，也无法自己排查或改正。
+
+**验证复现**：起本地 dev（`mps-dev`，端口 3002，连的是生产数据库，测试完已把测试数据删除），实际尝试创建产品：
+- Variant 填 "Default"（不符合"只能是数字，或数字+大写字母"的格式要求）→ 后端正确返回 400 及具体消息，但页面只显示通用失败文案。
+- 换成合法 Variant（如 "1"）、以及带中文名称的正常创建 → 都能成功，说明创建产品的核心功能本身没坏，坏的是"看不到失败原因"这一层。
+
+**修复**：`createItem`/`saveItem`/`deleteItem` 三处的失败分支都改成先读取 `response.json()` 里的 `message` 字段，有则显示服务端的具体原因，没有才 fallback 到原来的通用文案。
+
+**验证**：`tsc --noEmit`、`npm run lint` 全干净（无新增问题，仍是 24 个已知历史问题）。实机验证：故意用不合法 Variant 提交，页面底部消息区域正确显示"Variant must be numbers only, or numbers followed by uppercase letters."；用合法数据创建/含中文名称创建均成功。
+
+---
+
 ## 2026-07-21 — Contracts 加创建日期列 + 全站说明文字改成默认收起
 
 **需求 1**：Contracts 列表加一列"创建日期"，方便追溯合同是哪天建的。

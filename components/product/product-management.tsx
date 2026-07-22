@@ -196,7 +196,8 @@ export function ProductManagement({ products, language }: ProductManagementProps
       }),
     });
     if (!response.ok) {
-      setMessage(t.createFailed);
+      const data = (await response.json().catch(() => ({}))) as { message?: string };
+      setMessage(data.message || t.createFailed);
       return;
     }
     setMessage(t.productCreated);
@@ -224,7 +225,8 @@ export function ProductManagement({ products, language }: ProductManagementProps
       }),
     });
     if (!response.ok) {
-      setMessage(t.updateFailed);
+      const data = (await response.json().catch(() => ({}))) as { message?: string };
+      setMessage(data.message || t.updateFailed);
       return;
     }
     setMessage(t.saved.replace("{sku}", item.sku));
@@ -247,7 +249,8 @@ export function ProductManagement({ products, language }: ProductManagementProps
       method: "DELETE",
     });
     if (!response.ok) {
-      setMessage(t.deleteFailed);
+      const data = (await response.json().catch(() => ({}))) as { message?: string };
+      setMessage(data.message || t.deleteFailed);
       return;
     }
     setMessage(t.deleted.replace("{sku}", item.sku).replace("{variant}", item.variant));
