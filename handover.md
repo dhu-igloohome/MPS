@@ -21,7 +21,7 @@
 
 **验证**：`tsc --noEmit`、`npm run lint` 全干净（lint 剩余问题跟之前一样是 24 个已知历史问题，不在这次碰的文件里）。本地起 `mps-dev`（端口3002），临时建了一个 scope 仅 `fulfillment:read` 的测试 API key（`label='TEMP_DIAG_DELETE_ME'`）直连本地服务器验证：`?forecastPoNumber=POE202608040001` 返回 8 个 group，8 个 SKU 全部命中，`contractedQty` 均为 0；`?forecastMonth=2026-12&region=EU` 同样正确返回这 8 条；无筛选总 groupCount 从原来的 67 变成 107（新增的都是之前从未收录过的 forecast-only 记录，符合预期），`shipmentCount` 保持 2 不变（shipments 逻辑没碰）。确认内部 Order Fulfillments 页面（`app/logistics-progress/order-fulfillments/page.tsx`）仍然调用未改动的 `buildFulfillmentGroups`，不受影响。测试用的临时 API key 已通过 SQL 删除，未留痕迹。
 
-Commit: (pending push)
+Commit: `de2d9ab`
 
 ---
 
