@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { REGIONS } from "@/lib/accounts";
 import { authenticateIntegrationRequest } from "@/lib/integration-api-auth";
-import { buildFulfillmentGroups } from "@/lib/order-fulfillment-groups";
+import { buildIntegrationFulfillmentGroups } from "@/lib/order-fulfillment-groups";
 import type { Region } from "@/lib/types";
 import {
   getForecastsByRegions,
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     listFulfillmentShipments(),
   ]);
 
-  let groups = buildFulfillmentGroups(forecasts, contracts);
+  let groups = buildIntegrationFulfillmentGroups(forecasts, contracts);
   // Shipments have no region column of their own; derive it from the group they belong to
   // (same forecast # + SKU) so every shipment row can carry the same region label/filter.
   const regionByGroupKey = new Map(groups.map((g) => [`${g.forecastPoNumber}|${g.sku}`, g.region]));

@@ -14,19 +14,16 @@ function groupKey(month: string, poNumber: string, sku: string): string {
   return `${monthKey(month)}|${poNumber.trim()}|${sku.trim()}`;
 }
 
-/**
- * Builds Order fulfillments rows source: Forecast # + SKU groups (per forecast month)
- * that already have created contract quantity (approved/sent contracts linked via forecastId).
- */
-export function buildFulfillmentGroups(
+function buildGroups(
   forecasts: ForecastEntry[],
   contracts: ContractEntry[],
+  opts: { requireApprovedForecast: boolean; requireContract: boolean },
 ): FulfillmentGroup[] {
-  const approved = forecasts.filter(isCashFlowForecast);
+  const eligible = opts.requireApprovedForecast ? forecasts.filter(isCashFlowForecast) : forecasts;
   const byForecastId = new Map<string, ForecastEntry>();
   const groups = new Map<string, FulfillmentGroup>();
 
-  for (const f of approved) {
+  for (const f of eligible) {
     byForecastId.set(f.id, f);
     const key = groupKey(f.month, f.poNumber, f.sku);
     let g = groups.get(key);
@@ -64,12 +61,40 @@ export function buildFulfillmentGroups(
     if (supplier && !g.shipFroms.includes(supplier)) g.shipFroms.push(supplier);
   }
 
-  return [...groups.values()]
-    .filter((g) => g.contractedQty > 0)
-    .sort(
-      (a, b) =>
-        a.forecastMonth.localeCompare(b.forecastMonth) ||
-        a.forecastPoNumber.localeCompare(b.forecastPoNumber, undefined, { numeric: true }) ||
-        a.sku.localeCompare(b.sku),
-    );
+  const result = opts.requireContract
+    ? [...groups.values()].filter((g) => g.contractedQty > 0)
+    : [...groups.values()];
+
+  return result.sort(
+    (a, b) =>
+      a.forecastMonth.localeCompare(b.forecastMonth) ||
+      a.forecastPoNumber.localeCompare(b.forecastPoNumber, undefined, { numeric: true }) ||
+      a.sku.localeCompare(b.sku),
+  );
+}
+
+/**
+ * Builds Order fulfillments rows source: Forecast # + SKU groups (per forecast month)
+ * that already have created contract quantity (approved/sent contracts linked via forecastId).
+ * Used by the internal Order Fulfillments page — unchanged, contract-backed rows only.
+ */
+export function buildFulfillmentGroups(
+  forecasts: ForecastEntry[],
+  contracts: ContractEntry[],
+): FulfillmentGroup[] {
+  return buildGroups(forecasts, contracts, { requireApprovedForecast: true, requireContract: true });
+}
+
+/**
+ * Same grouping, but for the external integration API (`fulfillment:read`): includes every
+ * forecast line regardless of Ops action or whether a contract exists yet, so partners see
+ * forecast-stage demand (contractedQty: 0) instead of waiting until a contract is created.
+ * Requested by David 2026-08-17 after Berfin's AOP dashboard needed Dec 2026 EU forecasts
+ * that hadn't reached "Ok to issue PO" / contract stage yet.
+ */
+export function buildIntegrationFulfillmentGroups(
+  forecasts: ForecastEntry[],
+  contracts: ContractEntry[],
+): FulfillmentGroup[] {
+  return buildGroups(forecasts, contracts, { requireApprovedForecast: false, requireContract: false });
 }

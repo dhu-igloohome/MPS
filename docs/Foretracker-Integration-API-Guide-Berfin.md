@@ -115,7 +115,9 @@ Each object in `entries` includes warehouse quantities, batch info, and cost fie
 
 ### 3.3 Order fulfillments (read-only)
 
-Returns **Order Fulfillments** data from Foretracker: forecast groups with created contracts, plus shipment rows (SO, ETD/ETA, delivery status, etc.).
+Returns **Order Fulfillments** data from Foretracker: every Forecast # + SKU group (regardless of stage), plus shipment rows (SO, ETD/ETA, delivery status, etc.) for the ones that already have contracts.
+
+Each group includes `contractedQty` — this is `0` for forecast-stage demand that has no contract yet, and > 0 once a contract has been created against it. Use this to distinguish confirmed vs. tentative demand in your dashboard.
 
 Requires scope: **`fulfillment:read`**
 
@@ -182,7 +184,7 @@ curl -H "Authorization: Bearer mps_YOUR_API_KEY_HERE" \
 }
 ```
 
-- **`groups`** — one row per Forecast # + SKU (auto-derived from cash flow + contracts)  
+- **`groups`** — one row per Forecast # + SKU, from all forecast records (not just ones with contracts); check `contractedQty` to see whether a contract has been created yet
 - **`shipments`** — one row per shipment entry (SO, dates, status); multiple shipments can share the same group  
 
 ---
@@ -278,4 +280,4 @@ Contact your Foretracker administrator for:
 
 ---
 
-*Document version: June 2026 (updated) · Foretracker (MPS) Integration API v1*
+*Document version: August 2026 (updated) · Foretracker (MPS) Integration API v1*

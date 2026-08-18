@@ -6,6 +6,25 @@
 
 ---
 
+## 2026-08-17 — 集成 API `order-fulfillments` 放宽收录条件，支持 forecast 阶段数据
+
+**背景**：Berfin 反馈 `POE202608040001`（EU / Dec 2026 / 8 个 SKU）在"All Forecast Records"里能看到，但 `/api/integrations/v1/order-fulfillments` 无论加什么筛选参数都返回 0 条，一开始以为是 7月8日修的 region 参数 bug 复发。
+
+**排查结论（查生产库确认，未改动数据）**：不是 bug 复发。这条 PO 的 8 行 SKU 全部还没建合同（`contracts` 表按 forecast_id / po_number 查都是 0 条），且 Ops action 要么是空、要么是"Consider stock transfer from other region"，没有一行是"Ok to issue PO"。`buildFulfillmentGroups()`（`lib/order-fulfillment-groups.ts`）原本要求两个条件都满足才收录（跟 Cash Flow Analysis 用同一条规则），这条 PO 两个都不满足，所以在网站自己的 Order Fulfillments 页面和集成 API 里都查不到——行为是一致的，不是 API 单独的问题。
+
+**David 确认后的决定**：这个门槛对 Berfin 的 AOP 看板来说太晚了，需要放宽——但只放宽给外部集成 API，网站内部的 Order Fulfillments 页面（Jessie/Jayvis/Steven 平时看的）保持不变。放宽后不再要求 Ops action 或合同存在，approved forecast（即所有 forecast 记录）全部收录，`contractedQty` 为 0 表示还没建合同。
+
+**改动**：
+- `lib/order-fulfillment-groups.ts`：抽出公共 `buildGroups()`，用 `{requireApprovedForecast, requireContract}` 两个开关控制。`buildFulfillmentGroups()`（内部页面用）保持原有严格逻辑不变；新增 `buildIntegrationFulfillmentGroups()`（两个条件都关闭）给集成 API 用。
+- `app/api/integrations/v1/order-fulfillments/route.ts`：改为调用 `buildIntegrationFulfillmentGroups`。
+- `docs/Foretracker-Integration-API-Guide-Berfin.md`：更新 3.3 节说明，加上"`contractedQty` 为 0 表示 forecast 阶段还没合同"的说明，文档日期改成 2026年8月。
+
+**验证**：`tsc --noEmit`、`npm run lint` 全干净（lint 剩余问题跟之前一样是 24 个已知历史问题，不在这次碰的文件里）。本地起 `mps-dev`（端口3002），临时建了一个 scope 仅 `fulfillment:read` 的测试 API key（`label='TEMP_DIAG_DELETE_ME'`）直连本地服务器验证：`?forecastPoNumber=POE202608040001` 返回 8 个 group，8 个 SKU 全部命中，`contractedQty` 均为 0；`?forecastMonth=2026-12&region=EU` 同样正确返回这 8 条；无筛选总 groupCount 从原来的 67 变成 107（新增的都是之前从未收录过的 forecast-only 记录，符合预期），`shipmentCount` 保持 2 不变（shipments 逻辑没碰）。确认内部 Order Fulfillments 页面（`app/logistics-progress/order-fulfillments/page.tsx`）仍然调用未改动的 `buildFulfillmentGroups`，不受影响。测试用的临时 API key 已通过 SQL 删除，未留痕迹。
+
+Commit: (pending push)
+
+---
+
 ## 2026-07-22 — 产品数据库 Variant（型号）字段改为非必填
 
 **需求**：David 要求把 Product Database 的 Variant 字段定义为非必填。
