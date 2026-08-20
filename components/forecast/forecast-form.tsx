@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { CircleHelp, CloudDownload, Download, Filter, Plus, Trash2, Upload, X } from "lucide-react";
 
@@ -156,7 +157,7 @@ function ForecastCheckboxFilterPanel({
   }
 
   return (
-    <div className="absolute left-0 top-full z-20 mt-1 w-52 rounded-xl border border-app-border bg-white p-2 text-left text-xs font-normal normal-case text-foreground shadow-lg">
+    <div className="w-52 rounded-xl border border-app-border bg-white p-2 text-left text-xs font-normal normal-case text-foreground shadow-lg">
       {searchable ? (
         <input
           type="text"
@@ -220,7 +221,7 @@ function ForecastDateRangeFilterPanel({
   clearLabel: string;
 }) {
   return (
-    <div className="absolute left-0 top-full z-20 mt-1 w-52 rounded-xl border border-app-border bg-white p-2 text-left text-xs font-normal normal-case text-foreground shadow-lg">
+    <div className="w-52 rounded-xl border border-app-border bg-white p-2 text-left text-xs font-normal normal-case text-foreground shadow-lg">
       <label className="mb-1.5 block">
         <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-app-muted">{fromLabel}</span>
         <input
@@ -259,6 +260,7 @@ function ForecastFilterableHeader({
   isOpen,
   onToggle,
   panelRef,
+  portalPanelRef,
   children,
 }: {
   label: React.ReactNode;
@@ -266,11 +268,38 @@ function ForecastFilterableHeader({
   isOpen: boolean;
   onToggle: () => void;
   panelRef: React.RefObject<HTMLDivElement | null>;
+  portalPanelRef: React.RefObject<HTMLDivElement | null>;
   children: React.ReactNode;
 }) {
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function updatePosition() {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      // Anchor below-left of the trigger, but keep the 13rem-wide panel on screen
+      // if the column sits near the right edge of a horizontally-scrolled table.
+      const panelWidth = 224;
+      const left = Math.min(rect.left, window.innerWidth - panelWidth - 8);
+      setPosition({ top: rect.bottom + 4, left: Math.max(8, left) });
+    }
+    updatePosition();
+    // capture:true so this also fires for scroll events inside the table's own
+    // scroll container, which doesn't bubble to window like most events do.
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen]);
+
   return (
     <div className="relative inline-flex items-center gap-1" ref={isOpen ? panelRef : undefined}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={onToggle}
         className={`inline-flex items-center gap-1 whitespace-nowrap ${isActive ? "text-app-accent" : ""}`}
@@ -278,7 +307,18 @@ function ForecastFilterableHeader({
         {label}
         <Filter size={12} strokeWidth={1.75} className={isActive ? "fill-current" : ""} />
       </button>
-      {isOpen ? children : null}
+      {isOpen && position
+        ? createPortal(
+            <div
+              ref={portalPanelRef}
+              style={{ position: "fixed", top: position.top, left: position.left }}
+              className="z-50"
+            >
+              {children}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
@@ -568,10 +608,17 @@ export function ForecastForm({
   }
 
   const openFilterPanelRef = useRef<HTMLDivElement | null>(null);
+  // The dropdown itself renders through a portal (see ForecastFilterableHeader), so it's no
+  // longer a DOM descendant of openFilterPanelRef — track it separately so clicks inside the
+  // portal aren't mistaken for outside clicks.
+  const openFilterPortalRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!openFilterColumn) return;
     function handleClickOutside(event: MouseEvent) {
-      if (openFilterPanelRef.current && !openFilterPanelRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideTrigger = openFilterPanelRef.current?.contains(target) ?? false;
+      const insidePortal = openFilterPortalRef.current?.contains(target) ?? false;
+      if (!insideTrigger && !insidePortal) {
         setOpenFilterColumn(null);
       }
     }
@@ -1631,6 +1678,7 @@ export function ForecastForm({
                         isOpen={openFilterColumn === "month"}
                         onToggle={() => setOpenFilterColumn(openFilterColumn === "month" ? null : "month")}
                         panelRef={openFilterPanelRef}
+                        portalPanelRef={openFilterPortalRef}
                       >
                         <ForecastCheckboxFilterPanel
                           options={filterMonthOptions}
@@ -1651,6 +1699,7 @@ export function ForecastForm({
                         isOpen={openFilterColumn === "region"}
                         onToggle={() => setOpenFilterColumn(openFilterColumn === "region" ? null : "region")}
                         panelRef={openFilterPanelRef}
+                        portalPanelRef={openFilterPortalRef}
                       >
                         <ForecastCheckboxFilterPanel
                           options={filterRegionOptions}
@@ -1673,6 +1722,7 @@ export function ForecastForm({
                         isOpen={openFilterColumn === "sku"}
                         onToggle={() => setOpenFilterColumn(openFilterColumn === "sku" ? null : "sku")}
                         panelRef={openFilterPanelRef}
+                        portalPanelRef={openFilterPortalRef}
                       >
                         <ForecastCheckboxFilterPanel
                           options={filterSkuOptions}
@@ -1701,6 +1751,7 @@ export function ForecastForm({
                           setOpenFilterColumn(openFilterColumn === "demandType" ? null : "demandType")
                         }
                         panelRef={openFilterPanelRef}
+                        portalPanelRef={openFilterPortalRef}
                       >
                         <ForecastCheckboxFilterPanel
                           options={filterDemandTypeOptions}
@@ -1720,6 +1771,7 @@ export function ForecastForm({
                         isOpen={openFilterColumn === "created"}
                         onToggle={() => setOpenFilterColumn(openFilterColumn === "created" ? null : "created")}
                         panelRef={openFilterPanelRef}
+                        portalPanelRef={openFilterPortalRef}
                       >
                         <ForecastDateRangeFilterPanel
                           from={filterCreatedFrom}
@@ -1741,6 +1793,7 @@ export function ForecastForm({
                         isOpen={openFilterColumn === "opsAction"}
                         onToggle={() => setOpenFilterColumn(openFilterColumn === "opsAction" ? null : "opsAction")}
                         panelRef={openFilterPanelRef}
+                        portalPanelRef={openFilterPortalRef}
                       >
                         <ForecastCheckboxFilterPanel
                           options={filterOpsActionOptions}
