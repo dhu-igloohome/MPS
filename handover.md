@@ -8,6 +8,8 @@
 
 ## 2026-08-18 — 修复 Forecast Records 表列筛选下拉框被遮挡的问题
 
+Commit: `177b905`
+
 **背景**：David 反馈"All Forecast Records"表格的"Forecast Month"列筛选下拉框，部分选项被遮挡，选不到"Jan 2027"。
 
 **根本原因**：`components/forecast/forecast-form.tsx` 里 6 个列筛选下拉框（Forecast Month/Region/SKU/Buffer/Created/Ops action）原来都是用 `position: absolute` 挂在表头按钮下面，而表格本身包在 `max-h-[65vh] overflow-auto` 的容器里（横向 + 纵向都会滚动，因为表格 `min-w-[72rem]` 比视口宽）。CSS 规则：任何祖先元素只要 `overflow` 不是 `visible`，就会把里面 `absolute` 定位的后代裁切到自己的可视范围内，跟 z-index 无关。所以下拉框列表超出这个容器可视高度的部分（比如月份列表往下滚到 Jan 2027）直接被截断，根本点不到。
@@ -15,8 +17,6 @@
 **修复**：改用 React Portal（`createPortal` 挂到 `document.body`），下拉框内容不再是表格容器的 DOM 后代，改成 `position: fixed`，位置由触发按钮的 `getBoundingClientRect()` 实时计算（同时监听 window 的 scroll 捕获阶段 + resize 保持定位跟手；这里"接住"了后代滚动容器不冒泡的 scroll 事件本来抓不到的问题）。原来"点击面板外部关闭"的逻辑用同一个 ref 判断，现在面板挪到 portal 里不再是同一个 DOM 子树，所以新增了第二个 ref 专门追踪 portal 内容，点击判断改成"两个 ref 都不包含点击目标才关闭"，避免点下拉框里的复选框被误判成"点了外部"直接关掉。
 
 **验证**：`tsc --noEmit`、`npm run lint` 全干净（过程中发现新代码触发了一次 `react-hooks/set-state-in-effect` 新增 lint 问题，已通过去掉不必要的 `setPosition(null)` reset 分支解决，最终还是 24 个已知历史问题没有增加）。本地起 `mps-dev`（端口3002）用 david 账号登录实机验证：Forecast Month 筛选面板打开后完整显示 Aug 2026 ~ Jan 2027 全部 6 个选项（面板 bottom 在 y=555，视口高 720，无裁切）；勾选 Jan 2027 → 表格正确过滤成"1 / 117 rows"（对应那条 POU202608200001/IGK3/North America 记录）；点击面板内"Clear"按钮不会误关闭面板；点击面板外部正确关闭；再次点击表头按钮正常切换关闭 —— 三种交互都没有回归。
-
-Commit: (pending push)
 
 ---
 
