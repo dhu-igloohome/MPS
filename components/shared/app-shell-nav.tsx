@@ -14,9 +14,13 @@ import {
   ClipboardList,
   Factory,
   PackageSearch,
+  PanelLeftClose,
+  PanelLeftOpen,
   ShieldCheck,
   Users,
 } from "lucide-react";
+
+const NAV_COLLAPSED_STORAGE_KEY = "mps-nav-collapsed";
 
 export type ShellNavItem = {
   href: string;
@@ -68,6 +72,27 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
   const [manuallyClosed, setManuallyClosed] = useState<Set<string>>(() => new Set());
   /** When not on a branch, user may expand to peek at sub-links without navigating yet. */
   const [manuallyOpened, setManuallyOpened] = useState<Set<string>>(() => new Set());
+  /** Whole-sidebar icon-only rail mode, remembered per browser. Starts expanded on the server
+   * render so there's no hydration mismatch; a returning user's collapsed choice applies right
+   * after mount. */
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    // Deferred a tick so the initial (expanded) mount commits before this reads the
+    // returning user's stored preference, matching this file's existing manuallyClosed/
+    // manuallyOpened sync pattern below rather than setting state synchronously in-effect.
+    queueMicrotask(() => {
+      if (localStorage.getItem(NAV_COLLAPSED_STORAGE_KEY) === "1") setCollapsed(true);
+    });
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(NAV_COLLAPSED_STORAGE_KEY, next ? "1" : "0");
+      return next;
+    });
+  }
 
   useEffect(() => {
     setManuallyClosed((prev) => {
@@ -131,9 +156,24 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
   return (
     <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8 lg:gap-10">
         <nav
-          className="w-full shrink-0 md:w-56 lg:w-60"
+          className={`w-full shrink-0 ${collapsed ? "md:w-14" : "md:w-56 lg:w-60"}`}
           aria-label="Main navigation"
         >
+          <div className="hidden justify-end pb-1.5 md:flex">
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#6B7280] outline-none hover:bg-gray-100 hover:text-[#111827] focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]/40"
+              aria-label={en ? (collapsed ? "Expand navigation" : "Collapse navigation") : collapsed ? "展开导航" : "收起导航"}
+              title={en ? (collapsed ? "Expand navigation" : "Collapse navigation") : collapsed ? "展开导航" : "收起导航"}
+            >
+              {collapsed ? (
+                <PanelLeftOpen size={16} strokeWidth={1.75} />
+              ) : (
+                <PanelLeftClose size={16} strokeWidth={1.75} />
+              )}
+            </button>
+          </div>
           <ul className="max-h-[min(70dvh,calc(100dvh-12rem))] space-y-1 overflow-y-auto overscroll-contain rounded-2xl bg-[#F3F4F6]/80 p-3 [scrollbar-width:thin] md:max-h-[min(100dvh-9rem,calc(100vh-9rem))]">
             {items.map((item) => {
               const on = isInNavBranch(pathname, item);
@@ -146,17 +186,19 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className={`relative block rounded-lg px-4 py-2.5 text-sm font-medium tracking-tight transition-colors ${
+                      title={collapsed ? item.label : undefined}
+                      aria-label={collapsed ? item.label : undefined}
+                      className={`relative flex items-center gap-2.5 rounded-lg px-4 py-2.5 text-sm font-medium tracking-tight transition-colors ${
+                        collapsed ? "md:justify-center md:gap-0 md:px-0" : ""
+                      } ${
                         on
                           ? "bg-white font-semibold text-[#111827]"
                           : "text-[#4B5563] hover:bg-gray-100 hover:text-[#111827]"
                       }`}
                     >
                       {on ? <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-[var(--app-accent)]" /> : null}
-                      <span className="inline-flex items-center gap-2.5">
-                        {Icon ? <Icon size={16} strokeWidth={1.5} /> : null}
-                        <span>{item.label}</span>
-                      </span>
+                      {Icon ? <Icon size={16} strokeWidth={1.5} className="shrink-0" /> : null}
+                      <span className={collapsed ? "md:hidden" : ""}>{item.label}</span>
                     </Link>
                   </li>
                 );
@@ -169,13 +211,17 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
                 <li key={item.href}>
                   <div
                     className={`relative flex items-stretch rounded-lg transition-colors ${
+                      collapsed ? "md:justify-center" : ""
+                    } ${
                       on ? "bg-white font-semibold text-[#111827]" : "text-[#4B5563] hover:bg-gray-100 hover:text-[#111827]"
                     }`}
                   >
                     {on ? <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-[var(--app-accent)]" /> : null}
                     <button
                       type="button"
-                      className="flex shrink-0 items-center justify-center rounded-l-lg px-1.5 text-[#6B7280] outline-none hover:bg-black/[0.04] hover:text-[#111827] focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]/40"
+                      className={`flex shrink-0 items-center justify-center rounded-l-lg px-1.5 text-[#6B7280] outline-none hover:bg-black/[0.04] hover:text-[#111827] focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]/40 ${
+                        collapsed ? "md:hidden" : ""
+                      }`}
                       aria-expanded={ariaExpanded}
                       aria-controls={subListId}
                       aria-label={
@@ -198,20 +244,24 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
                     </button>
                     <Link
                       href={item.href}
+                      title={collapsed ? item.label : undefined}
+                      aria-label={collapsed ? item.label : undefined}
                       className={`min-w-0 flex-1 py-2.5 pr-3 text-sm font-medium tracking-tight ${
-                        on ? "text-[#111827]" : "text-[#4B5563]"
-                      }`}
+                        collapsed ? "md:flex md:items-center md:justify-center md:px-0" : ""
+                      } ${on ? "text-[#111827]" : "text-[#4B5563]"}`}
                     >
-                      <span className="inline-flex items-center gap-2.5">
-                        {Icon ? <Icon size={16} strokeWidth={1.5} /> : null}
-                        <span>{item.label}</span>
+                      <span className={`inline-flex items-center gap-2.5 ${collapsed ? "md:gap-0" : ""}`}>
+                        {Icon ? <Icon size={16} strokeWidth={1.5} className="shrink-0" /> : null}
+                        <span className={collapsed ? "md:hidden" : ""}>{item.label}</span>
                       </span>
                     </Link>
                   </div>
                   <ul
                     id={subListId}
                     hidden={!expanded}
-                    className="mt-1 space-y-0.5 border-l border-gray-200/90 py-0.5 pl-3 ml-4"
+                    className={`mt-1 space-y-0.5 border-l border-gray-200/90 py-0.5 pl-3 ml-4 ${
+                      collapsed ? "md:hidden" : ""
+                    }`}
                   >
                     {item.children!.map((child) => {
                       const childOn = activeChildHref(pathname, item.children ?? []) === child.href;
