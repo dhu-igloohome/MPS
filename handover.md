@@ -8,6 +8,8 @@
 
 ## 2026-08-18 — 侧边栏加收起/展开功能
 
+Commit: `cf69d86`
+
 **背景**：David 提出很多表格（比如 Forecast Records）列数多、需要横向滚动，问能不能牺牲侧边栏宽度换取页面完整性，但要对操作者友好。评估后建议做成"可收起侧边栏"而不是直接砍掉或默认隐藏——侧边栏 `md:w-56 lg:w-60`（224–240px）比起 Forecast 表格本身 `min-w-[72rem]`（1152px）来说不是横向滚动的主因，收起后也未必能完全消除滚动，但对 Jessie/Steven 这类需要在 8 大模块间频繁切换的人保留常驻导航更重要，所以做成用户自己选、记住偏好的开关，而不是强改所有人的默认体验。
 
 **改动**：`components/shared/app-shell-nav.tsx` 加了 `collapsed` 状态（存 `localStorage` key `mps-nav-collapsed`，跟随浏览器记住偏好，不是全局强制设置）：
@@ -17,8 +19,6 @@
 - **移动端安全兜底**：收起状态全部用 `md:` 开头的响应式 class 实现（而不是简单粗暴的 JS 分支渲染两套 DOM），确保就算 `collapsed` 状态因为某种边界情况（比如在桌面端收起后把浏览器窗口缩到手机宽度）变成 true，移动端窄屏下依然强制显示完整文字标签、看不到那个收起按钮——移动端体验完全不受这个新开关影响。
 
 **验证**：`tsc --noEmit`、`npm run lint` 全干净（同样中途撞到一次 `react-hooks/set-state-in-effect` 新增 lint 问题——组件挂载时从 `localStorage` 读取偏好写回 state 触发的——用 `queueMicrotask` 把这次 setState 挪到 effect 同步执行栈之外解决，最终还是 24 个已知历史问题没有增加）。本地起 `mps-dev` 用 david 账号实机验证：桌面视口下点击收起，侧边栏 240px→56px，图标居中、文字/子菜单/展开箭头全部正确隐藏；点击展开按钮变回原样；刷新页面后收起状态能从 localStorage 正确恢复（240px→56px 一致）；把窗口缩到手机尺寸（375px）时，即使 localStorage 里存的是收起状态，导航依然完整显示文字标签、收起按钮不可见——移动端没有受影响。验证过程中一度在 console 看到一次 "Hydration failed" 错误，经过对照测试（`git stash` 出改动前的版本 vs 改动后版本，各自开全新浏览器 tab 测试）确认这次改动本身不会复现该错误，两个版本都干净，判断是本地 dev server 冷启动编译时的偶发瞬时问题，非本次改动引入。
-
-Commit: (pending push)
 
 ---
 
