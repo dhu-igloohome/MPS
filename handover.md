@@ -8,6 +8,8 @@
 
 ## 2026-09-02 — Supply Chain Management 模块组件目录重整（第一步）
 
+Commit: `35e2365`
+
 **背景**：David 反馈 Supply Chain Management 模块目录乱，问有没有整理思路。诊断发现：路由早就统一在 `app/supply-chain/{cost-control,contracts,suppliers,buyer-entities}/` 下，但组件散落成 `components/contract/`、`components/cost-control/`、`components/supplier/`、`components/buyer-entities/` 四个各自独立、不带 `supply-chain` 前缀的顶层目录，同时又存在一个 `components/supply-chain/` 目录但只放了 `supply-chain-subnav.tsx`（模块内子导航）——路由和组件的目录结构对不上。API 层（`/api/contracts`、`/api/cost-control`、`/api/suppliers` vs `/api/supply-chain/contracts/*`）更分裂，风险也更高（要改前端硬编码的 fetch 路径、真正改变 URL），跟 David 商量后拆成两步，本次只做风险低的组件目录对齐（第一步），API 层重整（第二步）留待后续单独确认。
 
 **改动**：
@@ -17,8 +19,6 @@
 - 未改动任何 URL、API、组件对外行为——纯内部文件位置 + import 路径调整。
 
 **验证**：`tsc --noEmit`、`npm run lint` 全干净（24 个已知历史问题不变，说明没有漏改的 import）；`grep` 确认仓库里不再有任何指向旧路径的引用。本地起 `mps-dev` 实机走了一遍：Supply Chain 模块本身（Cost Control 首页+Payment Schedule+Unit Cost 子页、Contracts、Suppliers、Buyer Entities）全部正常渲染无 console 报错；另外抽查了引用 `field-controls.ts` 的 NPI（BOM Management）、Quality Control（Test Cases）两个无关模块页面，确认它们的表单控件样式没有因为这次搬家跟着坏掉。
-
-Commit: (pending push)
 
 ---
 
