@@ -27,11 +27,9 @@ export default async function LandedCostConsolidatePage() {
           ? "Forecast cash flow (for dashboard) — same table and PO date edits as Supply Chain → Cost control → Cash flow analysis."
           : "与「供应链 → 成本控制 → 现金流分析」中 Forecast 现金流（看板汇总）相同的表格与订单下达日期编辑。"
       }
+      moduleTabs={<LogisticsSubnav language={language} />}
     >
-      <div className="space-y-4">
-        <LogisticsSubnav language={language} />
-        <LandedCostConsolidatePanel language={language} rows={cashFlowRows} />
-      </div>
+      <LandedCostConsolidatePanel language={language} rows={cashFlowRows} />
     </AppShell>
   );
 }

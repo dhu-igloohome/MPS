@@ -39,17 +39,15 @@ export default async function LogisticsProgressPage() {
           ? "Record inbound and inter-office transfers (no inventory deduction). Visibility follows your regions on from/to endpoints."
           : "记录外部入库与办公室间调拨（不扣库存）。可见范围按物流起点/终点与您负责区域匹配。"
       }
+      moduleTabs={<LogisticsSubnav language={language} />}
     >
-      <div className="space-y-4">
-        <LogisticsSubnav language={language} />
-        <LogisticsProgressPanel
-          entries={entries}
-          products={products}
-          orderLines={orderLines}
-          forecasts={forecasts}
-          language={language}
-        />
-      </div>
+      <LogisticsProgressPanel
+        entries={entries}
+        products={products}
+        orderLines={orderLines}
+        forecasts={forecasts}
+        language={language}
+      />
     </AppShell>
   );
 }

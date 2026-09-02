@@ -25,11 +25,9 @@ export default async function ShippingReportPage() {
           ? "Track outbound shipping records and payment split by shipment."
           : "记录发货报告与费用分摊信息。"
       }
+      moduleTabs={<LogisticsSubnav language={language} />}
     >
-      <div className="space-y-4">
-        <LogisticsSubnav language={language} />
-        <ShippingReportPanel entries={entries} language={language} />
-      </div>
+      <ShippingReportPanel entries={entries} language={language} />
     </AppShell>
   );
 }

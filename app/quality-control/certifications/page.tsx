@@ -17,11 +17,13 @@ export default async function QualityControlCertificationsPage() {
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   const entries = await listQcCertificationEntries();
   return (
-    <AppShell session={session} title={language === "en" ? "Quality Control · Certifications" : "质量管理 · 认证管理"} description={language === "en" ? "Track product certifications, standards and expiry status." : "跟踪产品认证、标准与到期状态。"}>
-      <div className="space-y-4">
-        <QualityControlSubnav language={language} />
-        <CertificationManagement entries={entries} language={language} />
-      </div>
+    <AppShell
+      session={session}
+      title={language === "en" ? "Quality Control · Certifications" : "质量管理 · 认证管理"}
+      description={language === "en" ? "Track product certifications, standards and expiry status." : "跟踪产品认证、标准与到期状态。"}
+      moduleTabs={<QualityControlSubnav language={language} />}
+    >
+      <CertificationManagement entries={entries} language={language} />
     </AppShell>
   );
 }

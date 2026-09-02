@@ -3,7 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BarChart3, Building2, Calculator, ChevronRight, Coins, FileText, Landmark, Settings } from "lucide-react";
+import {
+  BarChart3,
+  Building2,
+  Calculator,
+  CalendarRange,
+  ChevronRight,
+  Coins,
+  FileText,
+  Landmark,
+  Settings,
+} from "lucide-react";
 
 import type { Language } from "@/lib/i18n";
 import type { LucideIcon } from "lucide-react";
@@ -48,6 +58,11 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
         href: "/supply-chain/cost-control/unit-cost",
         label: language === "en" ? "Unit cost" : "单位成本",
         Icon: Coins,
+      },
+      {
+        href: "/supply-chain/cost-control/payment-schedule",
+        label: language === "en" ? "Payment schedule" : "付款计划",
+        Icon: CalendarRange,
       },
     ],
   };

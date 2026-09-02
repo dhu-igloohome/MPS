@@ -16,18 +16,16 @@ export function QualityControlSubnav({ language }: { language: Language }) {
   const isOn = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <div className="app-subnav p-3">
-      <div className="flex flex-wrap gap-2">
-        {items.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`app-subnav-link ${isOn(item.href) ? "app-subnav-link-active" : ""}`}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          className={`app-subnav-link ${isOn(item.href) ? "app-subnav-link-active" : ""}`}
+        >
+          {item.label}
+        </Link>
+      ))}
     </div>
   );
 }

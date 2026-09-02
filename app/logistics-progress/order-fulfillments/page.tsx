@@ -34,16 +34,14 @@ export default async function OrderFulfillmentsPage() {
     <AppShell
       session={session}
       title={language === "en" ? "Logistics Progress · Order fulfillments" : "物流进度 · 订单履约"}
+      moduleTabs={<LogisticsSubnav language={language} />}
     >
-      <div className="space-y-4">
-        <LogisticsSubnav language={language} />
-        <OrderFulfillmentsPanel
-          language={language}
-          groups={groups}
-          shipments={shipments}
-          shipToOptions={shipToOptions}
-        />
-      </div>
+      <OrderFulfillmentsPanel
+        language={language}
+        groups={groups}
+        shipments={shipments}
+        shipToOptions={shipToOptions}
+      />
     </AppShell>
   );
 }

@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { CostControlSubnav } from "@/components/supply-chain/cost-control/cost-control-subnav";
 import { PaymentScheduleReports } from "@/components/supply-chain/cost-control/payment-schedule-reports";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
@@ -34,7 +33,6 @@ export default async function PaymentSchedulePage() {
       }
       moduleTabs={<SupplyChainSubnav language={language} />}
     >
-      <CostControlSubnav language={language} active="payment-schedule" />
       <PaymentScheduleReports
         language={language}
         rows={forecastCashFlowRows}

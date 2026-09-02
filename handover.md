@@ -6,6 +6,23 @@
 
 ---
 
+## 2026-09-02 — 全站子导航统一收进标题卡片，消除堆叠卡片和 Cost Control 重复子导航
+
+**背景**：David 反馈 Order fulfillments 页面实际可操作区域太窄，追问下发现是标题卡片和子导航各占一张卡片、白白吃掉垂直空间；又发现 Cost Control 页面更离谱——同时存在两套完全独立、内容还对不上的子导航（一套塞在标题卡片里但漏了"Payment schedule"，另一套单独起一张卡片但顺序不同）。排查后发现 `AppShell` 本来就设计了 `moduleTabs` prop 用来把子导航合并进标题卡片（避免堆叠卡片，见 `components/shared/app-shell.tsx:20` 的注释），但只有 Supply Chain 的 Contracts/Suppliers/Buyer Entities 和 Order Progress 正确用了这个方式；Cost Control 两套都用（重复）；Logistics Progress、Quality Control 完全没用，各自单独起一张 `.app-subnav` 卡片。NPI Management 没有子导航（纯靠左侧栏），不在此次范围内。David 确认后要求把所有已有子导航的模块统一成 `moduleTabs` 合并这一种写法。
+
+**改动**：
+- `components/supply-chain/supply-chain-subnav.tsx`：Cost Control 的嵌套子项从 3 项补全成 4 项，加回缺失的 "Payment schedule"（跟被删除的 `CostControlSubnav` 保持内容一致）。
+- 删除 `components/supply-chain/cost-control/cost-control-subnav.tsx`（重复实现，内容还跟 `SupplyChainSubnav` 里嵌套的那套不一致，是真正的 bug 根源）以及它在 `cost-control/page.tsx`、`cost-control/payment-schedule/page.tsx` 里的单独渲染；顺带清理了因此变成死代码的 `subnavActive` 变量、`tab` searchParams 解构（`CostControlPanel` 本来就是自己用 `useSearchParams()` 读 `?tab=`，不依赖页面传参）。
+- `components/logistics/logistics-subnav.tsx`、`components/quality-control/quality-control-subnav.tsx`：去掉外层 `app-subnav p-3` 卡片包装（边框+阴影+背景），只保留内部的 tab 链接行——因为现在要塞进 `AppShell` 已经带边框背景的 `moduleTabs` 插槽里，不能再自带一层卡片外观，否则变成"卡片里套卡片"。
+- Logistics Progress 5 个页面 + Quality Control 4 个页面：把各自的 `<LogisticsSubnav>` / `<QualityControlSubnav>` 从页面正文里的独立 `<div className="space-y-4">` 移到 `AppShell` 的 `moduleTabs` prop，跟标题合并成一张卡片。
+- `app/npi/page.tsx` 里那个复用了同一套 `.app-subnav`/`.app-subnav-link` CSS 类的"快捷入口卡片"（跟这次的子导航重复问题无关，是落地页自己的一次性跳转入口）没有动。
+
+**验证**：`tsc --noEmit`、`npm run lint` 全干净（24 个已知历史问题不变）；全仓库 grep 确认没有残留的 `subnavActive`/`CostControlSubnav`/旧卡片写法引用。本地起 `mps-dev` 逐页面实机验证（不是凭代码推断）：Cost Control 4 个路由变体（主页/Unit Cost/Payment Schedule/`?tab=cashflow`）、Logistics 5 个页面、Quality Control 4 个页面，每页都用脚本查了 `.app-panel`/`.app-subnav` 卡片数量（全部变成 1 张，之前 Cost Control 部分页面能查到 2 张）和 active tab 高亮状态（全部命中预期，包括之前漏掉的 Payment schedule）；对照检查了没有改动的 NPI 落地页确认它的入口卡片不受影响；全程查 `preview_logs` 无服务端报错，浏览器 console 除了跟代码无关的开发环境 HMR websocket 噪音外没有新增报错；截图确认 Order fulfillments 页面标题跟 tabs 现在是一张卡片，不再是两张堆叠的卡片。
+
+Commit: (pending push)
+
+---
+
 ## 2026-09-02 — Supply Chain Management 模块组件目录重整（第一步）
 
 Commit: `35e2365`

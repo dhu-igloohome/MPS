@@ -17,11 +17,13 @@ export default async function QualityControlOrtReportsPage() {
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   const entries = await listQcOrtReportEntries();
   return (
-    <AppShell session={session} title={language === "en" ? "Quality Control · ORT Reports" : "质量管理 · ORT 报告"} description={language === "en" ? "Manage ongoing reliability test (ORT) reports and corrective actions." : "管理产品可靠性 ORT 报告及纠正措施。"}>
-      <div className="space-y-4">
-        <QualityControlSubnav language={language} />
-        <OrtReportManagement entries={entries} language={language} />
-      </div>
+    <AppShell
+      session={session}
+      title={language === "en" ? "Quality Control · ORT Reports" : "质量管理 · ORT 报告"}
+      description={language === "en" ? "Manage ongoing reliability test (ORT) reports and corrective actions." : "管理产品可靠性 ORT 报告及纠正措施。"}
+      moduleTabs={<QualityControlSubnav language={language} />}
+    >
+      <OrtReportManagement entries={entries} language={language} />
     </AppShell>
   );
 }

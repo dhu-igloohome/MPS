@@ -34,18 +34,16 @@ export function LogisticsSubnav({ language }: { language: Language }) {
   ];
   const activeHref = activeSubnavHref(pathname, items);
   return (
-    <div className="app-subnav p-3">
-      <div className="flex flex-wrap gap-2">
-        {items.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`app-subnav-link ${activeHref === item.href ? "app-subnav-link-active" : ""}`}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          className={`app-subnav-link ${activeHref === item.href ? "app-subnav-link-active" : ""}`}
+        >
+          {item.label}
+        </Link>
+      ))}
     </div>
   );
 }

@@ -25,11 +25,9 @@ export default async function InventoryGlobalPage() {
           ? "Global inventory by Main SKU, locations, and cost fields."
           : "按 Main SKU、各仓位置与成本字段维护全球库存。"
       }
+      moduleTabs={<LogisticsSubnav language={language} />}
     >
-      <div className="space-y-4">
-        <LogisticsSubnav language={language} />
-        <InventoryGlobalPanel entries={entries} language={language} />
-      </div>
+      <InventoryGlobalPanel entries={entries} language={language} />
     </AppShell>
   );
 }
