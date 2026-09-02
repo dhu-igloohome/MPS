@@ -119,6 +119,8 @@ Returns **Order Fulfillments** data from Foretracker: every Forecast # + SKU gro
 
 Each group includes `contractedQty` — this is `0` for forecast-stage demand that has no contract yet, and > 0 once a contract has been created against it. Use this to distinguish confirmed vs. tentative demand in your dashboard.
 
+Each group also includes `opsActions` and `comments` — arrays of the distinct, non-empty Ops action / comment values from the underlying forecast line(s) for that Forecast # + SKU + month. This is an array (not a single string) because one group can be backed by more than one forecast row — Foretracker splits a single forecast entry into separate Build-to-Order and Build-to-Stock rows when both are filled in, and each row carries its own Ops action independently. In the common case there's exactly one row, so the array has 0 or 1 items; check `opsActions.includes("Consider stock transfer from other region")` (or whichever value you're flagging) rather than assuming a single string.
+
 Requires scope: **`fulfillment:read`**
 
 ```
@@ -161,7 +163,9 @@ curl -H "Authorization: Bearer mps_YOUR_API_KEY_HERE" \
       "forecastQty": 500,
       "contractedQty": 500,
       "mpBatches": ["B001"],
-      "shipFroms": ["TAIWAN FU HSING"]
+      "shipFroms": ["TAIWAN FU HSING"],
+      "opsActions": ["Ok to issue PO"],
+      "comments": []
     }
   ],
   "shipments": [

@@ -557,6 +557,11 @@ export type FulfillmentGroup = {
   mpBatches: string[];
   /** Distinct CM (supplier) names from the group's contracts. */
   shipFroms: string[];
+  /** Distinct non-empty Ops action values from the group's forecast line(s). A group can have
+   * more than one underlying forecast row (BTO/BTS split), each with its own Ops action. */
+  opsActions: string[];
+  /** Distinct non-empty comment/remark values from the group's forecast line(s). */
+  comments: string[];
 };
 
 /**

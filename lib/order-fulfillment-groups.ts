@@ -38,12 +38,18 @@ function buildGroups(
         contractedQty: 0,
         mpBatches: [],
         shipFroms: [],
+        opsActions: [],
+        comments: [],
       };
       groups.set(key, g);
     }
     g.forecastQty +=
       Math.max(0, Math.trunc(f.buildToOrder)) + Math.max(0, Math.trunc(f.buildToStock));
     if (!g.productName && f.productName) g.productName = f.productName;
+    const opsAction = f.opsAction.trim();
+    if (opsAction && !g.opsActions.includes(opsAction)) g.opsActions.push(opsAction);
+    const comment = f.remark.trim();
+    if (comment && !g.comments.includes(comment)) g.comments.push(comment);
   }
 
   for (const c of contracts) {

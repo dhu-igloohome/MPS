@@ -6,6 +6,23 @@
 
 ---
 
+## 2026-09-02 — 集成 API `order-fulfillments` 加 opsActions / comments 字段
+
+**背景**：Berfin 在 Slack 反馈，想在 group 对象里拿到 Ops action（"Ok to issue PO" / "Consider stock transfer from other region" 等）和 Comment 字段，用来在她的 AOP 看板里把"Consider stock transfer"的 SKU 单独标出来，跟已确认要生产的分开。举的例子是 `POE202608040001` / `IGM4` / Dec 2026 / EU。
+
+**改动**：
+- `lib/types.ts`：`FulfillmentGroup` 加 `opsActions: string[]`、`comments: string[]`。
+- `lib/order-fulfillment-groups.ts`：`buildGroups()` 累加时收集每个 forecast 行的 `opsAction`/`remark`（UI 里"Comment"列实际存的是 `remark` 字段），去重后放进这两个数组。**用数组而不是单个字符串**，是因为一个 group 有可能对应 2 条 forecast 行——同一个 PO+SKU+月份如果同时填了 BTO 和 BTS 数量，表单会拆成两行分别存，每行的 Ops action/Comment 可能不一样。
+- `docs/Foretracker-Integration-API-Guide-Berfin.md`：3.3 节补充说明这两个新字段，并解释了"为什么是数组"以及"多数情况下数组只有 0 或 1 个元素"这件事，避免 Berfin 那边假设是单个字符串。
+
+**验证**：`tsc --noEmit`、`npm run lint` 全干净（24 个已知历史问题不变）。本地起 `mps-dev`（端口3002），临时建 `fulfillment:read` scope 的测试 key 直连验证，测完已删除：
+- Berfin 举的例子 `?forecastPoNumber=POE202608040001&sku=IGM4` → 返回 `"opsActions":["Consider stock transfer from other region"],"comments":[]`，跟她在 UI 里看到的完全一致。
+- 找了一条真实的 2 行 forecast（`POA202605110001`/`IGB4`/2026-09，两行 ops_action 都是"Ok to issue PO"、但 remark 不同）验证多行聚合逻辑：`opsActions` 正确去重成 `["Ok to issue PO"]`（没有重复），`comments` 正确列出两条不同备注 `["8月份forecast中150台未下单","RMA for SYW"]`——去重和多值列表两种情况都符合预期。
+
+Commit: (pending push)
+
+---
+
 ## 2026-08-18 — 侧边栏加收起/展开功能
 
 Commit: `cf69d86`
