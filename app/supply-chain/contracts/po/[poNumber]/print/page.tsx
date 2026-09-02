@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
-import { PrintablePOPage } from "@/components/contract/printable-po-page";
-import type { PrintablePOData } from "@/components/contract/printable-po";
+import { PrintablePOPage } from "@/components/supply-chain/contracts/printable-po-page";
+import type { PrintablePOData } from "@/components/supply-chain/contracts/printable-po";
 import { listContractsByPoNumberInSessionRegions } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 

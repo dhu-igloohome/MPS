@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { UnitCostPanel } from "@/components/cost-control/unit-cost-panel";
+import { UnitCostPanel } from "@/components/supply-chain/cost-control/unit-cost-panel";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";

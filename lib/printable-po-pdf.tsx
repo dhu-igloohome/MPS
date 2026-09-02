@@ -1,7 +1,7 @@
 import path from "node:path";
 import { Document, Font, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
 
-import type { PrintablePOData } from "@/components/contract/printable-po";
+import type { PrintablePOData } from "@/components/supply-chain/contracts/printable-po";
 
 let fontRegistered = false;
 function ensureFontRegistered() {

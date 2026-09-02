@@ -9,7 +9,7 @@ import {
   ccInputMd,
   ccInputSm,
   ccLabel,
-} from "@/components/cost-control/cost-control-form-controls";
+} from "@/components/shared/field-controls";
 import { contractFileSizeError, contractFileTypeError } from "@/lib/contract-file-upload-policy";
 import type { Language } from "@/lib/i18n";
 import type { ContractFileUploadEntry } from "@/lib/types";

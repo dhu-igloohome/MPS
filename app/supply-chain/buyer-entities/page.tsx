@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
-import { BuyerEntitiesManagement } from "@/components/buyer-entities/buyer-entities-management";
+import { BuyerEntitiesManagement } from "@/components/supply-chain/buyer-entities/buyer-entities-management";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";

@@ -2,8 +2,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
-import { CostControlSubnav } from "@/components/cost-control/cost-control-subnav";
-import { CostControlPanel } from "@/components/cost-control/cost-control-panel";
+import { CostControlSubnav } from "@/components/supply-chain/cost-control/cost-control-subnav";
+import { CostControlPanel } from "@/components/supply-chain/cost-control/cost-control-panel";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";

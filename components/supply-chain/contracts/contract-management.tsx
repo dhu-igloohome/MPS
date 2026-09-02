@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ContractDraftDeleteButton } from "@/components/contract/contract-draft-delete-button";
-import { ContractOfflineUploads } from "@/components/contract/contract-offline-uploads";
+import { ContractDraftDeleteButton } from "@/components/supply-chain/contracts/contract-draft-delete-button";
+import { ContractOfflineUploads } from "@/components/supply-chain/contracts/contract-offline-uploads";
 import {
   ccInputMd,
   ccInputSm,
@@ -14,7 +14,7 @@ import {
   ccSelectLg,
   ccSelectMd,
   ccSelectSm,
-} from "@/components/cost-control/cost-control-form-controls";
+} from "@/components/shared/field-controls";
 import {
   DOMESTIC_CONTRACT_CURRENCY,
   domesticCnyContractUnitFromUsdBasis,

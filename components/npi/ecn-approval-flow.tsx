@@ -9,7 +9,7 @@ import {
   ccLabel,
   ccSelectMd,
   ccSelectSm,
-} from "@/components/cost-control/cost-control-form-controls";
+} from "@/components/shared/field-controls";
 import {
   canUserActAsEcnApprover,
   ECN_APPROVAL_DEPARTMENTS,

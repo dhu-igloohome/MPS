@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 
-import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
+import { CashFlowDashboard } from "@/components/supply-chain/cost-control/cash-flow-dashboard";
 import { uniqueForecastMonthKeysFromRows } from "@/lib/forecast-cash-flow-payment-bars";
 import {
   Bar,

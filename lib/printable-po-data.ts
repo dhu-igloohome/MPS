@@ -1,4 +1,4 @@
-import type { PrintablePOData } from "@/components/contract/printable-po";
+import type { PrintablePOData } from "@/components/supply-chain/contracts/printable-po";
 import { getContractBuyerEntity } from "@/lib/contract-buyer-entities";
 import {
   getBuyerEntityByCode,

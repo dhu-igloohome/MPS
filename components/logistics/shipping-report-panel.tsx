@@ -9,7 +9,7 @@ import {
   ccInputSm,
   ccNum,
   ccSelectSm,
-} from "@/components/cost-control/cost-control-form-controls";
+} from "@/components/shared/field-controls";
 import type { Language } from "@/lib/i18n";
 import { SHIPPING_REPORT_SKU_OPTIONS } from "@/lib/shipping-report-skus";
 import type { ShippingReportEntry } from "@/lib/types";

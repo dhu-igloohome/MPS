@@ -9,7 +9,7 @@ import {
   ccInputSm,
   ccNum,
   ccSelectSm,
-} from "@/components/cost-control/cost-control-form-controls";
+} from "@/components/shared/field-controls";
 import type { Language } from "@/lib/i18n";
 import type { Qc8dReportEntry, Qc8dSeverity, Qc8dStatus } from "@/lib/types";
 

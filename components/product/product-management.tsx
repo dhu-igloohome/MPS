@@ -7,7 +7,7 @@ import {
   ccInputMd,
   ccInputSm,
   ccNum,
-} from "@/components/cost-control/cost-control-form-controls";
+} from "@/components/shared/field-controls";
 import { Language } from "@/lib/i18n";
 import { ProductItem } from "@/lib/types";
 

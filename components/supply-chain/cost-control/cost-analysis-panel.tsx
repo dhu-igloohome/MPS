@@ -19,7 +19,7 @@ import {
   ccNum,
   ccSelectSm,
   ccSelectXs,
-} from "@/components/cost-control/cost-control-form-controls";
+} from "@/components/shared/field-controls";
 import { formatUsd } from "@/lib/format-usd";
 import type { Language } from "@/lib/i18n";
 import type { CostAnalysisEntry, CostFreightMode } from "@/lib/types";

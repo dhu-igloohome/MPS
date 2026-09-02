@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
-import { ccLabel, ccSelectSm } from "@/components/cost-control/cost-control-form-controls";
-import { ForecastCashFlowTable } from "@/components/cost-control/forecast-cash-flow-table";
+import { CashFlowDashboard } from "@/components/supply-chain/cost-control/cash-flow-dashboard";
+import { ccLabel, ccSelectSm } from "@/components/shared/field-controls";
+import { ForecastCashFlowTable } from "@/components/supply-chain/cost-control/forecast-cash-flow-table";
 import type { ForecastContractCoverageSummary } from "@/lib/contract-forecast-coverage";
 import type { Language } from "@/lib/i18n";
 import type {

@@ -11,7 +11,7 @@ import {
   ccNum,
   ccSelectMd,
   ccSelectSm,
-} from "@/components/cost-control/cost-control-form-controls";
+} from "@/components/shared/field-controls";
 import { TableCellLongText } from "@/components/shared/table-cell-long-text";
 import { usdBasisFromDomesticCnyUnit } from "@/lib/contract-domestic-pricing";
 import type { Language } from "@/lib/i18n";

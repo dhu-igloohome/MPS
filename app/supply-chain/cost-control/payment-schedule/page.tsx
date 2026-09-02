@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { CostControlSubnav } from "@/components/cost-control/cost-control-subnav";
-import { PaymentScheduleReports } from "@/components/cost-control/payment-schedule-reports";
+import { CostControlSubnav } from "@/components/supply-chain/cost-control/cost-control-subnav";
+import { PaymentScheduleReports } from "@/components/supply-chain/cost-control/payment-schedule-reports";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";

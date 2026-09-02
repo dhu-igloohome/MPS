@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-import { PrintablePOPage } from "@/components/contract/printable-po-page";
+import { PrintablePOPage } from "@/components/supply-chain/contracts/printable-po-page";
 import { buildPrintablePODataForContract, resolvePrintablePONumber } from "@/lib/printable-po-data";
 import { getContractById, sessionCanAccessContract } from "@/lib/repositories";
 import { getSession } from "@/lib/session";

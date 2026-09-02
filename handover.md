@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-09-02 — Supply Chain Management 模块组件目录重整（第一步）
+
+**背景**：David 反馈 Supply Chain Management 模块目录乱，问有没有整理思路。诊断发现：路由早就统一在 `app/supply-chain/{cost-control,contracts,suppliers,buyer-entities}/` 下，但组件散落成 `components/contract/`、`components/cost-control/`、`components/supplier/`、`components/buyer-entities/` 四个各自独立、不带 `supply-chain` 前缀的顶层目录，同时又存在一个 `components/supply-chain/` 目录但只放了 `supply-chain-subnav.tsx`（模块内子导航）——路由和组件的目录结构对不上。API 层（`/api/contracts`、`/api/cost-control`、`/api/suppliers` vs `/api/supply-chain/contracts/*`）更分裂，风险也更高（要改前端硬编码的 fetch 路径、真正改变 URL），跟 David 商量后拆成两步，本次只做风险低的组件目录对齐（第一步），API 层重整（第二步）留待后续单独确认。
+
+**改动**：
+- `components/{contract,cost-control,supplier,buyer-entities}/*` → 统一挪到 `components/supply-chain/{contracts,cost-control,suppliers,buyer-entities}/*`，跟路由结构一一对应（用 `git mv` 保留文件历史）。
+- **中途发现一个例外**：`components/cost-control/cost-control-form-controls.ts` 检查后发现根本不是 Cost Control 专属的东西，是纯通用的表单控件宽度/样式常量（`ccLabel`/`ccSelectSm` 等，配合 `docs/ui-control-width-checklist.md` 的"内容驱动宽度"规范），被 NPI（BOM/ECN/SOP/Tooling）、Quality Control（Test Cases/Certifications/ORT/8D）、Logistics（Inventory Global/Shipping Report）、Order Progress、Product Database 等一堆跟供应链无关的模块引用（37 处引用里有一半以上来自这些模块）。如果把它也搬进 `supply-chain/cost-control/`，会让这些无关模块的 import 路径变得更误导。所以把这一个文件单独挪到 `components/shared/field-controls.ts`，其余 10 个真正 Cost Control 专属的文件才搬进 `supply-chain/cost-control/`。这个判断是本次重构范围内的自然延伸，没有另外找 David 确认，完成后在这里说明。
+- 同步更新了全仓库 37 处引用这些路径的 import（`app/supply-chain/*`、`lib/printable-po-*.ts(x)`，以及上面提到的 NPI/QC/Logistics/Order Progress/Product 等无关模块），四个旧目录（`components/contract`、`components/cost-control`、`components/supplier`、`components/buyer-entities`）搬空后删除。
+- 未改动任何 URL、API、组件对外行为——纯内部文件位置 + import 路径调整。
+
+**验证**：`tsc --noEmit`、`npm run lint` 全干净（24 个已知历史问题不变，说明没有漏改的 import）；`grep` 确认仓库里不再有任何指向旧路径的引用。本地起 `mps-dev` 实机走了一遍：Supply Chain 模块本身（Cost Control 首页+Payment Schedule+Unit Cost 子页、Contracts、Suppliers、Buyer Entities）全部正常渲染无 console 报错；另外抽查了引用 `field-controls.ts` 的 NPI（BOM Management）、Quality Control（Test Cases）两个无关模块页面，确认它们的表单控件样式没有因为这次搬家跟着坏掉。
+
+Commit: (pending push)
+
+---
+
 ## 2026-09-02 — 集成 API `order-fulfillments` 加 opsActions / comments 字段
 
 Commit: `5c5aa62`

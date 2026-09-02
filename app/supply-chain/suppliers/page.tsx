@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
-import { SupplierManagement } from "@/components/supplier/supplier-management";
+import { SupplierManagement } from "@/components/supply-chain/suppliers/supplier-management";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
 import { listSuppliers } from "@/lib/repositories";

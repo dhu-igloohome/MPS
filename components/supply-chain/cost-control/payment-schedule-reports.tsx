@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 
-import { PaymentScheduleMatrixTable } from "@/components/cost-control/payment-schedule-matrix-table";
-import { ccLabel, ccSelectSm } from "@/components/cost-control/cost-control-form-controls";
+import { PaymentScheduleMatrixTable } from "@/components/supply-chain/cost-control/payment-schedule-matrix-table";
+import { ccLabel, ccSelectSm } from "@/components/shared/field-controls";
 import type { Language } from "@/lib/i18n";
 import {
   exportPaymentScheduleSkuCsv,

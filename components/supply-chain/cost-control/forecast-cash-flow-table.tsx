@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { CreateContractFromForecastModal } from "@/components/contract/create-contract-from-forecast-modal";
+import { CreateContractFromForecastModal } from "@/components/supply-chain/contracts/create-contract-from-forecast-modal";
 import {
   formatScheduleMonth,
   resolveForecastRowPayment,

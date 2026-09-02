@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { PrintablePO, type PrintablePOData } from "@/components/contract/printable-po";
+import { PrintablePO, type PrintablePOData } from "@/components/supply-chain/contracts/printable-po";
 
 type PrintablePOPageProps = {
   poData: PrintablePOData;

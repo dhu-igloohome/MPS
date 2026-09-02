@@ -2,9 +2,9 @@
 
 import { useSearchParams } from "next/navigation";
 
-import { CashFlowPanel } from "@/components/cost-control/cash-flow-panel";
-import { CostAnalysisPanel } from "@/components/cost-control/cost-analysis-panel";
-import { PoCashFlowPanel } from "@/components/cost-control/po-cash-flow-panel";
+import { CashFlowPanel } from "@/components/supply-chain/cost-control/cash-flow-panel";
+import { CostAnalysisPanel } from "@/components/supply-chain/cost-control/cost-analysis-panel";
+import { PoCashFlowPanel } from "@/components/supply-chain/cost-control/po-cash-flow-panel";
 import type { Language } from "@/lib/i18n";
 import type { ForecastContractCoverageSummary } from "@/lib/contract-forecast-coverage";
 import type {

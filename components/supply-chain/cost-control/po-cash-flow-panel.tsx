@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { CashFlowDashboard } from "@/components/cost-control/cash-flow-dashboard";
+import { CashFlowDashboard } from "@/components/supply-chain/cost-control/cash-flow-dashboard";
 import {
   ccDate,
   ccInputMd,
@@ -14,7 +14,7 @@ import {
   ccNum,
   ccReadOnly,
   ccSelectLg,
-} from "@/components/cost-control/cost-control-form-controls";
+} from "@/components/shared/field-controls";
 import { findCostAnalysisForCashFlow } from "@/lib/cash-flow-cost-analysis-link";
 import { formatUsd } from "@/lib/format-usd";
 import { computeCashFlowDerivedActuals, computeTotalAmount } from "@/lib/cash-flow-validation";

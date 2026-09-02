@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
-import { ContractDraftDeleteButton } from "@/components/contract/contract-draft-delete-button";
+import { ContractDraftDeleteButton } from "@/components/supply-chain/contracts/contract-draft-delete-button";
 import { SupplyChainSubnav } from "@/components/supply-chain/supply-chain-subnav";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
