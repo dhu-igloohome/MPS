@@ -52,6 +52,16 @@ export type AdminAuditLog = {
   createdAt: string;
 };
 
+/** Who changed a forecast or contract record, when, and what kind of change — no field-level diff. */
+export type BusinessAuditLog = {
+  id: string;
+  entityType: "forecast" | "contract";
+  entityId: string;
+  action: "create" | "update" | "delete";
+  actorUsername: string;
+  createdAt: string;
+};
+
 export type IntegrationApiKeyEntry = {
   id: string;
   label: string;

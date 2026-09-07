@@ -13,6 +13,7 @@ import type { ParsedOrderProgressDeliveryPlan } from "@/lib/order-progress-deliv
 import { hashPassword, verifyPassword } from "@/lib/security";
 import {
   AdminAuditLog,
+  BusinessAuditLog,
   AdminUser,
   BomEntry,
   BomStatus,
@@ -101,6 +102,15 @@ type AdminAuditLogRow = {
   action: string;
   target_username: string;
   details: string;
+  created_at: string;
+};
+
+type BusinessAuditLogRow = {
+  id: number;
+  entity_type: string;
+  entity_id: string;
+  action: string;
+  actor_username: string;
   created_at: string;
 };
 
@@ -1345,6 +1355,12 @@ export async function deleteForecastsBatch(input: {
       deletedBy: input.deletedBy,
     });
     await deleteForecastById(id);
+    await logBusinessAudit({
+      entityType: "forecast",
+      entityId: row.id,
+      action: "delete",
+      actorUsername: input.deletedBy,
+    });
   }
 
   return { deleted: unique.length };
@@ -1614,6 +1630,47 @@ export async function listAdminAuditLogs(limit = 50) {
       action: row.action,
       targetUsername: row.target_username,
       details: row.details,
+      createdAt: row.created_at,
+    }),
+  );
+}
+
+/** Records who created/updated/deleted a forecast or contract row, and when — no field-level diff. */
+export async function logBusinessAudit(input: {
+  entityType: "forecast" | "contract";
+  entityId: string;
+  action: "create" | "update" | "delete";
+  actorUsername: string;
+}) {
+  await ensureDatabase();
+  const db = getSql();
+  await db`
+    insert into business_audit_logs (entity_type, entity_id, action, actor_username)
+    values (${input.entityType}, ${input.entityId}, ${input.action}, ${input.actorUsername});
+  `;
+}
+
+export async function listBusinessAuditLogs(
+  entityType: "forecast" | "contract",
+  entityId: string,
+  limit = 50,
+): Promise<BusinessAuditLog[]> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<BusinessAuditLogRow[]>`
+    select id, entity_type, entity_id, action, actor_username, created_at::text
+    from business_audit_logs
+    where entity_type = ${entityType} and entity_id = ${entityId}
+    order by created_at desc
+    limit ${limit};
+  `;
+  return rows.map(
+    (row): BusinessAuditLog => ({
+      id: String(row.id),
+      entityType: row.entity_type as "forecast" | "contract",
+      entityId: row.entity_id,
+      action: row.action as "create" | "update" | "delete",
+      actorUsername: row.actor_username,
       createdAt: row.created_at,
     }),
   );

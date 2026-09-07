@@ -6,6 +6,21 @@
 
 ---
 
+## 2026-09-07 — 第3步：给 forecast/contract 加通用操作审计日志（谁在什么时候改了哪条记录）
+
+**背景**：延续数据体检第3项，David 确认设计"只记谁在什么时候改了哪条记录"（不用字段级diff）。现状是`admin_audit_logs`只覆盖User Management和Product Database，forecast/contract这类涉及金额的核心业务数据完全没有留痕（forecast的删除操作例外，`forecast_deletion_logs`早就有，带reason字段，比这次的更详细，两者并存不冲突）。
+
+**改动**：
+- 新表`business_audit_logs`（`entity_type`限定'forecast'/'contract'，`entity_id`，`action`限定'create'/'update'/'delete'，`actor_username`，`created_at`）+ 索引；`lib/types.ts`加`BusinessAuditLog`类型；`lib/repositories.ts`加`logBusinessAudit()`（写）+`listBusinessAuditLogs()`（按entity查，读，暂时只有函数没有UI页面——David这次只要求"记"，没要求"给我一个页面看"，以后想要页面可以单独提）。
+- 接入10个业务写入点：forecast的`POST /api/forecasts`（新建）、`PATCH/DELETE /api/forecasts/[id]`（改/删）、`POST /api/forecasts/batch`（CSV批量新建，逐行记）、`POST /api/forecasts/batch-delete`（批量删，加在`deleteForecastsBatch()`内部循环里，跟已有的`forecast_deletion_logs`写入紧挨着）、`POST /api/forecasts/import-from-igloohome-web`（SKU Tracker导入新建）；contract的`POST /api/contracts`（从Order Progress建）、`PATCH/DELETE /api/contracts/[id]`（改状态/删草稿）、`POST /api/contracts/from-forecast`（从Forecast批量建，一次可能建多条，每条各记一次）。
+- **⚠️ 踩了一个坑（表建了但没生效）**：第一次实现只在`setupSchema()`（全新空库才会跑的完整建库函数）里加了建表语句，本地/生产都是"已有数据库"，`ensureDatabase()`走的是`coreSchemaAlreadyPresent()`为true后只调`applyIncrementalMigrations()`的分支，`setupSchema()`根本不会执行，导致真机测试第一次POST forecast时500报错`relation "business_audit_logs" does not exist`。查了`createFulfillmentShipmentTables()`/`createIntegrationApiKeysTable()`这两个"新建表"的既有先例，发现正确模式是：写成独立函数，**同时**在`setupSchema()`和`applyIncrementalMigrations()`两处都调用（前者管全新库，后者管现有生产库），改成`createBusinessAuditLogsTable()`这个独立函数后两处都接上，问题解决。**以后在这个项目里新增表，必须走这个"独立函数+两处调用"模式，不能只写在`setupSchema()`里，否则对现有生产库（这个项目从来都是这个状态）完全不生效。**
+
+**验证**：`tsc --noEmit`、`npm run lint`干净（22个问题不变）。本地起`mps-dev`，真实登录后用API完整走了一遍create→update→delete（一条打了`AUDIT_LOG_TEST_DELETE_ME`标记的临时forecast，事后已通过正常DELETE接口清理干净，生产forecast表确认无残留），直接查生产库`business_audit_logs`表确认3条记录（create/update/delete）的`actor_username`/`entity_id`/`created_at`全部正确对应；contract那几个写入点因为搭测试数据成本较高（需要真实order progress/forecast allocation）没有做真实create/update/delete测试，但走的是跟forecast完全同构的`logBusinessAudit()`调用+`contract.id`字段访问，`tsc`已确认类型正确（`ContractEntry`/`updateContractStatusById`返回类型含`id`字段），判断为低风险。
+
+Commit: (pending push)
+
+---
+
 ## 2026-09-07 — 第4步：彻底删除 Cost Control "成本分析" tab（4个月0数据，David 确认删）
 
 Commit: `f0e3afa`

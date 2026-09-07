@@ -5,6 +5,7 @@ import {
   createForecast,
   findActiveProductByNameAndSku,
   findActiveProductBySku,
+  logBusinessAudit,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import type { Region } from "@/lib/types";
@@ -131,7 +132,7 @@ export async function POST(request: Request) {
     }
 
     try {
-      await createForecast({
+      const entry = await createForecast({
         month: ym,
         region,
         destination,
@@ -142,6 +143,12 @@ export async function POST(request: Request) {
         buildToOrder,
         buildToStock: 0,
         createdBy: session.username,
+      });
+      await logBusinessAudit({
+        entityType: "forecast",
+        entityId: entry.id,
+        action: "create",
+        actorUsername: session.username,
       });
       created += 1;
     } catch (e) {

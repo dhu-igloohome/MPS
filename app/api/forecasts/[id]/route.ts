@@ -7,6 +7,7 @@ import {
   deleteForecastById,
   findActiveProductByNameAndSku,
   getForecastById,
+  logBusinessAudit,
   updateForecast,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
@@ -141,6 +142,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!entry) {
     return NextResponse.json({ message: "Update failed" }, { status: 500 });
   }
+  await logBusinessAudit({
+    entityType: "forecast",
+    entityId: entry.id,
+    action: "update",
+    actorUsername: session.username,
+  });
   return NextResponse.json({ ok: true, entry });
 }
 
@@ -174,5 +181,11 @@ export async function DELETE(request: Request, context: RouteContext) {
     deletedBy: session.username,
   });
   await deleteForecastById(id);
+  await logBusinessAudit({
+    entityType: "forecast",
+    entityId: id,
+    action: "delete",
+    actorUsername: session.username,
+  });
   return NextResponse.json({ ok: true });
 }

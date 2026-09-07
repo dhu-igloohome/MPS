@@ -6,6 +6,7 @@ import {
   createForecast,
   findActiveProductByNameAndSku,
   forecastPoExistsInRegion,
+  logBusinessAudit,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import { ForecastDemandType, ForecastRegion, Region } from "@/lib/types";
@@ -116,6 +117,12 @@ export async function POST(request: Request) {
     buildToOrder,
     buildToStock,
     createdBy: session.username,
+  });
+  await logBusinessAudit({
+    entityType: "forecast",
+    entityId: entry.id,
+    action: "create",
+    actorUsername: session.username,
   });
 
   return NextResponse.json({ ok: true, entry });

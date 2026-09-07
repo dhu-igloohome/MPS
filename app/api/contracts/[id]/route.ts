@@ -4,6 +4,7 @@ import { canDeleteDraftContract } from "@/lib/contract-draft-delete";
 import {
   deleteDraftContractById,
   getContractById,
+  logBusinessAudit,
   sessionCanAccessContract,
   updateContractStatusById,
 } from "@/lib/repositories";
@@ -50,6 +51,12 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const updated = await updateContractStatusById(id, status);
   if (!updated) return NextResponse.json({ message: "Not found" }, { status: 404 });
+  await logBusinessAudit({
+    entityType: "contract",
+    entityId: id,
+    action: "update",
+    actorUsername: session.username,
+  });
   return NextResponse.json({ ok: true, contract: updated });
 }
 
@@ -81,5 +88,11 @@ export async function DELETE(_request: Request, context: RouteContext) {
   if (!ok) {
     return NextResponse.json({ message: "Only draft contracts can be deleted." }, { status: 400 });
   }
+  await logBusinessAudit({
+    entityType: "contract",
+    entityId: id,
+    action: "delete",
+    actorUsername: session.username,
+  });
   return NextResponse.json({ ok: true });
 }

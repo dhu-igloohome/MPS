@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { normalizeCsvHeader, parseCsvLine, splitCsvLines } from "@/lib/csv";
 import { isForecastDestinationInputValid } from "@/lib/forecast-destination-countries";
 import { parseForecastIncoterm } from "@/lib/forecast-incoterm";
-import { createForecast, findActiveProductByNameAndSku } from "@/lib/repositories";
+import { createForecast, findActiveProductByNameAndSku, logBusinessAudit } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 import type { ForecastIncoterm } from "@/lib/forecast-incoterm";
 import type { ForecastDemandType, Region } from "@/lib/types";
@@ -179,7 +179,7 @@ export async function POST(request: Request) {
       continue;
     }
     try {
-      await createForecast({
+      const entry = await createForecast({
         month,
         region,
         destination,
@@ -191,6 +191,12 @@ export async function POST(request: Request) {
         buildToOrder,
         buildToStock,
         createdBy: session.username,
+      });
+      await logBusinessAudit({
+        entityType: "forecast",
+        entityId: entry.id,
+        action: "create",
+        actorUsername: session.username,
       });
       created += 1;
     } catch (e) {

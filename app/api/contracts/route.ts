@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { createContractFromOrder, listContractsBySessionRegions } from "@/lib/repositories";
+import { createContractFromOrder, listContractsBySessionRegions, logBusinessAudit } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export async function GET() {
@@ -42,6 +42,12 @@ export async function POST(request: Request) {
       bluetoothId,
       createdBy: session.username,
       sessionRegions: session.regions,
+    });
+    await logBusinessAudit({
+      entityType: "contract",
+      entityId: contract.id,
+      action: "create",
+      actorUsername: session.username,
     });
     return NextResponse.json({ ok: true, contract });
   } catch (e) {

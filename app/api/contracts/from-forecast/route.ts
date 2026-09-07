@@ -9,6 +9,7 @@ import {
   enrichForecastRecordsForCashFlow,
   getForecastsByRegions,
   listContractsBySessionRegions,
+  logBusinessAudit,
 } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
@@ -49,6 +50,16 @@ export async function POST(request: Request) {
       createdBy: session.username,
       sessionRegions: session.regions,
     });
+    await Promise.all(
+      contracts.map((contract) =>
+        logBusinessAudit({
+          entityType: "contract",
+          entityId: contract.id,
+          action: "create",
+          actorUsername: session.username,
+        }),
+      ),
+    );
 
     const forecasts = await getForecastsByRegions(session.regions);
     const fcRows = await enrichForecastRecordsForCashFlow(forecasts);

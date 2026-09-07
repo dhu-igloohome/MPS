@@ -360,6 +360,7 @@ async function setupSchema() {
 
   await createFulfillmentShipmentTables();
   await createIntegrationApiKeysTable();
+  await createBusinessAuditLogsTable();
 
   await db`
     create table if not exists order_progress_delivery_plans (
@@ -1217,6 +1218,7 @@ async function applyIncrementalMigrations() {
   await db`alter table products add column if not exists product_name_cn text not null default '';`;
   await createFulfillmentShipmentTables();
   await createIntegrationApiKeysTable();
+  await createBusinessAuditLogsTable();
 }
 
 /**
@@ -1337,6 +1339,24 @@ async function createIntegrationApiKeysTable() {
   await db`
     create index if not exists idx_integration_api_keys_active
     on integration_api_keys (is_active, id desc);
+  `;
+}
+
+async function createBusinessAuditLogsTable() {
+  const db = getSql();
+  await db`
+    create table if not exists business_audit_logs (
+      id bigserial primary key,
+      entity_type text not null check (entity_type in ('forecast', 'contract')),
+      entity_id text not null,
+      action text not null check (action in ('create', 'update', 'delete')),
+      actor_username text not null references users(username),
+      created_at timestamptz not null default now()
+    );
+  `;
+  await db`
+    create index if not exists idx_business_audit_logs_entity
+    on business_audit_logs (entity_type, entity_id, created_at desc);
   `;
 }
 
