@@ -10,9 +10,7 @@ import { computeForecastContractCoverage } from "@/lib/contract-forecast-coverag
 import {
   enrichForecastRecordsForCashFlow,
   getForecastsByRegions,
-  listCashFlowEntries,
   listContractsBySessionRegions,
-  listCostAnalysisEntries,
   listSuppliers,
   listUnitCostQuotes,
 } from "@/lib/repositories";
@@ -28,10 +26,8 @@ export default async function SupplyChainCostControlPage() {
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
   // Kick off forecasts first so the dependent enrich step can overlap with the other 4 queries.
   const forecastRecordsPromise = getForecastsByRegions(session.regions);
-  const [cashFlowEntries, costAnalysisEntries, forecastRecords, suppliers, unitCostQuotes, forecastCashFlowRows, contracts] =
+  const [, suppliers, unitCostQuotes, forecastCashFlowRows, contracts] =
     await Promise.all([
-      listCashFlowEntries(),
-      listCostAnalysisEntries(),
       forecastRecordsPromise,
       listSuppliers(),
       listUnitCostQuotes(),
@@ -59,8 +55,6 @@ export default async function SupplyChainCostControlPage() {
       >
         <CostControlPanel
           language={language}
-          cashFlowEntries={cashFlowEntries}
-          costAnalysisEntries={costAnalysisEntries}
           forecastCashFlowRows={forecastCashFlowRows}
           forecastContractCoverage={forecastContractCoverage}
           fcSupplierNames={fcSupplierNames}

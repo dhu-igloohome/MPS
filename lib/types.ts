@@ -772,39 +772,6 @@ export type InventoryGlobalEntry = {
   updatedAt: string;
 };
 
-/** 空运 / 海运（DB 存 air | sea） */
-export type CostFreightMode = "air" | "sea";
-
-/** 成本控制 — 成本分析（与 Excel 列一致） */
-export type CostAnalysisEntry = {
-  id: string;
-  cmRegion: string;
-  supplierName: string;
-  sku: string;
-  quantity: number;
-  orderNumber: string;
-  orderTotalWithTariff: number;
-  orderTotalWithoutTariff: number;
-  unitCostWithTariff: number;
-  unitCostWithoutTariff: number;
-  includesChinaVat: boolean;
-  /** Excel「Unit cost」列（USD） */
-  baseUnitCostUsd: number;
-  eeCost: number;
-  meCost: number;
-  assemblyCost: number;
-  /** 关税比例，如 39 表示 39% */
-  tariffPct: number;
-  airFreightPerUnit: number;
-  seaFreightPerUnit: number;
-  destinationCountry: string;
-  freightMode: CostFreightMode;
-  remarks: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
 /** 单位成本报价 Incoterm（与报价行一致） */
 export type UnitCostQuoteIncoterm = "EXW" | "FOB" | "DAP" | "DDP";
 
@@ -869,27 +836,3 @@ export type ForecastCashFlowRow = ForecastEntry & {
   landedCostCashFlowPublishedAt: string | null;
 };
 
-/** 成本控制 — 现金流分析（与 Excel 列一致） */
-export type CashFlowEntry = {
-  id: string;
-  sku: string;
-  orderDate: string;
-  quantity: number;
-  /** 订单号（如 Forecast PO：POU…） */
-  orderNumber: string;
-  /** 订单金额：单价 */
-  unitPrice: number;
-  /** 订单总金额 */
-  totalAmount: number;
-  advanceRatioPct: number;
-  paymentTermDays: number;
-  finalRatioPct: number;
-  actualAdvanceDate: string | null;
-  actualAdvanceAmount: number | null;
-  actualFinalDate: string | null;
-  actualFinalAmount: number | null;
-  remarks: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-};

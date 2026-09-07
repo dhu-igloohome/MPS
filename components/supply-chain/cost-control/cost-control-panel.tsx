@@ -1,15 +1,9 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-
 import { CashFlowPanel } from "@/components/supply-chain/cost-control/cash-flow-panel";
-import { CostAnalysisPanel } from "@/components/supply-chain/cost-control/cost-analysis-panel";
-import { PoCashFlowPanel } from "@/components/supply-chain/cost-control/po-cash-flow-panel";
 import type { Language } from "@/lib/i18n";
 import type { ForecastContractCoverageSummary } from "@/lib/contract-forecast-coverage";
 import type {
-  CashFlowEntry,
-  CostAnalysisEntry,
   ForecastCashFlowRow,
   LogisticsLandedCostConsolidateSnapshot,
   SupplierEntry,
@@ -18,8 +12,6 @@ import type {
 
 type CostControlPanelProps = {
   language: Language;
-  cashFlowEntries: CashFlowEntry[];
-  costAnalysisEntries: CostAnalysisEntry[];
   forecastCashFlowRows: ForecastCashFlowRow[];
   forecastContractCoverage: ForecastContractCoverageSummary;
   fcSupplierNames: string[];
@@ -30,20 +22,12 @@ type CostControlPanelProps = {
 };
 
 const COPY = {
-  en: {
-    costAnalysis: "Cost analysis",
-    cashFlow: "Cash flow analysis",
-  },
-  zh: {
-    costAnalysis: "成本分析",
-    cashFlow: "现金流分析",
-  },
+  en: { cashFlow: "Cash flow analysis" },
+  zh: { cashFlow: "现金流分析" },
 };
 
 export function CostControlPanel({
   language,
-  cashFlowEntries,
-  costAnalysisEntries,
   forecastCashFlowRows,
   forecastContractCoverage,
   fcSupplierNames,
@@ -52,40 +36,24 @@ export function CostControlPanel({
   unitCostQuotes,
 }: CostControlPanelProps) {
   const t = COPY[language];
-  const searchParams = useSearchParams();
-  const section = searchParams.get("tab") === "cashflow" ? "cashflow" : "cost";
 
   return (
     <div className="mt-4 space-y-3">
       <section
         className="rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm"
         role="tabpanel"
-        aria-label={section === "cost" ? t.costAnalysis : t.cashFlow}
+        aria-label={t.cashFlow}
       >
-        {section === "cost" ? (
-          <>
-            <h3 className="mb-2 text-base font-semibold text-foreground">{t.costAnalysis}</h3>
-            <CostAnalysisPanel language={language} initialEntries={costAnalysisEntries} />
-            <PoCashFlowPanel
-              language={language}
-              initialEntries={cashFlowEntries}
-              costAnalysisEntries={costAnalysisEntries}
-            />
-          </>
-        ) : (
-          <>
-            <h3 className="mb-2 text-base font-semibold text-foreground">{t.cashFlow}</h3>
-            <CashFlowPanel
-              language={language}
-              forecastCashFlowRows={forecastCashFlowRows}
-              forecastContractCoverage={forecastContractCoverage}
-              fcSupplierNames={fcSupplierNames}
-              fcSuppliers={suppliers}
-              landedCostConsolidateSnapshots={landedCostConsolidateSnapshots}
-              unitCostQuotes={unitCostQuotes}
-            />
-          </>
-        )}
+        <h3 className="mb-2 text-base font-semibold text-foreground">{t.cashFlow}</h3>
+        <CashFlowPanel
+          language={language}
+          forecastCashFlowRows={forecastCashFlowRows}
+          forecastContractCoverage={forecastContractCoverage}
+          fcSupplierNames={fcSupplierNames}
+          fcSuppliers={suppliers}
+          landedCostConsolidateSnapshots={landedCostConsolidateSnapshots}
+          unitCostQuotes={unitCostQuotes}
+        />
       </section>
     </div>
   );

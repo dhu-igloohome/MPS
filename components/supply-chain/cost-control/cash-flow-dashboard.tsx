@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useDeferredValue, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -14,15 +14,7 @@ import {
   YAxis,
 } from "recharts";
 
-import {
-  type DashboardFilters,
-  enrichCashFlowRows,
-  filterEnriched,
-  getDateRangePreset,
-  computeKpis,
-  paymentMonthWindowAroundToday,
-  type RangePreset,
-} from "@/lib/cash-flow-dashboard-agg";
+import { paymentMonthWindowAroundToday } from "@/lib/cash-flow-dashboard-agg";
 import {
   buildForecastCashPaymentBarData,
   forecastMonthKeysFromRows,
@@ -51,8 +43,6 @@ import { computeForecastRowLandedMetrics } from "@/lib/forecast-landed-cost-merg
 import { computeDepartureDateYmd, computePaymentDueYmd } from "@/lib/landed-cost-cash-flow";
 import type { Language } from "@/lib/i18n";
 import type {
-  CashFlowEntry,
-  CostAnalysisEntry,
   ForecastCashFlowRow,
   ForecastIncoterm,
   LogisticsLandedCostConsolidateSnapshot,
@@ -63,8 +53,6 @@ import type { LabelContentType } from "recharts/types/component/Label";
 
 type Props = {
   language: Language;
-  entries: CashFlowEntry[];
-  costAnalysisEntries: CostAnalysisEntry[];
   /** Ok-comment forecast rows with supplier / unit cost (same source as Forecast cash flow table). */
   forecastCashFlowRows?: ForecastCashFlowRow[];
   /** @deprecated No longer used; landed cost cash flow follows Logistics Save + forecast publish timestamp. */
@@ -90,9 +78,7 @@ type Props = {
     },
   ) => void;
   onForecastCashFlowSettingsError?: (message: string) => void;
-  /** When true, only render Forecast cash flow (for dashboard) + payment bar chart (Cash flow analysis tab). */
-  forecastSummaryOnly?: boolean;
-  /** When true with forecastSummaryOnly: hide editable tables; show chart strip for Dashboard embed. */
+  /** When true: hide editable tables; show chart strip for Dashboard embed. */
   dashboardChartsOnly?: boolean;
   /** Dashboard: filter KPI + chart to one Forecast month (YYYY-MM); empty = all months. */
   fcFilterForecastMonth?: string;
@@ -131,12 +117,6 @@ const FC_DEP_STACK = ["#4f46e5", "#6366f1", "#7c3aed", "#8b5cf6", "#a855f7", "#c
 const FC_BAL_STACK = ["#047857", "#059669", "#0d9488", "#10b981", "#34d399", "#6ee7b7"];
 /** Landed cost stacked bars (one segment per forecast line). */
 const LC_PAY_STACK = ["#0369a1", "#0284c7", "#0ea5e9", "#38bdf8", "#7dd3fc", "#bae6fd", "#4f46e5", "#6366f1", "#8b5cf6", "#a78bfa", "#c084fc", "#059669"];
-
-function optNum(s: string): number | null {
-  if (s.trim() === "") return null;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
-}
 
 function labels(language: Language) {
   const en = language === "en";
@@ -618,8 +598,6 @@ function FcLandedSummaryTooltip({
 
 export function CashFlowDashboard({
   language,
-  entries,
-  costAnalysisEntries,
   forecastCashFlowRows = [],
   landedCostConsolidateSnapshots: _legacyLccSnapshots = [], // kept for API compatibility; unused
   unitCostQuotes: _unitCostQuotes = [],
@@ -627,7 +605,6 @@ export function CashFlowDashboard({
   showForecastCashFlowSummary = false,
   onForecastCashFlowSettingsSaved,
   onForecastCashFlowSettingsError,
-  forecastSummaryOnly = false,
   dashboardChartsOnly = false,
   fcFilterForecastMonth = "",
 }: Props) {
@@ -637,67 +614,10 @@ export function CashFlowDashboard({
     [forecastCashFlowRows],
   );
   const hasAnyPublishedLandedCost = publishedLandedRows.length > 0;
-  const [rangePreset, setRangePreset] = useState<RangePreset>("12m");
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo] = useState("");
-  const [supplier, setSupplier] = useState("");
-  const [qtyMin, setQtyMin] = useState("");
-  const [qtyMax, setQtyMax] = useState("");
-  const [totalMin, setTotalMin] = useState("");
-  const [totalMax, setTotalMax] = useState("");
-  const [advMin, setAdvMin] = useState("");
-  const [advMax, setAdvMax] = useState("");
-  const [finMin, setFinMin] = useState("");
-  const [finMax, setFinMax] = useState("");
   const [fcPoSavingId, setFcPoSavingId] = useState<string | null>(null);
   const [fcShippingSavingId, setFcShippingSavingId] = useState<string | null>(null);
   const [fcBarBucketMode, setFcBarBucketMode] = useState<FcPaymentBarBucketMode>("dueMonth");
   const fcDestinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
-
-  const enriched = useMemo(() => enrichCashFlowRows(entries, costAnalysisEntries), [entries, costAnalysisEntries]);
-
-  const supplierOptions = useMemo(() => {
-    const s = new Set(enriched.map((e) => e.supplier).filter(Boolean));
-    return Array.from(s).sort((a, b) => a.localeCompare(b));
-  }, [enriched]);
-
-  const dateRange = useMemo(
-    () => getDateRangePreset(rangePreset, customFrom, customTo),
-    [rangePreset, customFrom, customTo],
-  );
-
-  // Defer the filter inputs so typing stays snappy: React keeps the input components
-  // updating at high priority while the (expensive) charts/tables re-render off the
-  // deferred values at lower priority.
-  const dSupplier = useDeferredValue(supplier);
-  const dQtyMin = useDeferredValue(qtyMin);
-  const dQtyMax = useDeferredValue(qtyMax);
-  const dTotalMin = useDeferredValue(totalMin);
-  const dTotalMax = useDeferredValue(totalMax);
-  const dAdvMin = useDeferredValue(advMin);
-  const dAdvMax = useDeferredValue(advMax);
-  const dFinMin = useDeferredValue(finMin);
-  const dFinMax = useDeferredValue(finMax);
-
-  const filters: DashboardFilters = useMemo(
-    () => ({
-      supplier: dSupplier,
-      qtyMin: optNum(dQtyMin),
-      qtyMax: optNum(dQtyMax),
-      totalMin: optNum(dTotalMin),
-      totalMax: optNum(dTotalMax),
-      advMin: optNum(dAdvMin),
-      advMax: optNum(dAdvMax),
-      finMin: optNum(dFinMin),
-      finMax: optNum(dFinMax),
-    }),
-    [dSupplier, dQtyMin, dQtyMax, dTotalMin, dTotalMax, dAdvMin, dAdvMax, dFinMin, dFinMax],
-  );
-
-  const filtered = useMemo(
-    () => filterEnriched(enriched, filters, dateRange.from, dateRange.to),
-    [enriched, filters, dateRange.from, dateRange.to],
-  );
 
   const supplierTermsIndex = useMemo(() => buildSupplierTermsIndex(fcSuppliers), [fcSuppliers]);
 
@@ -885,20 +805,6 @@ export function CashFlowDashboard({
     }
     return { sumTotalUsd, computableLines };
   }, [publishedLandedRows]);
-
-  const kpis = useMemo(() => computeKpis(filtered), [filtered]);
-
-  const resetFilters = () => {
-    setSupplier("");
-    setQtyMin("");
-    setQtyMax("");
-    setTotalMin("");
-    setTotalMax("");
-    setAdvMin("");
-    setAdvMax("");
-    setFinMin("");
-    setFinMax("");
-  };
 
   const persistFcPoIssueDate = useCallback(
     async (forecastId: string, isoDay: string) => {
@@ -1673,203 +1579,7 @@ export function CashFlowDashboard({
     );
   };
 
-  if (forecastSummaryOnly) {
-    return (
-      <div className={dashboardChartsOnly ? "space-y-6" : "mb-10 space-y-6"}>{renderForecastCashFlowSummary()}</div>
-    );
-  }
-
   return (
-    <div className="mb-10 space-y-6">
-      {renderForecastCashFlowSummary()}
-
-      <div>
-        <h4 className="text-base font-semibold tracking-tight text-[#111827]">{t.title}</h4>
-        <p className="mt-1 text-sm text-[#4B5563]">{t.subtitle}</p>
-      </div>
-
-      <div className="app-card p-4">
-        <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
-          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-            {t.range}
-            <select
-              className="app-control-sm mt-1 block bg-white px-2 py-1.5 text-sm dark:bg-slate-800"
-              value={rangePreset}
-              onChange={(e) => setRangePreset(e.target.value as RangePreset)}
-            >
-              <option value="12m">{t.preset12}</option>
-              <option value="ytd">{t.presetYtd}</option>
-              <option value="custom">{t.presetCustom}</option>
-            </select>
-          </label>
-          {rangePreset === "custom" ? (
-            <>
-              <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-                {t.from}
-                <input
-                  type="date"
-                  className="app-control-sm mt-1 block bg-white px-2 py-1.5 text-sm dark:bg-slate-800"
-                  value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
-                />
-              </label>
-              <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-                {t.to}
-                <input
-                  type="date"
-                  className="app-control-sm mt-1 block bg-white px-2 py-1.5 text-sm dark:bg-slate-800"
-                  value={customTo}
-                  onChange={(e) => setCustomTo(e.target.value)}
-                />
-              </label>
-            </>
-          ) : (
-            <div className="shrink-0 pb-1 text-xs text-[#9CA3AF]">
-              {dateRange.from} → {dateRange.to}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-end gap-x-3 gap-y-2 border-t border-slate-200/80 pt-4 dark:border-slate-700">
-          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-            {t.supplier}
-            <select
-              className="app-control-md mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={supplier}
-              onChange={(e) => setSupplier(e.target.value)}
-            >
-              <option value="">{t.all}</option>
-              {supplierOptions.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-            {t.qtyMin}
-            <input
-              type="number"
-              min={0}
-              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={qtyMin}
-              onChange={(e) => setQtyMin(e.target.value)}
-            />
-          </label>
-          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-            {t.qtyMax}
-            <input
-              type="number"
-              min={0}
-              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={qtyMax}
-              onChange={(e) => setQtyMax(e.target.value)}
-            />
-          </label>
-          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-            {t.totalMin}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={totalMin}
-              onChange={(e) => setTotalMin(e.target.value)}
-            />
-          </label>
-          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-            {t.totalMax}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={totalMax}
-              onChange={(e) => setTotalMax(e.target.value)}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="shrink-0 rounded-xl border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
-          >
-            {t.resetFilters}
-          </button>
-          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-            {t.advMin}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={advMin}
-              onChange={(e) => setAdvMin(e.target.value)}
-            />
-          </label>
-          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-            {t.advMax}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={advMax}
-              onChange={(e) => setAdvMax(e.target.value)}
-            />
-          </label>
-          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-            {t.finMin}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={finMin}
-              onChange={(e) => setFinMin(e.target.value)}
-            />
-          </label>
-          <label className="shrink-0 text-xs font-medium text-[#4B5563]">
-            {t.finMax}
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="app-control-num mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"
-              value={finMax}
-              onChange={(e) => setFinMax(e.target.value)}
-            />
-          </label>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <article className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF] dark:text-slate-400">{t.kpiOrderTotal}</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
-            {formatUsd(kpis.orderTotal, 2)}
-          </p>
-        </article>
-        <article className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF] dark:text-slate-400">{t.kpiActualPaid}</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">
-            {formatUsd(kpis.actualPaid, 2)}
-          </p>
-        </article>
-        <article className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF] dark:text-slate-400">{t.kpiUnpaid}</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">
-            {formatUsd(kpis.unpaid, 2)}
-          </p>
-          <p className="mt-1 text-xs text-slate-400">{t.kpiHintUnpaid}</p>
-        </article>
-        <article className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF] dark:text-slate-400">{t.kpiAvgDays}</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-[#111827]">
-            {kpis.avgPayDays != null ? kpis.avgPayDays.toFixed(1) : t.na}
-          </p>
-          <p className="mt-1 text-xs text-slate-400">{t.kpiHintAvg}</p>
-        </article>
-      </div>
-    </div>
+    <div className={dashboardChartsOnly ? "space-y-6" : "mb-10 space-y-6"}>{renderForecastCashFlowSummary()}</div>
   );
 }

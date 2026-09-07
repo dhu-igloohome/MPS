@@ -334,14 +334,11 @@ export function CashFlowPanel({
 
       <CashFlowDashboard
         language={language}
-        entries={[]}
-        costAnalysisEntries={[]}
         forecastCashFlowRows={visibleFcRows}
         landedCostConsolidateSnapshots={landedCostConsolidateSnapshots}
         unitCostQuotes={unitCostQuotes}
         fcSuppliers={fcSuppliers}
         showForecastCashFlowSummary
-        forecastSummaryOnly
         onForecastCashFlowSettingsSaved={(forecastId, payload) => {
           setFcRows((prev) =>
             prev.map((r) =>

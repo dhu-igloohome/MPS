@@ -6,6 +6,28 @@
 
 ---
 
+## 2026-09-07 — 第4步：彻底删除 Cost Control "成本分析" tab（4个月0数据，David 确认删）
+
+**背景**：延续同一次数据体检的第4项，David 确认"完全删除（推荐）"。这个tab背后是`CostAnalysisPanel`（成本分析手动录入）+`PoCashFlowPanel`（PO现金流手动录入），4个月0行真实数据，跟真正在用的"现金流分析"tab（自动从forecast+contract计算）是两套完全独立的东西，只是当初都挂在"成本控制"模块下造成混淆。
+
+**⚠️ 排查过程中发现范围比最初估计的大**：`CashFlowDashboard`这个组件（`components/supply-chain/cost-control/cash-flow-dashboard.tsx`，1876行）是个"半死不活"的共享组件——Dashboard首页和"现金流分析"tab两个**真正在用**的地方调用它时，`entries`/`costAnalysisEntries`两个参数**永远传空数组**（`entries={[]}`），只有即将删除的`PoCashFlowPanel`会传真实数据并触发组件内部那段"手动KPI筛选表格"的死代码分支（`if (forecastSummaryOnly) {...} else {...}`的else分支）。所以不能简单删2个文件了事，还要把这个共享组件里被"永远走不到的分支"外科手术式地摘除，同时保留Dashboard和"现金流分析"tab两边真正在用的"Forecast现金流汇总+付款条形图+到岸成本"部分。
+
+**改动**：
+1. **`CashFlowDashboard`瘦身**：删除`forecastSummaryOnly`分支判断，只保留原来`if (forecastSummaryOnly)`为true时的那段渲染（因为剩下的2个调用方永远是true）；删除只服务于死分支的state（筛选条件11个useState、`enriched`/`supplierOptions`/`dateRange`/`filters`/`filtered`/`kpis`等memo）、`entries`/`costAnalysisEntries`/`forecastSummaryOnly`三个props、以及只被死分支用到的`enrichCashFlowRows`/`filterEnriched`/`computeKpis`/`getDateRangePreset`(部分保留)/`DashboardFilters`/`optNum`等。**保留了**`paymentMonthWindowAroundToday`/`monthKeysBetween`/`getDateRangePreset`/`RangePreset`（这几个是Dashboard自己的日期选择器、forecast付款条形图、payment schedule矩阵表在用的通用日期工具，虽然定义在同一个`lib/cash-flow-dashboard-agg.ts`里，但跟被删的手动录入功能无关，逐个грep确认外部引用后才决定保留）。
+2. **删除组件+API+专属lib文件**：`cost-analysis-panel.tsx`、`po-cash-flow-panel.tsx`、`/api/cost-control/cash-flow/*`（2个路由）、`/api/cost-control/cost-analysis/*`（2个路由）、`lib/cash-flow-cost-analysis-link.ts`、`lib/cash-flow-validation.ts`、`lib/cost-analysis-compute.ts`、`lib/cost-analysis-validation.ts`（后两个是删除组件后才发现的孤儿文件，grep确认0处引用）。`lib/cash-flow-overview.ts`（原本8个export）只留了`addCalendarDays`一个——其余7个函数（`buildSkuCashMetaFromOrderProgress`/`scheduleCashFlowSlices`/`aggregateByPeriod`/`topSkuExposure`/`filterCashFlowForSession`等）逐个grep确认除了被删的功能外没人调用，一并清掉；`addCalendarDays`因为被真正在用的`landed-cost-cash-flow.ts`（到岸成本，Logistics模块）依赖，必须保留。
+3. **`cost-control-panel.tsx`**：去掉tab切换逻辑，`/supply-chain/cost-control`页面现在只渲染"Cash flow analysis"这一块内容（不再有"cost"/"cashflow" section概念）。
+4. **`lib/types.ts`/`lib/repositories.ts`/`lib/db.ts`**：删除`CashFlowEntry`/`CostAnalysisEntry`/`CostFreightMode`三个类型、`listCashFlowEntries`/`createCashFlowEntry`/`updateCashFlowEntryById`/`deleteCashFlowEntryById`/`listCostAnalysisEntries`/`createCostAnalysisEntry`/`updateCostAnalysisEntryById`/`deleteCostAnalysisEntryById`及对应`mapCashFlow`/`mapCostAnalysis`（504行CRUD代码整块删除）、两张表的`create table`建表语句。生产库直接`drop table cash_flow_entries`/`drop table cost_analysis_entries`（删前再次确认0行）。
+5. **`SupplyChainSubnav`**：Cost Control嵌套菜单从4项（Cost analysis/Cash flow analysis/Unit cost/Payment schedule）删到3项，"Cash flow analysis"的链接从`/supply-chain/cost-control?tab=cashflow`简化成`/supply-chain/cost-control`（不再需要query param区分两个tab）。**踩了一个坑**：简化后"Cash flow analysis"和父级"Cost Control"共用同一个href，如果直接用通用的前缀匹配高亮逻辑，会导致在Unit cost/Payment schedule子页面时"Cash flow analysis"也被误判成高亮——加了一个精确匹配的特判（只有这一个子项需要，因为它是唯一一个href跟父级完全相同的子项）。
+
+**验证**：`tsc --noEmit`干净；`npm run lint`从24个已知问题**降到22个**（净减少，删除的死代码本身带的问题也一起消失了，不是历史遗留被容忍）。全仓库grep确认`CashFlowEntry`/`CostAnalysisEntry`/`CostAnalysisPanel`/`PoCashFlowPanel`/`cash_flow_entries`/`cost_analysis_entries`均无残留引用。本地起`mps-dev`真机验证（清了一次`.next`缓存排除Turbopack批量删文件后的路由缓存失效噪音）：
+- Dashboard首页"Forecast Cash flow analysis"板块：真实数字完整渲染（Computable forecast total $1,228,150.26等），确认瘦身`CashFlowDashboard`没有影响这个真正在用的路径。
+- Cost Control 3个子页（主页/Unit Cost/Payment Schedule）：子导航都只显示3项且高亮状态正确（包括之前会误判的"Cash flow analysis"在Unit Cost/Payment Schedule页面上确认不再误高亮）；`.app-panel`卡片数确认都是1张；每个页面正文实测有5000+字符的真实渲染内容（含Forecast cash flow表格、真实美元金额、Export按钮等），排除了"看起来空白"的假警报（那是`get_page_text`/`innerText`在未激活显示的Browser pane里的已知不可靠表现，改用`textContent`直接读DOM验证为准）。
+- 全程`preview_logs`查服务端日志无报错。
+
+Commit: (pending push)
+
+---
+
 ## 2026-09-07 — 数据驱动的系统体检：清理重复/测试账号 + 删除死表 `po_sequences`
 
 Commit: `80e1623`

@@ -280,13 +280,10 @@ export function CockpitVisualizations({
         </div>
         <CashFlowDashboard
           language={language}
-          entries={[]}
-          costAnalysisEntries={[]}
           forecastCashFlowRows={forecastCashFlowRows}
           fcSuppliers={fcSuppliers}
           unitCostQuotes={unitCostQuotes}
           showForecastCashFlowSummary
-          forecastSummaryOnly
           dashboardChartsOnly
           fcFilterForecastMonth={fcFilterForecastMonth}
         />

@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
-  BarChart3,
   Building2,
   Calculator,
   CalendarRange,
@@ -37,8 +36,6 @@ type SupplyChainSubnavItem = {
 
 export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
   const pathname = usePathname() || "";
-  const searchParams = useSearchParams();
-  const activeTab = searchParams.get("tab");
   const costControlItem: SupplyChainSubnavItem = {
     href: "/supply-chain/cost-control",
     label: language === "en" ? "Cost Control" : "成本控制",
@@ -46,11 +43,6 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
     children: [
       {
         href: "/supply-chain/cost-control",
-        label: language === "en" ? "Cost analysis" : "成本分析",
-        Icon: BarChart3,
-      },
-      {
-        href: "/supply-chain/cost-control?tab=cashflow",
         label: language === "en" ? "Cash flow analysis" : "现金流分析",
         Icon: Landmark,
       },
@@ -83,15 +75,6 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
   };
 
   const isOn = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
-  const isCostControlChildOn = (href: string) => {
-    if (href.includes("?tab=cashflow")) {
-      return pathname === "/supply-chain/cost-control" && activeTab === "cashflow";
-    }
-    if (href === "/supply-chain/cost-control") {
-      return pathname === "/supply-chain/cost-control" && activeTab !== "cashflow";
-    }
-    return isOn(href);
-  };
   const [costExpanded, setCostExpanded] = useState(false);
 
   useEffect(() => {
@@ -196,7 +179,10 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
       >
         {costControlItem.children?.map((child) => {
           const ChildIcon = child.Icon;
-          const childOn = isCostControlChildOn(child.href);
+          // Cash flow analysis shares its href with the parent Cost Control link — an exact
+          // match only, so it doesn't also light up on the Unit cost / Payment schedule sub-pages
+          // (those have their own distinct paths, so prefix matching works fine for them).
+          const childOn = child.href === costControlItem.href ? pathname === child.href : isOn(child.href);
           return (
             <li key={child.href}>
               <Link
