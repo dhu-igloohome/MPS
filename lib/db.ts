@@ -149,12 +149,6 @@ async function setupSchema() {
   `;
 
   await db`
-    create table if not exists po_sequences (
-      key text primary key,
-      next_number integer not null
-    );
-  `;
-  await db`
     create table if not exists order_progress_number_sequences (
       key text primary key,
       next_number integer not null

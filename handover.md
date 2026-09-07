@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-09-07 — 数据驱动的系统体检：清理重复/测试账号 + 删除死表 `po_sequences`
+
+**背景**：David 让基于生产数据分析系统还有哪些值得优化的点。查了各表行数、创建时间分布、外键完整性等，汇总出5个方向，David 确认全部按建议方向执行，这次先做了其中风险最低的两项（第3项审计日志设计、第4项"成本分析"tab取舍、第5项NPI/QC/Logistics模块投入取舍，还需要跟David分别确认细节，未执行）。
+
+**⚠️ 过程中纠正了一次差点搞反的判断**：最初只看 `users`/`user_regions` 表，发现 `apac`/`eu-admin`/`us-admin` 和 `apac_admin`/`eu_admin`/`usa_admin` 两组账号区域权限完全重复，凭直觉以为后创建的`_admin`后缀那组是"正式版"、该保留，前一组是废弃的、该删除。**动手删除前先查了每个账号实际创建过多少条forecast/contract记录，发现方向完全反了**：`apac`/`eu-admin`/`us-admin`三个账号合计创建了60条forecast（占全部123条的近一半，是真人在用的账号），而`apac_admin`/`eu_admin`/`usa_admin`三个账号确认0条forecast/0条contract，是真正没人用的账号。已经据此修正后再执行，没有误删任何真实在用的账号。
+
+**改动**：
+1. **删除4个确认0使用记录的账号**（`apac_admin`/`eu_admin`/`usa_admin`——0 forecasts/0 contracts的重复账号；`testbot`——0 forecasts/0 contracts的测试账号，之前还留着真实APAC区域权限）。删除前逐个查过`forecasts.created_by`/`contracts.created_by`确认为0，且确认`users`表所有被引用的外键（`created_by`/`updated_by`等约30处）都没设`on delete cascade`（只有`user_regions`一张表级联删除），就算判断错了也只会删除报错、不会误删业务数据。删除操作通过`admin_audit_logs`补记了4条`delete_user`审计记录（actor=david），保持审计记录连贯。
+2. **删除死表`po_sequences`**：全仓库grep确认只在`lib/db.ts`的建表语句里出现过，没有任何代码读写它（真正在用的是`forecast_po_sequences`，命名很像但是两张完全独立的表），数据库里躺着1条孤儿数据。生产库直接`drop table`，同时从`lib/db.ts`删掉这段`create table if not exists po_sequences`建表代码，防止下次冷启动又建回来。
+
+**验证**：`tsc --noEmit`、`npm run lint`全干净（24个已知历史问题不变）。删除账号后重新查过`users`表确认还剩25个（29-4），且`apac`/`eu-admin`/`us-admin`三个真实在用的账号完整保留；`to_regclass('po_sequences')`确认表已不存在；全仓库re-grep确认代码里没有残留引用。
+
+**待确认后续（第3/4/5项，未执行）**：
+- 第3项：给forecast/contract这类业务数据补操作审计日志——需要先跟David对齐记哪些字段、保留多久、谁能查，再动手实现，不能照抄`admin_audit_logs`现有模式直接套。
+- 第4项：Cost Control的"成本分析"tab（`CostAnalysisPanel`+`PoCashFlowPanel`，背后`cost_analysis_entries`/`cash_flow_entries`两张表4个月0行真实数据）——要不要整个移除，是产品决策不是代码整理，需要David明确"删"还是"留"。
+- 第5项：NPI Management/Quality Control/Logistics Progress 里一批模块（BOM/ECN/SOP/Tooling管理、4个QC子模块、Shipments/到岸成本汇总）7月摸底审计就是0行数据，9月复查依然0行——是否继续投入维护，是团队工作重心问题，只是把数据摆出来给David参考，没有定义具体的代码改动。
+
+Commit: (pending push)
+
+---
+
 ## 2026-09-02 — 全站子导航统一收进标题卡片，消除堆叠卡片和 Cost Control 重复子导航
 
 Commit: `b985262`
