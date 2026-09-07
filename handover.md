@@ -8,6 +8,8 @@
 
 ## 2026-09-07 — 数据驱动的系统体检：清理重复/测试账号 + 删除死表 `po_sequences`
 
+Commit: `80e1623`
+
 **背景**：David 让基于生产数据分析系统还有哪些值得优化的点。查了各表行数、创建时间分布、外键完整性等，汇总出5个方向，David 确认全部按建议方向执行，这次先做了其中风险最低的两项（第3项审计日志设计、第4项"成本分析"tab取舍、第5项NPI/QC/Logistics模块投入取舍，还需要跟David分别确认细节，未执行）。
 
 **⚠️ 过程中纠正了一次差点搞反的判断**：最初只看 `users`/`user_regions` 表，发现 `apac`/`eu-admin`/`us-admin` 和 `apac_admin`/`eu_admin`/`usa_admin` 两组账号区域权限完全重复，凭直觉以为后创建的`_admin`后缀那组是"正式版"、该保留，前一组是废弃的、该删除。**动手删除前先查了每个账号实际创建过多少条forecast/contract记录，发现方向完全反了**：`apac`/`eu-admin`/`us-admin`三个账号合计创建了60条forecast（占全部123条的近一半，是真人在用的账号），而`apac_admin`/`eu_admin`/`usa_admin`三个账号确认0条forecast/0条contract，是真正没人用的账号。已经据此修正后再执行，没有误删任何真实在用的账号。
@@ -22,8 +24,6 @@
 - 第3项：给forecast/contract这类业务数据补操作审计日志——需要先跟David对齐记哪些字段、保留多久、谁能查，再动手实现，不能照抄`admin_audit_logs`现有模式直接套。
 - 第4项：Cost Control的"成本分析"tab（`CostAnalysisPanel`+`PoCashFlowPanel`，背后`cost_analysis_entries`/`cash_flow_entries`两张表4个月0行真实数据）——要不要整个移除，是产品决策不是代码整理，需要David明确"删"还是"留"。
 - 第5项：NPI Management/Quality Control/Logistics Progress 里一批模块（BOM/ECN/SOP/Tooling管理、4个QC子模块、Shipments/到岸成本汇总）7月摸底审计就是0行数据，9月复查依然0行——是否继续投入维护，是团队工作重心问题，只是把数据摆出来给David参考，没有定义具体的代码改动。
-
-Commit: (pending push)
 
 ---
 
