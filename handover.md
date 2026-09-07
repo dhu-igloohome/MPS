@@ -8,6 +8,8 @@
 
 ## 2026-09-07 — 第4步：彻底删除 Cost Control "成本分析" tab（4个月0数据，David 确认删）
 
+Commit: `f0e3afa`
+
 **背景**：延续同一次数据体检的第4项，David 确认"完全删除（推荐）"。这个tab背后是`CostAnalysisPanel`（成本分析手动录入）+`PoCashFlowPanel`（PO现金流手动录入），4个月0行真实数据，跟真正在用的"现金流分析"tab（自动从forecast+contract计算）是两套完全独立的东西，只是当初都挂在"成本控制"模块下造成混淆。
 
 **⚠️ 排查过程中发现范围比最初估计的大**：`CashFlowDashboard`这个组件（`components/supply-chain/cost-control/cash-flow-dashboard.tsx`，1876行）是个"半死不活"的共享组件——Dashboard首页和"现金流分析"tab两个**真正在用**的地方调用它时，`entries`/`costAnalysisEntries`两个参数**永远传空数组**（`entries={[]}`），只有即将删除的`PoCashFlowPanel`会传真实数据并触发组件内部那段"手动KPI筛选表格"的死代码分支（`if (forecastSummaryOnly) {...} else {...}`的else分支）。所以不能简单删2个文件了事，还要把这个共享组件里被"永远走不到的分支"外科手术式地摘除，同时保留Dashboard和"现金流分析"tab两边真正在用的"Forecast现金流汇总+付款条形图+到岸成本"部分。
@@ -23,8 +25,6 @@
 - Dashboard首页"Forecast Cash flow analysis"板块：真实数字完整渲染（Computable forecast total $1,228,150.26等），确认瘦身`CashFlowDashboard`没有影响这个真正在用的路径。
 - Cost Control 3个子页（主页/Unit Cost/Payment Schedule）：子导航都只显示3项且高亮状态正确（包括之前会误判的"Cash flow analysis"在Unit Cost/Payment Schedule页面上确认不再误高亮）；`.app-panel`卡片数确认都是1张；每个页面正文实测有5000+字符的真实渲染内容（含Forecast cash flow表格、真实美元金额、Export按钮等），排除了"看起来空白"的假警报（那是`get_page_text`/`innerText`在未激活显示的Browser pane里的已知不可靠表现，改用`textContent`直接读DOM验证为准）。
 - 全程`preview_logs`查服务端日志无报错。
-
-Commit: (pending push)
 
 ---
 
