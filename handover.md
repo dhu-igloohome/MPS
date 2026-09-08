@@ -8,13 +8,13 @@
 
 ## 2026-09-08 — 左侧栏收窄：4个模块不再展开子项，删掉重复的"Cost Control"顶层bug
 
+Commit: `0be271a`
+
 **背景**：David 截图指出左侧栏"Cost Control"出现了两次——一次是"Supply Chain Management"展开后的嵌套子项，一次是它自己单独的顶层nav条目（查代码确认是`app-shell.tsx`第117行的遗留死代码，指向老的`/cost-control`重定向路由，本该在做模块整合时一起删掉但漏了）。顺带聊到更大的设计问题：Supply Chain Management/Order Progress/Logistics Progress/Quality Control 这4个模块，左侧栏嵌套展开的子项列表，跟各自页面顶部的module-tabs条（这次会话之前几轮做的`SupplyChainSubnav`/`LogisticsSubnav`等）内容重复——同一份"这个模块有哪几个子页"的信息画了两遍。跟 David 讨论后一致认为：对这种重复访问、非探索式使用的内部工具，顶部tab条留着做子导航唯一入口更好，左侧栏收窄成只显示顶层模块（NPI Management 因为没有对应的顶部tab条，暂时保留现状不动）。
 
 **改动**：`components/shared/app-shell-nav.tsx`给`ShellNavItem`类型加了`showChildren?: boolean`——`children`数组本身仍然参与"这个item是否处于当前激活分支"的判断（`isInNavBranch`不变），但渲染时如果`showChildren===false`就强制走"普通扁平链接"那条分支（不出chevron、不出嵌套`<ul>`），不是简单粗暴地删掉`children`数据。**这个设计选择是有意的**：Order Progress的3个子项里"Mass production Kanban"这条压根不在`/order-progress/`这个路径前缀下（它是`/mass-production-kanban`，独立顶层路由）——如果直接删掉`children`只留一个扁平href，会导致用户在Kanban页面时左侧栏"Order Progress"不再高亮；保留`children`只是不渲染，高亮判断逻辑完全不受影响。`components/shared/app-shell.tsx`：给这4个模块的nav条目加`showChildren: false`（Supply Chain Management顺带把"Buyer Entities"补进了`children`列表——它之前压根没在左侧栏的匹配列表里，只能从顶部tab条到达，现在左侧栏在这个页面上也能正确高亮了），删掉第117行那个重复的"Cost Control"顶层条目和对应的`navText.costControl`、`icon: "cost"`类型（都确认没有别处引用）。
 
 **验证**：`tsc --noEmit`、`npm run lint`干净（22个问题不变）。本地起`mps-dev`真机验证：4个模块的nav条目确认渲染成扁平链接（无chevron按钮），NPI Management确认还是原来的可展开样式（chevron点击后正确展开/收起）；专门测了两个最容易出问题的情况——`/mass-production-kanban`（路径前缀跟Order Progress完全不搭边）访问时左侧栏"Order Progress"正确高亮，`/supply-chain/buyer-entities`（之前从来没在左侧栏匹配列表里）访问时"Supply Chain Management"也正确高亮；另外抽查了Quality Control的8D Reports子页、Logistics Progress的Order fulfillments子页，高亮都对。确认重复的"Cost Control"顶层条目已经从列表里消失。
-
-Commit: (pending push)
 
 ---
 
