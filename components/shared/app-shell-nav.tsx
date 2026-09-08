@@ -25,8 +25,13 @@ const NAV_COLLAPSED_STORAGE_KEY = "mps-nav-collapsed";
 export type ShellNavItem = {
   href: string;
   label: string;
-  icon?: "cockpit" | "forecast" | "order" | "supply" | "logistics" | "npi" | "quality" | "cost" | "users";
+  icon?: "cockpit" | "forecast" | "order" | "supply" | "logistics" | "npi" | "quality" | "users";
   children?: Array<{ href: string; label: string }>;
+  /** false: `children` still counts toward "is this item's branch active" (so the flat link
+   * still highlights on any sibling sub-page) but renders as a plain link with no expand
+   * chevron / nested list — use when a module already has its own sub-nav (e.g. a tab bar
+   * merged into its page title card) so the sidebar doesn't duplicate that same list. */
+  showChildren?: boolean;
 };
 
 type AppShellNavProps = {
@@ -61,7 +66,6 @@ const ICONS = {
   logistics: Boxes,
   npi: PackageSearch,
   quality: ShieldCheck,
-  cost: BarChart3,
   users: Users,
 } as const;
 
@@ -178,10 +182,12 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
             {items.map((item) => {
               const on = isInNavBranch(pathname, item);
               const Icon = item.icon ? ICONS[item.icon] : null;
-              const hasChildren = Boolean(item.children?.length);
-              const expanded = hasChildren ? isGroupExpanded(item) : false;
+              // `children` (if present) always counts toward `on` above, regardless of
+              // showChildren — only whether to render the expandable nested list depends on it.
+              const showAsExpandable = Boolean(item.children?.length) && item.showChildren !== false;
+              const expanded = showAsExpandable ? isGroupExpanded(item) : false;
 
-              if (!hasChildren) {
+              if (!showAsExpandable) {
                 return (
                   <li key={item.href}>
                     <Link

@@ -37,7 +37,6 @@ export async function AppShell({ session, title, description, headerMeta, module
     logisticsProgress: language === "en" ? "Logistics Progress" : "物流进度",
     npi: language === "en" ? "NPI Management" : "NPI 管理",
     qualityControl: language === "en" ? "Quality Control" : "质量管理",
-    costControl: language === "en" ? "Cost Control" : "成本控制",
     userManagement: language === "en" ? "User Management" : "用户管理",
     productDatabase: language === "en" ? "Product Database" : "产品数据库",
   };
@@ -49,16 +48,19 @@ export async function AppShell({ session, title, description, headerMeta, module
       href: "/supply-chain/cost-control",
       label: navText.supplyChain,
       icon: "supply" as const,
+      showChildren: false,
       children: [
         { href: "/supply-chain/cost-control", label: language === "en" ? "Cost Control" : "成本控制" },
         { href: "/supply-chain/contracts", label: language === "en" ? "Contracts" : "合同管理" },
         { href: "/supply-chain/suppliers", label: language === "en" ? "Suppliers" : "供应商管理" },
+        { href: "/supply-chain/buyer-entities", label: language === "en" ? "Buyer Entities" : "需方信息" },
       ],
     },
     {
       href: "/order-progress",
       label: navText.orderProgress,
       icon: "order" as const,
+      showChildren: false,
       children: [
         { href: "/order-progress", label: navText.orderProgressSubLines },
         { href: "/mass-production-kanban", label: navText.massProductionKanban },
@@ -69,6 +71,7 @@ export async function AppShell({ session, title, description, headerMeta, module
       href: "/logistics-progress",
       label: navText.logisticsProgress,
       icon: "logistics" as const,
+      showChildren: false,
       children: [
         { href: "/logistics-progress", label: language === "en" ? "Logistics Progress" : "物流进度" },
         {
@@ -107,6 +110,7 @@ export async function AppShell({ session, title, description, headerMeta, module
       href: "/quality-control/test-cases",
       label: navText.qualityControl,
       icon: "quality" as const,
+      showChildren: false,
       children: [
         { href: "/quality-control/test-cases", label: language === "en" ? "Test Cases" : "测试用例管理" },
         { href: "/quality-control/certifications", label: language === "en" ? "Certifications" : "认证管理" },
@@ -114,7 +118,6 @@ export async function AppShell({ session, title, description, headerMeta, module
         { href: "/quality-control/eight-d", label: language === "en" ? "8D Reports" : "8D 报告管理" },
       ],
     },
-    { href: "/cost-control", label: navText.costControl, icon: "cost" as const },
     ...(session.role === "super_admin"
       ? [
           { href: "/admin/users", label: navText.userManagement, icon: "users" as const },
