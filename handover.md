@@ -8,13 +8,13 @@
 
 ## 2026-09-08 — 修复登录慢：迁移检查状态从内存挪到数据库，冷启动少跑17次DB往返
 
+Commit: `2090fde`
+
 **背景**：David 反馈"最近登录要等很久"，让分析根本原因。排查`authenticateUser()`发现开头就是`await ensureDatabase()`，而这个函数判断"迁移是否已跑过"的`appliedSchemaVersion`是个**纯内存变量**——Vercel serverless 实例闲置回收后，下次请求是全新进程，这个变量重置成0，导致`applyIncrementalMigrations()`里**17条顺序执行的DDL语句**（改表结构、建索引、建表）重新跑一遍，每条都是一次独立网络往返。登录恰好是用户闲置后重新打开系统的第一个动作，也恰好最容易撞上冷启动，所以最先感觉到。这条迁移链从3月上线起一直在增长（我自己9月2/7号两天就分别加了2条），是"最近变慢"的原因——不是突发bug，是攒了半年的量变。
 
 **改动**：`lib/db.ts`新增`applyIncrementalMigrationsIfNeeded()`包装函数，复用项目里本来就有、但只给2个一次性数据回填脚本用的`app_schema_migrations`表模式：先查一行`incremental_migrations_applied_v{CURRENT_SCHEMA_VERSION}`标记存不存在，存在就直接跳过17条DDL（只剩"建表(if not exists)+查标记"2次往返），不存在才真的跑一遍`applyIncrementalMigrations()`然后把标记写进去。以后改`CURRENT_SCHEMA_VERSION`（加新迁移时本来就要做的事）会让标记天然失效，自动重新跑一遍新的批次，不需要额外维护逻辑。
 
 **验证**：`tsc --noEmit`、`npm run lint`干净（22个问题不变）。真机测试：本地起`mps-dev`，第一次登录（标记还不存在）确认`app_schema_migrations`表新增了`incremental_migrations_applied_v11`这一行，服务端日志无报错；重启进程模拟"下一次冷启动"，标记已存在，功能正常。**为了避开dev环境Turbopack编译耗时的干扰**，另外写了一个不经过Next.js、直接连生产库的对比脚本，各自用全新连接测量：`旧的17条完整链路`总耗时4824ms vs `新的2次往返快速路径`总耗时3447ms，两者都包含一次性连接建立耗时——单独测出"连接建立"本身是2679ms（后续同连接上的查询只要278ms/次）。**换算下来这次改动每次冷启动真实省下约1.4秒**，但连接建立那2.5~3秒是完全独立的另一个瓶颈（大概率是Vercel函数区域和Postgres数据库区域不在一起，跨区域网络延迟），**这次没有动**，如果登录体感还是慢，下一步该查的是这个，不是迁移检查了。
-
-Commit: (pending push)
 
 ---
 
