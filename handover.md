@@ -8,7 +8,7 @@
 
 ## 2026-09-08 — Order fulfillments：delivery status 改成80cm外也能一眼分辨的实心徽章
 
-Commit: (pending push)
+Commit: `19f0c2d`
 
 **背景**：David 截图指出 Order fulfillments 表格"一眼看过去不知道哪个发货了哪个没发货"，追问后明确要求"眼睛距离屏幕80CM也能轻易分辨"——即不能只靠颜色、不能太小。查代码发现原实现是`STATUS_DOT`：一个8×8px的纯色圆点，放在第15列（表格总共17列、`min-w-[2280px]`），日常视口下不滚动到最右根本看不到，就算看到了8px在80cm外也分辨不出颜色。
 
