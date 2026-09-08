@@ -19,7 +19,12 @@ const sql = connectionString
     })
   : null;
 
-/** Bump when `setupSchema` gains migrations so warm serverless instances re-run bootstrap. */
+/**
+ * Bump when `setupSchema` or `applyIncrementalMigrations` gains a migration: it both makes
+ * warm in-process instances re-check, and (via the `app_schema_migrations` marker row keyed
+ * by this version in `applyIncrementalMigrationsIfNeeded`) makes a fresh cold-started instance
+ * re-run the incremental batch once instead of trusting a stale marker from an older version.
+ */
 const CURRENT_SCHEMA_VERSION = 11;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
@@ -1204,9 +1209,41 @@ async function coreSchemaAlreadyPresent(): Promise<boolean> {
 }
 
 /**
+ * Skips `applyIncrementalMigrations`'s ~17 sequential DDL round-trips once they're already
+ * applied for `CURRENT_SCHEMA_VERSION`. Without this, every cold serverless start re-ran the
+ * full batch (the "already applied" state lived only in the in-process `appliedSchemaVersion`
+ * variable, which resets on every new instance) — the dominant cause of slow logins, since
+ * login is typically the first request to hit a freshly-cold instance. Marker rows live in
+ * `app_schema_migrations` (same table already used for one-off data-backfill migrations
+ * below), keyed by schema version so a future version bump naturally re-runs the (idempotent)
+ * batch once and then goes back to the 2-round-trip fast path.
+ */
+async function applyIncrementalMigrationsIfNeeded() {
+  const db = getSql();
+  const markerId = `incremental_migrations_applied_v${CURRENT_SCHEMA_VERSION}`;
+  await db`
+    create table if not exists app_schema_migrations (
+      id text primary key,
+      applied_at timestamptz not null default now()
+    );
+  `;
+  const already = await db<{ id: string }[]>`
+    select id from app_schema_migrations where id = ${markerId} limit 1;
+  `;
+  if (already.length > 0) return;
+  await applyIncrementalMigrations();
+  await db`
+    insert into app_schema_migrations (id) values (${markerId})
+    on conflict (id) do nothing;
+  `;
+}
+
+/**
  * Fast, idempotent ALTERs applied even when the full bootstrap is skipped (existing DB).
  * Add statements here whenever `setupSchema` gains a column/table that existing
- * production databases need; keep each statement `if not exists`-safe.
+ * production databases need; keep each statement `if not exists`-safe. Bump
+ * `CURRENT_SCHEMA_VERSION` when adding a statement so `applyIncrementalMigrationsIfNeeded`
+ * knows to run this batch (with the new statement) at least once more.
  */
 async function applyIncrementalMigrations() {
   const db = getSql();
@@ -1379,9 +1416,10 @@ export async function ensureDatabase() {
   }
 
   // Existing production DB: do not re-run full bootstrap (avoids serverless timeout),
-  // but always apply lightweight incremental migrations so new columns ship with code.
+  // but make sure incremental migrations have run at least once for this schema version
+  // (skips the check almost instantly once a marker row confirms they already have).
   if (await coreSchemaAlreadyPresent()) {
-    await applyIncrementalMigrations();
+    await applyIncrementalMigrationsIfNeeded();
     appliedSchemaVersion = CURRENT_SCHEMA_VERSION;
     return;
   }
