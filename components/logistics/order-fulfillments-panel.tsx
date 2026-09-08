@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Paperclip, Plus, Save, Trash2, X } from "lucide-react";
+import { CheckCircle2, Clock, Package, Paperclip, Plus, Save, Trash2, Truck, X } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Language } from "@/lib/i18n";
@@ -92,12 +92,24 @@ const PO_BADGE_BY_REGION: Record<string, string> = {
 const PO_BADGE_DEFAULT =
   "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:ring-slate-500/30";
 
-/** Status dot color next to the Delivery status select. */
-const STATUS_DOT: Record<string, string> = {
-  Delivered: "bg-emerald-500",
-  "In transit": "bg-sky-500",
-  "Pending trigger SO": "bg-amber-400",
-  "In preparation": "bg-slate-400",
+/**
+ * High-contrast, filled badge (solid color + white text + icon, not just a hue) so status is
+ * readable at a glance from across the room — a small colored dot isn't distinguishable at that
+ * distance, especially by color alone. Icon shape is a second, colorblind-safe cue alongside color.
+ */
+const STATUS_BADGE: Record<string, string> = {
+  Delivered: "bg-emerald-600 text-white",
+  "In transit": "bg-sky-600 text-white",
+  "Pending trigger SO": "bg-amber-500 text-slate-950",
+  "In preparation": "bg-slate-500 text-white",
+};
+const STATUS_BADGE_EMPTY =
+  "bg-slate-100 text-slate-400 ring-1 ring-inset ring-slate-300 dark:bg-slate-700/40 dark:text-slate-500 dark:ring-slate-600";
+const STATUS_ICON: Record<string, typeof CheckCircle2> = {
+  Delivered: CheckCircle2,
+  "In transit": Truck,
+  "Pending trigger SO": Clock,
+  "In preparation": Package,
 };
 
 function labels(language: Language) {
@@ -129,6 +141,7 @@ function labels(language: Language) {
     eta: "ETA",
     trackingLink: en ? "Tracking link" : "跟踪链接",
     deliveryStatus: en ? "Delivery status" : "交付状态",
+    statusNotSet: en ? "Not set" : "未设置",
     balanceQty: en ? "Balance Qty" : "结余数量",
     actions: en ? "Actions" : "操作",
     save: en ? "Save" : "保存",
@@ -580,8 +593,23 @@ export function OrderFulfillmentsPanel({
                       <td className={`${autoCellCls} whitespace-nowrap text-foreground/70`}>
                         {formatForecastMonthLabel(row.group.forecastMonth, language)}
                       </td>
-                      <td className={`${autoCellCls} whitespace-nowrap font-medium`}>
-                        {row.group.sku}
+                      <td className={`${autoCellCls} whitespace-nowrap`}>
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="font-medium">{row.group.sku}</span>
+                          {(() => {
+                            const StatusIcon = STATUS_ICON[f.deliveryStatus];
+                            return (
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-bold ${
+                                  STATUS_BADGE[f.deliveryStatus] ?? STATUS_BADGE_EMPTY
+                                }`}
+                              >
+                                {StatusIcon ? <StatusIcon size={13} strokeWidth={2.5} aria-hidden /> : null}
+                                {f.deliveryStatus || t.statusNotSet}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </td>
                       <td className={autoCellCls}>
                         {row.group.mpBatches.length > 0 ? (
@@ -766,13 +794,7 @@ export function OrderFulfillmentsPanel({
                         />
                       </td>
                       <td className="px-2 py-2">
-                        <div className="flex min-w-[11.5rem] items-center gap-2">
-                          <span
-                            aria-hidden
-                            className={`h-2 w-2 shrink-0 rounded-full transition-colors duration-150 ${
-                              STATUS_DOT[f.deliveryStatus] ?? "bg-slate-200 dark:bg-slate-600"
-                            }`}
-                          />
+                        <div className="min-w-[11.5rem]">
                           <select
                             value={f.deliveryStatus}
                             onChange={(e) => setField(row, { deliveryStatus: e.target.value })}

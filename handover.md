@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-08 — Order fulfillments：delivery status 改成80cm外也能一眼分辨的实心徽章
+
+Commit: (pending push)
+
+**背景**：David 截图指出 Order fulfillments 表格"一眼看过去不知道哪个发货了哪个没发货"，追问后明确要求"眼睛距离屏幕80CM也能轻易分辨"——即不能只靠颜色、不能太小。查代码发现原实现是`STATUS_DOT`：一个8×8px的纯色圆点，放在第15列（表格总共17列、`min-w-[2280px]`），日常视口下不滚动到最右根本看不到，就算看到了8px在80cm外也分辨不出颜色。
+
+**改动**：`components/logistics/order-fulfillments-panel.tsx`——删掉`STATUS_DOT`，新增`STATUS_BADGE`/`STATUS_BADGE_EMPTY`/`STATUS_ICON`三个常量：实心背景色+白字+图标的徽章（Delivered=绿+对勾，In transit=蓝+卡车，Pending trigger SO=琥珀+时钟，In preparation=灰+包裹，未设置=浅灰描边+"Not set"文字），颜色和图标形状双重编码（色盲也能靠图标区分）。徽章位置从第15列挪到第3列SKU值正下方——这是表格里唯一保证不用横向滚动就能看到的位置。原第15列的编辑用下拉框简化，去掉了跟着一起冗余的迷你圆点。
+
+**验证**：`tsc --noEmit`、`npm run lint`干净（22个问题不变，跟现有baseline完全一致）。本地起`mps-dev`真机验证，抽查了30行数据：Delivered（绿底白字+对勾）、In transit（蓝底白字+卡车）、Pending trigger SO（琥珀底深字+时钟）、未设置（浅灰描边+"Not set"）都渲染正确，颜色class和文字一一对应无误；徽章在默认视口下无需横向滚动即可见。
+
+---
+
 ## 2026-09-08 — 左侧栏收窄：4个模块不再展开子项，删掉重复的"Cost Control"顶层bug
 
 Commit: `0be271a`
