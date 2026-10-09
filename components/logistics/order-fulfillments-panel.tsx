@@ -194,6 +194,28 @@ const autoCellCls =
 const thCls =
   "sticky top-0 z-10 border-b border-app-border bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-foreground/65 dark:bg-app-surface";
 
+/**
+ * First three columns (Forecast PO / Forecast month / SKU + status) stay pinned to the left while
+ * scrolling sideways, so you always know which row you're editing. Only at xl+ widths: on narrower
+ * screens the pinned block would eat most of the visible table.
+ */
+const PIN_PO_W = "w-[11.5rem] min-w-[11.5rem] max-w-[11.5rem]";
+const PIN_MONTH_W = "w-[4.75rem] min-w-[4.75rem] max-w-[4.75rem]";
+const PIN_SKU_W = "w-[8.5rem] min-w-[8.5rem] max-w-[8.5rem]";
+const PIN_PO_X = "xl:sticky xl:left-0";
+const PIN_MONTH_X = "xl:sticky xl:left-[11.5rem]";
+const PIN_SKU_X =
+  "xl:sticky xl:left-[16.25rem] xl:border-r xl:border-app-border xl:shadow-[3px_0_5px_-3px_rgba(15,23,42,0.18)]";
+const pinnedCellCls =
+  "px-3 py-2.5 align-top text-sm text-foreground/90 bg-slate-50 dark:bg-app-surface xl:z-[5]";
+
+/** Width taken by the pinned block while it is actually pinned (0 below the xl breakpoint). */
+function pinnedColumnsWidth(shell: HTMLElement): number {
+  const th = shell.querySelector<HTMLElement>("[data-pin-end]");
+  if (!th || getComputedStyle(th).position !== "sticky") return 0;
+  return th.getBoundingClientRect().right - shell.getBoundingClientRect().left;
+}
+
 const chipCls =
   "inline-flex max-w-full items-center truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:ring-slate-500/30";
 
@@ -337,9 +359,23 @@ export function OrderFulfillmentsPanel({
       }
       setHighlightRowId(target.rowId);
     });
-    tableShellRef.current
-      ?.querySelector(`[data-row-id="${CSS.escape(target.rowId)}"] [data-so-input]`)
-      ?.scrollIntoView({ block: "center", inline: "nearest" });
+    // Scroll only the table's own container: scrollIntoView would also move the page, which
+    // re-reveals the auto-hide header over the title/filter bar.
+    const shell = tableShellRef.current;
+    const el = shell?.querySelector<HTMLElement>(
+      `[data-row-id="${CSS.escape(target.rowId)}"] [data-so-input]`,
+    );
+    if (shell && el) {
+      const sr = shell.getBoundingClientRect();
+      const er = el.getBoundingClientRect();
+      const headH = shell.querySelector("thead")?.getBoundingClientRect().height ?? 0;
+      const pinnedW = pinnedColumnsWidth(shell);
+      const top = shell.scrollTop + (er.top - sr.top) - headH - (shell.clientHeight - headH - er.height) / 2;
+      let left = shell.scrollLeft;
+      if (er.left < sr.left + pinnedW + 12) left += er.left - (sr.left + pinnedW + 12);
+      else if (er.right > sr.right - 12) left += er.right - (sr.right - 12);
+      shell.scrollTo({ top: Math.max(0, top), left: Math.max(0, left) });
+    }
     if (highlightTimer.current) clearTimeout(highlightTimer.current);
     highlightTimer.current = setTimeout(() => setHighlightRowId(null), 6000);
   }
@@ -661,9 +697,11 @@ export function OrderFulfillmentsPanel({
             <table className="w-full min-w-[2280px] border-collapse text-sm">
               <thead>
                 <tr>
-                  <th className={thCls}>{t.forecastPo}</th>
-                  <th className={thCls}>{t.forecastMonth}</th>
-                  <th className={thCls}>{t.sku}</th>
+                  <th className={`${thCls} ${PIN_PO_W} ${PIN_PO_X} xl:z-20`}>{t.forecastPo}</th>
+                  <th className={`${thCls} ${PIN_MONTH_W} ${PIN_MONTH_X} xl:z-20`}>{t.forecastMonth}</th>
+                  <th data-pin-end className={`${thCls} ${PIN_SKU_W} ${PIN_SKU_X} xl:z-20`}>
+                    {t.sku}
+                  </th>
                   <th className={thCls}>{t.mpBatch}</th>
                   <th className={thCls}>{t.estimatedReady}</th>
                   <th className={`${thCls} text-right`}>{t.forecastQty}</th>
@@ -696,7 +734,7 @@ export function OrderFulfillmentsPanel({
                         highlightRowId === row.rowId ? "[&>td]:!bg-amber-100 dark:[&>td]:!bg-amber-500/20 outline outline-2 -outline-offset-2 outline-amber-500" : ""
                       }`}
                     >
-                      <td className={`${autoCellCls} whitespace-nowrap`}>
+                      <td className={`${pinnedCellCls} ${PIN_PO_W} ${PIN_PO_X} whitespace-nowrap`}>
                         {row.isFirstOfGroup ? (
                           <span className="inline-flex items-center gap-1.5">
                             <span
@@ -719,10 +757,12 @@ export function OrderFulfillmentsPanel({
                           </span>
                         )}
                       </td>
-                      <td className={`${autoCellCls} whitespace-nowrap text-foreground/70`}>
+                      <td
+                        className={`${pinnedCellCls} ${PIN_MONTH_W} ${PIN_MONTH_X} whitespace-nowrap text-foreground/70`}
+                      >
                         {formatForecastMonthLabel(row.group.forecastMonth, language)}
                       </td>
-                      <td className={`${autoCellCls} whitespace-nowrap`}>
+                      <td className={`${pinnedCellCls} ${PIN_SKU_W} ${PIN_SKU_X} whitespace-nowrap`}>
                         <div className="flex flex-col items-start gap-1">
                           <span className="font-medium">{row.group.sku}</span>
                           {(() => {
@@ -776,26 +816,52 @@ export function OrderFulfillmentsPanel({
                             aria-label={t.soNumber}
                             className={inputCls}
                           />
-                          <input
-                            type="url"
-                            value={f.soUrl}
-                            onChange={(e) => setField(row, { soUrl: e.target.value })}
-                            placeholder={t.soUrlPh}
-                            aria-label={t.soUrlPh}
-                            className={`${inputCls} text-xs`}
-                          />
-                          <div className="flex items-center gap-2 text-xs">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <input
+                              type="url"
+                              value={f.soUrl}
+                              onChange={(e) => setField(row, { soUrl: e.target.value })}
+                              placeholder={t.soUrlPh}
+                              aria-label={t.soUrlPh}
+                              className={`${inputCls} min-w-0 flex-1 text-xs`}
+                            />
                             {f.soUrl.trim().startsWith("http") ? (
                               <a
                                 href={f.soUrl.trim()}
                                 target="_blank"
                                 rel="noreferrer noopener"
-                                className="text-app-accent underline-offset-2 hover:underline"
+                                className="shrink-0 text-app-accent underline-offset-2 hover:underline"
                               >
                                 SO ↗
                               </a>
                             ) : null}
-                            {row.shipment?.attachment ? (
+                            {row.shipment?.attachment ? null : (
+                              <label
+                                title={row.shipment ? t.uploadFile : t.saveFirst}
+                                className={`inline-flex shrink-0 items-center justify-center rounded-lg border border-app-border p-1.5 ${
+                                  row.shipment
+                                    ? "cursor-pointer text-foreground/60 hover:bg-slate-100 hover:text-app-accent dark:hover:bg-slate-700/40"
+                                    : "cursor-not-allowed text-foreground/35"
+                                }`}
+                              >
+                                <Paperclip size={14} strokeWidth={1.75} aria-hidden />
+                                <span className="sr-only">{t.uploadFile}</span>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                  disabled={!row.shipment || busy}
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    e.target.value = "";
+                                    if (file) void uploadFile(row, file);
+                                  }}
+                                />
+                              </label>
+                            )}
+                          </div>
+                          {row.shipment?.attachment ? (
+                            <div className="flex items-center gap-2 text-xs">
                               <span className="inline-flex min-w-0 items-center gap-1">
                                 <a
                                   href={`/api/logistics-order-fulfillments/${encodeURIComponent(row.rowId)}/file`}
@@ -818,31 +884,8 @@ export function OrderFulfillmentsPanel({
                                   <X size={12} strokeWidth={2} />
                                 </button>
                               </span>
-                            ) : (
-                              <label
-                                title={row.shipment ? t.uploadFile : t.saveFirst}
-                                className={`inline-flex items-center gap-1 ${
-                                  row.shipment
-                                    ? "cursor-pointer text-foreground/60 hover:text-app-accent"
-                                    : "cursor-not-allowed text-foreground/35"
-                                }`}
-                              >
-                                <Paperclip size={12} strokeWidth={1.5} />
-                                {t.uploadFile}
-                                <input
-                                  type="file"
-                                  accept=".pdf,.doc,.docx,.xls,.xlsx"
-                                  disabled={!row.shipment || busy}
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    e.target.value = "";
-                                    if (file) void uploadFile(row, file);
-                                  }}
-                                />
-                              </label>
-                            )}
-                          </div>
+                            </div>
+                          ) : null}
                         </div>
                       </td>
                       <td className="px-2 py-2">
