@@ -8,7 +8,7 @@
 
 ## 2026-10-09 — Order fulfillments：加 SO Number 查找跳转控件
 
-Commit: (pending push)
+Commit: `11f0824`
 
 **背景**：David 要在 Order fulfillments 筛选区（Forecast month / Region / SKU 旁）加一个控件，输入 SO Number 后快速跳转到对应行。表格82行、17列、`min-w-[2280px]`，SO Number 在第7列，靠肉眼翻很费劲。
 
