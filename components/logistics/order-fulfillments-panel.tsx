@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { flushSync } from "react-dom";
+import { useMemo, useState } from "react";
 import {
   CheckCircle2,
   Clock,
@@ -145,10 +144,10 @@ function labels(language: Language) {
     estimatedReady: en ? "Estimated production readiness" : "预计齐货日期",
     forecastQty: en ? "Forecast quantity" : "Forecast 数量",
     soNumber: en ? "SO Number" : "SO 号",
-    soSearchLabel: en ? "Find SO Number" : "查找 SO 号",
-    soSearchPlaceholder: en ? "Type SO Number, Enter to jump" : "输入 SO 号，回车跳转",
-    soSearchGo: en ? "Jump to SO Number" : "跳转到该 SO 号",
-    soSearchNotFound: en ? "Not found" : "未找到",
+    soFilterPlaceholder: en ? "Filter by SO Number" : "按 SO 号筛选",
+    soFilterClear: en ? "Clear SO Number filter" : "清除 SO 号筛选",
+    soFilterNoMatch: en ? "No rows match this SO Number." : "没有匹配该 SO 号的行。",
+    soFilterCount: (n: number) => (en ? `${n} row${n === 1 ? "" : "s"}` : `${n} 行`),
     soQty: en ? "SO Quantity" : "SO 数量",
     freightMode: en ? "Freight mode" : "运输方式",
     shipFrom: en ? "Ship from" : "发货地（CM）",
@@ -209,13 +208,6 @@ const PIN_SKU_X =
 const pinnedCellCls =
   "px-3 py-2.5 align-top text-sm text-foreground/90 bg-slate-50 dark:bg-app-surface xl:z-[5]";
 
-/** Width taken by the pinned block while it is actually pinned (0 below the xl breakpoint). */
-function pinnedColumnsWidth(shell: HTMLElement): number {
-  const th = shell.querySelector<HTMLElement>("[data-pin-end]");
-  if (!th || getComputedStyle(th).position !== "sticky") return 0;
-  return th.getBoundingClientRect().right - shell.getBoundingClientRect().left;
-}
-
 const chipCls =
   "inline-flex max-w-full items-center truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:ring-slate-500/30";
 
@@ -239,11 +231,6 @@ export function OrderFulfillmentsPanel({
   const [regionFilter, setRegionFilter] = useState("all");
   const [skuFilter, setSkuFilter] = useState("all");
   const [soQuery, setSoQuery] = useState("");
-  const [soSearchMsg, setSoSearchMsg] = useState("");
-  const [highlightRowId, setHighlightRowId] = useState<string | null>(null);
-  const tableShellRef = useRef<HTMLDivElement>(null);
-  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const searchCursor = useRef<{ query: string; index: number }>({ query: "", index: -1 });
 
   const monthOptions = useMemo(
     () => [...new Set(groups.map((g) => g.forecastMonth))].sort(),
@@ -280,11 +267,24 @@ export function OrderFulfillmentsPanel({
     [groups, monthFilter, regionFilter, skuFilter],
   );
 
+  const soFilter = soQuery.trim().toLowerCase();
+
+  const soOptions = useMemo(
+    () => [...new Set(localShipments.map((s) => s.soNumber.trim()).filter(Boolean))].sort(),
+    [localShipments],
+  );
+
   const rows = useMemo<DisplayRow[]>(() => {
     const out: DisplayRow[] = [];
     for (const g of visibleGroups) {
       const key = groupKeyOf(g);
-      const saved = shipmentsByGroup.get(key) ?? [];
+      let saved = shipmentsByGroup.get(key) ?? [];
+      // Matches the SAVED SO number, not a half-typed edit, so a row doesn't vanish mid-typing.
+      // A group with no matching saved row is hidden; its draft rows are kept alongside matches.
+      if (soFilter) {
+        saved = saved.filter((s) => s.soNumber.toLowerCase().includes(soFilter));
+        if (saved.length === 0) continue;
+      }
       const groupDrafts = drafts.filter((d) => d.groupKey === key);
       const rowsOfGroup: DisplayRow[] = [
         ...saved.map((s) => ({ rowId: s.id, group: g, shipment: s, isFirstOfGroup: false })),
@@ -302,7 +302,7 @@ export function OrderFulfillmentsPanel({
       out.push(...rowsOfGroup);
     }
     return out;
-  }, [visibleGroups, shipmentsByGroup, drafts]);
+  }, [visibleGroups, shipmentsByGroup, drafts, soFilter]);
 
   const fieldsOf = (row: DisplayRow): RowFields =>
     rowFields[row.rowId] ?? (row.shipment ? fieldsFromShipment(row.shipment) : EMPTY_FIELDS);
@@ -310,75 +310,6 @@ export function OrderFulfillmentsPanel({
   const setField = (row: DisplayRow, patch: Partial<RowFields>) => {
     setRowFields((prev) => ({ ...prev, [row.rowId]: { ...fieldsOf(row), ...patch } }));
   };
-
-  /** Every row that has an SO number (saved or being typed), independent of the active filters. */
-  const soEntries = useMemo(() => {
-    const out: { rowId: string; groupKey: string; soNumber: string }[] = [];
-    for (const s of localShipments) {
-      const so = (rowFields[s.id]?.soNumber ?? s.soNumber).trim();
-      if (so) out.push({ rowId: s.id, groupKey: groupKeyOf(s), soNumber: so });
-    }
-    for (const d of drafts) {
-      const so = (rowFields[d.tempId]?.soNumber ?? "").trim();
-      if (so) out.push({ rowId: d.tempId, groupKey: d.groupKey, soNumber: so });
-    }
-    return out;
-  }, [localShipments, drafts, rowFields]);
-
-  const soOptions = useMemo(
-    () => [...new Set(soEntries.map((e) => e.soNumber))].sort(),
-    [soEntries],
-  );
-
-  function jumpToSo() {
-    const q = soQuery.trim().toLowerCase();
-    if (!q) {
-      setSoSearchMsg("");
-      return;
-    }
-    const exact = soEntries.filter((e) => e.soNumber.toLowerCase() === q);
-    const matches = exact.length > 0 ? exact : soEntries.filter((e) => e.soNumber.toLowerCase().includes(q));
-    if (matches.length === 0) {
-      setSoSearchMsg(t.soSearchNotFound);
-      return;
-    }
-    // Repeating the same query (Enter again) steps to the next match.
-    const cursor = searchCursor.current;
-    const index = cursor.query === q ? (cursor.index + 1) % matches.length : 0;
-    searchCursor.current = { query: q, index };
-    const target = matches[index];
-    setSoSearchMsg(matches.length > 1 ? `${index + 1}/${matches.length}` : "");
-
-    // If the active filters hide the target, clear them so it's actually on screen.
-    const hidden = !visibleGroups.some((g) => groupKeyOf(g) === target.groupKey);
-    flushSync(() => {
-      if (hidden) {
-        setMonthFilter("all");
-        setRegionFilter("all");
-        setSkuFilter("all");
-      }
-      setHighlightRowId(target.rowId);
-    });
-    // Scroll only the table's own container: scrollIntoView would also move the page, which
-    // re-reveals the auto-hide header over the title/filter bar.
-    const shell = tableShellRef.current;
-    const el = shell?.querySelector<HTMLElement>(
-      `[data-row-id="${CSS.escape(target.rowId)}"] [data-so-input]`,
-    );
-    if (shell && el) {
-      const sr = shell.getBoundingClientRect();
-      const er = el.getBoundingClientRect();
-      const headH = shell.querySelector("thead")?.getBoundingClientRect().height ?? 0;
-      const pinnedW = pinnedColumnsWidth(shell);
-      const top = shell.scrollTop + (er.top - sr.top) - headH - (shell.clientHeight - headH - er.height) / 2;
-      let left = shell.scrollLeft;
-      if (er.left < sr.left + pinnedW + 12) left += er.left - (sr.left + pinnedW + 12);
-      else if (er.right > sr.right - 12) left += er.right - (sr.right - 12);
-      shell.scrollTo({ top: Math.max(0, top), left: Math.max(0, left) });
-    }
-    if (highlightTimer.current) clearTimeout(highlightTimer.current);
-    highlightTimer.current = setTimeout(() => setHighlightRowId(null), 6000);
-  }
 
   /** Balance Qty per forecast month + SKU: Σ forecast qty − Σ SO qty (live values). */
   const balanceByMonthSku = useMemo(() => {
@@ -637,49 +568,49 @@ export function OrderFulfillmentsPanel({
               </select>
             </label>
             <div className="shrink-0">
-              <label htmlFor="so-search-input" className="block text-xs font-medium text-foreground/70">
-                {t.soSearchLabel}
-                {soSearchMsg ? (
+              <label htmlFor="so-filter-input" className="block text-xs font-medium text-foreground/70">
+                {t.soNumber}
+                {soFilter ? (
                   <span
-                    className={`ml-1.5 font-semibold ${
-                      soSearchMsg === t.soSearchNotFound ? "text-red-600" : "text-app-accent"
-                    }`}
+                    className={`ml-1.5 font-semibold ${rows.length === 0 ? "text-red-600" : "text-app-accent"}`}
                   >
-                    {soSearchMsg}
+                    {t.soFilterCount(rows.length)}
                   </span>
                 ) : null}
               </label>
-              <div className="mt-1 flex items-center gap-1">
-                <input
-                  id="so-search-input"
-                  type="search"
-                  list="so-search-options"
-                  value={soQuery}
-                  onChange={(e) => {
-                    setSoQuery(e.target.value);
-                    setSoSearchMsg("");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      jumpToSo();
-                    }
-                  }}
-                  placeholder={t.soSearchPlaceholder}
-                  autoComplete="off"
-                  className="w-56 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent transition duration-150 focus:ring-2"
+              <div className="relative mt-1">
+                <Search
+                  size={14}
+                  strokeWidth={2}
+                  aria-hidden
+                  className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-foreground/45"
                 />
-                <button
-                  type="button"
-                  onClick={jumpToSo}
-                  aria-label={t.soSearchGo}
-                  title={t.soSearchGo}
-                  className="flex shrink-0 items-center justify-center rounded-lg border border-app-border bg-app-surface p-2 text-foreground/70 outline-none transition hover:bg-slate-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-app-accent dark:hover:bg-slate-700/40"
-                >
-                  <Search size={15} strokeWidth={2} aria-hidden />
-                </button>
+                <input
+                  id="so-filter-input"
+                  type="text"
+                  list="so-filter-options"
+                  value={soQuery}
+                  onChange={(e) => setSoQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setSoQuery("");
+                  }}
+                  placeholder={t.soFilterPlaceholder}
+                  autoComplete="off"
+                  className="w-56 rounded-lg border border-app-border bg-app-surface py-1.5 pl-7 pr-7 text-sm outline-none ring-app-accent transition duration-150 focus:ring-2"
+                />
+                {soQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setSoQuery("")}
+                    aria-label={t.soFilterClear}
+                    title={t.soFilterClear}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-foreground/50 outline-none transition hover:bg-slate-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-app-accent dark:hover:bg-slate-700/40"
+                  >
+                    <X size={13} strokeWidth={2} aria-hidden />
+                  </button>
+                ) : null}
               </div>
-              <datalist id="so-search-options">
+              <datalist id="so-filter-options">
                 {soOptions.map((so) => (
                   <option key={so} value={so} />
                 ))}
@@ -693,15 +624,13 @@ export function OrderFulfillmentsPanel({
             {t.empty}
           </p>
         ) : (
-          <div ref={tableShellRef} className="app-table-shell mt-6 max-h-[72vh] overflow-auto">
+          <div className="app-table-shell mt-6 max-h-[72vh] overflow-auto">
             <table className="w-full min-w-[2280px] border-collapse text-sm">
               <thead>
                 <tr>
                   <th className={`${thCls} ${PIN_PO_W} ${PIN_PO_X} xl:z-20`}>{t.forecastPo}</th>
                   <th className={`${thCls} ${PIN_MONTH_W} ${PIN_MONTH_X} xl:z-20`}>{t.forecastMonth}</th>
-                  <th data-pin-end className={`${thCls} ${PIN_SKU_W} ${PIN_SKU_X} xl:z-20`}>
-                    {t.sku}
-                  </th>
+                  <th className={`${thCls} ${PIN_SKU_W} ${PIN_SKU_X} xl:z-20`}>{t.sku}</th>
                   <th className={thCls}>{t.mpBatch}</th>
                   <th className={thCls}>{t.estimatedReady}</th>
                   <th className={`${thCls} text-right`}>{t.forecastQty}</th>
@@ -729,10 +658,7 @@ export function OrderFulfillmentsPanel({
                   return (
                     <tr
                       key={row.rowId}
-                      data-row-id={row.rowId}
-                      className={`group border-b border-app-border/60 align-top transition-colors duration-150 hover:bg-app-accent-soft/20 ${
-                        highlightRowId === row.rowId ? "[&>td]:!bg-amber-100 dark:[&>td]:!bg-amber-500/20 outline outline-2 -outline-offset-2 outline-amber-500" : ""
-                      }`}
+                      className="group border-b border-app-border/60 align-top transition-colors duration-150 hover:bg-app-accent-soft/20"
                     >
                       <td className={`${pinnedCellCls} ${PIN_PO_W} ${PIN_PO_X} whitespace-nowrap`}>
                         {row.isFirstOfGroup ? (
@@ -809,7 +735,6 @@ export function OrderFulfillmentsPanel({
                         <div className="min-w-[13rem] space-y-1.5">
                           <input
                             type="text"
-                            data-so-input
                             value={f.soNumber}
                             onChange={(e) => setField(row, { soNumber: e.target.value })}
                             placeholder={t.soNumber}
@@ -1035,6 +960,11 @@ export function OrderFulfillmentsPanel({
                 })}
               </tbody>
             </table>
+            {rows.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-foreground/60">
+                {soFilter ? t.soFilterNoMatch : t.empty}
+              </p>
+            ) : null}
             <datalist id="of-ship-to-options">
               {shipToOptions.map((opt) => (
                 <option key={opt} value={opt} />
