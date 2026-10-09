@@ -1,7 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CheckCircle2, Clock, Package, Paperclip, Plus, Save, Trash2, Truck, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import {
+  CheckCircle2,
+  Clock,
+  Package,
+  Paperclip,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+  Truck,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import type { Language } from "@/lib/i18n";
@@ -133,6 +145,10 @@ function labels(language: Language) {
     estimatedReady: en ? "Estimated production readiness" : "预计齐货日期",
     forecastQty: en ? "Forecast quantity" : "Forecast 数量",
     soNumber: en ? "SO Number" : "SO 号",
+    soSearchLabel: en ? "Find SO Number" : "查找 SO 号",
+    soSearchPlaceholder: en ? "Type SO Number, Enter to jump" : "输入 SO 号，回车跳转",
+    soSearchGo: en ? "Jump to SO Number" : "跳转到该 SO 号",
+    soSearchNotFound: en ? "Not found" : "未找到",
     soQty: en ? "SO Quantity" : "SO 数量",
     freightMode: en ? "Freight mode" : "运输方式",
     shipFrom: en ? "Ship from" : "发货地（CM）",
@@ -200,6 +216,12 @@ export function OrderFulfillmentsPanel({
   const [monthFilter, setMonthFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState("all");
   const [skuFilter, setSkuFilter] = useState("all");
+  const [soQuery, setSoQuery] = useState("");
+  const [soSearchMsg, setSoSearchMsg] = useState("");
+  const [highlightRowId, setHighlightRowId] = useState<string | null>(null);
+  const tableShellRef = useRef<HTMLDivElement>(null);
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchCursor = useRef<{ query: string; index: number }>({ query: "", index: -1 });
 
   const monthOptions = useMemo(
     () => [...new Set(groups.map((g) => g.forecastMonth))].sort(),
@@ -266,6 +288,61 @@ export function OrderFulfillmentsPanel({
   const setField = (row: DisplayRow, patch: Partial<RowFields>) => {
     setRowFields((prev) => ({ ...prev, [row.rowId]: { ...fieldsOf(row), ...patch } }));
   };
+
+  /** Every row that has an SO number (saved or being typed), independent of the active filters. */
+  const soEntries = useMemo(() => {
+    const out: { rowId: string; groupKey: string; soNumber: string }[] = [];
+    for (const s of localShipments) {
+      const so = (rowFields[s.id]?.soNumber ?? s.soNumber).trim();
+      if (so) out.push({ rowId: s.id, groupKey: groupKeyOf(s), soNumber: so });
+    }
+    for (const d of drafts) {
+      const so = (rowFields[d.tempId]?.soNumber ?? "").trim();
+      if (so) out.push({ rowId: d.tempId, groupKey: d.groupKey, soNumber: so });
+    }
+    return out;
+  }, [localShipments, drafts, rowFields]);
+
+  const soOptions = useMemo(
+    () => [...new Set(soEntries.map((e) => e.soNumber))].sort(),
+    [soEntries],
+  );
+
+  function jumpToSo() {
+    const q = soQuery.trim().toLowerCase();
+    if (!q) {
+      setSoSearchMsg("");
+      return;
+    }
+    const exact = soEntries.filter((e) => e.soNumber.toLowerCase() === q);
+    const matches = exact.length > 0 ? exact : soEntries.filter((e) => e.soNumber.toLowerCase().includes(q));
+    if (matches.length === 0) {
+      setSoSearchMsg(t.soSearchNotFound);
+      return;
+    }
+    // Repeating the same query (Enter again) steps to the next match.
+    const cursor = searchCursor.current;
+    const index = cursor.query === q ? (cursor.index + 1) % matches.length : 0;
+    searchCursor.current = { query: q, index };
+    const target = matches[index];
+    setSoSearchMsg(matches.length > 1 ? `${index + 1}/${matches.length}` : "");
+
+    // If the active filters hide the target, clear them so it's actually on screen.
+    const hidden = !visibleGroups.some((g) => groupKeyOf(g) === target.groupKey);
+    flushSync(() => {
+      if (hidden) {
+        setMonthFilter("all");
+        setRegionFilter("all");
+        setSkuFilter("all");
+      }
+      setHighlightRowId(target.rowId);
+    });
+    tableShellRef.current
+      ?.querySelector(`[data-row-id="${CSS.escape(target.rowId)}"] [data-so-input]`)
+      ?.scrollIntoView({ block: "center", inline: "center" });
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlightRowId(null), 3000);
+  }
 
   /** Balance Qty per forecast month + SKU: Σ forecast qty − Σ SO qty (live values). */
   const balanceByMonthSku = useMemo(() => {
@@ -523,6 +600,55 @@ export function OrderFulfillmentsPanel({
                 ))}
               </select>
             </label>
+            <div className="shrink-0">
+              <label htmlFor="so-search-input" className="block text-xs font-medium text-foreground/70">
+                {t.soSearchLabel}
+                {soSearchMsg ? (
+                  <span
+                    className={`ml-1.5 font-semibold ${
+                      soSearchMsg === t.soSearchNotFound ? "text-red-600" : "text-app-accent"
+                    }`}
+                  >
+                    {soSearchMsg}
+                  </span>
+                ) : null}
+              </label>
+              <div className="mt-1 flex items-center gap-1">
+                <input
+                  id="so-search-input"
+                  type="search"
+                  list="so-search-options"
+                  value={soQuery}
+                  onChange={(e) => {
+                    setSoQuery(e.target.value);
+                    setSoSearchMsg("");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      jumpToSo();
+                    }
+                  }}
+                  placeholder={t.soSearchPlaceholder}
+                  autoComplete="off"
+                  className="app-control-sm w-56 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent transition duration-150 focus:ring-2"
+                />
+                <button
+                  type="button"
+                  onClick={jumpToSo}
+                  aria-label={t.soSearchGo}
+                  title={t.soSearchGo}
+                  className="app-control-sm flex shrink-0 items-center justify-center rounded-lg border border-app-border bg-app-surface px-2 text-foreground/70 outline-none transition hover:bg-slate-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-app-accent dark:hover:bg-slate-700/40"
+                >
+                  <Search size={15} strokeWidth={2} aria-hidden />
+                </button>
+              </div>
+              <datalist id="so-search-options">
+                {soOptions.map((so) => (
+                  <option key={so} value={so} />
+                ))}
+              </datalist>
+            </div>
           </div>
         </div>
 
@@ -531,7 +657,7 @@ export function OrderFulfillmentsPanel({
             {t.empty}
           </p>
         ) : (
-          <div className="app-table-shell mt-6 max-h-[72vh] overflow-auto">
+          <div ref={tableShellRef} className="app-table-shell mt-6 max-h-[72vh] overflow-auto">
             <table className="w-full min-w-[2280px] border-collapse text-sm">
               <thead>
                 <tr>
@@ -565,7 +691,10 @@ export function OrderFulfillmentsPanel({
                   return (
                     <tr
                       key={row.rowId}
-                      className="group border-b border-app-border/60 align-top transition-colors duration-150 hover:bg-app-accent-soft/20"
+                      data-row-id={row.rowId}
+                      className={`group border-b border-app-border/60 align-top transition-colors duration-150 hover:bg-app-accent-soft/20 ${
+                        highlightRowId === row.rowId ? "bg-amber-100 outline outline-2 -outline-offset-2 outline-amber-500 dark:bg-amber-500/20" : ""
+                      }`}
                     >
                       <td className={`${autoCellCls} whitespace-nowrap`}>
                         {row.isFirstOfGroup ? (
@@ -640,6 +769,7 @@ export function OrderFulfillmentsPanel({
                         <div className="min-w-[13rem] space-y-1.5">
                           <input
                             type="text"
+                            data-so-input
                             value={f.soNumber}
                             onChange={(e) => setField(row, { soNumber: e.target.value })}
                             placeholder={t.soNumber}

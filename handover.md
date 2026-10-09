@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-10-09 — Order fulfillments：加 SO Number 查找跳转控件
+
+Commit: (pending push)
+
+**背景**：David 要在 Order fulfillments 筛选区（Forecast month / Region / SKU 旁）加一个控件，输入 SO Number 后快速跳转到对应行。表格82行、17列、`min-w-[2280px]`，SO Number 在第7列，靠肉眼翻很费劲。
+
+**改动**：`components/logistics/order-fulfillments-panel.tsx`——筛选区新增"Find SO Number"输入框+放大镜按钮，带 `<datalist>` 自动补全（已有的 SO 号）。回车或点按钮：精确匹配优先，没有精确匹配就按包含匹配（不区分大小写）；命中后滚动到该行的 SO 输入框（横向纵向都居中，窄窗口下第7列也能看到）并用琥珀色描边高亮3秒；同一关键词再按回车循环跳下一个匹配，标签旁显示 `1/15`；没匹配显示红色"Not found"。**如果目标行被当前 Month/Region/SKU 筛选隐藏，会先自动把3个筛选重置为 All**（否则跳转会静默失败）。匹配范围包含已保存的行，以及正在编辑但还没保存的 SO 号。用 `flushSync` 让筛选重置先落到 DOM 再滚动，没用 smooth 滚动（后台/失焦窗口里动画会被节流导致不滚动，而且"跳转"本来就该是瞬时的）。
+
+**验证**：`tsc --noEmit`、`npm run lint` 干净（22个问题不变）。本地起 `mps-dev` 真机测：先把 SKU 筛选设成 DBX1（只剩5行），再搜一个 SK4 的 SO 号 → 筛选自动恢复 All（82行）、命中行高亮、SO 输入框完整进入表格可视区；不存在的号显示 Not found；部分匹配 `26` 显示 1/15 → 回车 → 2/15；大小写不敏感也命中。
+
+---
+
 ## 2026-09-08 — Order fulfillments：delivery status 改成80cm外也能一眼分辨的实心徽章
 
 Commit: `19f0c2d`
