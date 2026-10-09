@@ -339,9 +339,9 @@ export function OrderFulfillmentsPanel({
     });
     tableShellRef.current
       ?.querySelector(`[data-row-id="${CSS.escape(target.rowId)}"] [data-so-input]`)
-      ?.scrollIntoView({ block: "center", inline: "center" });
+      ?.scrollIntoView({ block: "center", inline: "nearest" });
     if (highlightTimer.current) clearTimeout(highlightTimer.current);
-    highlightTimer.current = setTimeout(() => setHighlightRowId(null), 3000);
+    highlightTimer.current = setTimeout(() => setHighlightRowId(null), 6000);
   }
 
   /** Balance Qty per forecast month + SKU: Σ forecast qty − Σ SO qty (live values). */
@@ -631,14 +631,14 @@ export function OrderFulfillmentsPanel({
                   }}
                   placeholder={t.soSearchPlaceholder}
                   autoComplete="off"
-                  className="app-control-sm w-56 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent transition duration-150 focus:ring-2"
+                  className="w-56 rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm outline-none ring-app-accent transition duration-150 focus:ring-2"
                 />
                 <button
                   type="button"
                   onClick={jumpToSo}
                   aria-label={t.soSearchGo}
                   title={t.soSearchGo}
-                  className="app-control-sm flex shrink-0 items-center justify-center rounded-lg border border-app-border bg-app-surface px-2 text-foreground/70 outline-none transition hover:bg-slate-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-app-accent dark:hover:bg-slate-700/40"
+                  className="flex shrink-0 items-center justify-center rounded-lg border border-app-border bg-app-surface p-2 text-foreground/70 outline-none transition hover:bg-slate-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-app-accent dark:hover:bg-slate-700/40"
                 >
                   <Search size={15} strokeWidth={2} aria-hidden />
                 </button>
@@ -693,7 +693,7 @@ export function OrderFulfillmentsPanel({
                       key={row.rowId}
                       data-row-id={row.rowId}
                       className={`group border-b border-app-border/60 align-top transition-colors duration-150 hover:bg-app-accent-soft/20 ${
-                        highlightRowId === row.rowId ? "bg-amber-100 outline outline-2 -outline-offset-2 outline-amber-500 dark:bg-amber-500/20" : ""
+                        highlightRowId === row.rowId ? "[&>td]:!bg-amber-100 dark:[&>td]:!bg-amber-500/20 outline outline-2 -outline-offset-2 outline-amber-500" : ""
                       }`}
                     >
                       <td className={`${autoCellCls} whitespace-nowrap`}>
