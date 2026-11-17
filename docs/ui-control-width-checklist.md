@@ -92,7 +92,6 @@ rg 'min-w-\[' components --glob '*.tsx'
 | `/npi/*` | bom/ecn/sop/tooling | 2–3/页 | 🟡 各表 `min-w-[1200–1500px]`；bom 等表单 `w-full` 常见 | P2 |
 | `/quality-control/*` | test-case 等 | 1–3/页 | 🟡 多为宽表 + 紧凑表单；cert 等单文件组件 | P3 |
 | `/login` | `app/login/page.tsx` | 0 | 🟢 单列登录，`w-full` 符合 P4「长输入」 | — |
-| `/potentials` | `app/potentials/page.tsx` | 0 | ⚪ 静态/展示页 | — |
 | `/` | redirect | — | — | — |
 
 \* `production-management-panel.tsx` 未检出 `<select>`，以本次 rg 为准。

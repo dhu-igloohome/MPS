@@ -52,7 +52,6 @@ Interactive website for collecting monthly order forecast from 13 offices across
 
 **Public**
 
-- `/potentials` — lightweight lead / interest form (no login; listed in `proxy.ts` public paths)
 
 > **Note:** Feature depth varies by screen (some flows are richer than others). This list matches the primary navigation and major routes in `app/` as of the current codebase.
 
