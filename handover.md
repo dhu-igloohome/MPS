@@ -8,7 +8,7 @@
 
 ## 2026-11-17 — Forecast 录入表单：智能默认值 + 精简录入行；删除2条测试数据
 
-Commit: (pending push)
+Commit: `9e9c48d`
 
 **背景**：David 让我结合 5–11 月实际录入记录评估 Forecast 页的控件，选了"智能默认值"和"精简录入行"两项一起做，并同意删除测试数据。依据（生产库 172 条）：89% 的行是创建月 +4/+5 个月；EU→Ireland 57、USA→United States 50、APAC→Singapore 46，三者占 89%，全库只用过 9 个国家；Incoterm **不由目的国决定**（爱尔兰 DAP 45/EXW 12，新加坡 EXW 40/DAP 6，美国 DDP 30/DAP 15/EXW 5）；只填 BTS 127、只填 BTO 39、两者都填仅 6；产品名称由 SKU 带出、172 条无一为空。
 
