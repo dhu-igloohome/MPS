@@ -1,19 +1,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { CockpitVisualizations } from "@/components/dashboard/cockpit-visualizations";
+import { ForecastExecutiveOverview } from "@/components/dashboard/forecast-executive-overview";
 import { AppShell } from "@/components/shared/app-shell";
 import { signDashboardExportSnapshot } from "@/lib/dashboard-export-snapshot-token";
 import { formatDataSnapshot, formatDataSnapshotDateOnly } from "@/lib/format-data-snapshot";
 import { normalizeLanguage } from "@/lib/i18n";
-import {
-  enrichForecastRecordsForCashFlow,
-  getForecastsByRegions,
-  listLogisticsShipmentsBySession,
-  listOrderProgressBySessionRegions,
-  listSuppliers,
-  listUnitCostQuotes,
-} from "@/lib/repositories";
+import { getForecastsByRegions } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -24,17 +17,7 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Kick off forecasts first so the dependent enrich step can overlap with the other 4 queries.
-  const entriesPromise = getForecastsByRegions(session.regions);
-  const [entries, orderProgressRows, logisticsRows, suppliers, unitCostQuotes, forecastCashFlowRows] =
-    await Promise.all([
-      entriesPromise,
-      listOrderProgressBySessionRegions(session.regions),
-      listLogisticsShipmentsBySession(session),
-      listSuppliers(),
-      listUnitCostQuotes(),
-      entriesPromise.then(enrichForecastRecordsForCashFlow),
-    ]);
+  const entries = await getForecastsByRegions(session.regions);
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
@@ -73,15 +56,10 @@ export default async function DashboardPage() {
 
   return (
     <AppShell session={session} title={t.title} headerMeta={snapshotMeta}>
-      <CockpitVisualizations
+      <ForecastExecutiveOverview
         language={language}
         dataSnapshotAt={dataSnapshotAt}
         forecasts={entries}
-        orderProgress={orderProgressRows}
-        logistics={logisticsRows}
-        forecastCashFlowRows={forecastCashFlowRows}
-        fcSuppliers={suppliers}
-        unitCostQuotes={unitCostQuotes}
         forecastExport={{
           href: "/api/dashboard/export-csv",
           label: t.exportCsv,

@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -21,9 +19,7 @@ import {
 import {
   aggregateForecastByRegion,
   aggregateForecastTopProducts,
-  buildForecastMonthlySeries,
   forecastKpis,
-  monthKeysForForecastRange,
 } from "@/lib/cockpit-dashboard-agg";
 import { formatDataSnapshot, formatSamePageSnapshotCrossRef } from "@/lib/format-data-snapshot";
 import type { Language } from "@/lib/i18n";
@@ -103,26 +99,6 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
   const byRegion = useMemo(() => aggregateForecastByRegion(filteredForecasts), [filteredForecasts]);
   const topProducts = useMemo(() => aggregateForecastTopProducts(filteredForecasts, 10), [filteredForecasts]);
 
-  const trendData = useMemo(() => {
-    if (filteredForecasts.length === 0) return [];
-    const keys =
-      selectedForecastMonths && selectedForecastMonths.length > 0
-        ? [...selectedForecastMonths].sort()
-        : (() => {
-            let min = filteredForecasts[0].month;
-            let max = filteredForecasts[0].month;
-            for (const e of filteredForecasts) {
-              if (e.month < min) min = e.month;
-              if (e.month > max) max = e.month;
-            }
-            return monthKeysForForecastRange(min, max);
-          })();
-    return buildForecastMonthlySeries(filteredForecasts, keys).map((p) => ({
-      ...p,
-      name: p.label,
-    }));
-  }, [filteredForecasts, selectedForecastMonths]);
-
   const t = {
     title: en ? "Forecast at a glance" : "Forecast 全景",
     bto: en ? "Build to order" : "按单 (BTO)",
@@ -132,7 +108,6 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     sku: en ? "SKUs" : "SKU 数",
     byRegion: en ? "Volume by region" : "各区域数量占比",
     topProducts: en ? "Top products by volume" : "产品数量 Top",
-    trend: en ? "Monthly trend (BTO vs BTS)" : "月度走势（BTO / BTS）",
     empty: en ? "No forecast data yet." : "暂无 Forecast 数据。",
     openForecast: en ? "Open Forecast" : "打开 Forecast 填报",
     fcMonthFilter: en ? "Forecast Month" : "Forecast 月份",
@@ -148,8 +123,8 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
     evidenceHeading: en ? "Three anchors" : "三条读数依据",
     e1Title: en ? "Unified filter" : "统一筛选",
     e1Body: en
-      ? "KPIs, region split, product Top, and the trend chart all read from the same Forecast Month selection."
-      : "KPI、区域占比、产品 Top、走势均来自同一组 Forecast 月份筛选后的数据集。",
+      ? "KPIs, region split, and product Top all read from the same Forecast Month selection."
+      : "KPI、区域占比、产品 Top 均来自同一组 Forecast 月份筛选后的数据集。",
     e2Title: en ? "Same scope as the list" : "与列表同源",
     e2Body: en
       ? "Rows are limited to your assigned regions — the same permission mask as the Forecast table."
@@ -442,52 +417,6 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
         </div>
       </div>
 
-      <div className="mt-6 min-w-0 overflow-hidden">
-        <h3 className="mb-2 truncate text-sm font-semibold text-[#111827]" title={t.trend}>
-          {t.trend}
-        </h3>
-        <div className="app-panel h-[320px] p-3">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="fillBtoExec" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#2563eb" stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id="fillBtsExec" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#059669" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#059669" stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={trendData.length > 14 ? -35 : 0} textAnchor={trendData.length > 14 ? "end" : "middle"} height={trendData.length > 14 ? 56 : 28} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatNum(Number(v))} />
-              <Tooltip
-                formatter={(value) => formatNum(Number(value ?? 0))}
-                labelStyle={{ fontWeight: 600 }}
-                contentStyle={{ borderRadius: "0.75rem", fontSize: "12px" }}
-              />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="bto"
-                name="BTO"
-                stroke="#2563eb"
-                strokeWidth={2}
-                fill="url(#fillBtoExec)"
-              />
-              <Area
-                type="monotone"
-                dataKey="bts"
-                name="BTS"
-                stroke="#059669"
-                strokeWidth={2}
-                fill="url(#fillBtsExec)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
     </section>
   );
 }

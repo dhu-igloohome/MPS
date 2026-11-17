@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-11-17 — 仪表盘删掉4个图：月度走势、现金流分析、Order progress、Logistics progress
+
+Commit: (pending push)
+
+**背景**：David 要求删掉仪表盘上的4块：①Forecast 全景里的"Monthly trend (BTO vs BTS)"；②"Forecast Cash flow analysis"卡片；③"Order progress"卡片；④"Logistics progress"卡片。理由：跟代工厂私下谈了分期付款，现金流金额已不准；Order progress / Logistics progress 运行半年仍看不出趋势。（①他没单独说理由，但4张图都贴了、一并按"这几个图"处理；如果其实想留，从 git 历史恢复即可。）
+
+**改动**：
+- `app/dashboard/page.tsx`：直接渲染 `ForecastExecutiveOverview`，**不再并行拉5份只给被删图表用的数据**（order progress、logistics、suppliers、unit cost quotes、现金流行），页面少了5个库查询，加载更快。
+- `components/dashboard/forecast-executive-overview.tsx`：删掉月度走势图及只服务它的 `trendData`/AreaChart 引用；"三条读数依据"里 e1 那条文案去掉"走势"一词。仪表盘现在只剩"Forecast 全景"：月份多选筛选、BTO/BTS/合计/行数/SKU 数 KPI、区域占比饼图、产品 Top 柱状图、CSV 导出。
+- 删除 `components/dashboard/cockpit-visualizations.tsx`（承载后3块 + 下钻弹窗）和 `components/dashboard/cash-flow-overview.tsx`（早就没人引用的死组件）。
+- `lib/cockpit-dashboard-agg.ts`：从约420行收缩成仪表盘还在用的3个函数（`forecastKpis`/`aggregateForecastByRegion`/`aggregateForecastTopProducts`），其余订单/物流/走势/下钻聚合全部是死代码。
+
+**没动、但现在成了死代码的**（留着是因为成本控制页还在用同一个大组件，不想为这次需求去动它）：`components/supply-chain/cost-control/cash-flow-dashboard.tsx` 里的 `dashboardChartsOnly`、`fcFilterForecastMonth` 两个 prop 及其分支（现在没有调用方传它们），以及 `lib/forecast-cash-flow-payment-bars.ts` 的 `uniqueForecastMonthKeysFromRows`。**成本控制 → 现金流分析页本身不受影响**（经办人入口还在 Supply Chain → Cost control）。
+
+**验证**：`tsc`、`lint`同基线(22)。本地真机：`/dashboard` 标题只剩 Dashboard / Forecast at a glance / Volume by region / Top products by volume，页面文本里找不到 Monthly trend / Cash flow analysis，也没有 Order progress / Logistics progress 卡片；2张图表正常；KPI 数字 BTO 11,689 / BTS 70,659 / 合计 82,348 / 172 行 / 31 SKU；取消勾选第一个月份后数字联动变化（76,748 / 170 行）、点 All months 恢复；导出按钮在。`/supply-chain/cost-control?tab=cashflow` 正常渲染（4 张表、2 张图）。服务端无报错。**没测的**：CSV 导出的真实下载；暗色模式。
+
+---
+
 ## 2026-11-17 — 货运行自带地区：共用 Buffer 池（OPS Department）按每次发货声明目的地区
 
 Commit: `53a5812`
