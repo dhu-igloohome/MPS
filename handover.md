@@ -8,7 +8,7 @@
 
 ## 2026-11-17 — Berfin 的 API 读不到 IG-SO-1589 / 1590：排查结论 + 接口文档补充
 
-Commit: (pending push)
+Commit: `cf9ac93`
 
 **现象**：David 发截图（Christy 账号的订单履约页）说 IG-SO-1589、IG-SO-1590 两张单 Berfin 的 API 读不到，要求优化。
 
