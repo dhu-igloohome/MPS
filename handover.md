@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-11-17 — 删除 /potentials 演示页
+
+Commit: `18f16ba`
+
+**背景**：David 确认删除。该页是纯前端演示（4个分类、提交不保存、占位文案"davidhuang testing…"、与 Foretracker 无数据互通），侧边栏没有入口。
+
+**改动**：删除 `app/potentials/page.tsx`；`proxy.ts` 的 `PUBLIC_PATHS` 去掉 `/potentials`（**它此前是免登录可访问的**，现在访问会走正常的登录/404）；`README.md`、`docs/ui-control-width-checklist.md` 里的条目一并删除。没有数据库表、API、其他代码引用它。
+
+**验证**：`tsc` 干净；已登录状态下访问 /potentials 返回 404。**没测**：未登录状态下访问 /potentials 的实际跳转（只读代码：不在公开路径里，会被重定向到登录页）。
+
+---
+
 ## 2026-11-17 — 仪表盘新增：供应商集中度
 
 Commit: `2eaca94`
