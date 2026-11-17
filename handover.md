@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-11-17 — Forecast 录入表单：智能默认值 + 精简录入行；删除2条测试数据
+
+Commit: (pending push)
+
+**背景**：David 让我结合 5–11 月实际录入记录评估 Forecast 页的控件，选了"智能默认值"和"精简录入行"两项一起做，并同意删除测试数据。依据（生产库 172 条）：89% 的行是创建月 +4/+5 个月；EU→Ireland 57、USA→United States 50、APAC→Singapore 46，三者占 89%，全库只用过 9 个国家；Incoterm **不由目的国决定**（爱尔兰 DAP 45/EXW 12，新加坡 EXW 40/DAP 6，美国 DDP 30/DAP 15/EXW 5）；只填 BTS 127、只填 BTO 39、两者都填仅 6；产品名称由 SKU 带出、172 条无一为空。
+
+**改动**：
+- `lib/forecast-entry-defaults.ts`（新，纯函数）：月份默认=当前月+4；区域→常用目的国（EU Ireland / USA United States / APAC Singapore，OPS 不猜）；目的国→Incoterm（Ireland DAP / United States DDP / Singapore EXW / 其余 EXW）；常用国家列表；`switchQuantityKind`（切换数量类型时不丢数字，从"拆分"合回单一类型时两数**相加**）。
+- `components/forecast/forecast-form.tsx` 新建表单：①月份默认 +4；②目的国、Incoterm 按区域预填，**切换区域时只改"还是默认值或空"的行，用户自己选过的不动**；Incoterm 一旦手动改过，之后改目的国不再覆盖它（`incotermTouched`）；③"加一行"沿用上一行的目的国/Incoterm/数量类型；④目的国下拉顶部加"常用"分组（爱尔兰/美国/新加坡/澳大利亚/中国），下面是全部 249 个；⑤去掉"产品名称"列（改成 SKU 下面一行小字，防止选错 SKU）；⑥BTO/BTS 两个数字框合并为"数量 + 类型下拉（备货 BTS / 按单 BTO / 拆分）"，默认 BTS，选"拆分"才出现两个框，**提交给服务端的字段不变**；⑦数量留空显示占位 0，**保存时任一行总数量≤0 会在发请求前被拦下**并提示第几行（库里最小值是 1，没有 0 的行）。
+- **没动**：区域下拉。它本来就带"Buffer Stock"选项，且单区域用户默认就是自己的区域，所以之前设想的"隐藏区域/Buffer"实际上已经是这样，不需要改；记录列表、编辑面板、导入功能。
+- **数据**：删除 forecasts id 225、226（备注 `AUDIT_LOG_TEST_DELETE_ME`，David 9/7 建的 APAC/SK4 测试行，无合同、无货运行关联）。库里现 170 条。
+
+**验证**：`tsc` 干净、lint 基线 22 不变。默认值/切换规则 14 个断言脚本全过。真机（super_admin，不保存）：月份默认 2027-03；APAC→Singapore/EXW；切 EU→Ireland/DAP；切 USA→United States/DDP；手动改 FOB 后再切 EU，目的国跟着变、Incoterm 保持 FOB；加一行沿用上一行；500 在 BTS→BTO→拆分→BTS 间流转不丢；第 2 行空数量提交 → 提示"Line 2…"且**没有发出任何 POST**；记录表 170 行正常渲染。**没测**：真实保存一条（保存请求体字段未变，故未在生产库写入）、中文界面、手机宽度、暗色模式、多区域账号（jessie/david）的"Buffer Stock"流程、编辑已有记录的面板。
+
+**之后可考虑**（David 未选）：备注升级成带日期/填写人的记录栏；列表默认视图（我的区域、未来月份）；给每条记录记"录入方式"（手填/CSV/API）以便判断导入功能去留。
+
+---
+
 ## 2026-11-17 — 删除 /potentials 演示页
 
 Commit: `97eccb7` + `4dc5369`

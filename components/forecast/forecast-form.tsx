@@ -15,6 +15,14 @@ import {
   forecastIncotermHint,
   type ForecastIncoterm,
 } from "@/lib/forecast-incoterm";
+import {
+  COMMON_FORECAST_DESTINATIONS,
+  defaultDestinationForRegion,
+  defaultForecastMonthKey,
+  defaultIncotermForDestination,
+  switchQuantityKind,
+  type QuantityKind,
+} from "@/lib/forecast-entry-defaults";
 import { TableCellLongText } from "@/components/shared/table-cell-long-text";
 import { Language } from "@/lib/i18n";
 import { ForecastDemandType, ForecastEntry, ForecastRegion, ProductItem, Region } from "@/lib/types";
@@ -35,6 +43,10 @@ type DraftForecastLine = {
   incoterm: ForecastIncoterm;
   buildToOrder: string;
   buildToStock: string;
+  /** Which quantity input(s) to show. Most rows are BTS-only; "both" is the rare split. */
+  kind: QuantityKind;
+  /** Once the user picks an Incoterm by hand, destination changes no longer overwrite it. */
+  incotermTouched: boolean;
   remark: string;
 };
 
@@ -73,16 +85,27 @@ function forecastRegionSelectLabel(region: ForecastRegion, language: Language): 
   return region;
 }
 
-function newDraftForecastLine(products: ProductItem[]): DraftForecastLine {
+/**
+ * A blank line. Destination / Incoterm / quantity kind start from the previous line (a submission
+ * is usually one region's SKUs going to the same place), else from the region's usual destination.
+ */
+function newDraftForecastLine(
+  products: ProductItem[],
+  region: ForecastRegion,
+  prev?: DraftForecastLine,
+): DraftForecastLine {
   const first = products[0];
+  const destination = prev ? prev.destination : defaultDestinationForRegion(region);
   return {
     key: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `f-${Date.now()}-${Math.random()}`,
     sku: first?.sku || "",
     productName: first?.productName || "",
-    destination: "",
-    incoterm: "EXW",
-    buildToOrder: "0",
-    buildToStock: "0",
+    destination,
+    incoterm: prev ? prev.incoterm : defaultIncotermForDestination(destination),
+    buildToOrder: "",
+    buildToStock: "",
+    kind: prev ? prev.kind : "bts",
+    incotermTouched: prev ? prev.incotermTouched : false,
     remark: "",
   };
 }
@@ -111,8 +134,8 @@ function buildForecastMonthOptions(): { value: string; labelEn: string; labelZh:
 
 function defaultForecastMonthValue(options: { value: string }[]): string {
   if (options.length === 0) return "";
-  const d = new Date();
-  const v = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  // Most rows are forecast 4–5 months ahead, so default to current month + 4, not the current month.
+  const v = defaultForecastMonthKey(new Date());
   return options.some((o) => o.value === v) ? v : options[0].value;
 }
 
@@ -359,6 +382,11 @@ export function ForecastForm({
     bts: language === "en" ? "Build to Stock" : "备货生产",
     btoHeader: language === "en" ? "BTO" : "按单",
     btsHeader: language === "en" ? "BTS" : "备货",
+    qtyHeader: language === "en" ? "Quantity" : "数量",
+    qtyKind: language === "en" ? "Quantity type" : "数量类型",
+    qtyBoth: language === "en" ? "Split BTO + BTS" : "拆分 BTO + BTS",
+    commonCountries: language === "en" ? "Common" : "常用",
+    allCountries: language === "en" ? "All countries" : "全部国家",
     createdHeader: language === "en" ? "Created" : "创建",
     bufferHeader: language === "en" ? "Buffer" : "缓冲",
     bufferLabel: language === "en" ? "Buffer stock" : "缓冲库存",
@@ -471,7 +499,7 @@ export function ForecastForm({
   const [month, setMonth] = useState(forecastMonthPicker.defaultValue);
   const [region, setRegion] = useState<ForecastRegion>(defaultRegion);
   const [demandTypeMode, setDemandTypeMode] = useState<ForecastDemandType>("regular");
-  const [lines, setLines] = useState<DraftForecastLine[]>([newDraftForecastLine(products)]);
+  const [lines, setLines] = useState<DraftForecastLine[]>(() => [newDraftForecastLine(products, defaultRegion)]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedForecastIds, setSelectedForecastIds] = useState<string[]>([]);
@@ -491,6 +519,13 @@ export function ForecastForm({
   const [inlineOpsActionById, setInlineOpsActionById] = useState<Record<string, string>>({});
   const [savingOpsActionId, setSavingOpsActionId] = useState<string | null>(null);
   const destinationOptions = useMemo(() => buildForecastDestinationOptions(), []);
+  const commonDestinationOptions = useMemo(
+    () =>
+      COMMON_FORECAST_DESTINATIONS.map((v) => destinationOptions.find((o) => o.value === v)).filter(
+        (o): o is NonNullable<typeof o> => Boolean(o),
+      ),
+    [destinationOptions],
+  );
   const editDestinationOptions = useMemo(() => {
     if (!editDraft) return destinationOptions;
     return withLegacyForecastDestination(editDraft.destination, destinationOptions);
@@ -709,6 +744,20 @@ export function ForecastForm({
   }
 
   function onRegionChange(nextRegion: ForecastRegion) {
+    // Re-point destination/Incoterm only where the user hasn't chosen their own: a blank
+    // destination or the previous region's usual one is a default, anything else is a decision.
+    const prevDefault = defaultDestinationForRegion(region);
+    const nextDefault = defaultDestinationForRegion(nextRegion);
+    setLines((prev) =>
+      prev.map((line) => {
+        if (line.destination !== "" && line.destination !== prevDefault) return line;
+        return {
+          ...line,
+          destination: nextDefault,
+          incoterm: line.incotermTouched ? line.incoterm : defaultIncotermForDestination(nextDefault),
+        };
+      }),
+    );
     setRegion(nextRegion);
     if (useExistingPo) {
       const first = entries.find((e) => e.region === nextRegion && e.poNumber)?.poNumber || "";
@@ -732,7 +781,11 @@ export function ForecastForm({
   }
 
   function addSkuLine() {
-    setLines((prev) => [...prev, newDraftForecastLine(products)]);
+    setLines((prev) => [...prev, newDraftForecastLine(products, region, prev[prev.length - 1])]);
+  }
+
+  function updateLine(lineKey: string, patch: Partial<DraftForecastLine>) {
+    setLines((prev) => prev.map((x) => (x.key === lineKey ? { ...x, ...patch } : x)));
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -741,6 +794,17 @@ export function ForecastForm({
     setMessage("");
     setBatchSummary(null);
     setBatchErrors([]);
+
+    const emptyIdx = lines.findIndex((l) => Number(l.buildToOrder || 0) + Number(l.buildToStock || 0) <= 0);
+    if (emptyIdx >= 0) {
+      setLoading(false);
+      setMessage(
+        language === "en"
+          ? `Line ${emptyIdx + 1}: enter a quantity greater than 0 (or remove the line).`
+          : `第 ${emptyIdx + 1} 行：请填写大于 0 的数量（或删除该行）。`,
+      );
+      return;
+    }
 
     let issuedPo = useExistingPo ? selectedPoNumber : "";
     let created = 0;
@@ -781,7 +845,7 @@ export function ForecastForm({
     setMessage(
       `${t.saved} (${created}) ${issuedPo ? `${language === "en" ? "Forecast #:" : "Forecast #："} ${issuedPo}` : ""}`,
     );
-    setLines([newDraftForecastLine(products)]);
+    setLines([newDraftForecastLine(products, region, lines[lines.length - 1])]);
     router.refresh();
   }
   async function onDelete(id: string) {
@@ -1201,12 +1265,10 @@ export function ForecastForm({
                 <table className="app-table w-full min-w-[52rem] table-fixed text-sm">
                   <colgroup>
                     <col className="w-8" />
-                    <col className="w-[5.5rem]" />
-                    <col className="w-[8rem]" />
+                    <col className="w-[9rem]" />
                     <col className="w-[10.5rem]" />
                     <col className="w-[4.75rem]" />
-                    <col className="w-[5rem]" />
-                    <col className="w-[5rem]" />
+                    <col className="w-[9.5rem]" />
                     <col className="w-[14rem]" />
                     <col className="w-9" />
                   </colgroup>
@@ -1214,15 +1276,9 @@ export function ForecastForm({
                     <tr className="[&>th]:bg-slate-50/90 [&>th]:px-2 [&>th]:py-2 [&>th]:text-left [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-app-muted">
                       <th>{t.lineNo}</th>
                       <th>{t.sku}</th>
-                      <th>{t.productName}</th>
                       <th>{t.destination}</th>
                       <th>{t.incoterm}</th>
-                      <th className="whitespace-nowrap px-1.5 text-right" title={t.bto}>
-                        {t.btoHeader}
-                      </th>
-                      <th className="whitespace-nowrap px-1.5 text-right" title={t.bts}>
-                        {t.btsHeader}
-                      </th>
+                      <th className="whitespace-nowrap px-1.5">{t.qtyHeader}</th>
                       <th>{t.remark}</th>
                       <th aria-hidden />
                     </tr>
@@ -1245,26 +1301,20 @@ export function ForecastForm({
                               </option>
                             ))}
                           </select>
-                        </td>
-                        <td className="max-w-[8rem]">
-                          <TableCellLongText
-                            text={line.productName}
-                            maxWidthClass="max-w-[7.5rem]"
-                            viewLabel={t.viewFullText}
-                            dialogTitle={t.productName}
-                            closeLabel={t.close}
-                            expandThreshold={20}
-                          />
+                          <p className="mt-0.5 truncate text-[11px] leading-tight text-app-muted" title={line.productName}>
+                            {line.productName}
+                          </p>
                         </td>
                         <td>
                           <select
                             value={line.destination}
                             onChange={(event) =>
-                              setLines((prev) =>
-                                prev.map((x) =>
-                                  x.key === line.key ? { ...x, destination: event.target.value } : x,
-                                ),
-                              )
+                              updateLine(line.key, {
+                                destination: event.target.value,
+                                ...(line.incotermTouched
+                                  ? {}
+                                  : { incoterm: defaultIncotermForDestination(event.target.value) }),
+                              })
                             }
                             required
                             title={t.destinationHint}
@@ -1274,24 +1324,30 @@ export function ForecastForm({
                             <option value="" disabled>
                               {t.destinationPlaceholder}
                             </option>
-                            {destinationOptions.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {language === "en" ? opt.labelEn : opt.labelZh}
-                              </option>
-                            ))}
+                            <optgroup label={t.commonCountries}>
+                              {commonDestinationOptions.map((opt) => (
+                                <option key={`c-${opt.value}`} value={opt.value}>
+                                  {language === "en" ? opt.labelEn : opt.labelZh}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label={t.allCountries}>
+                              {destinationOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {language === "en" ? opt.labelEn : opt.labelZh}
+                                </option>
+                              ))}
+                            </optgroup>
                           </select>
                         </td>
                         <td>
                           <select
                             value={line.incoterm}
                             onChange={(event) =>
-                              setLines((prev) =>
-                                prev.map((x) =>
-                                  x.key === line.key
-                                    ? { ...x, incoterm: event.target.value as ForecastIncoterm }
-                                    : x,
-                                ),
-                              )
+                              updateLine(line.key, {
+                                incoterm: event.target.value as ForecastIncoterm,
+                                incotermTouched: true,
+                              })
                             }
                             required
                             title={forecastIncotermHint(line.incoterm, language)}
@@ -1306,36 +1362,67 @@ export function ForecastForm({
                           </select>
                         </td>
                         <td>
-                          <input
-                            type="number"
-                            min={0}
-                            value={line.buildToOrder}
-                            onChange={(event) =>
-                              setLines((prev) =>
-                                prev.map((x) =>
-                                  x.key === line.key ? { ...x, buildToOrder: event.target.value } : x,
-                                ),
-                              )
-                            }
-                            className="app-control-num px-2 py-1.5 text-sm"
-                            aria-label={t.bto}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            min={0}
-                            value={line.buildToStock}
-                            onChange={(event) =>
-                              setLines((prev) =>
-                                prev.map((x) =>
-                                  x.key === line.key ? { ...x, buildToStock: event.target.value } : x,
-                                ),
-                              )
-                            }
-                            className="app-control-num px-2 py-1.5 text-sm"
-                            aria-label={t.bts}
-                          />
+                          <div className="flex flex-col gap-1">
+                            {line.kind === "both" ? (
+                              <>
+                                <label className="flex items-center gap-1 text-[11px] text-app-muted">
+                                  <span className="w-7 shrink-0">{t.btoHeader}</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={line.buildToOrder}
+                                    onChange={(event) => updateLine(line.key, { buildToOrder: event.target.value })}
+                                    className="app-control-num px-2 py-1.5 text-sm"
+                                    aria-label={t.bto}
+                                  />
+                                </label>
+                                <label className="flex items-center gap-1 text-[11px] text-app-muted">
+                                  <span className="w-7 shrink-0">{t.btsHeader}</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={line.buildToStock}
+                                    onChange={(event) => updateLine(line.key, { buildToStock: event.target.value })}
+                                    className="app-control-num px-2 py-1.5 text-sm"
+                                    aria-label={t.bts}
+                                  />
+                                </label>
+                              </>
+                            ) : (
+                              <input
+                                type="number"
+                                min={0}
+                                placeholder="0"
+                                value={line.kind === "bto" ? line.buildToOrder : line.buildToStock}
+                                onChange={(event) =>
+                                  updateLine(
+                                    line.key,
+                                    line.kind === "bto"
+                                      ? { buildToOrder: event.target.value }
+                                      : { buildToStock: event.target.value },
+                                  )
+                                }
+                                className="app-control-num w-full px-2 py-1.5 text-sm"
+                                aria-label={line.kind === "bto" ? t.bto : t.bts}
+                              />
+                            )}
+                            <select
+                              value={line.kind}
+                              onChange={(event) => {
+                                const to = event.target.value as QuantityKind;
+                                updateLine(line.key, {
+                                  kind: to,
+                                  ...switchQuantityKind(line.kind, to, line.buildToOrder, line.buildToStock),
+                                });
+                              }}
+                              className="app-control-sm max-w-full px-1.5 py-1 text-xs"
+                              aria-label={t.qtyKind}
+                            >
+                              <option value="bts">{t.bts}</option>
+                              <option value="bto">{t.bto}</option>
+                              <option value="both">{t.qtyBoth}</option>
+                            </select>
+                          </div>
                         </td>
                         <td className="min-w-[14rem]">
                           <textarea
@@ -1369,7 +1456,7 @@ export function ForecastForm({
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan={9} className="p-0">
+                      <td colSpan={7} className="p-0">
                         <button
                           type="button"
                           onClick={addSkuLine}
