@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 
 import type { Language } from "@/lib/i18n";
 import {
+  Archive,
   BarChart3,
   Boxes,
   BriefcaseBusiness,
@@ -25,8 +26,10 @@ const NAV_COLLAPSED_STORAGE_KEY = "mps-nav-collapsed";
 export type ShellNavItem = {
   href: string;
   label: string;
-  icon?: "cockpit" | "forecast" | "order" | "supply" | "logistics" | "npi" | "quality" | "users";
-  children?: Array<{ href: string; label: string }>;
+  icon?: "cockpit" | "forecast" | "order" | "supply" | "logistics" | "npi" | "quality" | "users" | "archive";
+  /** `exact: true` matches only that exact path (not its sub-paths) — needed when a sibling
+   * sub-path is a separate nav item, e.g. "/logistics-progress" vs ".../order-fulfillments". */
+  children?: Array<{ href: string; label: string; exact?: boolean }>;
   /** false: `children` still counts toward "is this item's branch active" (so the flat link
    * still highlights on any sibling sub-page) but renders as a plain link with no expand
    * chevron / nested list — use when a module already has its own sub-nav (e.g. a tab bar
@@ -46,8 +49,12 @@ function pathMatches(pathname: string, href: string) {
 }
 
 /** Among sibling nav children, pick the longest href that matches pathname (exact or prefix). */
-function activeChildHref(pathname: string, children: Array<{ href: string }>): string | null {
-  const hits = children.filter((c) => pathname === c.href || pathname.startsWith(`${c.href}/`));
+function childMatches(pathname: string, child: { href: string; exact?: boolean }) {
+  return child.exact ? pathname === child.href : pathMatches(pathname, child.href);
+}
+
+function activeChildHref(pathname: string, children: Array<{ href: string; exact?: boolean }>): string | null {
+  const hits = children.filter((c) => childMatches(pathname, c));
   if (hits.length === 0) return null;
   return hits.reduce((a, b) => (a.href.length >= b.href.length ? a : b)).href;
 }
@@ -55,7 +62,7 @@ function activeChildHref(pathname: string, children: Array<{ href: string }>): s
 /** True when this item or any of its children matches the current path (same rule as nav highlight). */
 function isInNavBranch(pathname: string, item: ShellNavItem): boolean {
   if (pathMatches(pathname, item.href)) return true;
-  return Boolean(item.children?.some((child) => pathMatches(pathname, child.href)));
+  return Boolean(item.children?.some((child) => childMatches(pathname, child)));
 }
 
 const ICONS = {
@@ -67,6 +74,7 @@ const ICONS = {
   npi: PackageSearch,
   quality: ShieldCheck,
   users: Users,
+  archive: Archive,
 } as const;
 
 export function AppShellNav({ items, children, language }: AppShellNavProps) {

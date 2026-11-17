@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-11-17 — 精简侧边栏：只留在用的页面，空模块收进"已归档模块"
+
+Commit: (pending push)
+
+**背景**：David 看完页面使用分析（按各表数据量判断，系统没有页面访问统计）后选了"先精简侧边栏"。8个月里订单进度、量产看板、物流进度主页/Shipping Report/Inventory Global/到岸成本汇总、NPI、质量管理的表全是 0~2 条，侧边栏却占了一半位置。
+
+**改动**：
+- `components/shared/app-shell.tsx`：侧边栏现在是 仪表盘 / Forecast 填报 / 供应链管理 / 订单履约（直接链接，不再套"物流进度"）/ 产品数据库 / 用户管理（后两项仅 super_admin）。产品数据库原来挂在 NPI 下面，单独拿出来。
+- **"已归档模块"折叠组（仅 super_admin 可见）**：订单进度、量产看板、生产管理、物流进度、Shipping Report、Inventory Global、到岸成本汇总、NPI、质量管理都在里面。**路由和数据一概没动，没有删任何东西**；普通同事侧边栏里看不到，但直接输网址仍能进。
+- `components/shared/app-shell-nav.tsx`：子项新增 `exact` 选项（"/logistics-progress" 不能前缀匹配 ".../order-fulfillments"，否则订单履约页会同时点亮归档组）；新增 Archive 图标。
+- `app/logistics-progress/order-fulfillments/page.tsx`：去掉顶部的物流子标签栏（现在它是唯一在用的物流页，一个标签没意义），标题改为"订单履约"。归档的物流页自己的子标签栏不变。
+
+**验证**：`tsc` 干净。真机（super_admin 账号）：订单履约页侧边栏只点亮"订单履约"、归档组收起、无子标签栏、控制台无报错；打开 /logistics-progress（归档页）时归档组自动展开、只高亮"Logistics Progress"。**没测**：非 super_admin 账号的实际显示（只靠读代码：归档组和产品数据库/用户管理在同一个 role 判断里）、中文界面、手机宽度下的展开表现、暗色模式。
+
+**后续建议（David 尚未决定）**：隐藏 1~2 个月没人来问再删代码；`/potentials` 演示页可直接删；NPI/质量需先问负责同事是否要用。
+
+---
+
 ## 2026-11-17 — 货运行"从合同带出"：新行自动带出 + "从合同带出"按钮
 
 Commit: `e092331`

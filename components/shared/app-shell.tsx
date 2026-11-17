@@ -56,71 +56,44 @@ export async function AppShell({ session, title, description, headerMeta, module
         { href: "/supply-chain/buyer-entities", label: language === "en" ? "Buyer Entities" : "需方信息" },
       ],
     },
+    // Order fulfillments is the only logistics page with real data (8 months of usage), so it is a
+    // flat link; the rest of the old Logistics module lives in "Archived modules" below.
     {
-      href: "/order-progress",
-      label: navText.orderProgress,
-      icon: "order" as const,
-      showChildren: false,
-      children: [
-        { href: "/order-progress", label: navText.orderProgressSubLines },
-        { href: "/mass-production-kanban", label: navText.massProductionKanban },
-        { href: "/order-progress/production-management", label: navText.productionManagement },
-      ],
-    },
-    {
-      href: "/logistics-progress",
-      label: navText.logisticsProgress,
+      href: "/logistics-progress/order-fulfillments",
+      label: language === "en" ? "Order fulfillments" : "订单履约",
       icon: "logistics" as const,
-      showChildren: false,
-      children: [
-        { href: "/logistics-progress", label: language === "en" ? "Logistics Progress" : "物流进度" },
-        {
-          href: "/logistics-progress/shipping-report",
-          label: language === "en" ? "Shipping Report" : "Shipping Report",
-        },
-        {
-          href: "/logistics-progress/inventory-global",
-          label: language === "en" ? "Inventory Global" : "Inventory Global",
-        },
-        {
-          href: "/logistics-progress/landed-cost-consolidate",
-          label: language === "en" ? "Landed cost consolidate" : "到岸成本汇总",
-        },
-        {
-          href: "/logistics-progress/order-fulfillments",
-          label: language === "en" ? "Order fulfillments" : "订单履约",
-        },
-      ],
-    },
-    {
-      href: "/npi",
-      label: navText.npi,
-      icon: "npi" as const,
-      children: [
-        { href: "/npi/bom", label: language === "en" ? "BOM Management" : "BOM 管理" },
-        { href: "/npi/tooling", label: language === "en" ? "Tooling & Fixture" : "工装夹具管理" },
-        { href: "/npi/ecn", label: language === "en" ? "ECN Management" : "ECN 管理" },
-        { href: "/npi/sop", label: language === "en" ? "SOP Management" : "SOP 管理" },
-        ...(session.role === "super_admin"
-          ? [{ href: "/admin/products", label: navText.productDatabase }]
-          : []),
-      ],
-    },
-    {
-      href: "/quality-control/test-cases",
-      label: navText.qualityControl,
-      icon: "quality" as const,
-      showChildren: false,
-      children: [
-        { href: "/quality-control/test-cases", label: language === "en" ? "Test Cases" : "测试用例管理" },
-        { href: "/quality-control/certifications", label: language === "en" ? "Certifications" : "认证管理" },
-        { href: "/quality-control/ort-reports", label: language === "en" ? "ORT Reports" : "ORT 报告管理" },
-        { href: "/quality-control/eight-d", label: language === "en" ? "8D Reports" : "8D 报告管理" },
-      ],
     },
     ...(session.role === "super_admin"
       ? [
+          { href: "/admin/products", label: navText.productDatabase, icon: "npi" as const },
           { href: "/admin/users", label: navText.userManagement, icon: "users" as const },
+          // Modules with no data after 8 months. Routes and data are untouched — only hidden from
+          // everyone's sidebar; super admins can still reach them here (and everyone via URL).
+          {
+            href: "/order-progress",
+            label: language === "en" ? "Archived modules" : "已归档模块",
+            icon: "archive" as const,
+            children: [
+              { href: "/order-progress", label: navText.orderProgress },
+              { href: "/mass-production-kanban", label: navText.massProductionKanban },
+              { href: "/order-progress/production-management", label: navText.productionManagement },
+              { href: "/logistics-progress", label: navText.logisticsProgress, exact: true },
+              {
+                href: "/logistics-progress/shipping-report",
+                label: language === "en" ? "Shipping Report" : "Shipping Report",
+              },
+              {
+                href: "/logistics-progress/inventory-global",
+                label: language === "en" ? "Inventory Global" : "Inventory Global",
+              },
+              {
+                href: "/logistics-progress/landed-cost-consolidate",
+                label: language === "en" ? "Landed cost consolidate" : "到岸成本汇总",
+              },
+              { href: "/npi", label: navText.npi },
+              { href: "/quality-control", label: navText.qualityControl },
+            ],
+          },
         ]
       : []),
   ];

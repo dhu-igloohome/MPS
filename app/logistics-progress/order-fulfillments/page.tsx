@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { LogisticsSubnav } from "@/components/logistics/logistics-subnav";
 import { OrderFulfillmentsPanel } from "@/components/logistics/order-fulfillments-panel";
 import { AppShell } from "@/components/shared/app-shell";
 import { normalizeLanguage } from "@/lib/i18n";
@@ -33,8 +32,7 @@ export default async function OrderFulfillmentsPage() {
   return (
     <AppShell
       session={session}
-      title={language === "en" ? "Logistics Progress · Order fulfillments" : "物流进度 · 订单履约"}
-      moduleTabs={<LogisticsSubnav language={language} />}
+      title={language === "en" ? "Order fulfillments" : "订单履约"}
     >
       <OrderFulfillmentsPanel
         language={language}
