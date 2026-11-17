@@ -236,7 +236,9 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                 dashboardRows.map(
                   ({ row, lineTotal, landed, needsLandedInputs, departureYmd, paymentDueYmd, destinationLabel, supplierLabel }) => (
                   <tr key={row.id} className="border-b border-app-border/60">
-                    <td className="max-w-[12rem] truncate py-2 pr-3">{supplierLabel}</td>
+                    <td className="max-w-[12rem] truncate py-2 pr-3" title={supplierLabel}>
+                      {supplierLabel}
+                    </td>
                     <td className="py-2 pr-3 font-medium">{row.sku}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{row.buildToOrder}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{row.buildToStock}</td>

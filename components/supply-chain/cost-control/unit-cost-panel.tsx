@@ -830,7 +830,9 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                       )}
                     </td>
                     <td className="whitespace-nowrap px-2 py-2">{row.taxIncluded ? t.yes : t.no}</td>
-                    <td className="max-w-[10rem] truncate px-2 py-2">{row.supplierName}</td>
+                    <td className="max-w-[10rem] truncate px-2 py-2" title={row.supplierName || undefined}>
+                      {row.supplierName}
+                    </td>
                     <td className="max-w-[8rem] truncate px-2 py-2">{row.manufacturerCountry || "—"}</td>
                     <td className="px-2 py-2 align-top">
                       <TableCellLongText

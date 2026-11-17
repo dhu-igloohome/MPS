@@ -982,7 +982,9 @@ export function CashFlowDashboard({
                 ) : (
                   fcDashboardRows.map(({ row, lineTotal, supplierLabel, schedule, unknownSupplier, supMeta }) => (
                     <tr key={row.id} className="border-b border-app-border/60">
-                      <td className="max-w-[12rem] truncate py-2 pr-3">{supplierLabel}</td>
+                      <td className="max-w-[12rem] truncate py-2 pr-3" title={supplierLabel}>
+                        {supplierLabel}
+                      </td>
                       <td className="py-2 pr-3 font-medium">{row.sku}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{row.buildToOrder}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{row.buildToStock}</td>
@@ -1328,7 +1330,10 @@ export function CashFlowDashboard({
                           <td className="max-w-[10rem] break-words py-2 pr-2">
                             {forecastDestinationDisplay(row.destination, language, fcDestinationOptions)}
                           </td>
-                          <td className="max-w-[10rem] truncate py-2 pr-2">
+                          <td
+                            className="max-w-[10rem] truncate py-2 pr-2"
+                            title={row.cashFlowSupplierName.trim() || undefined}
+                          >
                             {row.cashFlowSupplierName.trim() || t.na}
                           </td>
                           <td className="max-w-[8rem] truncate py-2 pr-2">{mfr || t.na}</td>

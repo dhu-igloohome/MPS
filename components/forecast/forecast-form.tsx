@@ -1643,7 +1643,7 @@ export function ForecastForm({
                 <colgroup>
                   {canDelete ? <col className="w-10" /> : null}
                   <col className="w-[6.5rem]" />
-                  <col className="w-[9.5rem]" />
+                  <col className="w-[11rem]" />
                   <col className="w-[5.5rem]" />
                   <col className="w-[8.5rem]" />
                   <col className="w-[4.25rem]" />

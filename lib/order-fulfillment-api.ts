@@ -1,3 +1,4 @@
+import { isPlaceholderSoNumber } from "@/lib/fulfillment-attention";
 import { isShipmentRegion, OPS_DEPARTMENT } from "@/lib/fulfillment-region";
 import type {
   ForecastRegion,
@@ -77,6 +78,13 @@ export function parseFulfillmentShipmentFields(body: Record<string, unknown>): P
   const region = String(body.region ?? "").trim();
   if (region !== "" && !isShipmentRegion(region)) {
     return { ok: false, message: "Invalid region" };
+  }
+
+  if (isPlaceholderSoNumber(String(body.soNumber ?? ""))) {
+    return {
+      ok: false,
+      message: "SO number looks like a placeholder. Enter the real SO number, or leave it empty until it is issued.",
+    };
   }
 
   return {

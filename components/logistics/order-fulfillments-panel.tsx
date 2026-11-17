@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   CheckCircle2,
   Clock,
+  ExternalLink,
   Package,
   Paperclip,
   Plus,
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 
 import type { Language } from "@/lib/i18n";
 import { formatForecastMonthLabel } from "@/lib/payment-schedule-matrix";
+import { type FulfillmentIssue, shipmentIssues } from "@/lib/fulfillment-attention";
 import {
   OPS_DEPARTMENT,
   SHIPMENT_REGIONS,
@@ -29,7 +31,11 @@ type OrderFulfillmentsPanelProps = {
   groups: FulfillmentGroup[];
   shipments: FulfillmentShipmentEntry[];
   shipToOptions: string[];
+  /** Server's today (YYYY-MM-DD, UTC) so "ETA passed" agrees between server render and hydration. */
+  todayIso: string;
 };
+
+type ShipmentView = "attention" | "active" | "all";
 
 type RowFields = {
   estimatedReadyDate: string;
@@ -164,6 +170,27 @@ function labels(language: Language) {
     etd: "ETD",
     eta: "ETA",
     trackingLink: en ? "Tracking link" : "跟踪链接",
+    openTracking: en ? "Open tracking page" : "打开物流跟踪页面",
+    viewLabel: en ? "Show" : "显示",
+    viewAttention: en ? "Needs attention" : "需要处理",
+    viewActive: en ? "In progress" : "进行中",
+    viewAll: en ? "All" : "全部",
+    viewAttentionHint: en
+      ? "Shipments that still need something: ETA passed, or missing ETA / tracking link / SO number / ship-to / status."
+      : "还有事要做的货运：ETA 已过，或缺 ETA / 跟踪链接 / SO 号 / 收货地 / 交付状态。",
+    viewActiveHint: en
+      ? "Everything not delivered yet, including forecasts with no shipment recorded."
+      : "所有还没送达的，包括还没录过货运的 forecast。",
+    attentionNone: en ? "Nothing needs attention right now." : "目前没有需要处理的货运。",
+    viewEmpty: en ? "No rows in this view." : "当前视图没有数据。",
+    issueEtaPassed: (d: number) => (en ? `ETA passed ${d}d` : `ETA 已过 ${d} 天`),
+    issueNoEta: en ? "No ETA" : "缺 ETA",
+    issueNoTracking: en ? "No tracking link" : "缺跟踪链接",
+    issueNoSo: en ? "No SO number" : "缺 SO 号",
+    issueNoShipTo: en ? "No ship-to" : "缺收货地",
+    issueNoStatus: en ? "No status" : "缺交付状态",
+    stillMissing: en ? "Still open:" : "仍待处理：",
+    movedOut: en ? "This row left the current view." : "该行已移出当前视图。",
     deliveryStatus: en ? "Delivery status" : "交付状态",
     statusNotSet: en ? "Not set" : "未设置",
     region: en ? "Region" : "地区",
@@ -235,9 +262,11 @@ export function OrderFulfillmentsPanel({
   groups,
   shipments,
   shipToOptions,
+  todayIso,
 }: OrderFulfillmentsPanelProps) {
   const t = labels(language);
   const en = language === "en";
+  const [view, setView] = useState<ShipmentView>("active");
 
   const [localShipments, setLocalShipments] = useState<FulfillmentShipmentEntry[]>(shipments);
   const [drafts, setDrafts] = useState<{ tempId: string; groupKey: string }[]>([]);
@@ -290,8 +319,13 @@ export function OrderFulfillmentsPanel({
     [localShipments],
   );
 
-  const rows = useMemo<DisplayRow[]>(() => {
+  const matchesView = (s: FulfillmentShipmentEntry, v: ShipmentView) =>
+    v === "all" ||
+    (v === "active" ? s.deliveryStatus !== "Delivered" : shipmentIssues(s, todayIso).length > 0);
+
+  const { rows, viewCounts } = useMemo(() => {
     const out: DisplayRow[] = [];
+    const counts = { attention: 0, active: 0, all: 0 };
     for (const g of visibleGroups) {
       const key = groupKeyOf(g);
       let saved = shipmentsByGroup.get(key) ?? [];
@@ -302,23 +336,38 @@ export function OrderFulfillmentsPanel({
         if (saved.length === 0) continue;
       }
       const groupDrafts = drafts.filter((d) => d.groupKey === key);
-      const rowsOfGroup: DisplayRow[] = [
-        ...saved.map((s) => ({ rowId: s.id, group: g, shipment: s, isFirstOfGroup: false })),
-        ...groupDrafts.map((d) => ({
-          rowId: d.tempId,
-          group: g,
-          shipment: null,
-          isFirstOfGroup: false,
-        })),
-      ];
-      if (rowsOfGroup.length === 0) {
-        rowsOfGroup.push({ rowId: `auto:${key}`, group: g, shipment: null, isFirstOfGroup: false });
+      // Same rule for the view tabs: judged on SAVED values so a row doesn't jump while you type.
+      for (const s of saved) {
+        counts.all++;
+        if (matchesView(s, "active")) counts.active++;
+        if (matchesView(s, "attention")) counts.attention++;
+      }
+      const shownSaved = saved.filter((s) => matchesView(s, view));
+      let rowsOfGroup: DisplayRow[];
+      if (saved.length === 0 && groupDrafts.length === 0) {
+        // Nothing shipped yet for this forecast group: counts as in progress, never "needs attention".
+        counts.all++;
+        counts.active++;
+        if (view === "attention") continue;
+        rowsOfGroup = [{ rowId: `auto:${key}`, group: g, shipment: null, isFirstOfGroup: false }];
+      } else {
+        if (shownSaved.length === 0 && saved.length > 0) continue;
+        rowsOfGroup = [
+          ...shownSaved.map((s) => ({ rowId: s.id, group: g, shipment: s, isFirstOfGroup: false })),
+          ...groupDrafts.map((d) => ({
+            rowId: d.tempId,
+            group: g,
+            shipment: null,
+            isFirstOfGroup: false,
+          })),
+        ];
       }
       rowsOfGroup[0].isFirstOfGroup = true;
       out.push(...rowsOfGroup);
     }
-    return out;
-  }, [visibleGroups, shipmentsByGroup, drafts, soFilter]);
+    return { rows: out, viewCounts: counts };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- matchesView only reads todayIso
+  }, [visibleGroups, shipmentsByGroup, drafts, soFilter, view, todayIso]);
 
   const fieldsOf = (row: DisplayRow): RowFields =>
     rowFields[row.rowId] ?? (row.shipment ? fieldsFromShipment(row.shipment) : EMPTY_FIELDS);
@@ -363,6 +412,23 @@ export function OrderFulfillmentsPanel({
     }
     return out;
   }, [groups, shipmentsByGroup, drafts, rowFields]);
+
+  const issueLabel = (i: FulfillmentIssue): string => {
+    switch (i.code) {
+      case "etaPassed":
+        return t.issueEtaPassed(i.days ?? 0);
+      case "noEta":
+        return t.issueNoEta;
+      case "noTracking":
+        return t.issueNoTracking;
+      case "noSo":
+        return t.issueNoSo;
+      case "noShipTo":
+        return t.issueNoShipTo;
+      case "noStatus":
+        return t.issueNoStatus;
+    }
+  };
 
   /** Shared buffer pool: no region of its own, so each shipment declares where it is going. */
   const isBufferPool = (g: FulfillmentGroup) => g.region === OPS_DEPARTMENT;
@@ -456,7 +522,14 @@ export function OrderFulfillmentsPanel({
         setLocalShipments((prev) => prev.map((s) => (s.id === entry.id ? entry : s)));
         setRowFields((prev) => ({ ...prev, [entry.id]: fieldsFromShipment(entry) }));
       }
-      toast.success(`${t.saved} ${row.group.forecastPoNumber} · ${row.group.sku}`);
+      const label = `${t.saved} ${row.group.forecastPoNumber} · ${row.group.sku}`;
+      const leftOpen = shipmentIssues(entry, todayIso);
+      const note = matchesView(entry, view) ? "" : ` ${t.movedOut}`;
+      if (leftOpen.length > 0) {
+        toast.warning(`${label}${note} ${t.stillMissing} ${leftOpen.map(issueLabel).join(", ")}`);
+      } else {
+        toast.success(`${label}${note}`);
+      }
     } finally {
       setBusyRowId(null);
     }
@@ -669,6 +742,48 @@ export function OrderFulfillmentsPanel({
           </div>
         </div>
 
+        {groups.length > 0 ? (
+          <div
+            className="mt-5 flex flex-wrap items-center gap-2"
+            role="group"
+            aria-label={t.viewLabel}
+          >
+            {(
+              [
+                { key: "attention", label: t.viewAttention, hint: t.viewAttentionHint, count: viewCounts.attention },
+                { key: "active", label: t.viewActive, hint: t.viewActiveHint, count: viewCounts.active },
+                { key: "all", label: t.viewAll, hint: undefined, count: viewCounts.all },
+              ] as const
+            ).map((v) => {
+              const on = view === v.key;
+              const hot = v.key === "attention" && v.count > 0;
+              return (
+                <button
+                  key={v.key}
+                  type="button"
+                  aria-pressed={on}
+                  title={v.hint}
+                  onClick={() => setView(v.key)}
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition duration-150 ${
+                    on
+                      ? "border-app-accent/50 bg-app-accent-soft text-[#111827] shadow-sm"
+                      : "border-app-border bg-white text-foreground/80 hover:border-app-accent/35 hover:bg-app-accent-soft/60 dark:bg-transparent"
+                  }`}
+                >
+                  {v.label}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${
+                      hot ? "bg-amber-500 text-slate-950" : "bg-slate-200 text-slate-700 dark:bg-slate-600/40 dark:text-slate-200"
+                    }`}
+                  >
+                    {v.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
         {groups.length === 0 ? (
           <p className="mt-6 rounded-xl border border-dashed border-app-border bg-slate-50 px-4 py-6 text-sm text-foreground/60 dark:bg-transparent">
             {t.empty}
@@ -754,6 +869,28 @@ export function OrderFulfillmentsPanel({
                               </span>
                             );
                           })()}
+                          {row.shipment
+                            ? (() => {
+                                const issues = shipmentIssues(row.shipment, todayIso);
+                                if (issues.length === 0) return null;
+                                return (
+                                  <div className="flex flex-col items-start gap-0.5" data-issues>
+                                    {issues.map((i) => (
+                                      <span
+                                        key={i.code}
+                                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold leading-tight ring-1 ring-inset ${
+                                          i.code === "etaPassed"
+                                            ? "bg-red-100 text-red-800 ring-red-300 dark:bg-red-500/15 dark:text-red-200 dark:ring-red-500/40"
+                                            : "bg-amber-100 text-amber-900 ring-amber-300 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-500/40"
+                                        }`}
+                                      >
+                                        {issueLabel(i)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                );
+                              })()
+                            : null}
                         </div>
                       </td>
                       <td className={autoCellCls}>
@@ -833,7 +970,7 @@ export function OrderFulfillmentsPanel({
                             {row.shipment?.attachment ? null : (
                               <label
                                 title={row.shipment ? t.uploadFile : t.saveFirst}
-                                className={`inline-flex shrink-0 items-center justify-center rounded-lg border border-app-border p-1.5 ${
+                                className={`relative inline-flex shrink-0 items-center justify-center rounded-lg border border-app-border p-1.5 ${
                                   row.shipment
                                     ? "cursor-pointer text-foreground/60 hover:bg-slate-100 hover:text-app-accent dark:hover:bg-slate-700/40"
                                     : "cursor-not-allowed text-foreground/35"
@@ -987,14 +1124,29 @@ export function OrderFulfillmentsPanel({
                         />
                       </td>
                       <td className="px-2 py-2">
-                        <input
-                          type="text"
-                          value={f.trackingLink}
-                          onChange={(e) => setField(row, { trackingLink: e.target.value })}
-                          placeholder="https://…"
-                          aria-label={t.trackingLink}
-                          className={`${inputCls} min-w-[9rem]`}
-                        />
+                        <div className="flex min-w-[17rem] items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={f.trackingLink}
+                            onChange={(e) => setField(row, { trackingLink: e.target.value })}
+                            placeholder="https://…"
+                            aria-label={t.trackingLink}
+                            title={f.trackingLink || undefined}
+                            className={`${inputCls} min-w-0 flex-1`}
+                          />
+                          {/^https?:\/\//i.test(f.trackingLink.trim()) ? (
+                            <a
+                              href={f.trackingLink.trim()}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              title={t.openTracking}
+                              aria-label={t.openTracking}
+                              className="shrink-0 rounded-lg border border-app-border p-1.5 text-app-accent transition hover:bg-slate-100 dark:hover:bg-slate-700/40"
+                            >
+                              <ExternalLink size={14} strokeWidth={1.75} aria-hidden />
+                            </a>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-2 py-2">
                         <div className="min-w-[11.5rem]">
@@ -1067,7 +1219,7 @@ export function OrderFulfillmentsPanel({
             </table>
             {rows.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-foreground/60">
-                {soFilter ? t.soFilterNoMatch : t.empty}
+                {soFilter ? t.soFilterNoMatch : view === "attention" ? t.attentionNone : t.viewEmpty}
               </p>
             ) : null}
             <datalist id="of-ship-to-options">

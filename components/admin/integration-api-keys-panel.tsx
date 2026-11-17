@@ -154,8 +154,8 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
 
       <div className="mt-4 rounded-xl border border-app-border/70 bg-slate-50 p-4 text-sm dark:bg-transparent">
         <p className="font-medium text-foreground">{t.baseUrl}</p>
-        <p className="mt-1 font-mono text-xs text-foreground/80">{base}</p>
-        <ul className="mt-3 space-y-1.5 font-mono text-xs text-foreground/75">
+        <p className="mt-1 break-all font-mono text-xs text-foreground/80">{base}</p>
+        <ul className="mt-3 space-y-1.5 break-all font-mono text-xs text-foreground/75">
           <li>
             GET {base}/api/integrations/v1/health
           </li>

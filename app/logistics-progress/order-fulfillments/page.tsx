@@ -41,6 +41,7 @@ export default async function OrderFulfillmentsPage() {
         groups={groups}
         shipments={shipments}
         shipToOptions={shipToOptions}
+        todayIso={new Date().toISOString().slice(0, 10)}
       />
     </AppShell>
   );
