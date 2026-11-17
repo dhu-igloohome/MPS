@@ -8,7 +8,7 @@
 
 ## 2026-11-17 — 仪表盘删掉4个图：月度走势、现金流分析、Order progress、Logistics progress
 
-Commit: (pending push)
+Commit: `98b57d2`
 
 **背景**：David 要求删掉仪表盘上的4块：①Forecast 全景里的"Monthly trend (BTO vs BTS)"；②"Forecast Cash flow analysis"卡片；③"Order progress"卡片；④"Logistics progress"卡片。理由：跟代工厂私下谈了分期付款，现金流金额已不准；Order progress / Logistics progress 运行半年仍看不出趋势。（①他没单独说理由，但4张图都贴了、一并按"这几个图"处理；如果其实想留，从 git 历史恢复即可。）
 
