@@ -1,4 +1,5 @@
-import type { FulfillmentGroup, FulfillmentShipmentEntry, UnitCostQuoteEntry } from "@/lib/types";
+import { CONTRACT_OCCUPIED_STATUSES } from "@/lib/contract-forecast-coverage";
+import type { ContractEntry, FulfillmentGroup, FulfillmentShipmentEntry, UnitCostQuoteEntry } from "@/lib/types";
 
 function groupKey(month: string, po: string, sku: string): string {
   return `${month.trim().slice(0, 7)}|${po.trim()}|${sku.trim()}`;
@@ -71,4 +72,44 @@ export function buildUnitCostTrend(quotes: UnitCostQuoteEntry[], sku: string): U
     byDate.set(date, row);
   }
   return { suppliers, rows: [...byDate.values()].sort((a, b) => String(a.date).localeCompare(String(b.date))) };
+}
+
+export type SupplierShare = { name: string; quantity: number; contracts: number; pct: number };
+
+/**
+ * Contracted quantity per supplier (approved/sent contracts only — same statuses as Order
+ * fulfillments), largest first. Suppliers beyond `limit` are merged into one "other" row.
+ */
+export function buildSupplierConcentration(
+  contracts: ContractEntry[],
+  limit: number,
+  otherLabel: string,
+): { rows: SupplierShare[]; total: number } {
+  const map = new Map<string, { quantity: number; contracts: number }>();
+  let total = 0;
+  for (const c of contracts) {
+    if (!CONTRACT_OCCUPIED_STATUSES.includes(c.status)) continue;
+    const q = Number.isFinite(c.quantity) && c.quantity > 0 ? Math.trunc(c.quantity) : 0;
+    if (q === 0) continue;
+    const name = c.supplierName.trim() || "—";
+    const cur = map.get(name) ?? { quantity: 0, contracts: 0 };
+    cur.quantity += q;
+    cur.contracts += 1;
+    map.set(name, cur);
+    total += q;
+  }
+  const sorted = [...map.entries()]
+    .map(([name, v]) => ({ name, ...v, pct: total > 0 ? (v.quantity / total) * 100 : 0 }))
+    .sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
+  if (sorted.length <= limit) return { rows: sorted, total };
+  const head = sorted.slice(0, limit);
+  const rest = sorted.slice(limit);
+  const restQty = rest.reduce((s, r) => s + r.quantity, 0);
+  head.push({
+    name: `${otherLabel} (${rest.length})`,
+    quantity: restQty,
+    contracts: rest.reduce((s, r) => s + r.contracts, 0),
+    pct: total > 0 ? (restQty / total) * 100 : 0,
+  });
+  return { rows: head, total };
 }

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ForecastExecutiveOverview } from "@/components/dashboard/forecast-executive-overview";
+import { SupplierConcentrationPanel } from "@/components/dashboard/supplier-concentration-panel";
 import { UnitCostTrendPanel } from "@/components/dashboard/unit-cost-trend-panel";
 import { AppShell } from "@/components/shared/app-shell";
 import { signDashboardExportSnapshot } from "@/lib/dashboard-export-snapshot-token";
@@ -81,6 +82,7 @@ export default async function DashboardPage() {
           snapshotToken: dashboardExportSnapshotToken,
         }}
       />
+      <SupplierConcentrationPanel language={language} contracts={contracts} />
       <UnitCostTrendPanel language={language} quotes={unitCostQuotes} />
     </AppShell>
   );
