@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-11-17 — Forecast 页：批量导入折叠成"导入"菜单 + 记录"录入方式"字段
+
+Commit: (pending push)
+
+**背景**：David 问 Bulk import 有没有人用。数据结论：正式阶段（4月下旬起）基本没用过——现存170条里没有 API 导入的备注签名，也没有 CSV 导入"短时间连续多行、PO 各不相同"的特征，成批行都是表单一次保存多行（共用1个PO、间隔约250–430ms）；3/26–4/20 的测试阶段有几批"多行各自不同 PO"的数据，删除原因全是 test（像是试过导入，但删除记录没有备注，无法证实）。因为用得少却占整张卡片，David 同意折叠。
+
+**改动**：
+- `components/forecast/forecast-form.tsx`：去掉整张"Bulk import"卡片，换成"新建"那一行最右边一个小的"导入 ▾"按钮，点开是三项（CSV 模板 / CSV 导入 / API 导入，各带一行说明，底部是原"导入说明"），点外面或按 Esc 关闭。导入结果/错误提示改成**只有有内容时才出现**，带 × 关闭；"没有启用产品"的警告仍然常驻。三个功能都保留，只是多点一下。
+- **新字段 `forecasts.source`**：`'form'` / `'csv'` / `'api'`，**现有170条为空串 `''`（= 此前未记录，不是 form）**。`lib/db.ts`：`CURRENT_SCHEMA_VERSION` 12→13，两处 `alter table forecasts add column if not exists source text not null default ''`；`lib/repositories.ts` `createForecast` 两条 insert 都写入 source（默认 `form`）；批量导入路由传 `csv`、API 导入路由传 `api`。**只用于以后统计，界面不显示、不进 API 输出。** 一两个月后可 `select source, count(*) from forecasts group by 1` 判断导入功能去留。
+
+**验证**：`tsc` 干净，lint 基线不变（该文件原有2个报错）。真机：菜单三项、点外面关闭、旧卡片已消失、文件 input 仍在；迁移已在生产库建出 `source` 列。**端到端真实保存一条**（APAC/AE1/数量1，备注 TEMP_SOURCE_TEST）：`source='form'`，预填的 Singapore/EXW/BTS 正确落库；该测试行已删除，库里仍170条。副作用：多了一条 forecast 审计日志（create），且 2026-11-17 的 APAC PO 流水号 `POA202611170001` 已被占用（下一条是 0002）。**没测**：真的点 CSV 导入/API 导入（API 导入会往生产库写一批数据，没做；CSV/API 路由只加了一个字段，未实测写入 source）、中文界面、手机宽度、暗色模式。
+
+---
+
 ## 2026-11-17 — Forecast 录入表单：智能默认值 + 精简录入行；删除2条测试数据
 
 Commit: `9e9c48d`

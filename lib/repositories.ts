@@ -494,9 +494,12 @@ export async function createForecast(input: {
   buildToOrder: number;
   buildToStock: number;
   createdBy: string;
+  /** How the row was entered; stored for usage analysis only (not shown in the UI). */
+  source?: "form" | "csv" | "api";
 }) {
   await ensureDatabase();
   const db = getSql();
+  const source = input.source ?? "form";
   const manualPo = String(input.poNumber || "").trim();
   const opsAction = String(input.opsAction || "").trim();
   const demandType: ForecastDemandType = input.demandType === "buffer" ? "buffer" : "regular";
@@ -533,7 +536,8 @@ export async function createForecast(input: {
         demand_type,
         build_to_order,
         build_to_stock,
-        created_by
+        created_by,
+        source
       )
       values (
         ${input.month},
@@ -548,7 +552,8 @@ export async function createForecast(input: {
         ${demandType},
         ${input.buildToOrder},
         ${input.buildToStock},
-        ${input.createdBy}
+        ${input.createdBy},
+        ${source}
       )
       returning
         id,
@@ -611,7 +616,8 @@ export async function createForecast(input: {
       demand_type,
       build_to_order,
       build_to_stock,
-      created_by
+      created_by,
+      source
     )
     select
       ${input.month},
@@ -626,7 +632,8 @@ export async function createForecast(input: {
       ${demandType},
       ${input.buildToOrder},
       ${input.buildToStock},
-      ${input.createdBy}
+      ${input.createdBy},
+      ${source}
     from alloc
     returning
       id,

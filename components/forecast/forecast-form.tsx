@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { CircleHelp, CloudDownload, Download, Filter, Plus, Trash2, Upload, X } from "lucide-react";
+import { ChevronDown, CloudDownload, Download, Filter, Plus, Trash2, Upload, X } from "lucide-react";
 
 import {
   buildForecastDestinationOptions,
@@ -420,6 +420,13 @@ export function ForecastForm({
         ? "One-click: loads SKU-level monthly sales for the selected Forecast Month from igloohome SKU Tracker (public /api/data). Uses current Region; default destination is Singapore (APAC), Germany (EU), or United States (North America). Quantities map to Build to Order; forecast numbers are auto-generated."
         : "一键从 igloohome SKU Tracker 拉取所选 Forecast 月份各 SKU 的月度销量（公开 /api/data）。使用当前区域；默认目的国为 APAC→新加坡、EU→德国、北美→美国。数量写入「按单生产」；forecast number 仍由系统生成。",
     downloadTemplate: language === "en" ? "CSV template" : "CSV 模板",
+    importMenu: language === "en" ? "Import" : "导入",
+    templateHint: language === "en" ? "Header row + example; fill it in, then upload." : "含表头和示例，填好后再上传。",
+    csvHint: language === "en" ? "Upload a filled-in CSV; each row becomes a forecast." : "上传填好的 CSV，每行生成一条 forecast。",
+    apiHint:
+      language === "en"
+        ? "Pull the selected month's SKU Tracker sales into BTO."
+        : "把所选月份 SKU Tracker 的销量拉进 BTO。",
     importHelpTitle: language === "en" ? "Import notes" : "导入说明",
     importHelp:
       language === "en"
@@ -510,6 +517,8 @@ export function ForecastForm({
   const [batchSummary, setBatchSummary] = useState<string | null>(null);
   const [batchErrors, setBatchErrors] = useState<{ row: number; message: string }[]>([]);
   const batchFileRef = useRef<HTMLInputElement>(null);
+  const importMenuRef = useRef<HTMLDivElement>(null);
+  const [importMenuOpen, setImportMenuOpen] = useState(false);
   const forecastEditPanelRef = useRef<HTMLDivElement>(null);
   const [editDraft, setEditDraft] = useState<ForecastEditDraft | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
@@ -660,6 +669,22 @@ export function ForecastForm({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [openFilterColumn]);
+
+  useEffect(() => {
+    if (!importMenuOpen) return;
+    function onDown(event: MouseEvent) {
+      if (!importMenuRef.current?.contains(event.target as Node)) setImportMenuOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setImportMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [importMenuOpen]);
 
   const allForecastRowsSelected =
     visibleForecastEntries.length > 0 &&
@@ -1062,82 +1087,46 @@ export function ForecastForm({
 
   return (
     <div className="space-y-5">
-      <section className="app-card overflow-hidden px-4 py-3 sm:px-5">
-        <div className="rounded-xl border border-app-accent/30 bg-gradient-to-r from-app-accent-soft/50 to-white px-3 py-3 sm:px-4">
-          <div className="mb-2.5 flex min-w-0 flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground">{t.bulkImport}</p>
-              <p className="mt-0.5 text-[11px] text-app-muted">{t.bulkImportHint}</p>
+      {batchSummary || batchErrors.length > 0 || products.length === 0 ? (
+        <section className="app-card min-w-0 overflow-hidden px-4 py-3 sm:px-5">
+          {batchSummary || batchErrors.length > 0 ? (
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                {batchSummary ? <p className="text-sm text-emerald-800">{batchSummary}</p> : null}
+                {batchErrors.length > 0 ? (
+                  <ul className="mt-2 max-h-40 list-inside list-disc overflow-y-auto rounded-xl border border-red-200 bg-red-50/60 px-4 py-3 text-sm text-red-800">
+                    {batchErrors.map((err) => (
+                      <li key={`${err.row}-${err.message}`}>
+                        {language === "en" ? "Row" : "第"}
+                        {err.row}
+                        {language === "en" ? ": " : " 行："}
+                        {err.message}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="shrink-0 rounded-lg p-1 text-app-muted transition hover:bg-gray-100 hover:text-foreground"
+                onClick={() => {
+                  setBatchSummary(null);
+                  setBatchErrors([]);
+                }}
+                aria-label={t.close}
+                title={t.close}
+              >
+                <X size={16} strokeWidth={1.75} />
+              </button>
             </div>
-            <button
-              type="button"
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-app-border/80 bg-white/80 px-2 py-1 text-xs text-app-muted transition hover:border-app-border hover:bg-white hover:text-foreground"
-              title={`${t.importHelpTitle}\n\n${t.importHelp}`}
-              aria-label={t.importHelpTitle}
-            >
-              <CircleHelp size={15} strokeWidth={1.5} />
-              <span className="hidden sm:inline">{t.importHelpTitle}</span>
-            </button>
-          </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <a
-              href="/api/forecasts/csv-template"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border-2 border-app-border bg-white px-3.5 py-2 text-sm font-medium text-foreground shadow-sm transition duration-150 ease-out hover:border-app-accent/50 hover:bg-app-accent-soft/40 hover:shadow-md active:translate-y-0"
-            >
-              <Download size={16} strokeWidth={2} />
-              {t.downloadTemplate}
-            </a>
-            <input
-              ref={batchFileRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={onBatchFileChange}
-            />
-            <button
-              type="button"
-              disabled={loading || products.length === 0}
-              onClick={() => batchFileRef.current?.click()}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border-2 border-app-accent bg-white px-3.5 py-2 text-sm font-semibold text-app-accent shadow-sm transition duration-150 ease-out hover:bg-app-accent-soft hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Upload size={16} strokeWidth={2} />
-              {t.batchImport}
-            </button>
-            <button
-              type="button"
-              disabled={loading || products.length === 0}
-              onClick={onApiImportFromSkuTracker}
-              title={t.apiImportHint}
-              className="app-button-primary inline-flex shrink-0 items-center gap-1.5 px-3.5 py-2 text-sm font-semibold shadow-sm transition duration-150 ease-out hover:-translate-y-px hover:shadow-md active:translate-y-0 disabled:opacity-50"
-            >
-              <CloudDownload size={16} strokeWidth={2} />
-              {t.apiImport}
-            </button>
-          </div>
-        </div>
-        {batchSummary || batchErrors.length > 0 || products.length === 0 ? (
-          <div className="mt-2 min-w-0 border-t border-app-border/60 pt-2">
-          {batchSummary ? <p className="text-sm text-emerald-800">{batchSummary}</p> : null}
-          {batchErrors.length > 0 ? (
-            <ul className="mt-2 max-h-40 list-inside list-disc overflow-y-auto rounded-xl border border-red-200 bg-red-50/60 px-4 py-3 text-sm text-red-800">
-              {batchErrors.map((err) => (
-                <li key={`${err.row}-${err.message}`}>
-                  {language === "en" ? "Row" : "第"}
-                  {err.row}
-                  {language === "en" ? ": " : " 行："}
-                  {err.message}
-                </li>
-              ))}
-            </ul>
           ) : null}
           {products.length === 0 ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
               {t.noProducts}
             </p>
           ) : null}
-          </div>
-        ) : null}
-      </section>
+        </section>
+      ) : null}
 
       <section className="app-card overflow-hidden">
         <form className="grid grid-cols-1 gap-4 px-4 py-4 sm:px-5 md:grid-cols-12" onSubmit={onSubmit}>
@@ -1242,6 +1231,82 @@ export function ForecastForm({
                 </select>
               </label>
             ) : null}
+
+            <input
+              ref={batchFileRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={onBatchFileChange}
+            />
+            <div className="relative ml-auto shrink-0" ref={importMenuRef}>
+              <button
+                type="button"
+                onClick={() => setImportMenuOpen((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={importMenuOpen}
+                className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-app-border bg-white px-3 py-2 text-sm text-foreground/85 transition hover:border-app-accent/40 hover:bg-app-accent-soft/40"
+              >
+                <Upload size={15} strokeWidth={1.75} />
+                {t.importMenu}
+                <ChevronDown size={14} strokeWidth={1.75} className={importMenuOpen ? "rotate-180" : ""} />
+              </button>
+              {importMenuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-30 mt-1 w-72 rounded-xl border border-app-border bg-white p-1.5 text-sm shadow-lg"
+                >
+                  <a
+                    role="menuitem"
+                    href="/api/forecasts/csv-template"
+                    onClick={() => setImportMenuOpen(false)}
+                    className="flex items-start gap-2 rounded-lg px-2.5 py-2 hover:bg-gray-50"
+                  >
+                    <Download size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-app-muted" />
+                    <span>
+                      <span className="block font-medium text-foreground">{t.downloadTemplate}</span>
+                      <span className="block text-[11px] leading-snug text-app-muted">{t.templateHint}</span>
+                    </span>
+                  </a>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={loading || products.length === 0}
+                    onClick={() => {
+                      setImportMenuOpen(false);
+                      batchFileRef.current?.click();
+                    }}
+                    className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Upload size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-app-muted" />
+                    <span>
+                      <span className="block font-medium text-foreground">{t.batchImport}</span>
+                      <span className="block text-[11px] leading-snug text-app-muted">{t.csvHint}</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={loading || products.length === 0}
+                    onClick={() => {
+                      setImportMenuOpen(false);
+                      void onApiImportFromSkuTracker();
+                    }}
+                    title={t.apiImportHint}
+                    className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <CloudDownload size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-app-muted" />
+                    <span>
+                      <span className="block font-medium text-foreground">{t.apiImport}</span>
+                      <span className="block text-[11px] leading-snug text-app-muted">{t.apiHint}</span>
+                    </span>
+                  </button>
+                  <p className="mt-1 whitespace-pre-line border-t border-app-border/60 px-2.5 pb-1 pt-2 text-[11px] leading-snug text-app-muted">
+                    {t.importHelp}
+                  </p>
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="min-w-0 md:col-span-12">

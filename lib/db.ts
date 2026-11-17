@@ -25,7 +25,7 @@ const sql = connectionString
  * by this version in `applyIncrementalMigrationsIfNeeded`) makes a fresh cold-started instance
  * re-run the incremental batch once instead of trusting a stale marker from an older version.
  */
-const CURRENT_SCHEMA_VERSION = 12;
+const CURRENT_SCHEMA_VERSION = 13;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -90,6 +90,7 @@ async function setupSchema() {
   await db`alter table forecasts add column if not exists incoterm text not null default 'EXW';`;
   await db`alter table forecasts add column if not exists ops_action text not null default '';`;
   await db`alter table forecasts add column if not exists demand_type text not null default 'regular';`;
+  await db`alter table forecasts add column if not exists source text not null default '';`;
   await addForecastDemandTypeCheckConstraint(db);
   await db`alter table forecasts drop column if exists office;`;
 
@@ -1250,6 +1251,8 @@ async function applyIncrementalMigrations() {
   await db`alter table unit_cost_quotes add column if not exists quote_currency text not null default 'USD';`;
   await db`alter table unit_cost_quotes add column if not exists unit_price_cny numeric(14, 4);`;
   await db`alter table forecasts add column if not exists demand_type text not null default 'regular';`;
+  // How the row was entered: 'form' | 'csv' | 'api'. '' = created before this column existed (unknown).
+  await db`alter table forecasts add column if not exists source text not null default '';`;
   await addForecastDemandTypeCheckConstraint(db);
   await widenForecastRegionCheckConstraints(db);
   await db`alter table products add column if not exists product_name_cn text not null default '';`;

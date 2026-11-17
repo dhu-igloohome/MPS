@@ -191,6 +191,7 @@ export async function POST(request: Request) {
         buildToOrder,
         buildToStock,
         createdBy: session.username,
+        source: "csv",
       });
       await logBusinessAudit({
         entityType: "forecast",
