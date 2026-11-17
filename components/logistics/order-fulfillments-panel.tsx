@@ -163,6 +163,7 @@ function labels(language: Language) {
     soNumber: en ? "SO Number" : "SO 号",
     soFilterPlaceholder: en ? "Filter by SO Number" : "按 SO 号筛选",
     soFilterClear: en ? "Clear SO Number filter" : "清除 SO 号筛选",
+    soSearchAll: en ? "Searching all statuses (including delivered)" : "正在搜索全部状态（含已送达）",
     soFilterNoMatch: en ? "No rows match this SO Number." : "没有匹配该 SO 号的行。",
     soFilterCount: (n: number) => (en ? `${n} row${n === 1 ? "" : "s"}` : `${n} 行`),
     soQty: en ? "SO Quantity" : "SO 数量",
@@ -324,6 +325,9 @@ export function OrderFulfillmentsPanel({
   );
 
   const soFilter = soQuery.trim().toLowerCase();
+  // Typing an SO number searches EVERY status. Otherwise a delivered shipment (hidden by the default
+  // "In progress" tab) looked like it had vanished: "no rows match this SO Number".
+  const effectiveView: ShipmentView = soFilter ? "all" : view;
 
   const soOptions = useMemo(
     () => [...new Set(localShipments.map((s) => s.soNumber.trim()).filter(Boolean))].sort(),
@@ -353,13 +357,13 @@ export function OrderFulfillmentsPanel({
         if (matchesView(s, "active")) counts.active++;
         if (matchesView(s, "attention")) counts.attention++;
       }
-      const shownSaved = saved.filter((s) => matchesView(s, view));
+      const shownSaved = saved.filter((s) => matchesView(s, effectiveView));
       let rowsOfGroup: DisplayRow[];
       if (saved.length === 0 && groupDrafts.length === 0) {
         // Nothing shipped yet for this forecast group: counts as in progress, never "needs attention".
         counts.all++;
         counts.active++;
-        if (view === "attention") continue;
+        if (effectiveView === "attention") continue;
         rowsOfGroup = [{ rowId: `auto:${key}`, group: g, shipment: null, isFirstOfGroup: false }];
       } else {
         if (shownSaved.length === 0 && saved.length > 0) continue;
@@ -378,7 +382,7 @@ export function OrderFulfillmentsPanel({
     }
     return { rows: out, viewCounts: counts };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- matchesView only reads todayIso
-  }, [visibleGroups, shipmentsByGroup, drafts, soFilter, view, todayIso]);
+  }, [visibleGroups, shipmentsByGroup, drafts, soFilter, effectiveView, todayIso]);
 
   const fieldsOf = (row: DisplayRow): RowFields =>
     rowFields[row.rowId] ?? (row.shipment ? fieldsFromShipment(row.shipment) : EMPTY_FIELDS);
@@ -836,7 +840,7 @@ export function OrderFulfillmentsPanel({
                 { key: "all", label: t.viewAll, hint: undefined, count: viewCounts.all },
               ] as const
             ).map((v) => {
-              const on = view === v.key;
+              const on = !soFilter && view === v.key;
               const hot = v.key === "attention" && v.count > 0;
               return (
                 <button
@@ -862,6 +866,7 @@ export function OrderFulfillmentsPanel({
                 </button>
               );
             })}
+            {soFilter ? <span className="text-xs text-app-muted">{t.soSearchAll}</span> : null}
           </div>
         ) : null}
 
