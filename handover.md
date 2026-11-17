@@ -8,7 +8,7 @@
 
 ## 2026-11-17 — 修复仪表盘饼图标签被裁 + 全站视觉 bug 扫描（只修了饼图，其余待 David 决定）
 
-Commit: (pending push)
+Commit: `77c62ab`
 
 **背景**：David 截图指出"Volume by region"饼图的标签被裁断（"OPS Department 24%" 被 SVG 边界截成 "…rtment 24%"）。OPS Department 这个长名字是 7 月加 Buffer 后才出现在这张图里的。
 
