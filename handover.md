@@ -8,7 +8,7 @@
 
 ## 2026-11-17 — 删除 /potentials 演示页
 
-Commit: `18f16ba`
+Commit: `97eccb7` + `4dc5369`
 
 **背景**：David 确认删除。该页是纯前端演示（4个分类、提交不保存、占位文案"davidhuang testing…"、与 Foretracker 无数据互通），侧边栏没有入口。
 
