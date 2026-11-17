@@ -23,7 +23,9 @@ Commit: `53a5812`
 
 **验证**：`tsc`、`lint`同基线(22)。本地真机（开发环境连的是生产库，所以测试数据选 OPS 行和 APAC 行，用完已删，库里确认 0 条残留）：OPS 行不带 region→400；带 APAC→存成 APAC；PATCH 清空→400，改 USA→成功；非法值→400；非 OPS（APAC）行传 USA→被丢弃存成 ''。迁移已在生产库跑过（列存在、v12 标记已写入）。`effectiveShipmentRegion`/`suggestRegionFromShipTo` 用20个用例脚本验过，全过（含库里实际出现过的 ship_to：JDM IR/UK、IDM UK、EU IRLAND、US FBA/SW/OMNI、SG、Hanman SG、SYW AU、Virasa Thailand、Zeest Canada→不猜）。页面：OPS 行有下拉、非 OPS 行没有；输入 JDM IR→EU，改 US FBA→USA（跟随），手选 APAC 后再改收货地→保持 APAC（不覆盖）；消耗统计、超额变红、没选地区栏都对；没选地区点 Save→弹提示且不发请求。**没测的**：集成接口的真实调用——尝试建临时 API key 被权限拦下（会在生产库新建凭证、David 没授权），所以接口这一段只验了纯函数规则 + 读了代码，没有端到端调用；以及暗色模式下新下拉的观感。
 
-**上线后还要做的（需 David 确认）**：把 `POO202608050001` 改回 OPS Department，并把它已有的 4 条货运行（IG-SO-1566/1567/1576/1578）补上 `region='EU'`，让新旧模型一致；在此之前它仍是 EU，Berfin 能看到这 4 条。
+**数据收尾（David 确认后已做，2026-11-17）**：①先把 `POO202608050001` 已有的 4 条货运行（IG-SO-1566/1567/1576/1578，id 58/59/61/63）`region` 补成 `'EU'`（对旧代码无影响，因为旧代码不读这一列）；②再把 `forecasts.id=214`（`POO202608050001`/SK4 Buffer 5000）的 `region` 从 `EU` 改回 `OPS Department`（SQL 带保护：只在4条货运行都已标 EU 时才执行）。改后核对：4 条货运行的有效地区仍都是 EU，库里 OPS Department 的 forecast 共 7 条（此前 6 条 + 这条）。**注意**：我无法直接确认 Vercel 上新代码已部署完（推送后 5 分钟、部署标识稳定，但没法证明它对应新版本）；若线上还是旧代码，旧代码会按 forecast 地区(OPS)过滤，Berfin 暂时看不到这4条，部署完即恢复。回滚办法：`update forecasts set region='EU' where id=214`。走的是 SQL，没有 `business_audit_logs` 记录，以本条为准。
+
+**之后新增的货运**：这 7 条 OPS Department 的 forecast 之后录货运行时都必须选地区（系统会强制）。`POO202610280002` 的 forecast 月份是 2026-01（同批其余是 2026-10），疑似年份笔误，已提醒 David 让 Jessie 核对，未改动。
 
 ---
 
