@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-11-17 — Berfin 的 API 读不到 IG-SO-1589 / 1590：排查结论 + 接口文档补充
+
+Commit: (pending push)
+
+**现象**：David 发截图（Christy 账号的订单履约页）说 IG-SO-1589、IG-SO-1590 两张单 Berfin 的 API 读不到，要求优化。
+
+**查证（服务端不是原因）**：库里这两条是 `fulfillment_shipments` id 70/71，Christy 今天（UTC 08:48/08:49）刚建，POO202608050001 / SK4 / 2026-12，`region='EU'`，状态 `In preparation`，`estimated_ready_date=2026-10-02`，**etd/eta 都是 null**，无跟踪链接。接口 `app/api/integrations/v1/order-fulfillments/route.ts` **没有任何按状态/日期的过滤**，`listFulfillmentShipments()` 也没有 limit；我用接口同样的区域判断规则在库数据上复算：`?region=EU` 会返回 IG-SO-1566/1567/1576/1578/**1589/1590** 等共 28 条 EU 货运，没有"无分组被丢弃"的货运。Berfin 的密钥 `last_used_at` = 2026-11-17 08:56:44Z，**晚于这两条创建时间约 7 分钟**，说明她的系统在它们存在之后调用过接口。所以更像是**她那边的导入逻辑**把它们筛掉了（嫌疑：etd/eta 为 null，或只收 In transit/Delivered）——但**这只是推断，没有看到她收到的 JSON，也没有她那边的代码**。
+
+**改动**（只改文档 `docs/Foretracker-Integration-API-Guide-Berfin.md`，没改接口行为）：示例 shipment 补上 `estimatedReadyDate`（响应里本来就有这个字段，文档漏写）；新增一段"并非每条货运都有日期"：In preparation / Pending trigger SO 阶段 etd、eta、trackingLink 通常为 null/空，**是真实的未结货运，请勿因 etd/eta 为 null 而跳过**，这类行用 `estimatedReadyDate` + `deliveryStatus` 定位；说明接口不做状态过滤（含 Delivered），以及 `deliveryStatus` 的全部取值。
+
+**没验证**：**没有端到端调用接口**（没有密钥明文；之前创建临时密钥被权限拦下，没有绕过），"会返回"是用同一套规则在 SQL 数据上复算得出，不是真实响应。
+
+**顺带发现的隐患（未改，待 David 决定）**：`lib/repositories.ts` 的 `getForecastsByRegions` 带 `limit 200`（按 created_at 倒序）。库里现在 170 条 forecast，按每月约 25 条，约 1–2 个月后会超过 200，**最旧的 forecast 会被悄悄截掉**：订单履约页和集成接口的分组会少，对应货运在 `?region=` 过滤时会因找不到分组而丢失。这与本次问题无关，但会产生同类"看不到某条"的问题。
+
+---
+
 ## 2026-11-17 — 订单履约：默认视图改为"全部"（Christy 的账号"少了一行"）
 
 Commit: `652c3fb`

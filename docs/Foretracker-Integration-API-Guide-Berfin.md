@@ -187,6 +187,7 @@ curl -H "Authorization: Bearer mps_YOUR_API_KEY_HERE" \
       "soQuantity": 200,
       "freightMode": "sea",
       "shipTo": "Singapore",
+      "estimatedReadyDate": "2026-07-29",
       "etd": "2026-08-01",
       "eta": "2026-08-15",
       "deliveryStatus": "In transit",
@@ -198,6 +199,10 @@ curl -H "Authorization: Bearer mps_YOUR_API_KEY_HERE" \
 
 - **`groups`** — one row per Forecast # + SKU, from all forecast records (not just ones with contracts); check `contractedQty` to see whether a contract has been created yet. `contractDeliveryDate` (`YYYY-MM-DD`, or `null` when there is no contract) is the earliest supplier delivery date among the group's contracts — when the goods are expected to be ready
 - **`shipments`** — one row per shipment entry (SO, dates, status); multiple shipments can share the same group  
+
+**Not every shipment has dates yet.** A shipment is created as soon as an SO exists, long before it ships. While `deliveryStatus` is `"In preparation"` (or `"Pending trigger SO"`), `etd`, `eta` and `trackingLink` are normally **`null` / empty** — that is a real, open shipment, not incomplete data. Please do **not** skip or hide rows because `etd`/`eta` is `null`. For these rows use `estimatedReadyDate` (`YYYY-MM-DD` or `null`: when the goods are expected to be ready) and `deliveryStatus` to place them. `etd`/`eta` get filled in when the shipment leaves. The API applies **no status filter** — every shipment is returned, including `"Delivered"` ones; filter on your side if you only want open ones.
+
+`deliveryStatus` is one of: `"In preparation"`, `"Pending trigger SO"`, `"In transit"`, `"Delivered"`, or `""` (not set yet).
 
 ---
 
