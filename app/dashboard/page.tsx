@@ -2,11 +2,18 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ForecastExecutiveOverview } from "@/components/dashboard/forecast-executive-overview";
+import { UnitCostTrendPanel } from "@/components/dashboard/unit-cost-trend-panel";
 import { AppShell } from "@/components/shared/app-shell";
 import { signDashboardExportSnapshot } from "@/lib/dashboard-export-snapshot-token";
 import { formatDataSnapshot, formatDataSnapshotDateOnly } from "@/lib/format-data-snapshot";
 import { normalizeLanguage } from "@/lib/i18n";
-import { getForecastsByRegions } from "@/lib/repositories";
+import { buildIntegrationFulfillmentGroups } from "@/lib/order-fulfillment-groups";
+import {
+  getForecastsByRegions,
+  listContractsBySessionRegions,
+  listFulfillmentShipments,
+  listUnitCostQuotes,
+} from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +24,13 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const entries = await getForecastsByRegions(session.regions);
+  const [entries, contracts, shipments, unitCostQuotes] = await Promise.all([
+    getForecastsByRegions(session.regions),
+    listContractsBySessionRegions(session.regions),
+    listFulfillmentShipments(),
+    listUnitCostQuotes(),
+  ]);
+  const fulfillmentGroups = buildIntegrationFulfillmentGroups(entries, contracts);
 
   const cookieStore = await cookies();
   const language = normalizeLanguage(cookieStore.get("lang")?.value);
@@ -60,12 +73,15 @@ export default async function DashboardPage() {
         language={language}
         dataSnapshotAt={dataSnapshotAt}
         forecasts={entries}
+        fulfillmentGroups={fulfillmentGroups}
+        shipments={shipments}
         forecastExport={{
           href: "/api/dashboard/export-csv",
           label: t.exportCsv,
           snapshotToken: dashboardExportSnapshotToken,
         }}
       />
+      <UnitCostTrendPanel language={language} quotes={unitCostQuotes} />
     </AppShell>
   );
 }

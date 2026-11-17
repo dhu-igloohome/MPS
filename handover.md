@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-11-17 — 仪表盘新增：数量漏斗 + 单位成本走势
+
+Commit: (pending push)
+
+**背景**：David 不要"待办视图"，问仪表盘还能放什么；我建议只用数量/日期、不用金额（分期付款导致金额不准），并选了两项："预测→合同→发货→送达"数量漏斗、各产品单位成本走势。
+
+**改动**：
+- `lib/dashboard-insights.ts`（新，纯函数）：`buildSupplyFunnel`（按所选 Forecast 月份汇总 forecast/合同/货运录入/送达数量，货运只算属于范围内分组的，所以区域权限同样作用到货运）；`trendableSkus`（有≥2条报价的 SKU）；`buildUnitCostTrend`（某 SKU 的 USD 报价按日期，每个供应商一条线）。
+- `components/dashboard/forecast-executive-overview.tsx`：下方新增漏斗（4条横条+占 Forecast 的百分比），**跟随页面顶部的 Forecast 月份筛选**。
+- `components/dashboard/unit-cost-trend-panel.tsx`（新）：SKU 下拉（默认报价最多的）+ 折线图。
+- `app/dashboard/page.tsx`：并行多读合同、货运、报价三份数据。
+
+**口径（页面上已写明）**：「发货」=订单履约所有货运行的 SO 数量，**含"备货中"**，不等于已出发；「合同」=已发出且关联到 forecast 行的合同，可能大于 forecast（百分比可超 100%）。
+
+**验证**：`tsc` 干净。真机全部月份下：Forecast 82,348 / 合同 56,377（68%）/ 录入发货 20,036（24%）/ 送达 12,007（15%），**与库里 SQL 直算的四个数完全一致**；走势图 22 个 SKU 可选，渲染正常，控制台无报错。**没测**：切换月份筛选后的数字、切换 SKU、中文界面、手机宽度、暗色模式、非 super_admin 账号。注意：合同数 56,377 只统计关联了 forecast 的合同（库里 88 份均为 sent），没关联 forecast 的合同不在内。
+
+---
+
 ## 2026-11-17 — 精简侧边栏：只留在用的页面，空模块收进"已归档模块"
 
 Commit: `3f7ec8b`

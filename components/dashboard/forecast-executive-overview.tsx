@@ -23,7 +23,8 @@ import {
 } from "@/lib/cockpit-dashboard-agg";
 import { formatDataSnapshot, formatSamePageSnapshotCrossRef } from "@/lib/format-data-snapshot";
 import type { Language } from "@/lib/i18n";
-import type { ForecastEntry } from "@/lib/types";
+import { buildSupplyFunnel } from "@/lib/dashboard-insights";
+import type { ForecastEntry, FulfillmentGroup, FulfillmentShipmentEntry } from "@/lib/types";
 
 const PIE_COLORS = ["#ee6454", "#2563eb", "#059669", "#d97706", "#7c3aed", "#e11d48"];
 
@@ -32,6 +33,9 @@ type Props = {
   /** ISO instant from the server; same as dashboard header (cross-ref under title). */
   dataSnapshotAt?: string;
   forecasts: ForecastEntry[];
+  /** Forecast # + SKU groups (with contracted qty) and shipments, for the quantity funnel. */
+  fulfillmentGroups?: FulfillmentGroup[];
+  shipments?: FulfillmentShipmentEntry[];
   /** When set, shows next to “Open Forecast” in the section toolbar (e.g. CSV export). */
   forecastExport?: { href: string; label: string; snapshotToken?: string };
 };
@@ -60,7 +64,14 @@ function PieTooltip({
   );
 }
 
-export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts, forecastExport }: Props) {
+export function ForecastExecutiveOverview({
+  language,
+  dataSnapshotAt,
+  forecasts,
+  fulfillmentGroups,
+  shipments,
+  forecastExport,
+}: Props) {
   const en = language === "en";
 
   const availableForecastMonths = useMemo(
@@ -99,7 +110,25 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
   const byRegion = useMemo(() => aggregateForecastByRegion(filteredForecasts), [filteredForecasts]);
   const topProducts = useMemo(() => aggregateForecastTopProducts(filteredForecasts, 10), [filteredForecasts]);
 
+  const funnel = useMemo(
+    () =>
+      buildSupplyFunnel(
+        fulfillmentGroups ?? [],
+        shipments ?? [],
+        new Set((selectedForecastMonths ?? availableForecastMonths).map((m) => m.slice(0, 7))),
+      ),
+    [fulfillmentGroups, shipments, selectedForecastMonths, availableForecastMonths],
+  );
+  const funnelMax = Math.max(funnel.forecast, funnel.contracted, funnel.recorded, funnel.delivered);
+
   const t = {
+    funnelTitle: en ? "Forecast → contract → shipment → delivered" : "预测 → 合同 → 发货 → 送达",
+    funnelHint: en
+      ? "Quantities for the selected forecast months. Percentages are relative to forecast."
+      : "所选 Forecast 月份的数量；百分比以 Forecast 数量为 100%。",
+    funnelNote: en
+      ? "Shipment = SO quantity of all Order fulfillments rows (including “In preparation”, so it is not only goods already moving). Contracts count approved/sent contracts linked to the forecast line; a contract can exceed its forecast, so 100%+ is possible."
+      : "发货 = 订单履约里所有货运行的 SO 数量（含“备货中”，并非都已出发）。合同只统计已批准/已发出、且关联到该 Forecast 行的合同；合同数量可能大于 Forecast，所以可能超过 100%。",
     title: en ? "Forecast at a glance" : "Forecast 全景",
     bto: en ? "Build to order" : "按单 (BTO)",
     bts: en ? "Build to stock" : "备货 (BTS)",
@@ -138,6 +167,13 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
       : "此导出会在 CSV 元数据中写入与本页「数据截至」一致的快照时间；表格区在您点击下载时会再次从数据库读取。",
     readingNotesSummary: en ? "Notes" : "说明",
   };
+
+  const funnelRows = [
+    { key: "forecast", label: en ? "Forecast" : "Forecast 预测", value: funnel.forecast, color: "#9CA3AF", hint: "" },
+    { key: "contracted", label: en ? "Contracted" : "已签合同", value: funnel.contracted, color: "#2563eb", hint: "" },
+    { key: "recorded", label: en ? "Shipment recorded" : "已录入发货", value: funnel.recorded, color: "#d97706", hint: "" },
+    { key: "delivered", label: en ? "Delivered" : "已送达", value: funnel.delivered, color: "#059669", hint: "" },
+  ];
 
   const latestRowDisplay = latestRowIso ? formatDataSnapshot(latestRowIso, language) : null;
 
@@ -417,6 +453,36 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
         </div>
       </div>
 
+      <div className="mt-6 min-w-0">
+        <h3 className="mb-1 text-sm font-semibold text-[#111827]">{t.funnelTitle}</h3>
+        <p className="mb-3 text-xs text-[#6B7280]">{t.funnelHint}</p>
+        <div className="app-panel space-y-3 p-4">
+          {funnelRows.map((r) => (
+            <div key={r.key} className="min-w-0">
+              <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
+                <span className="min-w-0 truncate font-medium text-[#374151]" title={r.hint}>
+                  {r.label}
+                </span>
+                <span className="shrink-0 tabular-nums text-[#111827]">
+                  {formatNum(r.value)}
+                  {funnel.forecast > 0 && r.key !== "forecast" ? (
+                    <span className="ml-2 text-xs text-[#6B7280]">
+                      {Math.round((r.value / funnel.forecast) * 100)}%
+                    </span>
+                  ) : null}
+                </span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-[#F3F4F6]">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${Math.min(100, funnelMax > 0 ? (r.value / funnelMax) * 100 : 0)}%`, background: r.color }}
+                />
+              </div>
+            </div>
+          ))}
+          <p className="pt-1 text-[11px] leading-relaxed text-[#6B7280]">{t.funnelNote}</p>
+        </div>
+      </div>
     </section>
   );
 }
