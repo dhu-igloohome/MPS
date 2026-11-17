@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-11-17 — 修复仪表盘饼图标签被裁 + 全站视觉 bug 扫描（只修了饼图，其余待 David 决定）
+
+Commit: (pending push)
+
+**背景**：David 截图指出"Volume by region"饼图的标签被裁断（"OPS Department 24%" 被 SVG 边界截成 "…rtment 24%"）。OPS Department 这个长名字是 7 月加 Buffer 后才出现在这张图里的。
+
+**已修**：`components/dashboard/forecast-executive-overview.tsx` 饼图 `label` 只显示百分比（`41%`），区域名由图例和悬停提示负责——不管窗口多窄都不会被裁。全站只有这一个饼图。
+
+**全站扫描方法**：写了一段检测脚本（页面横向溢出 / `overflow:hidden` 盒子里被截断的文字 / 文字被祖先容器裁掉 / 图表 SVG 里超出画布的文字 / 下拉与输入框内容被截断），在约30个页面上分别以 1440 宽和 390 宽（手机）跑。覆盖：dashboard、forecast、supply-chain 全部子页、order-progress 及子页、mass-production-kanban、logistics-progress 全部子页、npi 全部、quality-control 全部、admin 两页。**没测**：登录页、合同详情页/打印页、暗色模式、中文界面、1280 宽。
+
+**扫描结果（均未修，待决定）**：
+1. **Forecast 表 PO 号列**：23 行被省略号截断（文字 155px、列宽 152px，差 3px，最后一两位数字被吃掉；有 title 悬停提示但没必要）。`td.truncate.font-medium`。
+2. **供应商名列被截断且没有悬停提示**：`unit-cost` 页（`max-w-[10rem]`，6 行，如 "TAIWAN FU HSING INDUSTRIAL CO., LTD."、"Aztech Technology Pte Ltd (Singapore…"）和 `landed-cost-consolidate` 页（`max-w-[12rem]`，2 行）；`payment-schedule` 页同样的列有提示。
+3. **Order fulfillments 的 Tracking link 输入框**：只有约143px宽，粘进去的 URL 只看得到开头几个字。
+4. **手机宽度下整页横向滚动**：`order-fulfillments`（页面宽 1012 vs 视口 390）、`admin/users`（425 vs 390）。dashboard / forecast / contracts / cost-control 在 390 下没问题。
+5. **Forecast 页的 React 水合错误**（控制台报错，不是视觉 bug 但每次打开最常用的页面都触发）：国家下拉里 `Falkland Islands (Islas Malvinas)`（服务器端渲染）与 `Falkland Islands`（浏览器）不一致，原因大概率是 `Intl.DisplayNames` 在 Node 和浏览器的 ICU 数据不同；后果是 React 丢弃服务器 HTML 在客户端重新渲染，可能有闪烁/变慢。
+6. 误报排除：`span.sr-only`（屏幕阅读器专用文字）被检测脚本标成 HARD-CLIP，是正常的。
+
+---
+
 ## 2026-11-17 — 仪表盘删掉4个图：月度走势、现金流分析、Order progress、Logistics progress
 
 Commit: `98b57d2`

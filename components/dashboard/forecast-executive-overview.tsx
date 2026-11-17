@@ -373,7 +373,7 @@ export function ForecastExecutiveOverview({ language, dataSnapshotAt, forecasts,
                   innerRadius={52}
                   outerRadius={88}
                   paddingAngle={2}
-                  label={({ name, percent }) => `${String(name)} ${Math.round((Number(percent) || 0) * 100)}%`}
+                  label={({ percent }) => `${Math.round((Number(percent) || 0) * 100)}%`}
                 >
                   {byRegion.map((_, i) => (
                     <Cell key={String(i)} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="#fff" strokeWidth={1} />
