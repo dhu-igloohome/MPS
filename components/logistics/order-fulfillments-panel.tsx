@@ -278,7 +278,9 @@ export function OrderFulfillmentsPanel({
 }: OrderFulfillmentsPanelProps) {
   const t = labels(language);
   const en = language === "en";
-  const [view, setView] = useState<ShipmentView>("active");
+  // Default to everything: finance reconciles against ALL shipments weekly, so nothing may be hidden
+  // until someone picks a narrower tab on purpose.
+  const [view, setView] = useState<ShipmentView>("all");
 
   const [localShipments, setLocalShipments] = useState<FulfillmentShipmentEntry[]>(shipments);
   const [drafts, setDrafts] = useState<{ tempId: string; groupKey: string }[]>([]);
@@ -835,9 +837,9 @@ export function OrderFulfillmentsPanel({
           >
             {(
               [
-                { key: "attention", label: t.viewAttention, hint: t.viewAttentionHint, count: viewCounts.attention },
-                { key: "active", label: t.viewActive, hint: t.viewActiveHint, count: viewCounts.active },
                 { key: "all", label: t.viewAll, hint: undefined, count: viewCounts.all },
+                { key: "active", label: t.viewActive, hint: t.viewActiveHint, count: viewCounts.active },
+                { key: "attention", label: t.viewAttention, hint: t.viewAttentionHint, count: viewCounts.attention },
               ] as const
             ).map((v) => {
               const on = !soFilter && view === v.key;

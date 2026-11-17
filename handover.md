@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-11-17 — 订单履约：默认视图改为"全部"（Christy 的账号"少了一行"）
+
+Commit: (pending push)
+
+**现象**：David 发来两张截图：Christy 的账号里 SK4/MP7 只有 3 行（IG-SO-1566/1576/1578），David 的账号有 4 行（多了 IG-SO-1567），问是不是 bug。
+
+**结论：不是权限/数据 bug**。Christy 截图里高亮的是 "In progress (7)" 标签，David 的是 "All (18)"，两边 All 都是 18；Christy 那行的 "EU 2,484" = 552+600+732+600（四条之和），说明 1567 在她账号里也存在；缺的那条状态是 Delivered，被默认的"进行中"视图隐藏了。上一条只修了"搜 SO 号"，她这次用的是 SKU 下拉，不在修复范围里。
+
+**David 的决定**：不要隐藏——她每周要对账，必须看到全部记录。
+
+**改动**（`components/logistics/order-fulfillments-panel.tsx`）：默认视图 `active` → `all`；标签顺序改为 All / In progress / Needs attention（"All"排最前）。"进行中""需要处理"两个标签保留，想聚焦时手动点。SO 号搜索"忽略视图、搜全部"的逻辑保留（无害）。
+
+**验证**：`tsc` 干净。真机：打开默认高亮 All（105）、In progress 67、Needs attention 22；选 SKU=SK4 → 18 行，其中 MP7 为 4 行，含 IG-SO-1567，与 David 账号一致。**没验证**：没用 Christy 的真实账号登录（regional_admin 权限下的分组可见性只靠截图里的数字间接确认）；中文界面。
+
+---
+
 ## 2026-11-17 — 订单履约：搜 SO 号时不再被"进行中"视图挡住（IG-SO-1567"显示不出来"）
 
 Commit: `5e26c95`
