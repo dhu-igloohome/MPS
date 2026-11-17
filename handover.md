@@ -8,7 +8,7 @@
 
 ## 2026-11-17 — 订单履约：默认视图改为"全部"（Christy 的账号"少了一行"）
 
-Commit: (pending push)
+Commit: `652c3fb`
 
 **现象**：David 发来两张截图：Christy 的账号里 SK4/MP7 只有 3 行（IG-SO-1566/1576/1578），David 的账号有 4 行（多了 IG-SO-1567），问是不是 bug。
 
