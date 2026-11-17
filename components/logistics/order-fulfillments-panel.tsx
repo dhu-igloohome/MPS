@@ -132,7 +132,7 @@ const STATUS_BADGE: Record<string, string> = {
   "In preparation": "bg-slate-500 text-white",
 };
 const STATUS_BADGE_EMPTY =
-  "bg-slate-100 text-slate-400 ring-1 ring-inset ring-slate-300 dark:bg-slate-700/40 dark:text-slate-500 dark:ring-slate-600";
+  "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-300 dark:bg-slate-700/40 dark:text-slate-500 dark:ring-slate-600";
 const STATUS_ICON: Record<string, typeof CheckCircle2> = {
   Delivered: CheckCircle2,
   "In transit": Truck,
@@ -245,7 +245,7 @@ const autoCellCls =
   "bg-slate-50/70 px-3 py-2.5 align-top text-sm text-foreground/90 dark:bg-transparent";
 
 const thCls =
-  "sticky top-0 z-10 border-b border-app-border bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-foreground/65 dark:bg-app-surface";
+  "sticky top-0 z-10 border-b border-app-border bg-slate-50 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-foreground/65 dark:bg-app-surface";
 
 /**
  * First three columns (Forecast PO / Forecast month / SKU + status) stay pinned to the left while
@@ -915,7 +915,7 @@ export function OrderFulfillmentsPanel({
                               {row.group.forecastPoNumber}
                             </span>
                             {region ? (
-                              <span className="text-[10px] font-medium uppercase tracking-wide text-foreground/45">
+                              <span className="text-xs font-medium uppercase tracking-wide text-foreground/45">
                                 {region}
                               </span>
                             ) : null}
@@ -959,7 +959,7 @@ export function OrderFulfillmentsPanel({
                                     {issues.map((i) => (
                                       <span
                                         key={i.code}
-                                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold leading-tight ring-1 ring-inset ${
+                                        className={`rounded px-1.5 py-0.5 text-xs font-semibold leading-tight ring-1 ring-inset ${
                                           i.code === "etaPassed"
                                             ? "bg-red-100 text-red-800 ring-red-300 dark:bg-red-500/15 dark:text-red-200 dark:ring-red-500/40"
                                             : "bg-amber-100 text-amber-900 ring-amber-300 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-500/40"
@@ -1002,7 +1002,7 @@ export function OrderFulfillmentsPanel({
                           ? (() => {
                               const { byRegion, left } = bufferUsage(row.group);
                               return (
-                                <div className="mt-1 flex flex-col items-end gap-0.5 text-[11px] font-normal text-foreground/60">
+                                <div className="mt-1 flex flex-col items-end gap-0.5 text-xs font-normal text-foreground/60">
                                   {[...SHIPMENT_REGIONS, ""].map((r) => {
                                     const qty = byRegion.get(r);
                                     return qty ? (

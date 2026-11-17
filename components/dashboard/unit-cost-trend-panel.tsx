@@ -49,7 +49,7 @@ export function UnitCostTrendPanel({ language, quotes }: { language: Language; q
       </div>
 
       {!trend || trend.rows.length === 0 ? (
-        <p className="py-8 text-center text-sm text-[#9CA3AF]">
+        <p className="py-8 text-center text-sm text-[#6B7280]">
           {en ? "No SKU has two or more quotes yet." : "暂无 SKU 有 2 条以上报价。"}
         </p>
       ) : (

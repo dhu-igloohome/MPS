@@ -1,12 +1,17 @@
 @import "tailwindcss";
 
+/* The app has no dark theme (color-scheme: light, white surfaces). Without this, every `dark:`
+   class fires for users whose OS is in dark mode and paints light text on the white UI.
+   Dark styles now apply only under an explicit `.dark` ancestor, which nothing sets. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   color-scheme: light;
   --background: #f9fafb;
   --foreground: #111827;
   --app-surface: #ffffff;
   --app-muted: #4b5563;
-  --app-subtle: #9ca3af;
+  --app-subtle: #6b7280;
   --app-border: #e5e7eb;
   --app-border-strong: #d1d5db;
   --app-accent: #ee6454;

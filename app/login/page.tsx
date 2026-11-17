@@ -129,7 +129,7 @@ export default function LoginPage() {
           <label className="block">
             <span className="mb-1 block text-sm text-foreground">{t.username}</span>
             <div className="relative">
-              <User size={16} strokeWidth={1.5} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+              <User size={16} strokeWidth={1.5} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]" />
               <input
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
@@ -142,7 +142,7 @@ export default function LoginPage() {
           <label className="block">
             <span className="mb-1 block text-sm text-foreground">{t.password}</span>
             <div className="relative">
-              <Lock size={16} strokeWidth={1.5} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+              <Lock size={16} strokeWidth={1.5} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]" />
               <input
                 type="password"
                 value={password}

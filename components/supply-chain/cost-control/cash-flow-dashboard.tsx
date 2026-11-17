@@ -445,16 +445,16 @@ function LcPaymentBarTooltip({
                 <span style={{ color: p.color }}>■ </span>
                 {formatUsd(Number(p.value), 2)}
               </p>
-              <p className="mt-1 text-[11px] text-[#4B5563] dark:text-slate-400">
+              <p className="mt-1 text-xs text-[#4B5563] dark:text-slate-400">
                 {tipSku}: <span className="text-foreground">{meta.sku}</span>
               </p>
-              <p className="text-[11px] text-[#4B5563] dark:text-slate-400">
+              <p className="text-xs text-[#4B5563] dark:text-slate-400">
                 {tipDest}: <span className="text-foreground">{meta.destinationLabel}</span>
               </p>
-              <p className="text-[11px] text-[#4B5563] dark:text-slate-400">
+              <p className="text-xs text-[#4B5563] dark:text-slate-400">
                 {tipTotal}: <span className="text-foreground">{formatUsd(meta.totalUsd, 2)}</span>
               </p>
-              <p className="text-[11px] text-[#4B5563] dark:text-slate-400">
+              <p className="text-xs text-[#4B5563] dark:text-slate-400">
                 {tipDue}:{" "}
                 <span className="text-foreground" lang="en">
                   {formatPoIssueDateEnglish(meta.paymentDueYmd)}
@@ -491,7 +491,7 @@ function FcPaymentBarTooltip({
     <div className="max-w-xs rounded-lg border border-app-border bg-white/95 px-3 py-2 text-xs shadow-md backdrop-blur">
       <p className="mb-1.5 font-medium text-[#111827]">{label}</p>
       {deposits.length > 0 ? (
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-indigo-600">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-indigo-600">
           {en ? "Deposits" : "订金"}
         </p>
       ) : null}
@@ -502,7 +502,7 @@ function FcPaymentBarTooltip({
         </p>
       ))}
       {balances.length > 0 ? (
-        <p className="mb-1 mt-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+        <p className="mb-1 mt-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">
           {en ? "Balances" : "尾款"}
         </p>
       ) : null}
@@ -898,7 +898,7 @@ export function CashFlowDashboard({
         {dashboardChartsOnly ? (
           <>
           {fcFilterMonthKey ? (
-            <p className="text-xs text-[#9CA3AF]">
+            <p className="text-xs text-[#6B7280]">
               {t.dashFilteredNote}{" "}
               <span className="font-medium text-slate-600 dark:text-slate-300">
                 {formatForecastMonthCell(fcFilterMonthKey, language)}
@@ -907,19 +907,19 @@ export function CashFlowDashboard({
           ) : null}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <article className="min-w-0 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-              <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.dashForecastTotal}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">{t.dashForecastTotal}</p>
               <p className="mt-2 text-xl font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
                 {fcSumComputable > 0 ? formatUsd(fcSumComputable, 2) : t.na}
               </p>
             </article>
             <article className="min-w-0 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-              <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.dashDepositDue}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">{t.dashDepositDue}</p>
               <p className="mt-2 text-xl font-semibold tabular-nums text-slate-800 dark:text-slate-100">
                 {fcSumDeposits > 0 ? formatUsd(fcSumDeposits, 2) : t.na}
               </p>
             </article>
             <article className="min-w-0 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-              <p className="text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">{t.dashBalanceDue}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">{t.dashBalanceDue}</p>
               <p className="mt-2 text-xl font-semibold tabular-nums text-slate-800 dark:text-slate-100">
                 {fcSumBalances > 0 ? formatUsd(fcSumBalances, 2) : t.na}
               </p>
@@ -930,7 +930,7 @@ export function CashFlowDashboard({
         {!dashboardChartsOnly ? (
           <>
             <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.fcSummaryTitle}</h5>
-            <p className="mt-1 text-xs text-[#9CA3AF]">{t.fcSummaryHint}</p>
+            <p className="mt-1 text-xs text-[#6B7280]">{t.fcSummaryHint}</p>
             <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[1080px] border-collapse text-xs sm:text-sm">
               <thead>
@@ -975,7 +975,7 @@ export function CashFlowDashboard({
               <tbody>
                 {fcDashboardRows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400">
+                    <td colSpan={8} className="py-8 text-center text-slate-500">
                       {t.fcNoRows}
                     </td>
                   </tr>
@@ -1008,16 +1008,16 @@ export function CashFlowDashboard({
                       </td>
                       <td className="min-w-[7.5rem] py-2 pr-3 align-top">
                         {lineTotal == null || !row.poIssueDate || !row.cashFlowSupplierName.trim() ? (
-                          <span className="text-slate-400" title={t.fcPayNeedPoAndTotal}>
+                          <span className="text-slate-500" title={t.fcPayNeedPoAndTotal}>
                             {t.na}
                           </span>
                         ) : unknownSupplier ? (
-                          <span className="text-slate-400" title={t.fcPayUnknownSupplier}>
+                          <span className="text-slate-500" title={t.fcPayUnknownSupplier}>
                             {t.na}
                           </span>
                         ) : schedule?.parseFailed ? (
                           <span
-                            className="cursor-help text-slate-400"
+                            className="cursor-help text-slate-500"
                             title={`${t.fcPayParseTerms}\n${supMeta?.paymentTerms ?? ""}`}
                           >
                             {t.na}
@@ -1032,21 +1032,21 @@ export function CashFlowDashboard({
                             </span>
                           </div>
                         ) : (
-                          <span className="text-slate-400">{t.na}</span>
+                          <span className="text-slate-500">{t.na}</span>
                         )}
                       </td>
                       <td className="min-w-[7.5rem] py-2 pr-3 align-top">
                         {lineTotal == null || !row.poIssueDate || !row.cashFlowSupplierName.trim() ? (
-                          <span className="text-slate-400" title={t.fcPayNeedPoAndTotal}>
+                          <span className="text-slate-500" title={t.fcPayNeedPoAndTotal}>
                             {t.na}
                           </span>
                         ) : unknownSupplier ? (
-                          <span className="text-slate-400" title={t.fcPayUnknownSupplier}>
+                          <span className="text-slate-500" title={t.fcPayUnknownSupplier}>
                             {t.na}
                           </span>
                         ) : schedule?.parseFailed ? (
                           <span
-                            className="cursor-help text-slate-400"
+                            className="cursor-help text-slate-500"
                             title={`${t.fcPayParseTerms}\n${supMeta?.paymentTerms ?? ""}`}
                           >
                             {t.na}
@@ -1061,7 +1061,7 @@ export function CashFlowDashboard({
                             </span>
                           </div>
                         ) : (
-                          <span className="text-slate-400">{t.na}</span>
+                          <span className="text-slate-500">{t.na}</span>
                         )}
                       </td>
                     </tr>
@@ -1083,19 +1083,19 @@ export function CashFlowDashboard({
                           {fcSumDeposits > 0 ? (
                             <span title={t.fcSumDeposits}>{formatUsd(fcSumDeposits, 2)}</span>
                           ) : (
-                            <span className="text-slate-400">{t.na}</span>
+                            <span className="text-slate-500">{t.na}</span>
                           )}
                         </td>
                         <td className="py-2 pr-3 text-right text-sm font-medium tabular-nums text-slate-700 dark:text-slate-200">
                           {fcSumBalances > 0 ? (
                             <span title={t.fcSumBalances}>{formatUsd(fcSumBalances, 2)}</span>
                           ) : (
-                            <span className="text-slate-400">{t.na}</span>
+                            <span className="text-slate-500">{t.na}</span>
                           )}
                         </td>
                       </>
                     ) : (
-                      <td colSpan={8} className="py-3 text-center text-xs text-slate-400">
+                      <td colSpan={8} className="py-3 text-center text-xs text-slate-500">
                         {t.fcEmpty}
                       </td>
                     )}
@@ -1119,7 +1119,7 @@ export function CashFlowDashboard({
                 <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                   {fcBarBucketMode === "forecastMonth" ? t.fcBarTitleForecast : t.fcBarTitle}
                 </h6>
-                <p className="mt-1 text-xs text-[#9CA3AF]">
+                <p className="mt-1 text-xs text-[#6B7280]">
                   {fcBarBucketMode === "forecastMonth"
                     ? dashboardChartsOnly
                       ? t.fcBarHintForecastDash
@@ -1161,7 +1161,7 @@ export function CashFlowDashboard({
             <div className="mt-3 h-80 w-full min-w-0">
               {!fcBarHasAnyAmount ? (
                 <div className="py-10">
-                  <p className="text-center text-sm text-slate-400">
+                  <p className="text-center text-sm text-slate-500">
                     {fcBarBucketMode === "forecastMonth" ? t.fcBarNoDataForecast : t.fcBarNoData}
                   </p>
                   {fcBarDiagnostics.total > 0 && fcBarDiagnostics.schedulable === 0 ? (
@@ -1273,7 +1273,7 @@ export function CashFlowDashboard({
           <>
           <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
             <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.lcTitle}</h6>
-            <p className="mt-1 text-xs text-[#9CA3AF]">{t.lcHint}</p>
+            <p className="mt-1 text-xs text-[#6B7280]">{t.lcHint}</p>
             {!dashboardChartsOnly ? (
             <div className="mt-3 overflow-x-auto">
               <table className="w-full min-w-[2200px] border-collapse text-xs sm:text-sm">
@@ -1302,13 +1302,13 @@ export function CashFlowDashboard({
                 <tbody>
                   {forecastCashFlowRows.length === 0 ? (
                     <tr>
-                      <td colSpan={18} className="py-8 text-center text-slate-400">
+                      <td colSpan={18} className="py-8 text-center text-slate-500">
                         {t.lcNoRows}
                       </td>
                     </tr>
                   ) : !hasAnyPublishedLandedCost ? (
                     <tr>
-                      <td colSpan={18} className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">
+                      <td colSpan={18} className="py-12 text-center text-sm text-slate-500 dark:text-slate-500">
                         {t.lcEmptyUntilLogistics}
                       </td>
                     </tr>
@@ -1394,11 +1394,11 @@ export function CashFlowDashboard({
                         {t.lcSumLabel}
                       </td>
                       <td className="py-2.5 pr-2 text-right text-sm font-semibold tabular-nums text-emerald-800 dark:text-emerald-300">
-                        {lcTableSums.sumTotalUsd > 0 ? formatUsd(lcTableSums.sumTotalUsd, 2) : <span className="text-slate-400">{t.na}</span>}
+                        {lcTableSums.sumTotalUsd > 0 ? formatUsd(lcTableSums.sumTotalUsd, 2) : <span className="text-slate-500">{t.na}</span>}
                       </td>
                       <td
                         colSpan={2}
-                        className="py-2.5 pr-2 text-left text-[11px] text-slate-500 dark:text-slate-400"
+                        className="py-2.5 pr-2 text-left text-xs text-slate-500 dark:text-slate-400"
                         title={t.lcSumLineCount}
                       >
                         {lcTableSums.computableLines} / {publishedLandedRows.length}
@@ -1413,13 +1413,13 @@ export function CashFlowDashboard({
             {forecastCashFlowRows.length > 0 && hasAnyPublishedLandedCost ? (
             <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
               <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.lcBarTitle}</h6>
-              <p className="mt-1 text-xs text-[#9CA3AF]">{t.lcBarHint}</p>
+              <p className="mt-1 text-xs text-[#6B7280]">{t.lcBarHint}</p>
               {lcPaymentBar.seriesOrder.length > 12 ? (
-                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{t.lcBarLegendHint}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t.lcBarLegendHint}</p>
               ) : null}
               <div className="mt-3 h-80 w-full min-w-0">
                 {!lcBarHasAnyAmount ? (
-                  <p className="py-16 text-center text-sm text-slate-400">{t.lcBarNoData}</p>
+                  <p className="py-16 text-center text-sm text-slate-500">{t.lcBarNoData}</p>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -1495,11 +1495,11 @@ export function CashFlowDashboard({
 
           <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-slate-700">
             <h6 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.summaryBarTitle}</h6>
-            <p className="mt-1 text-xs text-[#9CA3AF]">{t.summaryBarHint}</p>
+            <p className="mt-1 text-xs text-[#6B7280]">{t.summaryBarHint}</p>
             <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-stretch">
               <div className="h-80 min-w-0 flex-1">
                 {!fcLcSummaryHasData ? (
-                  <p className="py-16 text-center text-sm text-slate-400">{t.summaryNoData}</p>
+                  <p className="py-16 text-center text-sm text-slate-500">{t.summaryNoData}</p>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -1564,11 +1564,11 @@ export function CashFlowDashboard({
                             {r.scheduledTotal > 0 ? (
                               formatUsd(r.scheduledTotal, 2)
                             ) : (
-                              <span className="text-slate-400">{t.na}</span>
+                              <span className="text-slate-500">{t.na}</span>
                             )}
                           </td>
                           <td className="py-2 text-right tabular-nums text-slate-700 dark:text-slate-200">
-                            {r.landedTotal > 0 ? formatUsd(r.landedTotal, 2) : <span className="text-slate-400">{t.na}</span>}
+                            {r.landedTotal > 0 ? formatUsd(r.landedTotal, 2) : <span className="text-slate-500">{t.na}</span>}
                           </td>
                         </tr>
                       ))}

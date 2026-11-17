@@ -41,7 +41,7 @@ export function ProductionManagementPanel({ language }: ProductionManagementPane
                   <span className="text-xs font-medium uppercase tracking-wide text-foreground/55">
                     {slotLabel(n)}
                   </span>
-                  <span className="shrink-0 rounded-md border border-app-border/60 bg-app-surface px-2 py-0.5 text-[10px] font-medium text-foreground/50">
+                  <span className="shrink-0 rounded-md border border-app-border/60 bg-app-surface px-2 py-0.5 text-xs font-medium text-foreground/50">
                     {slotHint}
                   </span>
                 </div>

@@ -271,7 +271,7 @@ function ForecastDateRangeFilterPanel({
   return (
     <div className="w-52 rounded-xl border border-app-border bg-white p-2 text-left text-xs font-normal normal-case text-foreground shadow-lg">
       <label className="mb-1.5 block">
-        <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-app-muted">{fromLabel}</span>
+        <span className="mb-0.5 block text-xs uppercase tracking-wide text-app-muted">{fromLabel}</span>
         <input
           type="date"
           value={from}
@@ -280,7 +280,7 @@ function ForecastDateRangeFilterPanel({
         />
       </label>
       <label className="mb-2 block">
-        <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-app-muted">{toLabel}</span>
+        <span className="mb-0.5 block text-xs uppercase tracking-wide text-app-muted">{toLabel}</span>
         <input
           type="date"
           value={to}
@@ -1295,7 +1295,7 @@ export function ForecastForm({
                     <Download size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-app-muted" />
                     <span>
                       <span className="block font-medium text-foreground">{t.downloadTemplate}</span>
-                      <span className="block text-[11px] leading-snug text-app-muted">{t.templateHint}</span>
+                      <span className="block text-xs leading-snug text-app-muted">{t.templateHint}</span>
                     </span>
                   </a>
                   <button
@@ -1311,7 +1311,7 @@ export function ForecastForm({
                     <Upload size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-app-muted" />
                     <span>
                       <span className="block font-medium text-foreground">{t.batchImport}</span>
-                      <span className="block text-[11px] leading-snug text-app-muted">{t.csvHint}</span>
+                      <span className="block text-xs leading-snug text-app-muted">{t.csvHint}</span>
                     </span>
                   </button>
                   <button
@@ -1328,10 +1328,10 @@ export function ForecastForm({
                     <CloudDownload size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-app-muted" />
                     <span>
                       <span className="block font-medium text-foreground">{t.apiImport}</span>
-                      <span className="block text-[11px] leading-snug text-app-muted">{t.apiHint}</span>
+                      <span className="block text-xs leading-snug text-app-muted">{t.apiHint}</span>
                     </span>
                   </button>
-                  <p className="mt-1 whitespace-pre-line border-t border-app-border/60 px-2.5 pb-1 pt-2 text-[11px] leading-snug text-app-muted">
+                  <p className="mt-1 whitespace-pre-line border-t border-app-border/60 px-2.5 pb-1 pt-2 text-xs leading-snug text-app-muted">
                     {t.importHelp}
                   </p>
                 </div>
@@ -1354,7 +1354,7 @@ export function ForecastForm({
                     <col className="w-9" />
                   </colgroup>
                   <thead>
-                    <tr className="[&>th]:bg-slate-50/90 [&>th]:px-2 [&>th]:py-2 [&>th]:text-left [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-app-muted">
+                    <tr className="[&>th]:bg-slate-50/90 [&>th]:px-2 [&>th]:py-2 [&>th]:text-left [&>th]:text-xs [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-app-muted">
                       <th>{t.lineNo}</th>
                       <th>{t.sku}</th>
                       <th>{t.destination}</th>
@@ -1382,7 +1382,7 @@ export function ForecastForm({
                               </option>
                             ))}
                           </select>
-                          <p className="mt-0.5 truncate text-[11px] leading-tight text-app-muted" title={line.productName}>
+                          <p className="mt-0.5 truncate text-xs leading-tight text-app-muted" title={line.productName}>
                             {line.productName}
                           </p>
                         </td>
@@ -1446,7 +1446,7 @@ export function ForecastForm({
                           <div className="flex flex-col gap-1">
                             {line.kind === "both" ? (
                               <>
-                                <label className="flex items-center gap-1 text-[11px] text-app-muted">
+                                <label className="flex items-center gap-1 text-xs text-app-muted">
                                   <span className="w-7 shrink-0">{t.btoHeader}</span>
                                   <input
                                     type="number"
@@ -1457,7 +1457,7 @@ export function ForecastForm({
                                     aria-label={t.bto}
                                   />
                                 </label>
-                                <label className="flex items-center gap-1 text-[11px] text-app-muted">
+                                <label className="flex items-center gap-1 text-xs text-app-muted">
                                   <span className="w-7 shrink-0">{t.btsHeader}</span>
                                   <input
                                     type="number"
@@ -2003,7 +2003,7 @@ export function ForecastForm({
                               {item.poNumber || "—"}
                             </p>
                             <p
-                              className="text-[11px] leading-tight tabular-nums text-app-muted"
+                              className="text-xs leading-tight tabular-nums text-app-muted"
                               title={`${t.createdAt}: ${item.createdAt.slice(0, 10)} · ${item.createdBy}`}
                             >
                               {item.createdAt.slice(0, 10)}
@@ -2014,7 +2014,7 @@ export function ForecastForm({
                               <span>{forecastRegionSelectLabel(item.region, language)}</span>
                               {item.demandType === "buffer" ? (
                                 <span
-                                  className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium leading-tight text-amber-800"
+                                  className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium leading-tight text-amber-800"
                                   title={t.bufferHint}
                                 >
                                   {t.bufferYes}
@@ -2026,17 +2026,17 @@ export function ForecastForm({
                             <p className="truncate" title={destLabel}>
                               {destLabel}
                             </p>
-                            <p className="text-[11px] font-medium leading-tight text-app-muted">{item.incoterm}</p>
+                            <p className="text-xs font-medium leading-tight text-app-muted">{item.incoterm}</p>
                           </td>
                           <td>
                             <p className="truncate font-medium">{item.sku}</p>
-                            <p className="truncate text-[11px] leading-tight text-app-muted" title={item.productName}>
+                            <p className="truncate text-xs leading-tight text-app-muted" title={item.productName}>
                               {item.productName}
                             </p>
                           </td>
                           <td className="text-right">
                             <p className="font-medium tabular-nums">{QTY_FORMAT.format(totalQty)}</p>
-                            <p className="text-[11px] leading-tight text-app-muted">
+                            <p className="text-xs leading-tight text-app-muted">
                               {item.buildToOrder > 0 && item.buildToStock > 0
                                 ? `${t.btoHeader} ${QTY_FORMAT.format(item.buildToOrder)} · ${t.btsHeader} ${QTY_FORMAT.format(item.buildToStock)}`
                                 : item.buildToOrder > 0
@@ -2094,7 +2094,7 @@ export function ForecastForm({
                                 {remarkValue ? (
                                   <span className="line-clamp-2 whitespace-pre-line break-words">{remarkValue}</span>
                                 ) : (
-                                  <span className="text-app-muted/70">{t.remarkAdd}</span>
+                                  <span className="text-app-muted">{t.remarkAdd}</span>
                                 )}
                               </button>
                             )}
@@ -2133,14 +2133,14 @@ export function ForecastForm({
                               >
                                 {opsValue ? (
                                   <span
-                                    className={`inline-block max-w-full rounded-full px-2 py-0.5 text-[11px] font-medium leading-tight ring-1 ${
+                                    className={`inline-block max-w-full rounded-full px-2 py-0.5 text-xs font-medium leading-tight ring-1 ${
                                       OPS_ACTION_BADGE[opsValue] ?? "bg-gray-100 text-gray-700 ring-gray-200"
                                     }`}
                                   >
                                     {opsValue}
                                   </span>
                                 ) : (
-                                  <span className="text-app-muted/70">—</span>
+                                  <span className="text-app-muted">—</span>
                                 )}
                               </button>
                             )}

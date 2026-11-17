@@ -199,7 +199,7 @@ export function ForecastExecutiveOverview({
           <span className="tabular-nums text-[#374151]">{latestRowDisplay}</span>
         </p>
       ) : null}
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]">{t.evidenceHeading}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">{t.evidenceHeading}</p>
       <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
         {(
           [
@@ -215,11 +215,11 @@ export function ForecastExecutiveOverview({
             <p className="text-xs font-semibold text-[#374151]">
               {i + 1}. {title}
             </p>
-            <p className="mt-1 text-[11px] leading-relaxed text-[#6B7280]">{body}</p>
+            <p className="mt-1 text-xs leading-relaxed text-[#6B7280]">{body}</p>
           </div>
         ))}
       </div>
-      {forecastExport?.snapshotToken ? <p className="text-[11px] text-[#6B7280]">{t.exportSnapshotHint}</p> : null}
+      {forecastExport?.snapshotToken ? <p className="text-xs text-[#6B7280]">{t.exportSnapshotHint}</p> : null}
     </div>
   );
 
@@ -230,13 +230,13 @@ export function ForecastExecutiveOverview({
       aria-label={en ? "Forecast summary for selected months" : "所选月份 Forecast 摘要"}
     >
       <article className="min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-gradient-to-br from-white to-[#fff4f1]/80 px-3 py-2.5">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bto}</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">{t.bto}</p>
         <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
           {formatNum(kpi.bto)}
         </p>
       </article>
       <article className="min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-gradient-to-br from-white to-emerald-50/60 px-3 py-2.5">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.bts}</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">{t.bts}</p>
         <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
           {formatNum(kpi.bts)}
         </p>
@@ -245,19 +245,19 @@ export function ForecastExecutiveOverview({
         className="min-w-0 overflow-hidden rounded-lg border border-app-accent/35 bg-gradient-to-br from-white to-[#fff4f1]/90 px-3 py-2.5 ring-1 ring-app-accent/15"
         title={t.e3Body}
       >
-        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.total}</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">{t.total}</p>
         <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
           {formatNum(kpi.total)}
         </p>
       </article>
       <article className="min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-white px-3 py-2.5">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.rows}</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">{t.rows}</p>
         <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
           {formatNum(kpi.rowCount)}
         </p>
       </article>
       <article className="col-span-2 min-w-0 overflow-hidden rounded-lg border border-app-border/90 bg-white px-3 py-2.5 sm:col-span-1">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">{t.sku}</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">{t.sku}</p>
         <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-[#111827] sm:text-xl">
           {formatNum(kpi.skuCount)}
         </p>
@@ -267,7 +267,7 @@ export function ForecastExecutiveOverview({
 
   const readingNotes = (
     <details className="mt-3 text-xs">
-      <summary className="cursor-pointer select-none text-[#9CA3AF] hover:text-[#6B7280]">
+      <summary className="cursor-pointer select-none text-[#6B7280] hover:text-[#6B7280]">
         {t.readingNotesSummary}
       </summary>
       {readingNotesDetails}
@@ -319,7 +319,7 @@ export function ForecastExecutiveOverview({
           </div>
           {readingNotes}
         </div>
-        <p className="text-center text-sm text-[#9CA3AF]">{t.empty}</p>
+        <p className="text-center text-sm text-[#6B7280]">{t.empty}</p>
       </section>
     );
   }
@@ -336,11 +336,11 @@ export function ForecastExecutiveOverview({
       <div className="mb-6 min-w-0 rounded-xl border border-app-border/80 bg-gradient-to-br from-[#fafafa] to-white p-4 shadow-sm sm:p-5">
         <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,28rem)] lg:items-start lg:gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(20rem,32rem)]">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]" title={t.fcMonthHint}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]" title={t.fcMonthHint}>
               {t.fcMonthFilter}
             </p>
         {availableForecastMonths.length === 0 ? (
-          <p className="mt-4 text-sm text-[#9CA3AF]">{t.fcMonthNone}</p>
+          <p className="mt-4 text-sm text-[#6B7280]">{t.fcMonthNone}</p>
         ) : (
           <div className="mt-4 min-w-0 overflow-x-auto overscroll-x-contain pb-0.5 [-webkit-overflow-scrolling:touch]">
             <div className="flex w-max max-w-none flex-nowrap gap-2 sm:w-auto sm:flex-wrap sm:pr-0">
@@ -480,7 +480,7 @@ export function ForecastExecutiveOverview({
               </div>
             </div>
           ))}
-          <p className="pt-1 text-[11px] leading-relaxed text-[#6B7280]">{t.funnelNote}</p>
+          <p className="pt-1 text-xs leading-relaxed text-[#6B7280]">{t.funnelNote}</p>
         </div>
       </div>
     </section>

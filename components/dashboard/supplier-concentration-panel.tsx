@@ -31,7 +31,7 @@ export function SupplierConcentrationPanel({ language, contracts }: { language: 
         </p>
       </div>
       {rows.length === 0 ? (
-        <p className="py-8 text-center text-sm text-[#9CA3AF]">{en ? "No contracts yet." : "暂无合同。"}</p>
+        <p className="py-8 text-center text-sm text-[#6B7280]">{en ? "No contracts yet." : "暂无合同。"}</p>
       ) : (
         <div className="app-panel space-y-3 p-4">
           {rows.map((r) => (
@@ -53,7 +53,7 @@ export function SupplierConcentrationPanel({ language, contracts }: { language: 
             </div>
           ))}
           {top ? (
-            <p className="pt-1 text-[11px] text-[#6B7280]">
+            <p className="pt-1 text-xs text-[#6B7280]">
               {en
                 ? `Total ${formatNum(total)} units. Largest supplier: ${top.name} (${top.pct.toFixed(0)}%).`
                 : `合计 ${formatNum(total)} 台。最大供应商：${top.name}（${top.pct.toFixed(0)}%）。`}

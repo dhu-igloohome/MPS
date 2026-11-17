@@ -189,7 +189,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
     <div className="space-y-4">
       <section className="app-card p-4">
         <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.title}</h5>
-        <details className="mt-1 text-xs text-[#9CA3AF]">
+        <details className="mt-1 text-xs text-[#6B7280]">
           <summary className="cursor-pointer select-none font-medium text-foreground/80">
             {en ? "Landed cost rules" : "到岸成本规则说明"}
           </summary>
@@ -228,7 +228,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
             <tbody>
               {dashboardRows.length === 0 ? (
                 <tr>
-                  <td colSpan={15} className="py-8 text-center text-slate-400">
+                  <td colSpan={15} className="py-8 text-center text-slate-500">
                     {t.empty}
                   </td>
                 </tr>
@@ -293,7 +293,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                           aria-label={t.tariff}
                         />
                       ) : (
-                        <span className="tabular-nums text-slate-400 dark:text-slate-500">{t.na}</span>
+                        <span className="tabular-nums text-slate-500 dark:text-slate-500">{t.na}</span>
                       )}
                     </td>
                     <td className="py-2 pr-3 align-top">
@@ -313,7 +313,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                           <option value="air">{t.shipAir}</option>
                         </select>
                       ) : (
-                        <span className="text-slate-400 dark:text-slate-500">{t.na}</span>
+                        <span className="text-slate-500 dark:text-slate-500">{t.na}</span>
                       )}
                     </td>
                     <td className="py-2 pr-3 text-right align-top">
@@ -342,7 +342,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                           aria-label={t.freight}
                         />
                       ) : (
-                        <span className="tabular-nums text-slate-400 dark:text-slate-500">{t.na}</span>
+                        <span className="tabular-nums text-slate-500 dark:text-slate-500">{t.na}</span>
                       )}
                     </td>
                     <td className="py-2 pr-3 align-top">
@@ -393,7 +393,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                           {t.saveLanded}
                         </button>
                       ) : (
-                        <span className="text-slate-400 dark:text-slate-500">{t.na}</span>
+                        <span className="text-slate-500 dark:text-slate-500">{t.na}</span>
                       )}
                     </td>
                   </tr>
@@ -419,7 +419,7 @@ export function LandedCostConsolidatePanel({ language, rows: initialRows }: Prop
                       </td>
                     </>
                   ) : (
-                    <td colSpan={15} className="py-3 text-center text-xs text-slate-400">
+                    <td colSpan={15} className="py-3 text-center text-xs text-slate-500">
                       {t.sumEmpty}
                     </td>
                   )}

@@ -121,7 +121,7 @@ export async function AppShell({ session, title, description, headerMeta, module
                   <span className="hidden sm:inline">{session.displayName}</span>
                   <span className="sm:hidden">{session.displayName.split(/\s+/)[0] || session.displayName}</span>
                 </p>
-                <p className="truncate text-[11px] text-app-muted">{session.role}</p>
+                <p className="truncate text-xs text-app-muted">{session.role}</p>
               </div>
             </div>
             <LanguageToggle language={language} />
@@ -141,7 +141,7 @@ export async function AppShell({ session, title, description, headerMeta, module
                   {title}
                 </h2>
                 {headerMeta ? (
-                  <div className="min-w-0 max-w-full shrink-0 text-xs text-[#9CA3AF] sm:max-w-[min(100%,22rem)] sm:pt-0.5 sm:text-right">
+                  <div className="min-w-0 max-w-full shrink-0 text-xs text-[#6B7280] sm:max-w-[min(100%,22rem)] sm:pt-0.5 sm:text-right">
                     <span className="inline-block max-w-full align-top sm:text-right">{headerMeta}</span>
                   </div>
                 ) : null}
