@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { ChevronDown, CloudDownload, Download, Filter, Plus, Trash2, Upload, X } from "lucide-react";
+import { ChevronDown, CloudDownload, Download, Filter, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
 
 import {
   buildForecastDestinationOptions,
@@ -23,7 +23,6 @@ import {
   switchQuantityKind,
   type QuantityKind,
 } from "@/lib/forecast-entry-defaults";
-import { TableCellLongText } from "@/components/shared/table-cell-long-text";
 import { Language } from "@/lib/i18n";
 import { ForecastDemandType, ForecastEntry, ForecastRegion, ProductItem, Region } from "@/lib/types";
 
@@ -149,6 +148,32 @@ function formatForecastMonthDisplay(ym: string, language: Language): string {
     return new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
   }
   return `${y}年${mo}月`;
+}
+
+const QTY_FORMAT = new Intl.NumberFormat("en-US");
+
+/** Ops action → badge colours, so a column of status text can be scanned by colour. */
+const OPS_ACTION_BADGE: Record<string, string> = {
+  "Ok to issue PO": "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  "Review the demand by next MP build": "bg-sky-50 text-sky-700 ring-sky-200",
+  "Not build new lot because of MOQ": "bg-amber-50 text-amber-800 ring-amber-200",
+  "Consider stock transfer from other region": "bg-violet-50 text-violet-700 ring-violet-200",
+};
+
+/** Ref callbacks with a stable identity run once on mount (not on every render). */
+function focusEnd(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.focus();
+  el.setSelectionRange(el.value.length, el.value.length);
+}
+function focusAndOpen(el: HTMLSelectElement | null) {
+  if (!el) return;
+  el.focus();
+  try {
+    el.showPicker?.();
+  } catch {
+    /* needs a user gesture; the select is focused either way */
+  }
 }
 
 function ForecastCheckboxFilterPanel({
@@ -481,9 +506,11 @@ export function ForecastForm({
     forecastNumberLabel: language === "en" ? "Forecast #" : "Forecast 编号",
     editSaveFailed: language === "en" ? "Save failed." : "保存失败。",
     editSaved: language === "en" ? "Saved." : "已保存。",
-    comment: language === "en" ? "Comment" : "评论",
-    commentSaved: language === "en" ? "Comment saved." : "评论已保存。",
-    commentSaveFailed: language === "en" ? "Could not save comment." : "评论保存失败。",
+    commentSaved: language === "en" ? "Remark saved." : "备注已保存。",
+    commentSaveFailed: language === "en" ? "Could not save remark." : "备注保存失败。",
+    remarkAdd: language === "en" ? "+ Add remark" : "+ 添加备注",
+    remarkPlaceholder: language === "en" ? "Add a remark…" : "输入备注…",
+    destIncoterm: language === "en" ? "Destination / Incoterm" : "目的国 / 贸易术语",
     filterSearchPlaceholder: language === "en" ? "Search…" : "搜索…",
     filterSelectAll: language === "en" ? "Select all" : "全选",
     filterClear: language === "en" ? "Clear" : "清除",
@@ -518,6 +545,9 @@ export function ForecastForm({
   const [batchErrors, setBatchErrors] = useState<{ row: number; message: string }[]>([]);
   const batchFileRef = useRef<HTMLInputElement>(null);
   const importMenuRef = useRef<HTMLDivElement>(null);
+  /** The records-table cell currently being edited in place (remark text or Ops action). */
+  const [editingCell, setEditingCell] = useState<{ id: string; field: "remark" | "ops" } | null>(null);
+  const escapedRef = useRef(false);
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const forecastEditPanelRef = useRef<HTMLDivElement>(null);
   const [editDraft, setEditDraft] = useState<ForecastEditDraft | null>(null);
@@ -1049,8 +1079,8 @@ export function ForecastForm({
     router.refresh();
   }
 
-  async function saveInlineOpsAction(item: ForecastEntry) {
-    const draft = (inlineOpsActionById[item.id] ?? item.opsAction).trim();
+  async function saveInlineOpsAction(item: ForecastEntry, value?: string) {
+    const draft = (value ?? inlineOpsActionById[item.id] ?? item.opsAction).trim();
     if (draft === (item.opsAction || "").trim()) return;
     setSavingOpsActionId(item.id);
     setMessage("");
@@ -1140,7 +1170,7 @@ export function ForecastForm({
                 value={month}
                 onChange={(event) => setMonth(event.target.value)}
                 required
-                className="app-control-sm px-3 py-2 text-sm"
+                className="min-h-9 rounded-[0.625rem] app-control-sm px-3 py-2 text-sm"
               >
                 {forecastMonthPicker.options.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -1164,7 +1194,7 @@ export function ForecastForm({
                     onRegionChange(next as Region);
                   }
                 }}
-                className="app-control-sm px-3 py-2 text-sm"
+                className="min-h-9 rounded-[0.625rem] app-control-sm px-3 py-2 text-sm"
               >
                 {allowedRegions.map((item) => (
                   <option key={item} value={item}>
@@ -1181,7 +1211,7 @@ export function ForecastForm({
                 <select
                   value={region}
                   onChange={(event) => onRegionChange(event.target.value as ForecastRegion)}
-                  className="app-control-sm px-3 py-2 text-sm"
+                  className="min-h-9 rounded-[0.625rem] app-control-sm px-3 py-2 text-sm"
                 >
                   <option value="OPS Department">{t.bufferStockOption}</option>
                   {allowedRegions.map((item) => (
@@ -1194,7 +1224,7 @@ export function ForecastForm({
             ) : null}
 
             <label
-              className="flex min-h-[38px] shrink-0 items-center gap-2 rounded-xl border border-app-border bg-white px-3 py-2 text-sm"
+              className="flex min-h-[36px] shrink-0 items-center gap-2 rounded-[0.625rem] border border-app-border bg-white px-3 py-1.5 text-sm"
               title={t.useExistingPo}
             >
               <input
@@ -1221,7 +1251,7 @@ export function ForecastForm({
                   value={selectedPoNumber}
                   onChange={(event) => setSelectedPoNumber(event.target.value)}
                   required
-                  className="app-control-md px-3 py-2 text-sm"
+                  className="min-h-9 rounded-[0.625rem] app-control-md px-3 py-2 text-sm"
                 >
                   {regionPoOptions.map((po) => (
                     <option key={po} value={po}>
@@ -1245,7 +1275,7 @@ export function ForecastForm({
                 onClick={() => setImportMenuOpen((v) => !v)}
                 aria-haspopup="menu"
                 aria-expanded={importMenuOpen}
-                className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-app-border bg-white px-3 py-2 text-sm text-foreground/85 transition hover:border-app-accent/40 hover:bg-app-accent-soft/40"
+                className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[0.625rem] border border-app-border bg-white px-3 py-1.5 text-sm text-foreground/85 transition hover:border-app-accent/40 hover:bg-app-accent-soft/40"
               >
                 <Upload size={15} strokeWidth={1.75} />
                 {t.importMenu}
@@ -1310,21 +1340,7 @@ export function ForecastForm({
           </div>
 
           <div className="min-w-0 md:col-span-12">
-            <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-app-accent/25 bg-app-accent-soft/35 px-3 py-2">
-              <div className="min-w-0">
-                <span className="text-xs font-semibold uppercase tracking-wide text-foreground/80">{t.skuLines}</span>
-                <p className="mt-0.5 text-[11px] text-app-muted">{t.addLineHint}</p>
-              </div>
-              <button
-                type="button"
-                onClick={addSkuLine}
-                disabled={products.length === 0}
-                className="app-button-primary inline-flex shrink-0 items-center gap-1.5 px-3.5 py-2 text-sm font-semibold shadow-sm transition duration-150 ease-out hover:-translate-y-px hover:shadow-md active:translate-y-0 disabled:opacity-50"
-              >
-                <Plus size={16} strokeWidth={2} />
-                {t.addLine}
-              </button>
-            </div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-foreground/80">{t.skuLines}</p>
             <div className="app-table-shell overflow-hidden rounded-xl border border-app-border/90">
               <div className="overflow-x-auto">
                 <table className="app-table w-full min-w-[52rem] table-fixed text-sm">
@@ -1357,7 +1373,7 @@ export function ForecastForm({
                             value={line.sku}
                             onChange={(event) => updateLineSku(line.key, event.target.value)}
                             required
-                            className="app-control-sm max-w-full px-2 py-1.5 text-sm"
+                            className="min-h-9 rounded-[0.625rem] app-control-sm max-w-full px-2 py-1.5 text-sm"
                             aria-label={t.sku}
                           >
                             {skuOptions.map((item) => (
@@ -1383,7 +1399,7 @@ export function ForecastForm({
                             }
                             required
                             title={t.destinationHint}
-                            className="app-control-md max-w-full px-2 py-1.5 text-sm"
+                            className="min-h-9 rounded-[0.625rem] app-control-md max-w-full px-2 py-1.5 text-sm"
                             aria-label={t.destination}
                           >
                             <option value="" disabled>
@@ -1416,7 +1432,7 @@ export function ForecastForm({
                             }
                             required
                             title={forecastIncotermHint(line.incoterm, language)}
-                            className="app-control-xs px-2 py-1.5 text-sm font-medium"
+                            className="min-h-9 rounded-[0.625rem] app-control-xs px-2 py-1.5 text-sm font-medium"
                             aria-label={t.incoterm}
                           >
                             {FORECAST_INCOTERMS.map((code) => (
@@ -1437,7 +1453,7 @@ export function ForecastForm({
                                     min={0}
                                     value={line.buildToOrder}
                                     onChange={(event) => updateLine(line.key, { buildToOrder: event.target.value })}
-                                    className="app-control-num px-2 py-1.5 text-sm"
+                                    className="min-h-9 rounded-[0.625rem] app-control-num px-2 py-1.5 text-sm"
                                     aria-label={t.bto}
                                   />
                                 </label>
@@ -1448,7 +1464,7 @@ export function ForecastForm({
                                     min={0}
                                     value={line.buildToStock}
                                     onChange={(event) => updateLine(line.key, { buildToStock: event.target.value })}
-                                    className="app-control-num px-2 py-1.5 text-sm"
+                                    className="min-h-9 rounded-[0.625rem] app-control-num px-2 py-1.5 text-sm"
                                     aria-label={t.bts}
                                   />
                                 </label>
@@ -1467,7 +1483,7 @@ export function ForecastForm({
                                       : { buildToStock: event.target.value },
                                   )
                                 }
-                                className="app-control-num w-full px-2 py-1.5 text-sm"
+                                className="min-h-9 rounded-[0.625rem] app-control-num w-full px-2 py-1.5 text-sm"
                                 aria-label={line.kind === "bto" ? t.bto : t.bts}
                               />
                             )}
@@ -1480,7 +1496,7 @@ export function ForecastForm({
                                   ...switchQuantityKind(line.kind, to, line.buildToOrder, line.buildToStock),
                                 });
                               }}
-                              className="app-control-sm max-w-full px-1.5 py-1 text-xs"
+                              className="app-control-sm max-w-full rounded-lg px-1.5 py-1 text-xs"
                               aria-label={t.qtyKind}
                             >
                               <option value="bts">{t.bts}</option>
@@ -1499,7 +1515,7 @@ export function ForecastForm({
                               )
                             }
                             placeholder={language === "en" ? "Optional" : "可选"}
-                            className="w-full min-w-0 resize-y rounded-lg border border-app-border bg-white px-2 py-1.5 text-sm leading-snug"
+                            className="min-h-9 rounded-[0.625rem] w-full min-w-0 resize-y border border-app-border bg-white px-2 py-1.5 text-sm leading-snug"
                             aria-label={t.remark}
                           />
                         </td>
@@ -1543,7 +1559,7 @@ export function ForecastForm({
             <button
               type="submit"
               disabled={loading || products.length === 0}
-              className="app-button-primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-60"
+              className="app-button-primary inline-flex min-h-[36px] items-center justify-center gap-2 rounded-[0.625rem] px-4 py-1.5 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-60"
             >
               {loading ? t.saving : t.saveForecast}
             </button>
@@ -1565,7 +1581,7 @@ export function ForecastForm({
               <input
                 value={editDraft.poNumber || "—"}
                 readOnly
-                className="app-control-md rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm"
+                className="min-h-9 rounded-[0.625rem] app-control-md rounded-lg border border-app-border bg-gray-50 px-3 py-2 text-sm"
               />
             </label>
             <label className="block shrink-0">
@@ -1573,7 +1589,7 @@ export function ForecastForm({
               <select
                 value={editDraft.month}
                 onChange={(e) => setEditDraft((d) => (d ? { ...d, month: e.target.value } : d))}
-                className="app-control-sm px-3 py-2 text-sm"
+                className="min-h-9 rounded-[0.625rem] app-control-sm px-3 py-2 text-sm"
               >
                 {forecastMonthPicker.options.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -1596,7 +1612,7 @@ export function ForecastForm({
                     return { ...d, isBuffer: false, region: next as Region };
                   });
                 }}
-                className="app-control-sm px-3 py-2 text-sm"
+                className="min-h-9 rounded-[0.625rem] app-control-sm px-3 py-2 text-sm"
               >
                 {allowedRegions.map((item) => (
                   <option key={item} value={item}>
@@ -1614,7 +1630,7 @@ export function ForecastForm({
                   onChange={(e) =>
                     setEditDraft((d) => (d ? { ...d, region: e.target.value as ForecastRegion } : d))
                   }
-                  className="app-control-sm px-3 py-2 text-sm"
+                  className="min-h-9 rounded-[0.625rem] app-control-sm px-3 py-2 text-sm"
                 >
                   <option value="OPS Department">{t.bufferStockOption}</option>
                   {allowedRegions.map((item) => (
@@ -1632,7 +1648,7 @@ export function ForecastForm({
                 onChange={(e) => setEditDraft((d) => (d ? { ...d, destination: e.target.value } : d))}
                 required
                 title={t.destinationHint}
-                className="app-control-md px-3 py-2 text-sm"
+                className="min-h-9 rounded-[0.625rem] app-control-md px-3 py-2 text-sm"
               >
                 {editDestinationOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -1652,7 +1668,7 @@ export function ForecastForm({
                 }
                 required
                 title={forecastIncotermHint(editDraft.incoterm, language)}
-                className="app-control-xs px-3 py-2 text-sm font-medium"
+                className="min-h-9 rounded-[0.625rem] app-control-xs px-3 py-2 text-sm font-medium"
               >
                 {FORECAST_INCOTERMS.map((code) => (
                   <option key={code} value={code}>
@@ -1666,7 +1682,7 @@ export function ForecastForm({
               <select
                 value={editDraft.sku}
                 onChange={(e) => updateEditSku(e.target.value)}
-                className="app-control-sm px-3 py-2 text-sm"
+                className="min-h-9 rounded-[0.625rem] app-control-sm px-3 py-2 text-sm"
               >
                 {skuOptions.map((item) => (
                   <option key={item} value={item}>
@@ -1693,7 +1709,7 @@ export function ForecastForm({
                 onChange={(e) =>
                   setEditDraft((d) => (d ? { ...d, buildToOrder: e.target.value } : d))
                 }
-                className="app-control-num px-3 py-2 text-sm"
+                className="min-h-9 rounded-[0.625rem] app-control-num px-3 py-2 text-sm"
               />
             </label>
             <label className="block shrink-0">
@@ -1705,7 +1721,7 @@ export function ForecastForm({
                 onChange={(e) =>
                   setEditDraft((d) => (d ? { ...d, buildToStock: e.target.value } : d))
                 }
-                className="app-control-num px-3 py-2 text-sm"
+                className="min-h-9 rounded-[0.625rem] app-control-num px-3 py-2 text-sm"
               />
             </label>
             <label className="block max-w-[12rem] shrink-0">
@@ -1791,28 +1807,23 @@ export function ForecastForm({
         <div className="px-4 py-4 sm:px-5">
           <div className="app-table-shell overflow-hidden">
             <div className="max-h-[65vh] overflow-auto">
-              <table className="app-table w-full min-w-[72rem] table-fixed text-sm">
+              <table className="app-table w-full min-w-[76rem] table-fixed text-sm [&_td]:py-1.5">
                 <colgroup>
-                  {canDelete ? <col className="w-10" /> : null}
-                  <col className="w-[6.5rem]" />
-                  <col className="w-[11rem]" />
+                  {canDelete ? <col className="w-9" /> : null}
                   <col className="w-[5.5rem]" />
-                  <col className="w-[8.5rem]" />
-                  <col className="w-[4.25rem]" />
+                  <col className="w-[9.5rem]" />
+                  <col className="w-[7rem]" />
                   <col className="w-[8rem]" />
-                  <col className="w-[5.5rem]" />
-                  <col className="w-[5.25rem]" />
-                  <col className="w-[5.25rem]" />
-                  <col className="w-[4.5rem]" />
-                  <col className="w-[7.25rem]" />
                   <col className="w-[8.5rem]" />
+                  <col className="w-[6.5rem]" />
+                  <col />
                   <col className="w-[12rem]" />
-                  <col className="w-[19rem]" />
+                  <col className="w-[5rem]" />
                 </colgroup>
                 <thead>
                   <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:bg-slate-50">
                     {canDelete ? (
-                      <th className="w-10">
+                      <th className="w-9">
                         <input
                           type="checkbox"
                           className="h-4 w-4 rounded border-app-border"
@@ -1843,30 +1854,58 @@ export function ForecastForm({
                         />
                       </ForecastFilterableHeader>
                     </th>
-                    <th className="whitespace-nowrap">{language === "en" ? "Forecast #" : "Forecast #"}</th>
+                    <th className="whitespace-nowrap" title={t.createdAt}>
+                      <ForecastFilterableHeader
+                        label="Forecast #"
+                        isActive={Boolean(filterCreatedFrom || filterCreatedTo)}
+                        isOpen={openFilterColumn === "created"}
+                        onToggle={() => setOpenFilterColumn(openFilterColumn === "created" ? null : "created")}
+                        panelRef={openFilterPanelRef}
+                        portalPanelRef={openFilterPortalRef}
+                      >
+                        <ForecastDateRangeFilterPanel
+                          from={filterCreatedFrom}
+                          to={filterCreatedTo}
+                          onChangeFrom={setFilterCreatedFrom}
+                          onChangeTo={setFilterCreatedTo}
+                          fromLabel={`${t.createdAt}: ${t.filterDateFrom}`}
+                          toLabel={`${t.createdAt}: ${t.filterDateTo}`}
+                          clearLabel={t.filterClear}
+                        />
+                      </ForecastFilterableHeader>
+                    </th>
                     <th className="whitespace-nowrap">
                       <ForecastFilterableHeader
                         label={t.region}
-                        isActive={filterRegions.length > 0}
+                        isActive={filterRegions.length > 0 || filterDemandTypes.length > 0}
                         isOpen={openFilterColumn === "region"}
                         onToggle={() => setOpenFilterColumn(openFilterColumn === "region" ? null : "region")}
                         panelRef={openFilterPanelRef}
                         portalPanelRef={openFilterPortalRef}
                       >
-                        <ForecastCheckboxFilterPanel
-                          options={filterRegionOptions}
-                          selected={filterRegions}
-                          onChange={(next) => setFilterRegions(next as Region[])}
-                          searchPlaceholder={t.filterSearchPlaceholder}
-                          selectAllLabel={t.filterSelectAll}
-                          clearLabel={t.filterClear}
-                          noOptionsLabel={t.filterNoOptions}
-                        />
+                        <div className="flex flex-col gap-2">
+                          <ForecastCheckboxFilterPanel
+                            options={filterRegionOptions}
+                            selected={filterRegions}
+                            onChange={(next) => setFilterRegions(next as Region[])}
+                            searchPlaceholder={t.filterSearchPlaceholder}
+                            selectAllLabel={t.filterSelectAll}
+                            clearLabel={t.filterClear}
+                            noOptionsLabel={t.filterNoOptions}
+                          />
+                          <ForecastCheckboxFilterPanel
+                            options={filterDemandTypeOptions}
+                            selected={filterDemandTypes}
+                            onChange={(next) => setFilterDemandTypes(next as ForecastDemandType[])}
+                            searchPlaceholder={t.filterSearchPlaceholder}
+                            selectAllLabel={t.filterSelectAll}
+                            clearLabel={t.filterClear}
+                            noOptionsLabel={t.filterNoOptions}
+                          />
+                        </div>
                       </ForecastFilterableHeader>
                     </th>
-                    <th>{t.destination}</th>
-                    <th className="whitespace-nowrap">{t.incoterm}</th>
-                    <th>{t.productName}</th>
+                    <th>{t.destIncoterm}</th>
                     <th className="whitespace-nowrap">
                       <ForecastFilterableHeader
                         label={t.sku}
@@ -1888,56 +1927,8 @@ export function ForecastForm({
                         />
                       </ForecastFilterableHeader>
                     </th>
-                    <th className="whitespace-nowrap px-1.5 text-right" title={t.bto}>
-                      {t.btoHeader}
-                    </th>
-                    <th className="whitespace-nowrap px-1.5 text-right" title={t.bts}>
-                      {t.btsHeader}
-                    </th>
-                    <th className="whitespace-nowrap px-1.5 text-center" title={t.bufferHint}>
-                      <ForecastFilterableHeader
-                        label={t.bufferHeader}
-                        isActive={filterDemandTypes.length > 0}
-                        isOpen={openFilterColumn === "demandType"}
-                        onToggle={() =>
-                          setOpenFilterColumn(openFilterColumn === "demandType" ? null : "demandType")
-                        }
-                        panelRef={openFilterPanelRef}
-                        portalPanelRef={openFilterPortalRef}
-                      >
-                        <ForecastCheckboxFilterPanel
-                          options={filterDemandTypeOptions}
-                          selected={filterDemandTypes}
-                          onChange={(next) => setFilterDemandTypes(next as ForecastDemandType[])}
-                          searchPlaceholder={t.filterSearchPlaceholder}
-                          selectAllLabel={t.filterSelectAll}
-                          clearLabel={t.filterClear}
-                          noOptionsLabel={t.filterNoOptions}
-                        />
-                      </ForecastFilterableHeader>
-                    </th>
-                    <th className="whitespace-nowrap px-1.5" title={t.createdAt}>
-                      <ForecastFilterableHeader
-                        label={t.createdHeader}
-                        isActive={Boolean(filterCreatedFrom || filterCreatedTo)}
-                        isOpen={openFilterColumn === "created"}
-                        onToggle={() => setOpenFilterColumn(openFilterColumn === "created" ? null : "created")}
-                        panelRef={openFilterPanelRef}
-                        portalPanelRef={openFilterPortalRef}
-                      >
-                        <ForecastDateRangeFilterPanel
-                          from={filterCreatedFrom}
-                          to={filterCreatedTo}
-                          onChangeFrom={setFilterCreatedFrom}
-                          onChangeTo={setFilterCreatedTo}
-                          fromLabel={t.filterDateFrom}
-                          toLabel={t.filterDateTo}
-                          clearLabel={t.filterClear}
-                        />
-                      </ForecastFilterableHeader>
-                    </th>
-                    <th>{t.actions}</th>
-                    <th>{t.comment}</th>
+                    <th className="whitespace-nowrap text-right">{t.qtyHeader}</th>
+                    <th>{t.remark}</th>
                     <th>
                       <ForecastFilterableHeader
                         label="Ops action"
@@ -1958,18 +1949,19 @@ export function ForecastForm({
                         />
                       </ForecastFilterableHeader>
                     </th>
+                    <th aria-label={t.actions} />
                   </tr>
                 </thead>
                 <tbody>
                   {entries.length === 0 ? (
                     <tr>
-                      <td colSpan={canDelete ? 15 : 14} className="py-10 text-center text-app-muted">
+                      <td colSpan={canDelete ? 10 : 9} className="py-10 text-center text-app-muted">
                         {t.noRecords}
                       </td>
                     </tr>
                   ) : visibleForecastEntries.length === 0 ? (
                     <tr>
-                      <td colSpan={canDelete ? 15 : 14} className="py-10 text-center text-app-muted">
+                      <td colSpan={canDelete ? 10 : 9} className="py-10 text-center text-app-muted">
                         {t.noFilterMatches}{" "}
                         <button type="button" className="text-app-accent hover:underline" onClick={clearAllForecastFilters}>
                           {t.clearAllFilters}
@@ -1980,17 +1972,19 @@ export function ForecastForm({
                     visibleForecastEntries.map((item, rowIdx) => {
                       const selected = selectedForecastIds.includes(item.id);
                       const editing = editDraft?.id === item.id;
-                      const base =
-                        rowIdx % 2 === 0
-                          ? "bg-white"
-                          : "bg-slate-50/40";
-                      const rowClass = editing
-                        ? "bg-app-accent-soft/55"
-                        : base;
+                      const base = rowIdx % 2 === 0 ? "bg-white" : "bg-slate-50/40";
+                      const rowClass = editing ? "bg-app-accent-soft/55" : base;
+                      const destLabel = forecastDestinationDisplay(item.destination, language, destinationOptions);
+                      const remarkValue = inlineRemarkById[item.id] ?? item.remark;
+                      const opsValue = inlineOpsActionById[item.id] ?? item.opsAction;
+                      const busy = savingEdit || deletingId === item.id;
+                      const editingRemark = editingCell?.id === item.id && editingCell.field === "remark";
+                      const editingOps = editingCell?.id === item.id && editingCell.field === "ops";
+                      const totalQty = item.buildToOrder + item.buildToStock;
                       return (
                         <tr
                           key={item.id}
-                          className={`${rowClass} ${selected ? "ring-1 ring-[rgba(238,100,84,0.25)]" : ""}`}
+                          className={`group ${rowClass} ${selected ? "ring-1 ring-[rgba(238,100,84,0.25)]" : ""}`}
                         >
                           {canDelete ? (
                             <td>
@@ -2004,97 +1998,182 @@ export function ForecastForm({
                             </td>
                           ) : null}
                           <td className="whitespace-nowrap">{formatForecastMonthDisplay(item.month, language)}</td>
-                          <td className="truncate font-medium" title={item.poNumber || undefined}>
-                            {item.poNumber || "—"}
+                          <td>
+                            <p className="truncate font-medium" title={item.poNumber || undefined}>
+                              {item.poNumber || "—"}
+                            </p>
+                            <p
+                              className="text-[11px] leading-tight tabular-nums text-app-muted"
+                              title={`${t.createdAt}: ${item.createdAt.slice(0, 10)} · ${item.createdBy}`}
+                            >
+                              {item.createdAt.slice(0, 10)}
+                            </p>
                           </td>
-                          <td className="whitespace-nowrap">{forecastRegionSelectLabel(item.region, language)}</td>
-                          <td className="truncate" title={forecastDestinationDisplay(item.destination, language, destinationOptions)}>
-                            {forecastDestinationDisplay(item.destination, language, destinationOptions)}
+                          <td>
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span>{forecastRegionSelectLabel(item.region, language)}</span>
+                              {item.demandType === "buffer" ? (
+                                <span
+                                  className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium leading-tight text-amber-800"
+                                  title={t.bufferHint}
+                                >
+                                  {t.bufferYes}
+                                </span>
+                              ) : null}
+                            </div>
                           </td>
-                          <td className="whitespace-nowrap font-medium">{item.incoterm}</td>
-                          <td className="max-w-[8rem] align-top">
-                            <TableCellLongText
-                              text={item.productName}
-                              maxWidthClass="max-w-[7.5rem]"
-                              viewLabel={t.viewFullText}
-                              dialogTitle={t.productName}
-                              closeLabel={t.close}
-                              expandThreshold={22}
-                            />
+                          <td>
+                            <p className="truncate" title={destLabel}>
+                              {destLabel}
+                            </p>
+                            <p className="text-[11px] font-medium leading-tight text-app-muted">{item.incoterm}</p>
                           </td>
-                          <td className="whitespace-nowrap font-medium">{item.sku}</td>
-                          <td className="text-right tabular-nums">{item.buildToOrder}</td>
-                          <td className="text-right tabular-nums">{item.buildToStock}</td>
-                          <td className="text-center">
-                            {item.demandType === "buffer" ? (
-                              <span
-                                className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
-                                title={t.bufferHint}
+                          <td>
+                            <p className="truncate font-medium">{item.sku}</p>
+                            <p className="truncate text-[11px] leading-tight text-app-muted" title={item.productName}>
+                              {item.productName}
+                            </p>
+                          </td>
+                          <td className="text-right">
+                            <p className="font-medium tabular-nums">{QTY_FORMAT.format(totalQty)}</p>
+                            <p className="text-[11px] leading-tight text-app-muted">
+                              {item.buildToOrder > 0 && item.buildToStock > 0
+                                ? `${t.btoHeader} ${QTY_FORMAT.format(item.buildToOrder)} · ${t.btsHeader} ${QTY_FORMAT.format(item.buildToStock)}`
+                                : item.buildToOrder > 0
+                                  ? t.btoHeader
+                                  : t.btsHeader}
+                            </p>
+                          </td>
+                          <td>
+                            {editingRemark ? (
+                              <textarea
+                                ref={focusEnd}
+                                rows={3}
+                                maxLength={4000}
+                                value={remarkValue}
+                                onChange={(e) =>
+                                  setInlineRemarkById((prev) => ({ ...prev, [item.id]: e.target.value }))
+                                }
+                                onBlur={() => {
+                                  setEditingCell(null);
+                                  if (escapedRef.current) {
+                                    escapedRef.current = false;
+                                    return;
+                                  }
+                                  void saveInlineRemark(item);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Escape") {
+                                    escapedRef.current = true;
+                                    setInlineRemarkById((prev) => {
+                                      const next = { ...prev };
+                                      delete next[item.id];
+                                      return next;
+                                    });
+                                    setEditingCell(null);
+                                  }
+                                }}
+                                disabled={savingRemarkId === item.id || busy}
+                                placeholder={t.remarkPlaceholder}
+                                className="w-full min-w-0 resize-y rounded-[0.625rem] border border-app-border bg-white px-2.5 py-1.5 text-sm text-foreground placeholder:text-app-muted focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
+                                aria-label={t.remark}
+                              />
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  // Esc may have left this set (an unmounted textarea can't report its blur).
+                                  escapedRef.current = false;
+                                  setEditingCell({ id: item.id, field: "remark" });
+                                }}
+                                disabled={savingRemarkId === item.id || busy}
+                                title={remarkValue || t.remarkPlaceholder}
+                                aria-label={`${t.remark}: ${remarkValue || t.remarkPlaceholder}`}
+                                className="block w-full rounded-lg px-2 py-1 text-left text-xs leading-4 text-foreground transition hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
                               >
-                                {t.bufferYes}
-                              </span>
-                            ) : null}
+                                {remarkValue ? (
+                                  <span className="line-clamp-2 whitespace-pre-line break-words">{remarkValue}</span>
+                                ) : (
+                                  <span className="text-app-muted/70">{t.remarkAdd}</span>
+                                )}
+                              </button>
+                            )}
                           </td>
-                          <td className="whitespace-nowrap tabular-nums text-app-muted">{item.createdAt.slice(0, 10)}</td>
-                          <td className="align-top">
-                            <div className="flex flex-wrap gap-1.5">
+                          <td>
+                            {editingOps ? (
+                              <select
+                                ref={focusAndOpen}
+                                value={opsValue}
+                                onChange={(e) => {
+                                  const next = e.target.value;
+                                  setInlineOpsActionById((prev) => ({ ...prev, [item.id]: next }));
+                                  setEditingCell(null);
+                                  void saveInlineOpsAction(item, next);
+                                }}
+                                onBlur={() => setEditingCell(null)}
+                                disabled={savingOpsActionId === item.id || busy}
+                                className="min-h-9 rounded-[0.625rem] w-full max-w-[19rem] border border-app-border bg-white px-2.5 py-1.5 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
+                                aria-label="Ops action"
+                              >
+                                <option value="">—</option>
+                                {FORECAST_OPS_ACTION_OPTIONS.filter((x) => x !== "").map((opt) => (
+                                  <option key={opt} value={opt}>
+                                    {opt}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setEditingCell({ id: item.id, field: "ops" })}
+                                disabled={savingOpsActionId === item.id || busy}
+                                title={opsValue || undefined}
+                                aria-label={`Ops action: ${opsValue || "—"}`}
+                                className="block w-full rounded-lg px-1.5 py-1 text-left transition hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
+                              >
+                                {opsValue ? (
+                                  <span
+                                    className={`inline-block max-w-full rounded-full px-2 py-0.5 text-[11px] font-medium leading-tight ring-1 ${
+                                      OPS_ACTION_BADGE[opsValue] ?? "bg-gray-100 text-gray-700 ring-gray-200"
+                                    }`}
+                                  >
+                                    {opsValue}
+                                  </span>
+                                ) : (
+                                  <span className="text-app-muted/70">—</span>
+                                )}
+                              </button>
+                            )}
+                          </td>
+                          <td>
+                            <div
+                              className={`flex justify-end gap-0.5 lg:opacity-0 lg:transition-opacity lg:group-focus-within:opacity-100 lg:group-hover:opacity-100 ${
+                                editing ? "lg:opacity-100" : ""
+                              }`}
+                            >
                               <button
                                 type="button"
                                 onClick={() => startEditForecast(item)}
-                                disabled={savingEdit || deletingId === item.id}
-                                className="app-button-secondary px-2.5 py-1 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+                                disabled={busy}
+                                title={t.edit}
+                                aria-label={t.edit}
+                                className="inline-flex rounded-lg p-1.5 text-app-muted transition hover:bg-gray-100 hover:text-foreground disabled:opacity-50"
                               >
-                                {t.edit}
+                                <Pencil size={15} strokeWidth={1.75} />
                               </button>
                               {canDelete ? (
                                 <button
                                   type="button"
                                   onClick={() => onDelete(item.id)}
-                                  disabled={deletingId === item.id || savingEdit}
-                                  className="rounded-xl border border-red-200 bg-white px-2.5 py-1 text-sm text-red-700 transition duration-150 ease-out hover:-translate-y-px hover:bg-red-50 active:translate-y-0 disabled:opacity-50"
+                                  disabled={busy}
+                                  title={t.delete}
+                                  aria-label={t.delete}
+                                  className="inline-flex rounded-lg p-1.5 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                                 >
-                                  {t.delete}
+                                  <Trash2 size={15} strokeWidth={1.75} />
                                 </button>
                               ) : null}
                             </div>
-                          </td>
-                          <td className="align-top">
-                            <textarea
-                              rows={3}
-                              maxLength={4000}
-                              value={inlineRemarkById[item.id] ?? item.remark}
-                              onChange={(e) =>
-                                setInlineRemarkById((prev) => ({ ...prev, [item.id]: e.target.value }))
-                              }
-                              onBlur={() => void saveInlineRemark(item)}
-                              disabled={savingRemarkId === item.id || savingEdit || deletingId === item.id}
-                              placeholder={language === "en" ? "Add a comment…" : "输入评论…"}
-                              className="w-full min-w-0 resize-y rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground placeholder:text-app-muted focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
-                              aria-label={language === "en" ? "Comment" : "评论"}
-                            />
-                          </td>
-                          <td className="align-top">
-                            <select
-                              value={inlineOpsActionById[item.id] ?? item.opsAction}
-                              onChange={(e) =>
-                                setInlineOpsActionById((prev) => ({ ...prev, [item.id]: e.target.value }))
-                              }
-                              onBlur={() => void saveInlineOpsAction(item)}
-                              disabled={
-                                savingOpsActionId === item.id ||
-                                savingEdit ||
-                                deletingId === item.id
-                              }
-                              className="app-control-md max-w-[19rem] rounded-xl border border-app-border bg-white px-2.5 py-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-[rgba(238,100,84,0.35)] disabled:opacity-60"
-                              aria-label="Ops action"
-                            >
-                              <option value="">{language === "en" ? "—" : "—"}</option>
-                              {FORECAST_OPS_ACTION_OPTIONS.filter((x) => x !== "").map((opt) => (
-                                <option key={opt} value={opt}>
-                                  {opt}
-                                </option>
-                              ))}
-                            </select>
                           </td>
                         </tr>
                       );
