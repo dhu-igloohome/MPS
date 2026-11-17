@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-11-17 — 货运行自带地区：共用 Buffer 池（OPS Department）按每次发货声明目的地区
+
+Commit: (pending push)
+
+**背景**：接上一条。David 指出 Buffer 会被多个地区消耗（例如 5000 台，到发货时才知道发往哪），所以把整条 Buffer 改归 EU 不对（`POO202608050001` 还剩 2516 台，之后若发往非 EU 会被错标成 EU，且 5000 全算进 EU 汇总）。新模型：Buffer 一直留在 OPS Department 当共用池，**每条货运行在发货时自己声明发往哪个地区**。
+
+**改动**：
+- `lib/db.ts`：`fulfillment_shipments` 新增 `region text not null default '' check (region in ('','APAC','EU','USA'))`（加在 `createFulfillmentShipmentTables()`，两条建表路径都会走到）；`CURRENT_SCHEMA_VERSION` 11→12，让 `incremental_migrations_applied_v*` 标记失效，生产第一次请求会自动补列。
+- `lib/types.ts`：`FulfillmentShipmentEntry.region: Region | ""`。
+- 新文件 `lib/fulfillment-region.ts`：`effectiveShipmentRegion()`（所属 forecast 是真实地区→用 forecast 地区；是 OPS Department→用货运行声明的地区，没声明的老数据回落成 "OPS Department"）和 `suggestRegionFromShipTo()`（按收货地猜地区：JDM/IDM/EU/UK/IR→EU，US 开头→USA，SG/Thailand/AU 等→APAC，Canada 等不猜）。
+- `lib/order-fulfillment-api.ts`：校验 `region`；`resolveShipmentRegion()`——**所属 forecast 是 OPS Department 时 region 必填**（否则 400），否则不管传什么都存成 ''。`app/api/logistics-order-fulfillments/route.ts`（POST）和 `[id]/route.ts`（PATCH）都走这条规则；`lib/repositories.ts` 的读写、新增 `getForecastRegionForGroup()`。
+- `app/api/integrations/v1/order-fulfillments/route.ts`：shipments 的 `region` 改用 `effectiveShipmentRegion()`，`?region=EU` 按它过滤——即只返回声明发往 EU 的货运行；OPS Department 池的 group 本身 region 仍是 "OPS Department"，不出现在任何真实地区的 groups 里。
+- `components/logistics/order-fulfillments-panel.tsx`：OPS Department 行的 Ship To 下面多一个地区下拉（没选时琥珀色提示），输入收货地时自动预选建议地区（只在地区为空或仍是上次自动建议时跟随，**不会覆盖用户手选的**）；保存前客户端先拦截没选地区的情况；Forecast Qty 单元格里按地区显示 Buffer 消耗（`EU 300 / USA 500 / Left 1,170`，超额变红，没选地区的单独一栏）。
+- `docs/Foretracker-Integration-API-Guide-Berfin.md`：新增"Shared buffer stock"一节说明地区语义（不要从 PO 前缀 POO 推地区，用 `region` 字段）。
+
+**验证**：`tsc`、`lint`同基线(22)。本地真机（开发环境连的是生产库，所以测试数据选 OPS 行和 APAC 行，用完已删，库里确认 0 条残留）：OPS 行不带 region→400；带 APAC→存成 APAC；PATCH 清空→400，改 USA→成功；非法值→400；非 OPS（APAC）行传 USA→被丢弃存成 ''。迁移已在生产库跑过（列存在、v12 标记已写入）。`effectiveShipmentRegion`/`suggestRegionFromShipTo` 用20个用例脚本验过，全过（含库里实际出现过的 ship_to：JDM IR/UK、IDM UK、EU IRLAND、US FBA/SW/OMNI、SG、Hanman SG、SYW AU、Virasa Thailand、Zeest Canada→不猜）。页面：OPS 行有下拉、非 OPS 行没有；输入 JDM IR→EU，改 US FBA→USA（跟随），手选 APAC 后再改收货地→保持 APAC（不覆盖）；消耗统计、超额变红、没选地区栏都对；没选地区点 Save→弹提示且不发请求。**没测的**：集成接口的真实调用——尝试建临时 API key 被权限拦下（会在生产库新建凭证、David 没授权），所以接口这一段只验了纯函数规则 + 读了代码，没有端到端调用；以及暗色模式下新下拉的观感。
+
+**上线后还要做的（需 David 确认）**：把 `POO202608050001` 改回 OPS Department，并把它已有的 4 条货运行（IG-SO-1566/1567/1576/1578）补上 `region='EU'`，让新旧模型一致；在此之前它仍是 EU，Berfin 能看到这 4 条。
+
+---
+
 ## 2026-11-17 — 生产数据修复：Buffer PO `POO202608050001` 从 "OPS Department" 改归 EU（Berfin 看不到新货运）
 
 Commit: （无代码改动，仅数据 + 本记录）

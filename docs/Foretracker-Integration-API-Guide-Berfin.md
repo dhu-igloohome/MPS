@@ -136,7 +136,14 @@ GET /api/integrations/v1/order-fulfillments
 | `sku` | `DAX6E` | SKU |
 | `forecastPoNumber` | `POU202606020002` | Forecast PO # |
 
-Every object in `groups` and `shipments` now also includes a `"region"` field (`"APAC"`, `"EU"`, or `"USA"`) so you can filter or label rows client-side even without the `region` param.
+Every object in `groups` and `shipments` also includes a `"region"` field so you can filter or label rows client-side even without the `region` param.
+
+**Shared buffer stock ("OPS Department")** — a Buffer Stock forecast can be created before anyone knows which region will consume it, so it is parked under the region `"OPS Department"` and works as a shared pool. The pool itself has no region, but **every shipment that draws from it declares the region it is going to**:
+
+- A **group** backed by the pool has `"region": "OPS Department"`, so it does **not** show up under `?region=EU` (or any real region) — it isn't any one region's demand.
+- A **shipment** drawing from the pool carries the **destination region** it was assigned (`"APAC"`, `"EU"` or `"USA"`), and `?region=EU` returns exactly the shipments assigned to EU. The shipment's `forecastPoNumber` still starts with `POO…`, so don't infer the region from the PO prefix — use the `region` field.
+- For all other groups, a shipment's `region` is simply its group's region (unchanged).
+- Only old shipments that were saved before this rule existed and never got a region can still show `"region": "OPS Department"`; they will be assigned over time.
 
 **Example (curl)**
 

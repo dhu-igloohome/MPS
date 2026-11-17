@@ -1,4 +1,10 @@
-import type { FulfillmentDeliveryStatus, FulfillmentFreightMode } from "@/lib/types";
+import { isShipmentRegion, OPS_DEPARTMENT } from "@/lib/fulfillment-region";
+import type {
+  ForecastRegion,
+  FulfillmentDeliveryStatus,
+  FulfillmentFreightMode,
+  Region,
+} from "@/lib/types";
 import type { FulfillmentShipmentFieldsInput } from "@/lib/repositories";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -22,6 +28,26 @@ function parseDate(raw: unknown, label: string): { value: string | null; error?:
   if (!s) return { value: null };
   if (!DATE_RE.test(s)) return { value: null, error: `Invalid ${label} date (YYYY-MM-DD)` };
   return { value: s };
+}
+
+/**
+ * A shipment only carries its own region when its group is parked under "OPS Department" (shared
+ * buffer pool, which has no region) — there it is mandatory, because that is the only place the
+ * region is ever decided. Everywhere else the group's own region applies, so any value is dropped.
+ */
+export function resolveShipmentRegion(
+  groupRegion: ForecastRegion | null,
+  requested: Region | "",
+): { ok: true; region: Region | "" } | { ok: false; message: string } {
+  if (groupRegion !== OPS_DEPARTMENT) return { ok: true, region: "" };
+  if (!requested) {
+    return {
+      ok: false,
+      message:
+        "Region is required: this shipment draws from the shared OPS Department buffer, so choose which region it is going to.",
+    };
+  }
+  return { ok: true, region: requested };
 }
 
 /** Shared validation for POST (create) and PATCH (update) shipment bodies. */
@@ -48,6 +74,11 @@ export function parseFulfillmentShipmentFields(body: Record<string, unknown>): P
     return { ok: false, message: "Invalid delivery status" };
   }
 
+  const region = String(body.region ?? "").trim();
+  if (region !== "" && !isShipmentRegion(region)) {
+    return { ok: false, message: "Invalid region" };
+  }
+
   return {
     ok: true,
     fields: {
@@ -57,6 +88,7 @@ export function parseFulfillmentShipmentFields(body: Record<string, unknown>): P
       soQuantity,
       freightMode: freightMode as FulfillmentFreightMode,
       shipTo: String(body.shipTo ?? "").trim(),
+      region: region as Region | "",
       etd: etd.value,
       eta: eta.value,
       trackingLink: String(body.trackingLink ?? "").trim(),

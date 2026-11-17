@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { REGIONS } from "@/lib/accounts";
+import { effectiveShipmentRegion } from "@/lib/fulfillment-region";
 import { authenticateIntegrationRequest } from "@/lib/integration-api-auth";
 import { buildIntegrationFulfillmentGroups } from "@/lib/order-fulfillment-groups";
 import type { Region } from "@/lib/types";
@@ -39,12 +40,13 @@ export async function GET(request: Request) {
   ]);
 
   let groups = buildIntegrationFulfillmentGroups(forecasts, contracts);
-  // Shipments have no region column of their own; derive it from the group they belong to
-  // (same forecast # + SKU) so every shipment row can carry the same region label/filter.
+  // A shipment's region is its group's region (same forecast # + SKU) — except for groups parked
+  // under "OPS Department" (shared buffer pool), where each shipment declares its own destination
+  // region. "OPS Department" is only left on legacy shipments that never declared one.
   const regionByGroupKey = new Map(groups.map((g) => [`${g.forecastPoNumber}|${g.sku}`, g.region]));
   let taggedShipments = shipments.map((s) => ({
     ...s,
-    region: regionByGroupKey.get(`${s.forecastPoNumber}|${s.sku}`) ?? null,
+    region: effectiveShipmentRegion(regionByGroupKey.get(`${s.forecastPoNumber}|${s.sku}`), s.region),
   }));
 
   if (region) {

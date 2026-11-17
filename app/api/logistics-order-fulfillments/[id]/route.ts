@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { parseFulfillmentShipmentFields } from "@/lib/order-fulfillment-api";
-import { deleteFulfillmentShipment, updateFulfillmentShipment } from "@/lib/repositories";
+import { parseFulfillmentShipmentFields, resolveShipmentRegion } from "@/lib/order-fulfillment-api";
+import {
+  deleteFulfillmentShipment,
+  getFulfillmentShipmentById,
+  getForecastRegionForGroup,
+  updateFulfillmentShipment,
+} from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -19,7 +24,17 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ message: parsed.message }, { status: 400 });
   }
 
-  const entry = await updateFulfillmentShipment(id, parsed.fields);
+  const existing = await getFulfillmentShipmentById(id);
+  if (!existing) return NextResponse.json({ message: "Not found" }, { status: 404 });
+  const resolved = resolveShipmentRegion(
+    await getForecastRegionForGroup(existing.forecastPoNumber, existing.sku),
+    parsed.fields.region,
+  );
+  if (!resolved.ok) {
+    return NextResponse.json({ message: resolved.message }, { status: 400 });
+  }
+
+  const entry = await updateFulfillmentShipment(id, { ...parsed.fields, region: resolved.region });
   if (!entry) return NextResponse.json({ message: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true, entry });
 }

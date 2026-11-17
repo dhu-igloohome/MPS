@@ -6819,6 +6819,7 @@ type FulfillmentShipmentRow = {
   so_quantity: number;
   freight_mode: string;
   ship_to: string;
+  region: string;
   etd: string | null;
   eta: string | null;
   tracking_link: string;
@@ -6842,6 +6843,7 @@ const FULFILLMENT_SHIPMENT_COLUMNS = `
   s.so_quantity,
   s.freight_mode,
   s.ship_to,
+  s.region,
   s.etd::text,
   s.eta::text,
   s.tracking_link,
@@ -6868,6 +6870,7 @@ function mapFulfillmentShipmentRow(row: FulfillmentShipmentRow): FulfillmentShip
     soQuantity: Number(row.so_quantity ?? 0),
     freightMode: (row.freight_mode ?? "") as FulfillmentFreightMode,
     shipTo: row.ship_to ?? "",
+    region: (row.region ?? "") as Region | "",
     etd: row.etd ? formatPgDateOnly(row.etd) : null,
     eta: row.eta ? formatPgDateOnly(row.eta) : null,
     trackingLink: row.tracking_link ?? "",
@@ -6931,11 +6934,29 @@ export type FulfillmentShipmentFieldsInput = {
   soQuantity: number;
   freightMode: FulfillmentFreightMode;
   shipTo: string;
+  /** Declared destination region; only kept when the group is under "OPS Department". */
+  region: Region | "";
   etd: string | null;
   eta: string | null;
   trackingLink: string;
   deliveryStatus: FulfillmentDeliveryStatus;
 };
+
+/** Region of the forecast line(s) behind a Forecast # + SKU group, or null if there is none. */
+export async function getForecastRegionForGroup(
+  forecastPoNumber: string,
+  sku: string,
+): Promise<ForecastRegion | null> {
+  await ensureDatabase();
+  const db = getSql();
+  const rows = await db<{ region: ForecastRegion }[]>`
+    select region from forecasts
+    where po_number = ${forecastPoNumber.trim()} and sku = ${sku.trim()}
+    order by id
+    limit 1
+  `;
+  return rows[0]?.region ?? null;
+}
 
 export async function createFulfillmentShipment(
   input: FulfillmentShipmentFieldsInput & {
@@ -6958,6 +6979,7 @@ export async function createFulfillmentShipment(
       so_quantity,
       freight_mode,
       ship_to,
+      region,
       etd,
       eta,
       tracking_link,
@@ -6974,6 +6996,7 @@ export async function createFulfillmentShipment(
       ${Math.max(0, Math.trunc(input.soQuantity))},
       ${input.freightMode},
       ${input.shipTo.trim().slice(0, 160)},
+      ${input.region},
       ${input.etd},
       ${input.eta},
       ${input.trackingLink.trim().slice(0, 600)},
@@ -7001,6 +7024,7 @@ export async function updateFulfillmentShipment(
       so_quantity = ${Math.max(0, Math.trunc(input.soQuantity))},
       freight_mode = ${input.freightMode},
       ship_to = ${input.shipTo.trim().slice(0, 160)},
+      region = ${input.region},
       etd = ${input.etd},
       eta = ${input.eta},
       tracking_link = ${input.trackingLink.trim().slice(0, 600)},

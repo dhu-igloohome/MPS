@@ -17,6 +17,11 @@ import { toast } from "sonner";
 
 import type { Language } from "@/lib/i18n";
 import { formatForecastMonthLabel } from "@/lib/payment-schedule-matrix";
+import {
+  OPS_DEPARTMENT,
+  SHIPMENT_REGIONS,
+  suggestRegionFromShipTo,
+} from "@/lib/fulfillment-region";
 import type { FulfillmentGroup, FulfillmentShipmentEntry } from "@/lib/types";
 
 type OrderFulfillmentsPanelProps = {
@@ -33,6 +38,8 @@ type RowFields = {
   soQuantity: string;
   freightMode: string;
   shipTo: string;
+  /** Destination region; only used for groups parked under "OPS Department" (shared buffer). */
+  region: string;
   etd: string;
   eta: string;
   trackingLink: string;
@@ -46,6 +53,7 @@ const EMPTY_FIELDS: RowFields = {
   soQuantity: "",
   freightMode: "",
   shipTo: "",
+  region: "",
   etd: "",
   eta: "",
   trackingLink: "",
@@ -60,6 +68,7 @@ function fieldsFromShipment(s: FulfillmentShipmentEntry): RowFields {
     soQuantity: s.soQuantity > 0 ? String(s.soQuantity) : "",
     freightMode: s.freightMode,
     shipTo: s.shipTo,
+    region: s.region,
     etd: s.etd ?? "",
     eta: s.eta ?? "",
     trackingLink: s.trackingLink,
@@ -157,6 +166,13 @@ function labels(language: Language) {
     trackingLink: en ? "Tracking link" : "跟踪链接",
     deliveryStatus: en ? "Delivery status" : "交付状态",
     statusNotSet: en ? "Not set" : "未设置",
+    region: en ? "Region" : "地区",
+    regionSelect: en ? "Region…" : "选择地区…",
+    regionRequired: en
+      ? "Pick the destination region for this shipment (it draws from the shared OPS Department buffer)."
+      : "请选择这笔货运发往的地区（它消耗的是共用的 OPS Department Buffer）。",
+    regionNone: en ? "no region" : "未选地区",
+    bufferLeft: en ? "Left" : "剩余",
     balanceQty: en ? "Balance Qty" : "结余数量",
     actions: en ? "Actions" : "操作",
     save: en ? "Save" : "保存",
@@ -348,8 +364,41 @@ export function OrderFulfillmentsPanel({
     return out;
   }, [groups, shipmentsByGroup, drafts, rowFields]);
 
+  /** Shared buffer pool: no region of its own, so each shipment declares where it is going. */
+  const isBufferPool = (g: FulfillmentGroup) => g.region === OPS_DEPARTMENT;
+
+  /** Per-region draw-down of a shared buffer group, from live (possibly unsaved) values. */
+  const bufferUsage = (g: FulfillmentGroup) => {
+    const key = groupKeyOf(g);
+    const byRegion = new Map<string, number>();
+    let used = 0;
+    const add = (region: string, qty: string | number) => {
+      const n = Math.trunc(Number(qty));
+      if (!Number.isFinite(n) || n <= 0) return;
+      used += n;
+      byRegion.set(region, (byRegion.get(region) ?? 0) + n);
+    };
+    for (const s of shipmentsByGroup.get(key) ?? []) {
+      const f = rowFields[s.id];
+      add(f ? f.region : s.region, f ? f.soQuantity : s.soQuantity);
+    }
+    for (const d of drafts) {
+      if (d.groupKey !== key) continue;
+      const f = rowFields[d.tempId];
+      if (f) add(f.region, f.soQuantity);
+    }
+    const auto = rowFields[`auto:${key}`];
+    if (auto) add(auto.region, auto.soQuantity);
+    return { byRegion, left: g.forecastQty - used };
+  };
+
   async function saveRow(row: DisplayRow) {
     const f = fieldsOf(row);
+    const needsRegion = isBufferPool(row.group);
+    if (needsRegion && !f.region) {
+      toast.error(t.regionRequired);
+      return;
+    }
     setBusyRowId(row.rowId);
     const payload = {
       estimatedReadyDate: f.estimatedReadyDate || null,
@@ -358,6 +407,7 @@ export function OrderFulfillmentsPanel({
       soQuantity: Number(f.soQuantity || 0),
       freightMode: f.freightMode,
       shipTo: f.shipTo,
+      region: needsRegion ? f.region : "",
       etd: f.etd || null,
       eta: f.eta || null,
       trackingLink: f.trackingLink,
@@ -730,6 +780,26 @@ export function OrderFulfillmentsPanel({
                       </td>
                       <td className={`${autoCellCls} text-right font-medium tabular-nums`}>
                         {row.group.forecastQty.toLocaleString()}
+                        {row.isFirstOfGroup && isBufferPool(row.group)
+                          ? (() => {
+                              const { byRegion, left } = bufferUsage(row.group);
+                              return (
+                                <div className="mt-1 flex flex-col items-end gap-0.5 text-[11px] font-normal text-foreground/60">
+                                  {[...SHIPMENT_REGIONS, ""].map((r) => {
+                                    const qty = byRegion.get(r);
+                                    return qty ? (
+                                      <span key={r || "none"} className={r ? "" : "text-amber-700 dark:text-amber-300"}>
+                                        {r || t.regionNone} {qty.toLocaleString()}
+                                      </span>
+                                    ) : null;
+                                  })}
+                                  <span className={left < 0 ? "font-semibold text-red-600" : ""}>
+                                    {t.bufferLeft} {left.toLocaleString()}
+                                  </span>
+                                </div>
+                              );
+                            })()
+                          : null}
                       </td>
                       <td className="px-2 py-2">
                         <div className="min-w-[13rem] space-y-1.5">
@@ -853,15 +923,50 @@ export function OrderFulfillmentsPanel({
                         )}
                       </td>
                       <td className="px-2 py-2">
-                        <input
-                          type="text"
-                          list="of-ship-to-options"
-                          value={f.shipTo}
-                          onChange={(e) => setField(row, { shipTo: e.target.value })}
-                          placeholder={t.shipTo}
-                          aria-label={t.shipTo}
-                          className={`${inputCls} min-w-[9rem]`}
-                        />
+                        <div className="min-w-[9rem] space-y-1.5">
+                          <input
+                            type="text"
+                            list="of-ship-to-options"
+                            value={f.shipTo}
+                            onChange={(e) => {
+                              const shipTo = e.target.value;
+                              // On a shared buffer row, pre-fill the region from the destination, but
+                              // only while it is still empty or still the previous auto-suggestion —
+                              // never overwrite a region the user picked on purpose.
+                              const followSuggestion =
+                                isBufferPool(row.group) &&
+                                (f.region === "" || f.region === suggestRegionFromShipTo(f.shipTo));
+                              setField(
+                                row,
+                                followSuggestion
+                                  ? { shipTo, region: suggestRegionFromShipTo(shipTo) }
+                                  : { shipTo },
+                              );
+                            }}
+                            placeholder={t.shipTo}
+                            aria-label={t.shipTo}
+                            className={inputCls}
+                          />
+                          {isBufferPool(row.group) ? (
+                            <select
+                              value={f.region}
+                              onChange={(e) => setField(row, { region: e.target.value })}
+                              aria-label={t.region}
+                              className={`${inputCls} text-xs ${
+                                f.region
+                                  ? ""
+                                  : "border-amber-400 bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300"
+                              }`}
+                            >
+                              <option value="">{t.regionSelect}</option>
+                              {SHIPMENT_REGIONS.map((r) => (
+                                <option key={r} value={r}>
+                                  {r}
+                                </option>
+                              ))}
+                            </select>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-2 py-2">
                         <input

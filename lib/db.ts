@@ -25,7 +25,7 @@ const sql = connectionString
  * by this version in `applyIncrementalMigrationsIfNeeded`) makes a fresh cold-started instance
  * re-run the incremental batch once instead of trusting a stale marker from an older version.
  */
-const CURRENT_SCHEMA_VERSION = 11;
+const CURRENT_SCHEMA_VERSION = 12;
 let appliedSchemaVersion = 0;
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -1334,6 +1334,14 @@ async function createFulfillmentShipmentTables() {
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     );
+  `;
+  // Region the shipment is actually going to. Only meaningful when the group's forecast is
+  // parked under "OPS Department" (a shared buffer pool): the pool has no region of its own, so
+  // each shipment that draws from it declares one. '' = not declared (legacy rows).
+  await db`
+    alter table fulfillment_shipments
+    add column if not exists region text not null default ''
+    check (region in ('', 'APAC', 'EU', 'USA'));
   `;
   await db`
     create index if not exists idx_fulfillment_shipments_group

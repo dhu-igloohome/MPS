@@ -536,6 +536,11 @@ export type FulfillmentShipmentEntry = {
   soQuantity: number;
   freightMode: FulfillmentFreightMode;
   shipTo: string;
+  /**
+   * Region this shipment is going to. Only used when the group's forecast sits under
+   * "OPS Department" (shared buffer pool); "" otherwise or when not yet declared.
+   */
+  region: Region | "";
   etd: string | null;
   eta: string | null;
   trackingLink: string;

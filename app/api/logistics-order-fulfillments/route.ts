@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 
 import {
   parseFulfillmentShipmentFields,
+  resolveShipmentRegion,
 } from "@/lib/order-fulfillment-api";
-import { createFulfillmentShipment } from "@/lib/repositories";
+import { createFulfillmentShipment, getForecastRegionForGroup } from "@/lib/repositories";
 import { getSession } from "@/lib/session";
 
 export async function POST(request: Request) {
@@ -24,9 +25,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: parsed.message }, { status: 400 });
   }
 
+  const resolved = resolveShipmentRegion(
+    await getForecastRegionForGroup(forecastPoNumber, sku),
+    parsed.fields.region,
+  );
+  if (!resolved.ok) {
+    return NextResponse.json({ message: resolved.message }, { status: 400 });
+  }
+
   try {
     const entry = await createFulfillmentShipment({
       ...parsed.fields,
+      region: resolved.region,
       forecastPoNumber,
       sku,
       forecastMonth,
