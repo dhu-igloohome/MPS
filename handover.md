@@ -8,7 +8,7 @@
 
 ## 2026-11-17 — 订单履约：搜 SO 号时不再被"进行中"视图挡住（IG-SO-1567"显示不出来"）
 
-Commit: (pending push)
+Commit: `5e26c95`
 
 **现象**：David 转述 Christy 录入时 SO-1567 这条"无法显示"，问是不是 bug。
 
