@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-11-17 — 生产数据修复：Buffer PO `POO202608050001` 从 "OPS Department" 改归 EU（Berfin 看不到新货运）
+
+Commit: （无代码改动，仅数据 + 本记录）
+
+**背景**：Berfin 反馈她的 EU Shipment Tracking 看不到最近的货运（SK4 的 `IG-SO-1566/1567/1576`）。Jessie 一度以为是"PO 没在 David 系统里确认"，实际不是。
+
+**根因（查生产库确认）**：这几条货运行都在 MPS 里，全部挂在 PO `POO202608050001` 下——这是 Jessie 8/5 建的 Buffer Stock（SK4 5000，合同 sent），`forecasts.region='OPS Department'`（7月做 Buffer Stock 时的设计：暂放，等知道服务哪个地区再改）。Berfin 的系统用 `?region=EU` 调 `/api/integrations/v1/order-fulfillments`，接口按所属 forecast 的 region 给货运行打标签再过滤，所以 OPS Department 下的货运行全被滤掉。她说"10/13 之后就没有 EU 货运"吻合：Christy 10/28 起录的货运都挂这个 PO。JDM IR/JDM UK 都是 EU，但没人把 Buffer 改归 EU。
+
+**操作**（David 同意直接改）：用带保护条件的单行 SQL 把 `forecasts.id=214`（`POO202608050001`/SK4）的 `region` 从 `OPS Department` 改为 `EU`（先确认仅1行、当前值确为 OPS Department）。事先读代码确认 `updateForecast` 本来就不改 `po_number`，所以 PO 号不变、已有货运行不会失联。改后验证：4 条货运行（IG-SO-1566/1567/1576/1578）通过 forecast 反查的 region 全部是 EU。**走的是 SQL 不是界面，所以没有 `business_audit_logs` 记录**——以本条为准。副作用：这笔 5000 Buffer 现在算进 EU 的 forecast 汇总。
+
+**Berfin 提的另外两点（均非 MPS bug）**：①`IG-SO-1566` 同一票的 EB2 180 / AE1 90 在 MPS 里根本没录货运行，需 Jessie/Christy 补录；②2027年1月 4 条 EU forecast（`POE202609030001` 的 SK4/EB2/SW1、`POE202609080001` 的 AE1）区域是 EU、没合同，接口按 8/17 的放宽规则会输出（`contractedQty:0`），她 AOP 看不到更像是她那边要求合同量>0——这点只读了代码和库、没真调接口，待她确认。
+
+**遗留/注意**：库里还剩 6 条 `OPS Department` 的 forecast，如果以后有货运行挂在它们下面，Berfin 同样会看不到。另外 `docs/Foretracker-Integration-API-Guide-Berfin.md` 写 region 只可能是 APAC/EU/USA，实际会出现 `OPS Department`，文档没写。还有 `IG-CO-26041`（IGK3 500 / JDM IR）的 ETA 是 2027-01-01，疑似笔误，已提醒 David 让 Christy 核对。
+
+---
+
 ## 2026-10-09 — Order fulfillments：SO 查找从"跳转高亮"改成"只显示匹配行"
 
 Commit: `82c6971`
