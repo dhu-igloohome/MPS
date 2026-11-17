@@ -8,7 +8,7 @@
 
 ## 2026-11-17 — 货运行自带地区：共用 Buffer 池（OPS Department）按每次发货声明目的地区
 
-Commit: (pending push)
+Commit: `53a5812`
 
 **背景**：接上一条。David 指出 Buffer 会被多个地区消耗（例如 5000 台，到发货时才知道发往哪），所以把整条 Buffer 改归 EU 不对（`POO202608050001` 还剩 2516 台，之后若发往非 EU 会被错标成 EU，且 5000 全算进 EU 汇总）。新模型：Buffer 一直留在 OPS Department 当共用池，**每条货运行在发货时自己声明发往哪个地区**。
 
