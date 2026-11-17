@@ -169,6 +169,7 @@ curl -H "Authorization: Bearer mps_YOUR_API_KEY_HERE" \
       "region": "USA",
       "forecastQty": 500,
       "contractedQty": 500,
+      "contractDeliveryDate": "2026-08-20",
       "mpBatches": ["B001"],
       "shipFroms": ["TAIWAN FU HSING"],
       "opsActions": ["Ok to issue PO"],
@@ -195,7 +196,7 @@ curl -H "Authorization: Bearer mps_YOUR_API_KEY_HERE" \
 }
 ```
 
-- **`groups`** — one row per Forecast # + SKU, from all forecast records (not just ones with contracts); check `contractedQty` to see whether a contract has been created yet
+- **`groups`** — one row per Forecast # + SKU, from all forecast records (not just ones with contracts); check `contractedQty` to see whether a contract has been created yet. `contractDeliveryDate` (`YYYY-MM-DD`, or `null` when there is no contract) is the earliest supplier delivery date among the group's contracts — when the goods are expected to be ready
 - **`shipments`** — one row per shipment entry (SO, dates, status); multiple shipments can share the same group  
 
 ---

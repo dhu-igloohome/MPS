@@ -36,6 +36,7 @@ function buildGroups(
         region: f.region,
         forecastQty: 0,
         contractedQty: 0,
+        contractDeliveryDate: null,
         mpBatches: [],
         shipFroms: [],
         opsActions: [],
@@ -61,6 +62,10 @@ function buildGroups(
     const g = groups.get(groupKey(f.month, f.poNumber, f.sku));
     if (!g) continue;
     g.contractedQty += Math.max(0, Math.trunc(c.quantity));
+    const delivery = c.deliveryDate.trim().slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(delivery) && (!g.contractDeliveryDate || delivery < g.contractDeliveryDate)) {
+      g.contractDeliveryDate = delivery;
+    }
     const batch = c.batch.trim();
     if (batch && !g.mpBatches.includes(batch)) g.mpBatches.push(batch);
     const supplier = c.supplierName.trim();

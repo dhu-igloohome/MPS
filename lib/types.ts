@@ -568,6 +568,8 @@ export type FulfillmentGroup = {
   forecastQty: number;
   /** Quantity already covered by approved/sent contracts. */
   contractedQty: number;
+  /** Earliest delivery date (YYYY-MM-DD) among the group's contracts; null when there is none. */
+  contractDeliveryDate: string | null;
   /** Distinct MP batches from the group's contracts. */
   mpBatches: string[];
   /** Distinct CM (supplier) names from the group's contracts. */

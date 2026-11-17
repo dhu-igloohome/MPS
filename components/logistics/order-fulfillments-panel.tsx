@@ -12,6 +12,7 @@ import {
   Search,
   Trash2,
   Truck,
+  Wand2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -19,12 +20,13 @@ import { toast } from "sonner";
 import type { Language } from "@/lib/i18n";
 import { formatForecastMonthLabel } from "@/lib/payment-schedule-matrix";
 import { type FulfillmentIssue, shipmentIssues } from "@/lib/fulfillment-attention";
+import { suggestShipmentFields } from "@/lib/fulfillment-prefill";
 import {
   OPS_DEPARTMENT,
   SHIPMENT_REGIONS,
   suggestRegionFromShipTo,
 } from "@/lib/fulfillment-region";
-import type { FulfillmentGroup, FulfillmentShipmentEntry } from "@/lib/types";
+import type { FulfillmentGroup, FulfillmentShipmentEntry, Region } from "@/lib/types";
 
 type OrderFulfillmentsPanelProps = {
   language: Language;
@@ -189,6 +191,15 @@ function labels(language: Language) {
     issueNoSo: en ? "No SO number" : "缺 SO 号",
     issueNoShipTo: en ? "No ship-to" : "缺收货地",
     issueNoStatus: en ? "No status" : "缺交付状态",
+    fillFromContract: en ? "Fill from contract" : "从合同带出",
+    fillFromContractHint: en
+      ? "Fill the empty fields from the contract and earlier shipments: remaining quantity, ready date, ship to, freight mode, status. Nothing you already typed is changed."
+      : "用合同和已有货运把空着的字段填上：剩余数量、备货完成日、收货地、运输方式、状态。你已经填好的不会被改动。",
+    fillDone: en ? "Filled from contract:" : "已从合同带出：",
+    fillCheck: en ? "Check, then Save." : "请核对后保存。",
+    fillNothing: en
+      ? "Nothing to fill — those fields already have values."
+      : "没有可带出的内容：相关字段都已有值。",
     stillMissing: en ? "Still open:" : "仍待处理：",
     movedOut: en ? "This row left the current view." : "该行已移出当前视图。",
     deliveryStatus: en ? "Delivery status" : "交付状态",
@@ -568,12 +579,82 @@ export function OrderFulfillmentsPanel({
     }
   }
 
+  /** What the group's other shipments (saved or being typed) already say, for prefilling a new one. */
+  const siblingsOf = (g: FulfillmentGroup, excludeRowId: string) => {
+    const key = groupKeyOf(g);
+    const out: { soQuantity: number; shipTo: string; freightMode: string; region: Region | "" }[] = [];
+    for (const s of shipmentsByGroup.get(key) ?? []) {
+      if (s.id === excludeRowId) continue;
+      const f = rowFields[s.id];
+      out.push({
+        soQuantity: Number(f ? f.soQuantity : s.soQuantity),
+        shipTo: f ? f.shipTo : s.shipTo,
+        freightMode: f ? f.freightMode : s.freightMode,
+        region: (f ? f.region : s.region) as Region | "",
+      });
+    }
+    for (const d of drafts) {
+      if (d.groupKey !== key || d.tempId === excludeRowId) continue;
+      const f = rowFields[d.tempId];
+      if (f) {
+        out.push({
+          soQuantity: Number(f.soQuantity),
+          shipTo: f.shipTo,
+          freightMode: f.freightMode,
+          region: f.region as Region | "",
+        });
+      }
+    }
+    return out;
+  };
+
+  const FILL_FIELDS = [
+    ["soQuantity", t.soQty],
+    ["estimatedReadyDate", t.estimatedReady],
+    ["shipTo", t.shipTo],
+    ["freightMode", t.freightMode],
+    ["region", t.region],
+    ["deliveryStatus", t.deliveryStatus],
+  ] as const;
+
+  /** Fills only fields that are still empty, so nothing the user typed is ever overwritten. */
+  function fillFromContract(row: DisplayRow) {
+    const suggestion = suggestShipmentFields(row.group, siblingsOf(row.group, row.rowId));
+    const current = fieldsOf(row);
+    const patch: Partial<RowFields> = {};
+    const filled: string[] = [];
+    for (const [key, label] of FILL_FIELDS) {
+      const value = suggestion[key];
+      if (value && !current[key]) {
+        patch[key] = value;
+        filled.push(label);
+      }
+    }
+    if (filled.length === 0) {
+      toast.info(t.fillNothing);
+      return;
+    }
+    setField(row, patch);
+    toast.success(`${t.fillDone} ${filled.join(", ")}. ${t.fillCheck}`);
+  }
+
   function addShipment(row: DisplayRow) {
     const key = groupKeyOf(row.group);
-    setDrafts((prev) => [
+    const tempId = `draft:${key}:${Date.now()}:${Math.random().toString(36).slice(2, 7)}`;
+    const suggestion = suggestShipmentFields(row.group, siblingsOf(row.group, tempId));
+    setDrafts((prev) => [...prev, { tempId, groupKey: key }]);
+    setRowFields((prev) => ({
       ...prev,
-      { tempId: `draft:${key}:${Date.now()}:${Math.random().toString(36).slice(2, 7)}`, groupKey: key },
-    ]);
+      [tempId]: {
+        ...EMPTY_FIELDS,
+        soQuantity: suggestion.soQuantity ?? "",
+        estimatedReadyDate: suggestion.estimatedReadyDate ?? "",
+        shipTo: suggestion.shipTo ?? "",
+        freightMode: suggestion.freightMode ?? "",
+        region: suggestion.region ?? "",
+        deliveryStatus: suggestion.deliveryStatus,
+      },
+    }));
   }
 
   async function uploadFile(row: DisplayRow, file: File) {
@@ -1198,6 +1279,18 @@ export function OrderFulfillmentsPanel({
                             <Plus size={14} strokeWidth={1.5} />
                             {t.addShipment}
                           </button>
+                          {row.shipment == null ? (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => fillFromContract(row)}
+                              title={t.fillFromContractHint}
+                              className="app-button-secondary inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+                            >
+                              <Wand2 size={14} strokeWidth={1.5} />
+                              {t.fillFromContract}
+                            </button>
+                          ) : null}
                           {(row.shipment != null || !row.rowId.startsWith("auto:")) && (
                             <button
                               type="button"
