@@ -8,7 +8,7 @@
 
 ## 2026-11-18 — 修复 forecast 查询 `limit 200` 会悄悄丢最旧记录的隐患
 
-Commit: (pending push)
+Commit: `b29fd06`
 
 **背景**：排查 Berfin 问题时发现 `lib/repositories.ts` 的 `getForecastsByRegions` 带 `limit 200`（按 created_at 倒序）。库里 forecast 现为 171 条、每月约 25 条，约一两个月后就会超过 200，**最旧的 forecast 会被悄悄截掉**：订单履约页、仪表盘、Forecast 页、集成接口都用它，分组会少，对应货运在 `?region=` 过滤时会因找不到分组而丢失——属于"看不到某一条"的同类问题。David 同意去掉。
 
