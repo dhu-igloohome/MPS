@@ -33,7 +33,7 @@ export function LanguageToggle({ language }: LanguageToggleProps) {
         onClick={() => setLanguage("en")}
         className={`${segmentBase} ${
           language === "en"
-            ? "bg-white text-app-accent shadow-sm ring-1 ring-black/[0.06]"
+            ? "bg-white text-app-accent-text shadow-sm ring-1 ring-black/[0.06]"
             : "text-app-muted hover:text-foreground"
         }`}
         aria-pressed={language === "en"}
@@ -45,7 +45,7 @@ export function LanguageToggle({ language }: LanguageToggleProps) {
         onClick={() => setLanguage("zh")}
         className={`${segmentBase} ${
           language === "zh"
-            ? "bg-white text-app-accent shadow-sm ring-1 ring-black/[0.06]"
+            ? "bg-white text-app-accent-text shadow-sm ring-1 ring-black/[0.06]"
             : "text-app-muted hover:text-foreground"
         }`}
         aria-pressed={language === "zh"}

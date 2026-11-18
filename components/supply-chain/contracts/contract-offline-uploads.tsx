@@ -168,7 +168,7 @@ export function ContractOfflineUploads({ uploads, language }: Props) {
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border-2 border-app-accent bg-app-accent-soft px-3.5 py-2 text-sm font-semibold text-app-accent shadow-sm transition hover:bg-app-accent/10 disabled:opacity-50"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border-2 border-app-accent bg-app-accent-soft px-3.5 py-2 text-sm font-semibold text-app-accent-text shadow-sm transition hover:bg-app-accent/10 disabled:opacity-50"
         >
           <FileUp size={16} strokeWidth={2} />
           {loading ? t.uploading : t.upload}
@@ -239,7 +239,7 @@ export function ContractOfflineUploads({ uploads, language }: Props) {
                   <td className="px-2 py-2">
                     <a
                       href={`/api/contract-file-uploads/${encodeURIComponent(row.id)}/download`}
-                      className="inline-flex items-center gap-1 rounded-md border border-app-border px-2 py-1 text-xs font-medium text-app-accent hover:bg-app-accent-soft"
+                      className="inline-flex items-center gap-1 rounded-md border border-app-border px-2 py-1 text-xs font-medium text-app-accent-text hover:bg-app-accent-soft"
                     >
                       <Download size={14} strokeWidth={1.75} />
                       {t.download}

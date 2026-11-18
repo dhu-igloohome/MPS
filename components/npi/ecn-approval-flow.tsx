@@ -474,7 +474,7 @@ export function EcnApprovalFlow({ entries, products, language, username, role }:
               ))}
               <button
                 type="button"
-                className="text-xs font-medium text-app-accent"
+                className="text-xs font-medium text-app-accent-text"
                 onClick={() => setForm((f) => ({ ...f, jiraLinks: [...f.jiraLinks, ""] }))}
               >
                 + {en ? "Add link" : "添加链接"}
@@ -512,7 +512,7 @@ export function EcnApprovalFlow({ entries, products, language, username, role }:
             <button
               type="submit"
               disabled={loading}
-              className="rounded-lg border-2 border-app-accent bg-app-accent-soft px-3.5 py-2 text-sm font-semibold text-app-accent disabled:opacity-50"
+              className="rounded-lg border-2 border-app-accent bg-app-accent-soft px-3.5 py-2 text-sm font-semibold text-app-accent-text disabled:opacity-50"
             >
               {loading ? (en ? "Saving…" : "保存中…") : en ? "Save draft" : "保存草稿"}
             </button>
@@ -629,7 +629,7 @@ export function EcnApprovalFlow({ entries, products, language, username, role }:
                             <button
                               type="button"
                               disabled={loading}
-                              className="rounded border border-app-accent px-2 py-0.5 text-xs text-app-accent hover:bg-app-accent-soft disabled:opacity-50"
+                              className="rounded border border-app-accent px-2 py-0.5 text-xs text-app-accent-text hover:bg-app-accent-soft disabled:opacity-50"
                               onClick={() => onSubmitForApproval(row.id)}
                             >
                               {en ? "Submit" : "提交"}
@@ -658,7 +658,7 @@ export function EcnApprovalFlow({ entries, products, language, username, role }:
                             <a
                               key={a.id}
                               href={`/api/npi/ecn/attachments/${encodeURIComponent(a.id)}/download`}
-                              className="rounded border border-app-border px-2 py-0.5 text-xs text-app-accent hover:bg-app-accent-soft"
+                              className="rounded border border-app-border px-2 py-0.5 text-xs text-app-accent-text hover:bg-app-accent-soft"
                             >
                               {a.fileName}
                             </a>

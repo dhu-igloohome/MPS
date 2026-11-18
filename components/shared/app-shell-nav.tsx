@@ -285,7 +285,7 @@ export function AppShellNav({ items, children, language }: AppShellNavProps) {
                             href={child.href}
                             className={`block rounded-md py-1.5 pl-2 pr-2 text-sm tracking-tight transition-colors ${
                               childOn
-                                ? "bg-[var(--app-accent-soft)] font-semibold text-[var(--app-accent)]"
+                                ? "bg-[var(--app-accent-soft)] font-semibold text-app-accent-text"
                                 : "text-[#4B5563] hover:bg-gray-100/80 hover:text-[#111827]"
                             }`}
                           >

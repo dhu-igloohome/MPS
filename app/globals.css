@@ -17,6 +17,8 @@
   --app-accent: #ee6454;
   --app-accent-hover: #df5949;
   --app-accent-soft: #fff4f1;
+  /* Orange used as TEXT (links, active labels): #ee6454 is only 3.2:1 on white; this is 5.1:1. */
+  --app-accent-text: #c93a28;
   --app-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
 }
 
@@ -31,6 +33,7 @@
   --color-app-accent: var(--app-accent);
   --color-app-accent-hover: var(--app-accent-hover);
   --color-app-accent-soft: var(--app-accent-soft);
+  --color-app-accent-text: var(--app-accent-text);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
@@ -138,13 +141,14 @@
   .app-subnav-link-active {
     border-color: rgb(238 100 84 / 0.18);
     background: var(--app-accent-soft);
-    color: var(--app-accent);
+    color: var(--app-accent-text);
   }
 
   .app-button-primary {
     border-radius: 0.75rem;
     background: var(--app-accent);
     color: white;
+    font-weight: 600;
     transition:
       background-color 150ms ease,
       opacity 150ms ease;

@@ -190,7 +190,7 @@ export function SupplyChainSubnav({ language }: SupplyChainSubnavProps) {
                 aria-current={childOn ? "page" : undefined}
                 className={`flex min-h-[2.25rem] items-center justify-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
                   childOn
-                    ? "bg-white text-[var(--app-accent)] shadow-sm ring-1 ring-black/[0.05]"
+                    ? "bg-white text-app-accent-text shadow-sm ring-1 ring-black/[0.05]"
                     : "text-[#4B5563] hover:bg-white/70 hover:text-[#111827]"
                 }`}
               >

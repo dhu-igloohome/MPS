@@ -111,7 +111,7 @@ export async function AppShell({ session, title, description, headerMeta, module
           <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:gap-2.5">
             <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-app-border/80 bg-white/95 px-2.5 py-1.5 shadow-sm ring-1 ring-black/[0.03] sm:gap-3 sm:px-3">
               <div
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-app-accent-soft to-white text-xs font-bold text-app-accent ring-1 ring-[rgba(238,100,84,0.2)]"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-app-accent-soft to-white text-xs font-bold text-app-accent-text ring-1 ring-[rgba(238,100,84,0.2)]"
                 aria-hidden
               >
                 {(session.displayName.trim()[0] || "U").toUpperCase()}

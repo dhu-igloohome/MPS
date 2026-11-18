@@ -572,7 +572,7 @@ export function InventoryGlobalPanel({ entries, language }: Props) {
           <button
             type="submit"
             disabled={loading}
-            className="app-button-primary shrink-0 px-4 py-2 text-sm font-medium disabled:opacity-60"
+            className="app-button-primary shrink-0 px-4 py-2 text-sm font-semibold disabled:opacity-60"
           >
             {editingId ? (en ? "Save" : "保存") : en ? "Create" : "创建"}
           </button>

@@ -218,7 +218,7 @@ function ForecastCheckboxFilterPanel({
       <div className="mb-1 flex items-center justify-between">
         <button
           type="button"
-          className="text-app-accent hover:underline"
+          className="text-app-accent-text hover:underline"
           onClick={() => onChange(options.map((o) => o.value))}
         >
           {selectAllLabel}
@@ -350,7 +350,7 @@ function ForecastFilterableHeader({
         ref={buttonRef}
         type="button"
         onClick={onToggle}
-        className={`inline-flex items-center gap-1 whitespace-nowrap ${isActive ? "text-app-accent" : ""}`}
+        className={`inline-flex items-center gap-1 whitespace-nowrap ${isActive ? "text-app-accent-text" : ""}`}
       >
         {label}
         <Filter size={12} strokeWidth={1.75} className={isActive ? "fill-current" : ""} />
@@ -1542,7 +1542,7 @@ export function ForecastForm({
                           type="button"
                           onClick={addSkuLine}
                           disabled={products.length === 0}
-                          className="flex w-full items-center justify-center gap-2 border-t-2 border-dashed border-app-accent/40 bg-app-accent-soft/25 px-3 py-3 text-sm font-semibold text-app-accent transition duration-150 ease-out hover:bg-app-accent-soft/50 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex w-full items-center justify-center gap-2 border-t-2 border-dashed border-app-accent/40 bg-app-accent-soft/25 px-3 py-3 text-sm font-semibold text-app-accent-text transition duration-150 ease-out hover:bg-app-accent-soft/50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Plus size={16} strokeWidth={2} />
                           {t.addLine}
@@ -1559,7 +1559,7 @@ export function ForecastForm({
             <button
               type="submit"
               disabled={loading || products.length === 0}
-              className="app-button-primary inline-flex min-h-[36px] items-center justify-center gap-2 rounded-[0.625rem] px-4 py-1.5 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-60"
+              className="app-button-primary inline-flex min-h-[36px] items-center justify-center gap-2 rounded-[0.625rem] px-4 py-1.5 text-sm font-semibold transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-60"
             >
               {loading ? t.saving : t.saveForecast}
             </button>
@@ -1739,7 +1739,7 @@ export function ForecastForm({
               type="button"
               disabled={savingEdit}
               onClick={saveEditForecast}
-              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-semibold text-white hover:bg-app-accent-hover disabled:opacity-50"
             >
               {savingEdit ? t.saving : t.saveEdit}
             </button>
@@ -1779,7 +1779,7 @@ export function ForecastForm({
               <button
                 type="button"
                 onClick={clearAllForecastFilters}
-                className="inline-flex items-center gap-1 text-xs text-app-accent hover:underline"
+                className="inline-flex items-center gap-1 text-xs text-app-accent-text hover:underline"
               >
                 <X size={12} strokeWidth={2} />
                 {t.clearAllFilters}
@@ -1963,7 +1963,7 @@ export function ForecastForm({
                     <tr>
                       <td colSpan={canDelete ? 10 : 9} className="py-10 text-center text-app-muted">
                         {t.noFilterMatches}{" "}
-                        <button type="button" className="text-app-accent hover:underline" onClick={clearAllForecastFilters}>
+                        <button type="button" className="text-app-accent-text hover:underline" onClick={clearAllForecastFilters}>
                           {t.clearAllFilters}
                         </button>
                       </td>

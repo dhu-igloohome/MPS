@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-11-18 — 橙色（第3项）：只调文字——橙色文字换深色 + 橙底按钮标签加粗
+
+Commit: (pending push)
+
+**背景**：上一轮评估里橙色 `#EE6454` 对白底只有 3.2:1（标准 4.5），白字压橙底也是 3.2。David 回复"只调文字到合适字号与字体"。我的理解（**未再追问确认**）：**橙色背景、按钮底色、Logo 一律不动，只改文字本身**。
+
+**改动**：
+- **橙色当文字用 → 更深的橙**：新增 `--app-accent-text: #c93a28`（`app/globals.css`，同时注册 Tailwind 颜色 `text-app-accent-text`），把全站 27 处 `text-app-accent` / `text-[var(--app-accent)]` / `hover:text-app-accent` 和 `.app-subnav-link-active` 的文字色换成它。对比度：白底 5.10、页面底 4.88、侧栏灰底 4.63、选中标签的浅橙底 4.72（原来 3.19/2.95）。`bg-app-accent`、边框、ring 不变。
+- **白字压橙底的按钮标签 → 加粗**：`.app-button-primary` 加 `font-weight: 600`；所有 `app-button-primary` / `bg-app-accent … text-white` 的按钮 `font-medium` → `font-semibold`（23 处）、原来没写粗细的补 `font-semibold`（7 处）。字号没动（按钮本来就是 14px，订单履约行内 Save 是 12px 紧凑按钮）。
+
+**没解决（如实说明）**：白字压 `#EE6454` 底的对比度**数值上仍是 3.2**，加粗只改善可读性，**不达到 4.5 的 AA 标准**；要达标只能把按钮底色调深（如 `#D03E2C`=4.76），David 选了不动背景。蓝色"In transit"标签白字 4.0 也没动。
+
+**验证**：`tsc` 干净、lint 基线 22 不变。清缓存后从开发服务器取到的编译后 CSS 里确认有 `--app-accent-text:#c93a28`、`.text-app-accent-text` 规则、`.app-button-primary{font-weight:600}`；对比度用公式算（见上）。**没在页面上看到实际效果**：开发服务器重启后浏览器登录状态过期，不能替用户输密码，也没法截图。
+
+**踩坑（重要）**：**开发服务器会长期不重新编译 `globals.css` 的新改动**（今天第二次遇到，第一次是 `.app-field`）——即使重启 preview 也一样，因为 `.next/dev/cache`（1.1GB 的编译缓存）命中了旧结果。**`rm -rf D:\MPS\.next\dev\cache` 后重启才生效**（`.next` 已 gitignore，不影响代码库）。生产构建不受此影响。
+
+---
+
 ## 2026-11-18 — 修复 forecast 查询 `limit 200` 会悄悄丢最旧记录的隐患
 
 Commit: `b29fd06`

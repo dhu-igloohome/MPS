@@ -41,7 +41,7 @@ export function TableCellLongText({
         {showExpand ? (
           <button
             type="button"
-            className="mt-0.5 text-left text-xs font-medium text-app-accent hover:underline"
+            className="mt-0.5 text-left text-xs font-medium text-app-accent-text hover:underline"
             onClick={() => setOpen(true)}
           >
             {viewLabel}

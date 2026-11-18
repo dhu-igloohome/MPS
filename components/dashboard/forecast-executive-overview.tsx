@@ -288,7 +288,7 @@ export function ForecastExecutiveOverview({
       ) : null}
       <Link
         href="/forecast"
-        className="app-button-primary inline-flex items-center justify-center px-3 py-2 text-sm font-medium transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
+        className="app-button-primary inline-flex items-center justify-center px-3 py-2 text-sm font-semibold transition duration-150 ease-out hover:-translate-y-px active:translate-y-0"
       >
         {t.openForecast}
       </Link>
@@ -358,7 +358,7 @@ export function ForecastExecutiveOverview({
                   >
                     <input
                       type="checkbox"
-                      className="h-3.5 w-3.5 shrink-0 rounded border-app-border text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
+                      className="h-3.5 w-3.5 shrink-0 rounded border-app-border text-app-accent-text focus:ring-[var(--app-accent)]"
                       checked={checked}
                       onChange={() => {
                         if (explicit === undefined) {

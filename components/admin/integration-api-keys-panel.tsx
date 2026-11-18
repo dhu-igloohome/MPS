@@ -140,7 +140,7 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
   return (
     <section className="mt-8 rounded-2xl border border-app-border/90 bg-app-surface p-5 shadow-sm">
       <div className="flex items-start gap-3">
-        <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-app-accent" strokeWidth={1.5} />
+        <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-app-accent-text" strokeWidth={1.5} />
         <div className="min-w-0 flex-1">
           <h3 className="text-lg font-semibold text-foreground">{t.title}</h3>
           <details className="mt-1 text-xs text-app-muted">
@@ -200,7 +200,7 @@ export function IntegrationApiKeysPanel({ keys, language, siteOrigin }: Integrat
           type="button"
           disabled={busy || !label.trim() || createScopes.length === 0}
           onClick={() => void onCreate()}
-          className="app-button-primary shrink-0 px-4 py-2 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+          className="app-button-primary font-semibold shrink-0 px-4 py-2 text-sm transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
         >
           {t.create}
         </button>

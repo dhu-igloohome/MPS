@@ -376,7 +376,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
             <button
               type="submit"
               disabled={loading}
-              className="app-button-primary px-4 py-2 text-sm disabled:opacity-60"
+              className="app-button-primary font-semibold px-4 py-2 text-sm disabled:opacity-60"
             >
               {loading ? t.creating : t.createUser}
             </button>
@@ -553,7 +553,7 @@ export function UserManagement({ users, auditLogs, language }: UserManagementPro
               <button
                 type="button"
                 disabled={modalBusy}
-                className="app-button-primary px-3 py-2 text-sm disabled:opacity-60"
+                className="app-button-primary font-semibold px-3 py-2 text-sm disabled:opacity-60"
                 onClick={() => void commitSaveModal()}
               >
                 {savingUsername ? t.saving : t.save}

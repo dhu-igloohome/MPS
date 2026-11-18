@@ -513,7 +513,7 @@ export function LogisticsProgressPanel({
           <button
             type="submit"
             disabled={loading || products.length === 0}
-            className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-semibold text-white hover:bg-app-accent-hover disabled:opacity-50"
           >
             {loading ? "..." : editingId ? t.save : t.create}
           </button>

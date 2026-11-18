@@ -229,7 +229,7 @@ export function TestCaseManagement({ entries, language }: Props) {
             value={form.remarks}
             onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
           />
-          <button className="shrink-0 app-button-primary px-4 py-2 text-sm" disabled={loading} type="submit">
+          <button className="shrink-0 app-button-primary font-semibold px-4 py-2 text-sm" disabled={loading} type="submit">
             {editingId ? (
               <>
                 <Save className="mr-2 inline h-4 w-4" />

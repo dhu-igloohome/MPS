@@ -20,7 +20,7 @@ export function AppToaster() {
           title: "text-sm font-medium text-foreground",
           description: "text-sm text-app-muted",
           actionButton:
-            "rounded-lg bg-app-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-app-accent-hover",
+            "rounded-lg bg-app-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-app-accent-hover",
           cancelButton:
             "rounded-lg border border-app-border bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50",
           closeButton:

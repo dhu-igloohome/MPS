@@ -782,7 +782,7 @@ export function OrderFulfillmentsPanel({
                 {t.soNumber}
                 {soFilter ? (
                   <span
-                    className={`ml-1.5 font-semibold ${rows.length === 0 ? "text-red-600" : "text-app-accent"}`}
+                    className={`ml-1.5 font-semibold ${rows.length === 0 ? "text-red-600" : "text-app-accent-text"}`}
                   >
                     {t.soFilterCount(rows.length)}
                   </span>
@@ -1050,7 +1050,7 @@ export function OrderFulfillmentsPanel({
                                 href={f.soUrl.trim()}
                                 target="_blank"
                                 rel="noreferrer noopener"
-                                className="shrink-0 text-app-accent underline-offset-2 hover:underline"
+                                className="shrink-0 text-app-accent-text underline-offset-2 hover:underline"
                               >
                                 SO ↗
                               </a>
@@ -1060,7 +1060,7 @@ export function OrderFulfillmentsPanel({
                                 title={row.shipment ? t.uploadFile : t.saveFirst}
                                 className={`relative inline-flex shrink-0 items-center justify-center rounded-lg border border-app-border p-1.5 ${
                                   row.shipment
-                                    ? "cursor-pointer text-foreground/60 hover:bg-slate-100 hover:text-app-accent dark:hover:bg-slate-700/40"
+                                    ? "cursor-pointer text-foreground/60 hover:bg-slate-100 hover:text-app-accent-text dark:hover:bg-slate-700/40"
                                     : "cursor-not-allowed text-foreground/35"
                                 }`}
                               >
@@ -1085,7 +1085,7 @@ export function OrderFulfillmentsPanel({
                               <span className="inline-flex min-w-0 items-center gap-1">
                                 <a
                                   href={`/api/logistics-order-fulfillments/${encodeURIComponent(row.rowId)}/file`}
-                                  className="inline-flex min-w-0 items-center gap-1 text-app-accent underline-offset-2 hover:underline"
+                                  className="inline-flex min-w-0 items-center gap-1 text-app-accent-text underline-offset-2 hover:underline"
                                   title={row.shipment.attachment.fileName}
                                 >
                                   <Paperclip size={12} strokeWidth={1.5} className="shrink-0" />
@@ -1229,7 +1229,7 @@ export function OrderFulfillmentsPanel({
                               rel="noreferrer noopener"
                               title={t.openTracking}
                               aria-label={t.openTracking}
-                              className="shrink-0 rounded-lg border border-app-border p-1.5 text-app-accent transition hover:bg-slate-100 dark:hover:bg-slate-700/40"
+                              className="shrink-0 rounded-lg border border-app-border p-1.5 text-app-accent-text transition hover:bg-slate-100 dark:hover:bg-slate-700/40"
                             >
                               <ExternalLink size={14} strokeWidth={1.75} aria-hidden />
                             </a>
@@ -1271,7 +1271,7 @@ export function OrderFulfillmentsPanel({
                             type="button"
                             disabled={busy}
                             onClick={() => void saveRow(row)}
-                            className="app-button-primary inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+                            className="app-button-primary font-semibold inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs transition duration-150 ease-out hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
                           >
                             <Save size={14} strokeWidth={1.5} />
                             {t.save}

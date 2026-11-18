@@ -156,7 +156,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="app-button-primary w-full px-4 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-70"
+            className="app-button-primary w-full px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? "..." : t.login}
           </button>

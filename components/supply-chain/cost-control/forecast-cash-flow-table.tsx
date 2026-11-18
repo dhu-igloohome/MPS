@@ -249,7 +249,7 @@ export function ForecastCashFlowTable({
           )}
         </td>
         <td className="px-2 py-2 whitespace-nowrap">
-          <Link href="/forecast" className="text-app-accent hover:underline" prefetch={false}>
+          <Link href="/forecast" className="text-app-accent-text hover:underline" prefetch={false}>
             {labels.fcOpenForecast}
           </Link>
         </td>
@@ -373,7 +373,7 @@ export function ForecastCashFlowTable({
                           type="button"
                           disabled={!canCreate || !cov}
                           onClick={() => setModalSku(sku)}
-                          className="rounded-lg bg-app-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+                          className="rounded-lg bg-app-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-app-accent-hover disabled:opacity-50"
                         >
                           {labels.fcCreateContract}
                         </button>

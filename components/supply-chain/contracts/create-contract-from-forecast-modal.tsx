@@ -396,7 +396,7 @@ export function CreateContractFromForecastModal({
                 !bluetoothId.trim() ||
                 totalAlloc <= 0
               }
-              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
+              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-semibold text-white hover:bg-app-accent-hover disabled:opacity-60"
             >
               {loading ? (en ? "Creating…" : "创建中…") : en ? "Create contract(s)" : "创建合同"}
             </button>

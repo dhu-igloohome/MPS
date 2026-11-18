@@ -540,7 +540,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
           <button
             type="submit"
             disabled={loading}
-            className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-semibold text-white hover:bg-app-accent-hover disabled:opacity-50"
           >
             {loading ? t.saving : t.save}
           </button>
@@ -659,7 +659,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                 <button
                   type="submit"
                   disabled={editLoading}
-                  className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+                  className="rounded-lg bg-app-accent px-4 py-2 text-sm font-semibold text-white hover:bg-app-accent-hover disabled:opacity-50"
                 >
                   {editLoading ? t.savingEdit : t.saveChanges}
                 </button>
@@ -851,7 +851,7 @@ export function UnitCostPanel({ language, initialEntries, products, suppliers }:
                         <button
                           type="button"
                           onClick={() => openEdit(row)}
-                          className="rounded-md border border-app-border px-2 py-1 text-xs font-medium text-app-accent hover:bg-app-accent-soft"
+                          className="rounded-md border border-app-border px-2 py-1 text-xs font-medium text-app-accent-text hover:bg-app-accent-soft"
                         >
                           {t.edit}
                         </button>

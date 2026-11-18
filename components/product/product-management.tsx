@@ -351,7 +351,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
             value={articleNumber}
             onChange={(event) => setArticleNumber(event.target.value)}
           />
-          <button type="submit" className="shrink-0 app-button-primary px-4 py-2 text-sm">
+          <button type="submit" className="shrink-0 app-button-primary font-semibold px-4 py-2 text-sm">
             {t.create}
           </button>
         </form>
@@ -522,7 +522,7 @@ export function ProductManagement({ products, language }: ProductManagementProps
                 type="button"
                 disabled={templateBusy}
                 onClick={() => saveProductionTemplate()}
-                className="app-button-primary px-4 py-2 text-sm disabled:opacity-50"
+                className="app-button-primary font-semibold px-4 py-2 text-sm disabled:opacity-50"
               >
                 {t.save}
               </button>

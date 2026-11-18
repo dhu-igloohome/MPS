@@ -593,7 +593,7 @@ export function ContractManagement({
               !serialCode.trim() ||
               !bluetoothId.trim()
             }
-            className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
+            className="shrink-0 rounded-lg bg-app-accent px-4 py-2 text-sm font-semibold text-white hover:bg-app-accent-hover disabled:opacity-60"
           >
             {t.create}
           </button>

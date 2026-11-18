@@ -167,7 +167,7 @@ export function BuyerEntitiesManagement({ language, initialBuyerEntities, canEdi
                       {pill}
                     </span>
                     {isOn ? (
-                      <span className="mt-2 block text-xs font-medium text-[var(--app-accent)]">
+                      <span className="mt-2 block text-xs font-medium text-app-accent-text">
                         {t.editing}
                       </span>
                     ) : null}
@@ -246,7 +246,7 @@ export function BuyerEntitiesManagement({ language, initialBuyerEntities, canEdi
             <button
               type="submit"
               disabled={!canEdit || loading || !form.legalName.trim() || !form.address.trim()}
-              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-60"
+              className="rounded-lg bg-app-accent px-4 py-2 text-sm font-semibold text-white hover:bg-app-accent-hover disabled:opacity-60"
             >
               {loading ? t.saving : t.save}
             </button>
