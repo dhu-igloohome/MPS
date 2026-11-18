@@ -6,6 +6,25 @@
 
 ---
 
+## 2026-11-18 — Berfin 回复：根因在她的导入；接口文档补"地区筛选的副作用"和"备用库存 vs 需求"
+
+Commit: (pending push)
+
+**Berfin 的回复（David 转贴）**：她的导入只收"PO 同时出现在 groups 里"的货运，POO202608050001 (SK4) 有货运但没有分组，所以它的 6 条货运（1566/1567/1576/1578/1589/1590）全被跳过；**null etd/eta 不是原因**（我上一条的推断不对）；她已在她那边修好。她另外问：为什么 POO202608050001 在 groups 里没有条目，它和 12 月 SK4 的 POE202608040001（forecast 500、contracted 0）是不是同一个订单，会不会重复计算。
+
+**查证**：
+- POO202608050001/SK4 = forecast id 214，OPS Department、buffer、5,000 台，已签合同 5,000（华美），6 条货运全部声明发往 EU，共 3,492 台。分组**其实有**，只是 `?region=EU` 会把 OPS Department 的分组挡掉（文档写明的设计），货运行却带 EU 标签返回，于是"有货运、无分组"。不带 `region` 参数时分组会返回。
+- POE202608040001/SK4 = forecast id 206，Berfin 8/4 填的 EU 12 月需求 500，Ops action "Consider stock transfer from other region"，备注 "Stock transfer from POO202608050001"，所以没有合同。**不是同一个订单号，是同一批货**：500 是需求、5,000 是供应，不能相加。
+- 备用库存发往 EU 的 3,492 台**远多于**这条 500（EU 的 SK4 还有 10 月 600+250、11 月 500、2027-01 2,000 等需求）。**系统只记录"从备用库存发往 EU"，不记录每条货运对应 EU 的哪条需求**。
+
+**决定（David 授权我定）**：①**不加**"货运对应哪条需求"的功能（会让 Christy 每次多填一项，且只为 Berfin 一人；见 [[mps-serve-all-users-not-berfin]]）；②**不改接口行为**：让 `?region=EU` 附带 OPS 分组会让她把 5,000 台备用库存当成 EU 需求，反而造成她担心的重复计算，且她已自行修复；③**只补文档**。
+
+**改动**（`docs/Foretracker-Integration-API-Guide-Berfin.md`）：在 "Shared buffer stock" 一节补两条：`?region=` 的副作用（货运可能返回时没有对应分组，不要强制每条货运都有分组，或不带 region 再自行筛选）；不要把备用库存和地区需求相加（备用库存是供应、标"Consider stock transfer…"的地区 forecast 是需求，通常 contractedQty 为 0；系统不记录货运对应哪条需求，需她那边自行分摊）。**没改任何代码。**
+
+**没验证**：没有端到端调用接口；她"已修复"是她自述，我没验证；3,492 台具体对应 EU 哪几条需求，系统里没有数据，我没有也不能给出对应关系。
+
+---
+
 ## 2026-11-17 — Berfin 的 API 读不到 IG-SO-1589 / 1590：排查结论 + 接口文档补充
 
 Commit: `cf9ac93`

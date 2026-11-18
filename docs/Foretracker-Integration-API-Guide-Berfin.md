@@ -144,6 +144,8 @@ Every object in `groups` and `shipments` also includes a `"region"` field so you
 - A **shipment** drawing from the pool carries the **destination region** it was assigned (`"APAC"`, `"EU"` or `"USA"`), and `?region=EU` returns exactly the shipments assigned to EU. The shipment's `forecastPoNumber` still starts with `POO…`, so don't infer the region from the PO prefix — use the `region` field.
 - For all other groups, a shipment's `region` is simply its group's region (unchanged).
 - Only old shipments that were saved before this rule existed and never got a region can still show `"region": "OPS Department"`; they will be assigned over time.
+- **Side effect of `?region=`:** because the pool group is filtered out under `?region=EU` while its shipments are not, a shipment can come back **without its group** in the same response. Don't require every shipment to have a matching group when you filter by region — or call without `region` (the pool group then comes back with `"region": "OPS Department"`) and filter on your side.
+- **Do not add pool and regional demand together.** The pool PO is *supply* (stock bought ahead, e.g. 5,000 units); a regional forecast marked `"Consider stock transfer from other region"` is *demand* that the pool is meant to cover (it usually has `contractedQty: 0`). Foretracker records that a shipment is **drawn from the pool and going to region X**, but not which regional forecast line it serves — that allocation has to be done on your side.
 
 **Example (curl)**
 
