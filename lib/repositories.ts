@@ -834,7 +834,10 @@ export async function getForecastsByRegions(regions: Region[]) {
     from forecasts
     where region = any(${regions}) or region = 'OPS Department'
     order by created_at desc
-    limit 200;
+    -- Safety cap only. It used to be 200, which would silently drop the OLDEST forecasts once the table
+    -- grew past it (~25 rows/month) and make Order fulfillments groups / the integration API lose
+    -- rows. 5000 is ~16 years of headroom at the current rate.
+    limit 5000;
   `;
 
   return rows.map(mapForecast);
