@@ -92,6 +92,11 @@ If you cannot run Node against the DB, print SQL only and run it in the host’s
 node scripts/reset-user-password.mjs david david123 --sql-only
 ```
 
+## UI guidelines
+
+- `docs/ui-design-principles.md` — what belongs on a screen (no unnecessary helper labels; let the layout explain).
+- `docs/ui-control-width-checklist.md` — control widths.
+
 ## Development
 
 ```bash
